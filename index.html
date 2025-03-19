@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online JavaScript Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+    <style>
+
+         button {
+        font-family: 'Baseball', sans-serif;
+        font-weight: bold;
+        font-size: 12px;
+        padding: 10px 24px;
+        margin: 5px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #run {
+        background: linear-gradient(45deg, #4CAF50, #2E7D32);
+        color: white;
+    }
+
+    #clear {
+        background: linear-gradient(45deg, #FF5722, #E64A19);
+        color: white;
+    }
+
+    #download {
+        background: linear-gradient(45deg, #2196F3, #1976D2);
+        color: white;
+    }
+
+    button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+        transform: scale(0.98);
+    }
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            padding: 20px;
+            margin: 0;
+            background-color: #333;
+            color: white;
+        }
+
+        /* Container for Editor and Output */
+        .container {
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Editor Section */
+        #editor {
+            flex: 1.5;
+            border: 1px solid #ddd;
+            min-height: 40vh;
+        }
+
+        /* Controls Section */
+        #controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        #controls button:hover {
+            background-color: #0056b3;
+        }
+
+        #controls button:active {
+            background-color: #004080;
+        }
+
+        /* Output Section */
+        .output-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .output-section {
+            flex: 8;
+            background: #f4f4f4;
+            padding: 15px;
+            border: 1px solid #ddd;
+            min-height: 400px;
+            /* white-space: pre-wrap; */
+        }
+
+        .metrics-section {
+            background: #e9e9e9;
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .metrics-section h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .metrics-section pre {
+            margin: 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h2>Online JavaScript Editor</h2>
+    <div class="container">
+        <!-- Editor Section -->
+        <div id="editor"></div>
+
+        <!-- Output Section -->
+        <div class="output-container">
+            <div id="controls">
+                <button id="run">🚀 Run Code</button>
+                <button id="format">✨ Format Code</button>
+                <button id="clear">🧹 Clear Output</button>
+                <button id="download">📥 Download Code</button>
+                
+            </div>
+            <div class="output-section" style="overflow-y: auto; max-height: 300px;">
+               
+                <pre id="output"></pre>
+            </div>
+            <div class="metrics-section">
+                <h4>Execution Metrics:</h4>
+                <pre id="metrics"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs" } });
+        require(["vs/editor/editor.main"], function () {
+            var editor = monaco.editor.create(document.getElementById("editor"), {
+                value: `console.log("Developed By Sunil...")`,
+                language: "javascript",
+                theme: "vs-dark",
+                automaticLayout: true,
+                minimap: { enabled: true },
+                scrollBeyondLastLine: true,
+                fontFamily: "'Fira Code', 'Consolas', monospace",
+                fontSize: 15,
+                lineNumbers: "on",
+                roundedSelection: false,
+                scrollbar: {
+                    verticalScrollbarSize: 10,
+                    horizontalScrollbarSize: 10
+                }
+            });
+
+            const outputElement = document.getElementById("output");
+            const metricsElement = document.getElementById("metrics");
+   
+            const runStatusElement = document.getElementById("run-status");
+           
+            let executionStartTime = 0;
+            let logMessages = 0;
+            let executionInterval = null;
+            
+            function updateMetrics(isRunning = true) {
+    const currentTime = performance.now();
+    const elapsedTime = (currentTime - executionStartTime).toFixed(2);
+
+    // Check if we have Chrome's memory API
+    let memoryInfo = '';
+    if (window.performance && window.performance.memory) {
+        const usedHeap = (window.performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(2);
+        const totalHeap = (window.performance.memory.totalJSHeapSize / (1024 * 1024)).toFixed(2);
+        memoryInfo = `Memory Usage: Heap: ${usedHeap} MB<br>Total heap: ${totalHeap} MB`;
+    }
+
+    metricsElement.innerHTML = `
+        <div>Execution Time: ${elapsedTime} ms</div>
+        <div>Console Logs: ${logMessages.replace(/\n/g, '<br>')}</div>
+        ${memoryInfo ? `<div>${memoryInfo}</div>` : ''}
+    `;
+
+    // Update status indicator
+    runStatusElement.innerHTML = isRunning ? 'Running...' : 'Complete';
+}
+function downloadCode() {
+    const code = editor.getValue();
+    if (!code) return;
+
+    let fileName = prompt("Enter the file name (including extension, e.g., code.js):", "code.js");
+    
+    // Stop execution if user cancels
+    if (fileName === null) return;
+
+    if (!fileName.trim()) {
+        fileName = "code.js"; // Default filename if input is empty
+    }
+
+    const blob = new Blob([code], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+            function runCode() {
+                const code = editor.getValue();
+                outputElement.innerText = "";
+                metricsElement.innerText = "";
+
+                // Override console methods
+                const originalConsole = { ...console };
+                console.log = function(...args) {
+                    outputElement.innerText += args.join(" ") + "\n";
+                };
+                console.error = function(...args) {
+                    outputElement.innerText += "Error: " + args.join(" ") + "\n";
+                };
+                console.warn = function(...args) {
+                    outputElement.innerText += "Warning: " + args.join(" ") + "\n";
+                };
+                console.info = function(...args) {
+                    outputElement.innerText += "Info: " + args.join(" ") + "\n";
+                };
+
+                // Handle unhandled promise rejections
+                window.onunhandledrejection = function(event) {
+                    console.error("Unhandled Rejection:", event.reason);
+                };
+
+                // Start measuring execution time and memory
+                const startTime = performance.now();
+                const startMemory = window.performance.memory ? window.performance.memory.usedJSHeapSize : null;
+
+                try {
+                    // Wrap the code in an async function to handle async/await
+                    const wrappedCode = `(async () => { ${code} })();`;
+                    new Function(wrappedCode)();
+                } catch (error) {
+                    console.error("Error:", error.message);
+                } finally {
+                    // Calculate execution time and memory usage
+                    const endTime = performance.now();
+                    const endMemory = window.performance.memory ? window.performance.memory.usedJSHeapSize : null;
+
+                    const executionTime = (endTime - startTime).toFixed(2);
+                    const memoryUsage = endMemory && startMemory ? ((endMemory - startMemory) / 1024).toFixed(2) + " KB" : "N/A";
+
+                    // Display metrics
+                    metricsElement.innerText = `Execution Time: ${executionTime} ms\nMemory Usage: ${memoryUsage}`;
+
+                    // Restore original console methods after a delay
+                    setTimeout(() => {
+                        console.log = originalConsole.log;
+                        console.error = originalConsole.error;
+                        console.warn = originalConsole.warn;
+                        console.info = originalConsole.info;
+                    }, 11000); // Wait for all timeouts to complete (10 seconds max)
+                }
+            }
+            document.getElementById("clear").addEventListener("click", clearOutput);
+            document.getElementById("download").addEventListener("click", downloadCode);
+            document.getElementById("format").addEventListener("click", formatCode);
+            function formatCode() {
+                const code = editor.getValue();
+
+    const formattedCode = js_beautify(code);
+    
+    editor.setValue(formattedCode);
+        }
+
+            function clearOutput() {
+                outputElement.innerText = "";
+                metricsElement.innerText = "";
+            }
+
+            document.getElementById("run").addEventListener("click", runCode);
+            
+            document.getElementById("clear").addEventListener("click", clearOutput);
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+</body>
+</html>
