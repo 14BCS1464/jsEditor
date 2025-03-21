@@ -421,7 +421,7 @@ pre {
             <div id="controls">
                 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                     <button id="run">🚀 Run Code</button>
-                    <button id="format">✨ Format Code</button>
+                    <button id="addfile">✨ IMPORT CODE</button>
                     <button id="clear">🧹 Clear Output</button>
                     <button id="download">📥 Download Code</button>
                 </div>
@@ -436,11 +436,12 @@ pre {
             
                 <!-- Metrics Section -->
                 <div class="metrics-section">
-                  <h3>Execution Matrix</h3>
+                  <h1></h1>Execution Matrix</h1>
                     <pre id="metrics">Waiting for execution...</pre>
                 </div>
             </div>
         </div>
+        <input type="file" id="fileInput" accept=".js" style="display: none;">
     </div>
 
     <script>
@@ -609,23 +610,36 @@ function runCode() {
 }
             document.getElementById("clear").addEventListener("click", clearOutput);
             document.getElementById("download").addEventListener("click", downloadCode);
-            document.getElementById("format").addEventListener("click", formatCode);
-            function formatCode() {
-                const code = editor.getValue();
-
-    const formattedCode = js_beautify(code);
-    
-    editor.setValue(formattedCode);
+            document.getElementById("addfile").addEventListener("click", addJsFile);
+            document.getElementById("run").addEventListener("click", runCode);
+      
+            function addJsFile() {
+          
+            document.getElementById("fileInput").click(); // Trigger file input
         }
+
+        document.getElementById("fileInput").addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            if (file && file.name.endsWith('.js')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+              
+                    editor.setValue(e.target.result);
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Please select a valid JavaScript (.js) file.");
+            }
+        });
+
+   
 
             function clearOutput() {
                 outputElement.innerText = "";
-                metricsElement.innerText = "";
+                //metricsElement.innerText = "";
             }
 
-            document.getElementById("run").addEventListener("click", runCode);
-            
-            document.getElementById("clear").addEventListener("click", clearOutput);
+       
         });
          // Auto-completion
          monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
