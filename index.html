@@ -410,7 +410,17 @@ pre {
         <h2>
           <span class="gradient-text">Online The JavaScript Editor</span>
           <!-- <span class="by-text">By Appcontrivance</span> -->
+           
         </h2>
+        <div id="controls">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <button id="run">🚀 Run Code</button>
+              <button id="addfile">✨ IMPORT CODE</button>
+              <button id="clear">🧹 Clear Output</button>
+              <button id="download">📥 Download Code</button>
+          </div>
+          
+      </div>
       </div>
     <div class="container">
         <!-- Editor Section -->
@@ -418,15 +428,7 @@ pre {
 
         <!-- Output Section -->
         <div class="output-container">
-            <div id="controls">
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <button id="run">🚀 Run Code</button>
-                    <button id="addfile">✨ IMPORT CODE</button>
-                    <button id="clear">🧹 Clear Output</button>
-                    <button id="download">📥 Download Code</button>
-                </div>
-                
-            </div>
+          
             <div class="output-container">
                 <!-- Output Section -->
                 <div class="output-section">
@@ -513,7 +515,7 @@ function downloadCode() {
     if (!code) return;
 
     let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ""); // Format timestamp
-let fileName = prompt("Enter the file name (including extension):", `learn_J_${timestamp}.js`);
+let fileName = prompt("Enter the file name (including extension):", `learn_${timestamp}.js`);
 
     
     // Stop execution if user cancels
