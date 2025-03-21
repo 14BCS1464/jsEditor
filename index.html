@@ -152,7 +152,7 @@ button:active {
   color: white;
 }
 
-#format { 
+#addfile { 
   background: linear-gradient(135deg, #6c5ce7, #5f27cd); 
   color: white; 
 }
@@ -408,7 +408,7 @@ pre {
 <body>
     <div class="editor-heading">
         <h2>
-          <span class="gradient-text">Online JavaScript Editor</span>
+          <span class="gradient-text">Online The JavaScript Editor</span>
           <!-- <span class="by-text">By Appcontrivance</span> -->
         </h2>
       </div>
@@ -472,8 +472,8 @@ pre {
             editor.setValue(localStorage.getItem("userCode") || `console.log("Developed By Appcontrivance...")`);
 
             document.getElementById("clear").addEventListener("click", function () {
-                editor.setValue("");
-                localStorage.removeItem("userCode");
+               // editor.setValue("");
+                //localStorage.removeItem("userCode");
             });
             editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, function () {
                 editor.trigger("keyboard", "actions.find");
@@ -512,7 +512,9 @@ function downloadCode() {
     const code = editor.getValue();
     if (!code) return;
 
-    let fileName = prompt("Enter the file name (including extension, e.g., code.js):", "code.js");
+    let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ""); // Format timestamp
+let fileName = prompt("Enter the file name (including extension):", `learn_J_${timestamp}.js`);
+
     
     // Stop execution if user cancels
     if (fileName === null) return;
@@ -622,11 +624,19 @@ function runCode() {
             const file = event.target.files[0];
             if (file && file.name.endsWith('.js')) {
                 const reader = new FileReader();
+                // Ask user for merge or replace preference
+                const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
+
                 reader.onload = function(e) {
-              
-                    editor.setValue(e.target.result);
+              const editorvalue = editor.getValue()  || ""
+              const concatValue = mergeChoice?`${editorvalue} \n ${e.target.result}` :`${e.target.result}` 
+                    editor.setValue(concatValue);
                 };
                 reader.readAsText(file);
+                editor.onDidChangeModelContent(() => {
+                localStorage.setItem("userCode", concatValue);
+            });
+
             } else {
                 alert("Please select a valid JavaScript (.js) file.");
             }
@@ -635,8 +645,9 @@ function runCode() {
    
 
             function clearOutput() {
-                outputElement.innerText = "";
-                //metricsElement.innerText = "";
+                 outputElement.innerText = "";
+             
+                metricsElement.innerText = "";
             }
 
        
