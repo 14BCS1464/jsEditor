@@ -7,6 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <style>
       /* Modern Editor CSS */
 :root {
@@ -414,14 +416,21 @@ pre {
         </h2>
         <div id="controls">
           <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-              <button id="run">🚀 Run Code</button>
-              <button id="addfile">✨ IMPORT CODE</button>
-              <button id="clear">🧹 Clear Output</button>
-              <button id="download">📥 Download Code</button>
+            <button id="run">▶️ Run Code</button>
+        <button id="addfile">✨ IMPORT CODE</button>
+        <button id="clear">🧹 Clear Output</button>
+        <button id="download">📥 Download Code</button>
+        <button id="interView">📚 JS Interview Questions</button> 
+
+      
           </div>
           
       </div>
       </div>
+      
+
+
+  
     <div class="container">
         <!-- Editor Section -->
         <div id="editor"></div>
@@ -493,6 +502,52 @@ pre {
     const currentTime = performance.now();
     const elapsedTime = (currentTime - executionStartTime).toFixed(2);
 
+
+    monaco.languages.registerCompletionItemProvider('javascript', {
+    provideCompletionItems: async function (model, position) {
+        const codeBeforeCursor = model.getValueInRange({
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column
+        });
+alert("dsfds")
+        // Call OpenAI API for suggestions
+        const suggestion = await fetchAICompletion(codeBeforeCursor);
+alert(suggestion)
+        return {
+            suggestions: [
+                {
+                    label: suggestion,  // AI-generated code
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: suggestion,
+                    documentation: "AI Suggested Code"
+                }
+            ]
+        };
+    }
+});
+
+
+async function fetchAICompletion(codeSnippet) {
+    const apiKey = "YOUR_OPENAI_API_KEY"; // Replace with your actual API key
+    const response = await fetch("https://api.openai.com/v1/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: "gpt-4", // Use GPT-4 or another model
+            prompt: `Suggest the next line of JavaScript code:\n\n${codeSnippet}`,
+            max_tokens: 50
+        })
+    });
+
+    const data = await response.json();
+    return data.choices?.[0]?.text.trim() || "";
+}
+
     // Check if we have Chrome's memory API
     let memoryInfo = '';
     if (window.performance && window.performance.memory) {
@@ -509,6 +564,11 @@ pre {
 
     // Update status indicator
     runStatusElement.innerHTML = isRunning ? 'Running...' : 'Complete';
+}
+
+function loadQuestionPage() {
+ 
+    window.location.href = "questions.html"; // Change this to your actual page URL
 }
 function downloadCode() {
     const code = editor.getValue();
@@ -616,7 +676,8 @@ function runCode() {
             document.getElementById("download").addEventListener("click", downloadCode);
             document.getElementById("addfile").addEventListener("click", addJsFile);
             document.getElementById("run").addEventListener("click", runCode);
-      
+            document.getElementById("interView").addEventListener("click", loadQuestionPage);
+         
             function addJsFile() {
           
             document.getElementById("fileInput").click(); // Trigger file input
