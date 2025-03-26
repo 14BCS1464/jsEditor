@@ -105,7 +105,7 @@ button {
   padding: 10px 10px;
   font-size: 12px;
   font-weight: 400;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   border-radius: 12px;
   border: none;
   cursor: pointer;
@@ -153,7 +153,10 @@ button:active {
   background: linear-gradient(135deg, #00b894, #20bf6b); 
   color: white;
 }
-
+#interView{ 
+  background: linear-gradient(135deg, #00b894, #20bf6b); 
+  color: white;
+}
 #addfile { 
   background: linear-gradient(135deg, #6c5ce7, #5f27cd); 
   color: white; 
@@ -267,14 +270,16 @@ h2 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap:15px;
   height: 100%;
 }
 
 .output-section {
   background: var(--card-bg);
   border-radius: var(--border-radius);
-  padding: 24px;
+  padding-left: 10px;
+  padding-left: 10px;
+  padding-bottom: 10px;
   box-shadow: var(--shadow-md);
   flex: 2;
   overflow-y: auto;
@@ -417,10 +422,10 @@ pre {
         <div id="controls">
           <div style="display: flex; flex-wrap: wrap; gap: 10px;">
             <button id="run">▶️ Run Code</button>
-        <button id="addfile">✨ IMPORT CODE</button>
+        <button id="addfile">✨ Import Code</button>
         <button id="clear">🧹 Clear Output</button>
         <button id="download">📥 Download Code</button>
-        <button id="interView">📚 JS Interview Questions</button> 
+        <button id="interView">📚 Interview Preparation</button> 
 
       
           </div>
@@ -436,24 +441,24 @@ pre {
         <div id="editor"></div>
 
         <!-- Output Section -->
-        <div class="output-container">
+    
           
             <div class="output-container">
                 <!-- Output Section -->
                 <div class="output-section">
-                    <h4>Console Output</h4>
+                    <h4 style="position: sticky; top: 0; background-color: #1a1a25;   padding-top: 10px;">Console Output</h4>
                     <pre id="output">No output yet...</pre>
                 </div>
             
                 <!-- Metrics Section -->
-                <div class="metrics-section">
-                  <h1></h1>Execution Matrix</h1>
+                <div class="metrics-section" style="overflow: auto; max-height: 300px;">
+                  <p>Execution Matrix</p>
                     <pre id="metrics">Waiting for execution...</pre>
                 </div>
             </div>
         </div>
         <input type="file" id="fileInput" accept=".js" style="display: none;">
-    </div>
+  
 
     <script>
         require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs" } });
@@ -603,7 +608,7 @@ function runCode() {
   // Clear previous output
   outputElement.innerText = "";
   metricsElement.innerText = "";
-  
+  const jsEngine = detectJSEngine();
   // Override console methods
   const originalConsole = { ...console };
   
@@ -624,6 +629,10 @@ function runCode() {
     outputElement.innerHTML += `<span style="color: #54a0ff; font-weight: bold;">\nInfo: ${args.join(" ")}</span>\n`;
   };
   
+  console.info = function(...args) {
+    outputElement.innerHTML += `<span style="color: #54a0ff; font-weight: bold;">{Compilation Done ...}</span>\n`;
+  };
+  
   // Handle unhandled promise rejections
   window.onunhandledrejection = function(event) {
     console.error("Unhandled Rejection:", event.reason);
@@ -632,7 +641,7 @@ function runCode() {
   // Start measuring execution time and memory
   const startTime = performance.now();
   const startMemory = window.performance.memory ? window.performance.memory.usedJSHeapSize : null;
-  
+
   try {
     // Wrap the code in an async function to handle async/await
     const wrappedCode = `(async () => { ${code} })();`;
@@ -653,6 +662,11 @@ function runCode() {
     // Display metrics with improved styling
   // Display metrics with improved styling and increased size
   metricsElement.innerHTML = `
+    <div class="metric-row">
+ 
+  <div class="metric-label">JS Engine:</div>
+    <div class="metric-value">${jsEngine}</div>
+  </div>
   <div class="metric-row">
     <div class="metric-label">Execution Time:</div>
     <div class="metric-value">${executionTime} ms</div>
@@ -661,6 +675,8 @@ function runCode() {
     <div class="metric-label">Memory Usage:</div>
     <div class="metric-value">${memoryUsage}</div>
   </div>
+ 
+  
 `;
     
     // Restore original console methods after a delay
@@ -671,7 +687,18 @@ function runCode() {
       console.info = originalConsole.info;
     }, 11000); // Wait for all timeouts to complete (10 seconds max)
   }
+  outputElement.innerHTML += `<span style="color: #dfe6e9;">\nCompilation Done...</span>\n`;
 }
+function detectJSEngine() {
+    try {
+      if (window.navigator.userAgent.includes('Chrome')) return 'V8';
+      if (window.navigator.userAgent.includes('Firefox')) return 'SpiderMonkey';
+      if (window.navigator.userAgent.includes('Safari')) return 'JavaScriptCore';
+      return 'Unknown Engine';
+    } catch (e) {
+      return 'Unknown Engine';
+    }
+  }
             document.getElementById("clear").addEventListener("click", clearOutput);
             document.getElementById("download").addEventListener("click", downloadCode);
             document.getElementById("addfile").addEventListener("click", addJsFile);

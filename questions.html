@@ -154,6 +154,7 @@
             overflow-x: auto;
             color: var(--highlight);
             margin: 10px 0;
+            position: relative;
         }
     
         .answer strong {
@@ -310,6 +311,57 @@
                 font-size: 0.75rem;
             }
         }
+        .topic {
+            font-size: 15px;
+    
+            color: #21dd24;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        .topic:hover {
+            color: #6fab70;
+        }
+
+        /* New styles for run code functionality */
+        .run-code-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--highlight);
+            color: #000;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .run-code-btn:hover {
+            background: #00c9b7;
+        }
+
+        .code-output {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            border-left: 3px solid var(--highlight);
+            display: none;
+        }
+
+        .code-output-title {
+            font-size: 0.8rem;
+            color: var(--highlight);
+            margin-bottom: 5px;
+        }
+
+        .code-output-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+        }
     </style>
 
     <!-- Razorpay Checkout Script -->
@@ -322,8 +374,9 @@
         <div class="header">
             <h2>JavaScript Interview Questions</h2>
             <p>Master these questions to ace your next interview</p>
+            
         </div>
-
+        <a href="newpage.html" class="topic">Important Topic Read This</a>
         <!-- Free Questions -->
         <div class="question-container">
             <div class="question">
@@ -344,12 +397,13 @@ function createCounter() {
     return function() {
         count++;
         return count;
-    }
+    };
 }
 
 const counter = createCounter();
 console.log(counter()); // 1
-console.log(counter()); // 2</pre>
+console.log(counter()); // 2<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-2"></div>
                 Here, the inner function maintains access to the `count` variable even after `createCounter` has finished execution.
             </div>
             
@@ -365,6 +419,19 @@ console.log(counter()); // 2</pre>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Promises are objects representing the eventual completion (or failure) of an asynchronous operation and its resulting value. `async/await` is syntactic sugar built on top of Promises, making asynchronous code easier to write and understand by allowing you to write asynchronous code that looks synchronous.
+                <pre>
+async function fetchData() {
+    try {
+        const response = await fetch('https://api.example.com/data');
+        const data = await response.json();
+        console.log(data);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+fetchData();<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-4"></div>
             </div>
             
             <div class="question">
@@ -372,6 +439,12 @@ console.log(counter()); // 2</pre>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> The `==` (loose equality) operator checks for value equality after converting both values to a common type, while the `===` (strict equality) operator checks for both value and type equality without type conversion.
+                <pre>
+console.log(5 == '5');    // true
+console.log(5 === '5');   // false
+console.log(0 == false);  // true
+console.log(0 === false); // false<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-5"></div>
             </div>
             
             <div class="question">
@@ -379,6 +452,15 @@ console.log(counter()); // 2</pre>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> `undefined` means a variable has been declared but not assigned a value, while `null` is an intentional assignment to represent "no value" or "empty". `undefined` is a type itself, whereas `null` is an object.
+                <pre>
+let a;
+console.log(a);     // undefined
+console.log(typeof a); // "undefined"
+
+let b = null;
+console.log(b);     // null
+console.log(typeof b); // "object"<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-6"></div>
             </div>
             
             <div class="question">
@@ -399,6 +481,16 @@ console.log(counter()); // 2</pre>
                     <li>In an event, `this` refers to the element that received the event</li>
                     <li>With call/apply/bind methods, `this` can be explicitly set</li>
                 </ul>
+                <pre>
+const obj = {
+    name: 'John',
+    greet: function() {
+        console.log(`Hello, ${this.name}!`);
+    }
+};
+
+obj.greet(); // "Hello, John!"<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-8"></div>
             </div>
             
             <div class="question">
@@ -406,6 +498,18 @@ console.log(counter()); // 2</pre>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Both iterate over arrays, but `map()` returns a new array with the results of calling a function on every element, while `forEach()` simply executes a function for each element without returning anything. `map()` is immutable and better for transforming data, while `forEach()` is used for side effects.
+                <pre>
+const numbers = [1, 2, 3];
+
+// map() example
+const doubled = numbers.map(num => num * 2);
+console.log(doubled); // [2, 4, 6]
+
+// forEach() example
+let sum = 0;
+numbers.forEach(num => sum += num);
+console.log(sum); // 6<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-9"></div>
             </div>
             
             <div class="question">
@@ -413,6 +517,18 @@ console.log(counter()); // 2</pre>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Hoisting is JavaScript's default behavior of moving declarations to the top of the current scope. Function declarations are hoisted completely, while variable declarations (not initializations) are hoisted. This allows you to use functions and variables before they're declared in the code.
+                <pre>
+// Function declaration is hoisted
+sayHello(); // "Hello!"
+
+function sayHello() {
+    console.log("Hello!");
+}
+
+// Variable declaration is hoisted but not initialization
+console.log(x); // undefined
+var x = 5;<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-10"></div>
             </div>
         </div>
         
@@ -427,7 +543,7 @@ console.log(counter()); // 2</pre>
          
             
             <div class="question">
-                <span><span class="question-number">13</span> What is the difference between call, apply, and bind? <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">1</span> What is the difference between call, apply, and bind? <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> All three methods are used to control what `this` refers to:
@@ -436,10 +552,27 @@ console.log(counter()); // 2</pre>
                     <li><strong>apply:</strong> Invokes the function immediately with a specified `this` value and arguments as an array: `func.apply(thisArg, [arg1, arg2, ...])`</li>
                     <li><strong>bind:</strong> Returns a new function with a specified `this` value and initial arguments, which can be invoked later: `const boundFunc = func.bind(thisArg, arg1, arg2, ...)`</li>
                 </ul>
+                <pre>
+function greet(greeting, punctuation) {
+    console.log(`${greeting}, ${this.name}${punctuation}`);
+}
+
+const person = { name: 'John' };
+
+// call
+greet.call(person, 'Hello', '!'); // "Hello, John!"
+
+// apply
+greet.apply(person, ['Hi', '!!']); // "Hi, John!!"
+
+// bind
+const boundGreet = greet.bind(person, 'Hey');
+boundGreet('!!!'); // "Hey, John!!!"<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-p1"></div>
             </div>
             
             <div class="question">
-                <span><span class="question-number">14</span> Explain the concept of memoization in JavaScript. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">2</span> Explain the concept of memoization in JavaScript. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Memoization is an optimization technique that speeds up function calls by storing the results of expensive function calls and returning the cached result when the same inputs occur again. Example:
@@ -455,7 +588,19 @@ function memoize(fn) {
         cache[key] = result;
         return result;
     };
-}</pre>
+}
+
+// Example usage with a factorial function
+function slowFactorial(n) {
+    if (n === 0 || n === 1) return 1;
+    return n * slowFactorial(n - 1);
+}
+
+const fastFactorial = memoize(slowFactorial);
+
+console.log(fastFactorial(5)); // Calculates and caches
+console.log(fastFactorial(5)); // Returns cached result<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-p2"></div>
             </div>
             
    
@@ -463,7 +608,7 @@ function memoize(fn) {
           
             
             <div class="question">
-                <span><span class="question-number">17</span> Explain JavaScript currying with an example. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">3</span> Explain JavaScript currying with an example. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Currying is a technique where a function with multiple arguments is transformed into a sequence of functions each with a single argument. Example:
@@ -484,12 +629,18 @@ function curryAdd(a) {
 
 // Usage
 console.log(add(1, 2, 3)); // 6
-console.log(curryAdd(1)(2)(3)); // 6</pre>
+console.log(curryAdd(1)(2)(3)); // 6
+
+// Practical example: creating specialized functions
+const addFive = curryAdd(5);
+const addFiveAndTwo = addFive(2);
+console.log(addFiveAndTwo(3)); // 10<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-p3"></div>
                 Currying allows for partial application of functions and creating more specialized functions from general ones.
             </div>
             
             <div class="question">
-                <span><span class="question-number">18</span> What are JavaScript generators and iterators? <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">4</span> What are JavaScript generators and iterators? <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Iterators are objects with a `next()` method that returns values in a sequence. Generators are special functions (marked with `function*`) that can pause and resume execution, yielding multiple values. They simplify the creation of iterators by automatically implementing the iterator protocol. Example:
@@ -505,11 +656,27 @@ const counter = countUp(3);
 console.log(counter.next().value); // 0
 console.log(counter.next().value); // 1
 console.log(counter.next().value); // 2
-console.log(counter.next().value); // undefined</pre>
+console.log(counter.next().value); // undefined
+
+// Practical example: infinite sequence
+function* fibonacci() {
+    let [prev, curr] = [0, 1];
+    while (true) {
+        yield curr;
+        [prev, curr] = [curr, prev + curr];
+    }
+}
+
+const fib = fibonacci();
+console.log(fib.next().value); // 1
+console.log(fib.next().value); // 1
+console.log(fib.next().value); // 2
+console.log(fib.next().value); // 3<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-p4"></div>
             </div>
             
             <div class="question">
-                <span><span class="question-number">19</span> What is the JavaScript Event Loop? <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">5</span> What is the JavaScript Event Loop? <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> The Event Loop is a fundamental part of JavaScript's concurrency model. It's responsible for executing code, collecting and processing events, and executing queued sub-tasks. It works by:
@@ -520,10 +687,26 @@ console.log(counter.next().value); // undefined</pre>
                     <li>This process repeats, allowing JavaScript to handle asynchronous operations without blocking</li>
                 </ul>
                 This model allows JavaScript, which is single-threaded, to handle multiple operations concurrently.
+                <pre>
+// Example demonstrating event loop behavior
+console.log('Start');
+
+setTimeout(() => console.log('Timeout callback'), 0);
+
+Promise.resolve().then(() => console.log('Promise callback'));
+
+console.log('End');
+
+// Output order:
+// Start
+// End
+// Promise callback
+// Timeout callback<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-p5"></div>
             </div>
             
             <div class="question">
-                <span><span class="question-number">20</span> Explain browser storage options (localStorage, sessionStorage, cookies) and their differences. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">5</span> Explain browser storage options (localStorage, sessionStorage, cookies) and their differences. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Browser storage options:
@@ -533,6 +716,20 @@ console.log(counter.next().value); // undefined</pre>
                     <li><strong>Cookies:</strong> Small text files stored on the client's computer, limited to about 4KB, can set expiration time, sent with every HTTP request to the same domain, can be made secure/HTTP-only</li>
                 </ul>
                 Choose based on persistence needs, storage size requirements, and whether data needs to be sent to the server.
+                <pre>
+// localStorage example
+localStorage.setItem('username', 'john_doe');
+console.log(localStorage.getItem('username')); // "john_doe"
+localStorage.removeItem('username');
+
+// sessionStorage example
+sessionStorage.setItem('theme', 'dark');
+console.log(sessionStorage.getItem('theme')); // "dark"
+
+// Cookies example
+document.cookie = "username=john_doe; expires=Fri, 31 Dec 2023 23:59:59 GMT; path=/";
+console.log(document.cookie);<button class="run-code-btn">Run Code</button></pre>
+                <div class="code-output" id="output-p6"></div>
             </div>
 
           
@@ -560,8 +757,57 @@ console.log(counter.next().value); // undefined</pre>
             });
         });
 
-      // Razorpay Integration for PDF Purchase
-      document.getElementById("downloadButton") && document.getElementById("downloadButton").addEventListener("click", function() {
+        // Add run code functionality
+        document.querySelectorAll('.run-code-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const preElement = this.parentElement;
+                const code = preElement.textContent.replace('Run Code', '').trim();
+                const outputId = preElement.nextElementSibling.id;
+                
+                try {
+                    // Create a function to capture console.log output
+                    const logs = [];
+                    const originalConsoleLog = console.log;
+                    console.log = function() {
+                        logs.push(Array.from(arguments).join(' '));
+                        originalConsoleLog.apply(console, arguments);
+                    };
+                    
+                    // Execute the code
+                    const result = new Function(code)();
+                    
+                    // Restore original console.log
+                    console.log = originalConsoleLog;
+                    
+                    // Display the output
+                    const outputElement = document.getElementById(outputId);
+                    outputElement.innerHTML = `
+                        <div class="code-output-title">Output:</div>
+                        <div class="code-output-content">${logs.join('\n')}</div>
+                    `;
+                    outputElement.style.display = 'block';
+                    
+                    // If no console.log was called but there's a return value
+                    if (logs.length === 0 && result !== undefined) {
+                        outputElement.innerHTML = `
+                            <div class="code-output-title">Return value:</div>
+                            <div class="code-output-content">${result}</div>
+                        `;
+                    }
+                } catch (error) {
+                    const outputElement = document.getElementById(outputId);
+                    outputElement.innerHTML = `
+                        <div class="code-output-title">Error:</div>
+                        <div class="code-output-content">${error.message}</div>
+                    `;
+                    outputElement.style.display = 'block';
+                }
+            });
+        });
+
+        // Razorpay Integration for PDF Purchase
+        document.getElementById("downloadButton") && document.getElementById("downloadButton").addEventListener("click", function() {
             const options = {
                 key: "YOUR_KEY_ID", // Replace with your Razorpay Key ID
                 amount: 10000, // Amount in paise (10000 paise = ₹100)
