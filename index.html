@@ -604,7 +604,9 @@ let fileName = prompt("Enter the file name (including extension):", `learn_${tim
 function runCode() {
   const code = editor.getValue();
   if (!code) return;
-  
+  console.info = function(...args) {
+    outputElement.innerHTML += `<span style="color: #54a0ff; font-weight: bold;">{Compilation start ...}</span>\n`;
+  };
   // Clear previous output
   outputElement.innerText = "";
   metricsElement.innerText = "";
