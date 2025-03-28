@@ -632,7 +632,18 @@ function runCode() {
     // Wrap the code in an async function to handle async/await
     const wrappedCode = `(async () => { ${code} })();`;
    
-  new Function(wrappedCode)();
+    const result = new Function(wrappedCode)();
+    
+    // If the result is a Promise, await it and handle the resolved value
+    if (result instanceof Promise) {
+        result.then(value => {
+            if (value === undefined) {
+                outputElement.innerHTML += `<span style="color: #dfe6e9; font-style: italic;">undefined</span>\n`;
+            }
+        }).catch(error => {
+            console.error(error.message);
+        });
+    } 
 
   } catch (error) {
  
