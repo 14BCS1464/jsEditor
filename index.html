@@ -611,12 +611,12 @@ function runCode() {
   
   console.warn = function(...args) {
     const warn = args.join(" ");
-    outputElement.innerHTML += `<span style="color: #feca57; font-weight: bold;">\nWarning: ${warn}</span>\n`;
+    outputElement.innerHTML += `<span style="color: #feca57; font-style: italic;">\nWarning: ${warn}</span>\n`;
   };
   
   console.info = function(...args) {
     const info = args.join(" ");
-    outputElement.innerHTML += `<span style="color: #54a0ff; font-weight: bold;">\nInfo: ${info}</span>\n`;
+    outputElement.innerHTML += `<span style="color: #54a0ff; font-style: italic;">\nInfo: ${info}</span>\n`;
   };
   
   // Handle unhandled promise rejections
