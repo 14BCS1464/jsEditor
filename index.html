@@ -446,71 +446,75 @@ require(["vs/editor/editor.main"], function() {
   }
 
   function runCode() {
-    const code = editor.getValue();
-    if (!code) return;
+  const code = editor.getValue();
+  if (!code) return;
 
-    // Clear previous output
-    outputElement.innerText = "";
+  // Clear previous output
+  outputElement.innerText = "";
 
-    // Override console methods
-    const originalConsole = { ...console };
+  // Override console methods
+  const originalConsole = { ...console };
 
-    console.log = function(...args) {
-      outputElement.innerHTML += `<span style="color: #00b894; font-style: italic;">${args.join(" ")}</span>\n`;
-    };
+  console.log = function(...args) {
+    // Special handling for undefined values and proper formatting
+    const formattedArgs = args.map(arg => {
+      if (arg === undefined) {
+        return "undefined";
+      } else if (arg === null) {
+        return "null";
+      } else {
+        return arg;
+      }
+    });
+    outputElement.innerHTML += `<span style="color: #00b894; font-style: italic;">${formattedArgs.join(" ")}</span>\n`;
+  };
 
-    console.error = function(...args) {
-      const errorMessage = args.join(" ");
-      outputElement.innerHTML += `<span style="color: #ff6b6b; font-style: italic;">\nError: ${errorMessage}</span>\n`;
-    };
+  console.error = function(...args) {
+    const errorMessage = args.join(" ");
+    outputElement.innerHTML += `<span style="color: #ff6b6b; font-style: italic;">\nError: ${errorMessage}</span>\n`;
+  };
 
-    console.warn = function(...args) {
-      const warn = args.join(" ");
-      outputElement.innerHTML += `<span style="color: #feca57; font-style: italic;">\nWarning: ${warn}</span>\n`;
-    };
+  console.warn = function(...args) {
+    const warn = args.join(" ");
+    outputElement.innerHTML += `<span style="color: #feca57; font-style: italic;">\nWarning: ${warn}</span>\n`;
+  };
 
-    console.info = function(...args) {
-      const info = args.join(" ");
-      outputElement.innerHTML += `<span style="color: #54a0ff; font-style: italic;">\nInfo: ${info}</span>\n`;
-    };
+  console.info = function(...args) {
+    const info = args.join(" ");
+    outputElement.innerHTML += `<span style="color: #54a0ff; font-style: italic;">\nInfo: ${info}</span>\n`;
+  };
 
-    // Handle unhandled promise rejections
-    window.onunhandledrejection = function(event) {
-      console.error("Unhandled Rejection:", event.reason);
-    };
+  // Handle unhandled promise rejections
+  window.onunhandledrejection = function(event) {
+    console.error("Unhandled Rejection:", event.reason);
+  };
 
-    try {
-      // Wrap the code in an async function to handle async/await
-      const wrappedCode = `(async () => { ${code} })();`;
-
-      const result = new Function(wrappedCode)();
-
-      // If the result is a Promise, await it and handle the resolved value
-      if (result instanceof Promise) {
-        result.then(value => {
-          if (value === undefined) {
-            outputElement.innerHTML += `<span style="color: #dfe6e9; font-style: italic;">undefined</span>\n`;
-          }
-        }).catch(error => {
-          console.error(error.message);
-        });
-      } 
-
-    } catch (error) {
-      outputElement.innerHTML += `<div style="background-color: rgba(255, 107, 107, 0.1); border-left: 3px solid #ff6b6b; padding: 10px; margin: 10px 0; border-radius: 4px;">
-        <span style="color: #ff6b6b; font-style: italic;">Error:</span> ${error.message}
-        ${error.stack ? `<pre style="margin-top: 10px; font-size: 14px; color: #dfe6e9;">${error.stack}</pre>` : ''}
-      </div>`;
-    } finally {
-      // Restore original console methods after a delay
-      setTimeout(() => {
-        console.log = originalConsole.log;
-        console.error = originalConsole.error;
-        console.warn = originalConsole.warn;
-        console.info = originalConsole.info;
-      }, 11000);
+  try {
+    // Execute the code directly in the global context
+    // This preserves the behavior for "this" in setTimeout callbacks and other contexts
+    const result = eval(code);
+    
+    // If there's a returned promise, handle it appropriately
+    if (result instanceof Promise) {
+      result.catch(error => {
+        console.error(error.message);
+      });
     }
+  } catch (error) {
+    outputElement.innerHTML += `<div style="background-color: rgba(255, 107, 107, 0.1); border-left: 3px solid #ff6b6b; padding: 10px; margin: 10px 0; border-radius: 4px;">
+      <span style="color: #ff6b6b; font-style: italic;">Error:</span> ${error.message}
+      ${error.stack ? `<pre style="margin-top: 10px; font-size: 14px; color: #dfe6e9;">${error.stack}</pre>` : ''}
+    </div>`;
+  } finally {
+    // Restore original console methods after a delay
+    setTimeout(() => {
+      console.log = originalConsole.log;
+      console.error = originalConsole.error;
+      console.warn = originalConsole.warn;
+      console.info = originalConsole.info;
+    }, 11000);
   }
+}
 
   document.getElementById("clear").addEventListener("click", function() {
     outputElement.innerText = "";
