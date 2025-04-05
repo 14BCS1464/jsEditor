@@ -2,576 +2,436 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online JavaScript Editor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online JavaScript Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-    <style>
-        /* Modern Editor CSS */
-        
-         :root {
-            --primary-color: #6c5ce7;
-            --secondary-color: #00cec9;
-            --dark-bg: #0f0f17;
-            --card-bg: #1a1a25;
-            --text-primary: #f1f1f1;
-            --text-secondary: #a0a0a0;
-            --success: #00b894;
-            --warning: #fdcb6e;
-            --danger: #ff7675;
-            --border-radius: 16px;
-            --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-        /* Button styles for your specific buttons */
-        /* Modern heading styles */
-        
-        .editor-heading {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        
-        .editor-heading h2 {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-        }
-        
-        .gradient-text {
-            font-size: 2rem;
-            background: linear-gradient(135deg, #6c5ce7, #00cec9);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            position: relative;
-            padding-bottom: 10px;
-        }
-        
-        .gradient-text::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 4px;
-            background: linear-gradient(90deg, #6c5ce7, #00cec9);
-            border-radius: 2px;
-        }
-        
-        .by-text {
-            font-size: 1.2rem;
-            color: #a0a0a0;
-            margin-top: 8px;
-            font-weight: 500;
-            letter-spacing: 1px;
-        }
-        
-        @media (max-width: 768px) {
-            .gradient-text {
-                font-size: 2.2rem;
-            }
-            .by-text {
-                font-size: 1rem;
-            }
-        }
-        
-        .gradient-text {
-            transition: transform 0.3s ease, text-shadow 0.3s ease;
-        }
-        
-        .gradient-text:hover {
-            transform: translateY(-2px);
-            text-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
-        }
-        
-        .gradient-text::after {
-            transition: width 0.3s ease;
-        }
-        
-        .editor-heading h2:hover .gradient-text::after {
-            width: 100px;
-        }
-        /* Base Button Style */
-        
-        button {
-            padding: 10px 10px;
-            font-size: 12px;
-            font-weight: 400;
-            /* text-transform: uppercase; */
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: inset;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.1);
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-        }
-        
-        button:hover::after {
-            transform: translateX(0);
-        }
-        /* Button Hover Effects */
-        
-        button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-        }
-        /* Button Active Effect */
-        
-        button:active {
-            transform: translateY(0);
-        }
-        /* Individual Button Styles */
-        
-        #run {
-            background: linear-gradient(135deg, #00b894, #20bf6b);
-            color: white;
-        }
-        
-        #interView {
-            background: linear-gradient(135deg, #00b894, #20bf6b);
-            color: white;
-        }
-        
-        #addfile {
-            background: linear-gradient(135deg, #6c5ce7, #5f27cd);
-            color: white;
-        }
-        
-        #clear {
-            background: linear-gradient(135deg, #ff7675, #d63031);
-            color: white;
-        }
-        
-        #download {
-            background: linear-gradient(135deg, #fdcb6e, #fab1a0);
-            color: #2d3436;
-        }
-        /* Make emoji slightly larger */
-        
-        button::before {
-            font-size: 1.2em;
-            margin-right: 8px;
-        }
-        /* Assign emojis using content property for consistent styling */
-        /* Responsive adjustments */
-        
-        @media (max-width: 768px) {
-            button {
-                padding: 14px 24px;
-                font-size: 14px;
-                min-width: 140px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            button {
-                flex: 1;
-                min-width: 120px;
-                padding: 12px 18px;
-            }
-            button::before {
-                font-size: 1.1em;
-                margin-right: 6px;
-            }
-        }
-        /* General Styles */
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--dark-bg);
-            color: var(--text-primary);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.03em;
-        }
-        /* Container Layout */
-        
-        .container {
-            display: flex;
-            flex-direction: row;
-            gap: 30px;
-            width: 95%;
-            max-width: 1600px;
-            margin: 0 auto;
-            height: calc(100vh - 180px);
-        }
-        /* Code Editor */
-        
-        #editor {
-            flex: 2;
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 24px;
-            height: 100%;
-            font-size: 18px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        #editor:hover {
-            box-shadow: 0 12px 24px rgba(108, 92, 231, 0.2);
-            border: 1px solid rgba(108, 92, 231, 0.2);
-        }
-        /* Output & Metrics Container */
-        
-        .output-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            height: 100%;
-        }
-        
-        .output-section {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding-left: 10px;
-            padding-left: 10px;
-            padding-bottom: 10px;
-            box-shadow: var(--shadow-md);
-            flex: 2;
-            overflow-y: auto;
-            font-size: 16px;
-            border: 1px solid rgba(0, 206, 201, 0.1);
-            transition: var(--transition);
-            position: relative;
-            height: 400px;
-            /* Fixed height */
-            max-height: 400px;
-            /* Maximum height */
-        }
-        
-        .output-section:hover {
-            box-shadow: 0 12px 24px rgba(0, 206, 201, 0.2);
-            border: 1px solid rgba(0, 206, 201, 0.2);
-        }
-        
-        .metrics-section {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 10px;
-            box-shadow: var(--shadow-md);
-            flex: 1;
-            border: 1px solid rgba(108, 92, 231, 0.1);
-            transition: var(--transition);
-        }
-        
-        .metrics-section:hover {
-            box-shadow: 0 12px 24px rgba(108, 92, 231, 0.2);
-            border: 1px solid rgba(108, 92, 231, 0.2);
-        }
-        
-        h4 {
-            font-size: 16px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-        
-        pre {
-            white-space: pre-wrap;
-            font-size: 16px;
-            font-family: 'Fira Code', 'Cascadia Code', monospace;
-            line-height: 1.6;
-        }
-        /* Responsive Design */
-        
-        @media (max-width: 1200px) {
-            .container {
-                height: auto;
-            }
-            #editor {
-                min-height: 450px;
-            }
-        }
-        /* Metrics display styling */
-        
-        .metric-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .metric-label {
-            font-weight: 600;
-            font-size: 18px;
-            color: #a0a0a0;
-        }
-        
-        .metric-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #6c5ce7;
-        }
-        
-        @media (max-width: 992px) {
-            .container {
-                flex-direction: column;
-            }
-            #editor {
-                min-height: 400px;
-            }
-            .output-section,
-            .metrics-section {
-                min-height: 250px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            h2 {
-                font-size: 2rem;
-            }
-            .btn {
-                padding: 14px 24px;
-                font-size: 14px;
-                min-width: 140px;
-            }
-            #editor {
-                font-size: 16px;
-                padding: 16px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            h2 {
-                font-size: 1.8rem;
-            }
-            .container {
-                width: 100%;
-                gap: 20px;
-            }
-            .btn {
-                flex: 1;
-                min-width: 120px;
-                padding: 12px 18px;
-            }
-        }
-    </style>
+<style>
+/* Modern Editor CSS */
+:root {
+  --primary-color: #6c5ce7;
+  --secondary-color: #00cec9;
+  --dark-bg: #0f0f17;
+  --card-bg: #1a1a25;
+  --text-primary: #f1f1f1;
+  --text-secondary: #a0a0a0;
+  --success: #00b894;
+  --warning: #fdcb6e;
+  --danger: #ff7675;
+  --border-radius: 16px;
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.editor-heading {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.editor-heading h2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.gradient-text {
+  font-size: 2rem;
+  background: linear-gradient(135deg, #6c5ce7, #00cec9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.gradient-text::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #6c5ce7, #00cec9);
+  border-radius: 2px;
+}
+
+.by-text {
+  font-size: 1.2rem;
+  color: #a0a0a0;
+  margin-top: 8px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .gradient-text {
+    font-size: 2.2rem;
+  }
+  .by-text {
+    font-size: 1rem;
+  }
+}
+
+.gradient-text {
+  transition: transform 0.3s ease, text-shadow 0.3s ease;
+}
+
+.gradient-text:hover {
+  transform: translateY(-2px);
+  text-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
+}
+
+.gradient-text::after {
+  transition: width 0.3s ease;
+}
+
+.editor-heading h2:hover .gradient-text::after {
+  width: 100px;
+}
+
+button {
+  padding: 10px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: inset;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+button:hover::after {
+  transform: translateX(0);
+}
+
+button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+#run {
+  background: linear-gradient(135deg, #00b894, #20bf6b);
+  color: white;
+}
+
+#interView {
+  background: linear-gradient(135deg, #00b894, #20bf6b);
+  color: white;
+}
+
+#addfile {
+  background: linear-gradient(135deg, #6c5ce7, #5f27cd);
+  color: white;
+}
+
+#clear {
+  background: linear-gradient(135deg, #ff7675, #d63031);
+  color: white;
+}
+
+#download {
+  background: linear-gradient(135deg, #fdcb6e, #fab1a0);
+  color: #2d3436;
+}
+
+button::before {
+  font-size: 1.2em;
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  button {
+    padding: 14px 24px;
+    font-size: 14px;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  button {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 18px;
+  }
+  button::before {
+    font-size: 1.1em;
+    margin-right: 6px;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.03em;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  width: 95%;
+  max-width: 1600px;
+  margin: 0 auto;
+  height: calc(100vh - 180px);
+}
+
+#editor {
+  flex: 2;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  height: 100%;
+  font-size: 18px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+#editor:hover {
+  box-shadow: 0 12px 24px rgba(108, 92, 231, 0.2);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+}
+
+.output-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.output-section {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 10px;
+  box-shadow: var(--shadow-md);
+  flex: 1;
+  overflow-y: auto;
+  font-size: 16px;
+  border: 1px solid rgba(0, 206, 201, 0.1);
+  transition: var(--transition);
+  height: 100%;
+}
+
+.output-section:hover {
+  box-shadow: 0 12px 24px rgba(0, 206, 201, 0.2);
+  border: 1px solid rgba(0, 206, 201, 0.2);
+}
+
+h4 {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+pre {
+  white-space: pre-wrap;
+  font-size: 16px;
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  line-height: 1.6;
+}
+
+@media (max-width: 1200px) {
+  .container {
+    height: auto;
+  }
+  #editor {
+    min-height: 450px;
+  }
+}
+
+@media (max-width: 992px) {
+  .container {
+    flex-direction: column;
+  }
+  #editor {
+    min-height: 400px;
+  }
+  .output-section {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  h2 {
+    font-size: 2rem;
+  }
+  .btn {
+    padding: 14px 24px;
+    font-size: 14px;
+    min-width: 140px;
+  }
+  #editor {
+    font-size: 16px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  h2 {
+    font-size: 1.8rem;
+  }
+  .container {
+    width: 100%;
+    gap: 20px;
+  }
+  .btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 18px;
+  }
+}
+</style>
 </head>
 
 <body>
-    <div class="editor-heading">
-        <h2>
-            <span class="gradient-text">Online The JavaScript Editor</span>
-            <!-- <span class="by-text">By Appcontrivance</span> -->
-
-        </h2>
-        <div id="controls">
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                <button id="run">▶️ Run Code</button>
-                <button id="addfile">✨ Import Code</button>
-                <button id="clear">🧹 Clear Output</button>
-                <button id="download">📥 Download Code</button>
-                <button id="interView">📚 Interview Preparation</button>
-
-
-            </div>
-
-        </div>
+<div class="editor-heading">
+  <h2>
+    <span class="gradient-text">Online The JavaScript Editor</span>
+  </h2>
+  <div id="controls">
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+      <button id="run">▶️ Run Code</button>
+      <button id="addfile">✨ Import Code</button>
+      <button id="clear">🧹 Clear Output</button>
+      <button id="download">📥 Download Code</button>
+      <button id="interView">📚 Interview Preparation</button>
     </div>
+  </div>
+</div>
 
+<div class="container">
+  <!-- Editor Section -->
+  <div id="editor"></div>
 
-
-
-    <div class="container">
-        <!-- Editor Section -->
-        <div id="editor"></div>
-
-        <!-- Output Section -->
-
-
-        <div class="output-container">
-            <!-- Output Section -->
-            <div class="output-section">
-                <h4 style="position: sticky; top: 0; background-color: #1a1a25;   padding-top: 10px; color: #f1f1f1;">Console Output</h4>
-                <pre id="output">No output yet...</pre>
-            </div>
-
-            <!-- Metrics Section -->
-            <div class="metrics-section" style="overflow: auto; max-height: 300px;">
-
-                <h4 style="position: sticky; top: 0; background-color: #1a1a25;   padding-top: 10px; color: #f1f1f1;">Execution Matrix</h4>
-                <pre id="metrics">Waiting for execution...</pre>
-            </div>
-        </div>
+  <!-- Output Section -->
+  <div class="output-container">
+    <div class="output-section">
+      <h4 style="position: sticky; top: 0; background-color: #1a1a25; padding-top: 10px; color: #f1f1f1;">Console Output</h4>
+      <pre id="output"></pre>
     </div>
-    <input type="file" id="fileInput" accept=".js" style="display: none;">
+  </div>
+</div>
 
+<input type="file" id="fileInput" accept=".js" style="display: none;">
 
-    <script>
-        require.config({
-            paths: {
-                vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
-            }
-        });
-        require(["vs/editor/editor.main"], function() {
-                    var editor = monaco.editor.create(document.getElementById("editor"), {
-                        value: `console.log("Developed By sunil...")`,
-                        language: "javascript",
-                        theme: "vs-dark",
-                        automaticLayout: true,
-                        minimap: {
-                            enabled: true
-                        },
-                        scrollBeyondLastLine: true,
-                        fontFamily: "'Fira Code', 'Consolas', monospace",
-                        fontSize: 15,
-                        lineNumbers: "on",
-                        roundedSelection: false,
-                        scrollbar: {
-                            verticalScrollbarSize: 10,
-                            horizontalScrollbarSize: 10
-                        }
-                    });
-                    // Save code to localStorage
-                    editor.onDidChangeModelContent(() => {
-                        localStorage.setItem("userCode", editor.getValue());
-                    });
+<script>
+require.config({
+  paths: {
+    vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
+  }
+});
 
-                    // Load saved code
-                    editor.setValue(localStorage.getItem("userCode") || `console.log("Developed By Appcontrivance...")`);
+require(["vs/editor/editor.main"], function() {
+  var editor = monaco.editor.create(document.getElementById("editor"), {
+    value: `console.log("Developed By sunil...")`,
+    language: "javascript",
+    theme: "vs-dark",
+    automaticLayout: true,
+    minimap: {
+      enabled: true
+    },
+    scrollBeyondLastLine: true,
+    fontFamily: "'Fira Code', 'Consolas', monospace",
+    fontSize: 15,
+    lineNumbers: "on",
+    roundedSelection: false,
+    scrollbar: {
+      verticalScrollbarSize: 10,
+      horizontalScrollbarSize: 10
+    }
+  });
 
-                    document.getElementById("clear").addEventListener("click", function() {
-                        // editor.setValue("");
-                        //localStorage.removeItem("userCode");
-                    });
-                    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, function() {
-                        editor.trigger("keyboard", "actions.find");
-                    });
-                    const outputElement = document.getElementById("output");
-                    const metricsElement = document.getElementById("metrics");
+  // Save code to localStorage
+  editor.onDidChangeModelContent(() => {
+    localStorage.setItem("userCode", editor.getValue());
+  });
 
-                    const runStatusElement = document.getElementById("run-status");
+  // Load saved code
+  editor.setValue(localStorage.getItem("userCode") || `console.log("Developed By Appcontrivance...")`);
 
-                    let executionStartTime = 0;
-                    let logMessages = 0;
-                    let executionInterval = null;
+  const outputElement = document.getElementById("output");
 
-                    function updateMetrics(isRunning = true) {
-                        const currentTime = performance.now();
-                        const elapsedTime = (currentTime - executionStartTime).toFixed(2);
+  function loadQuestionPage() {
+    window.location.href = "questions.html";
+  }
 
-
-                        monaco.languages.registerCompletionItemProvider('javascript', {
-                            provideCompletionItems: async function(model, position) {
-                                const codeBeforeCursor = model.getValueInRange({
-                                    startLineNumber: 1,
-                                    startColumn: 1,
-                                    endLineNumber: position.lineNumber,
-                                    endColumn: position.column
-                                });
-                                alert("dsfds")
-                                    // Call OpenAI API for suggestions
-                                const suggestion = await fetchAICompletion(codeBeforeCursor);
-                                alert(suggestion)
-                                return {
-                                    suggestions: [{
-                                        label: suggestion, // AI-generated code
-                                        kind: monaco.languages.CompletionItemKind.Function,
-                                        insertText: suggestion,
-                                        documentation: "AI Suggested Code"
-                                    }]
-                                };
-                            }
-                        });
-
-
-
-
-                        // Check if we have Chrome's memory API
-                        let memoryInfo = '';
-                        if (window.performance && window.performance.memory) {
-                            const usedHeap = (window.performance.memory.usedJSHeapSize / (1024 * 1024)).toFixed(2);
-                            const totalHeap = (window.performance.memory.totalJSHeapSize / (1024 * 1024)).toFixed(2);
-                            memoryInfo = `Memory Usage: Heap: ${usedHeap} MB<br>Total heap: ${totalHeap} MB`;
-                        }
-
-                        metricsElement.innerHTML = `
-        <div>Execution Time: ${elapsedTime} ms</div>
-        <div>Console Logs: ${logMessages.replace(/\n/g, '<br>')}</div>
-        ${memoryInfo ? `<div>${memoryInfo}</div>` : ''}
-    `;
-
-    // Update status indicator
-    runStatusElement.innerHTML = isRunning ? 'Running...' : 'Complete';
-}
-
-function loadQuestionPage() {
- 
-    window.location.href = "questions.html"; // Change this to your actual page URL
-}
-function downloadCode() {
+  function downloadCode() {
     const code = editor.getValue();
     if (!code) return;
 
-    let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, ""); // Format timestamp
-let fileName = prompt("Enter the file name (including extension):", `learn_${timestamp}.js`);
+    let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
+    let fileName = prompt("Enter the file name (including extension):", `learn_${timestamp}.js`);
 
-
-    // Stop execution if user cancels
     if (fileName === null) return;
 
     if (!fileName.trim()) {
-        fileName = "code.js"; // Default filename if input is empty
+      fileName = "code.js";
     }
 
     const blob = new Blob([code], { type: "text/javascript" });
@@ -583,186 +443,118 @@ let fileName = prompt("Enter the file name (including extension):", `learn_${tim
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-}
+  }
 
-function runCode() {
+  function runCode() {
   const code = editor.getValue();
   if (!code) return;
-  console.info = function(...args) {
-    outputElement.innerHTML += `<span style="color: #54a0ff; font-weight: bold;">{Compilation start ...}</span>\n`;
-  };
+
   // Clear previous output
   outputElement.innerText = "";
-  metricsElement.innerText = "";
-  const jsEngine = detectJSEngine();
+
   // Override console methods
   const originalConsole = { ...console };
-  
-  console.log = function(...args) {
-    outputElement.innerHTML += `<span style="color: #00b894; font-weight: italic;">${args.join(" ")}</span>\n`;
-  };
-  
 
-  
+  console.log = function(...args) {
+    // Special handling for undefined values
+    const formattedArgs = args.map(arg => 
+      arg === undefined ? "undefined" : arg
+    );
+    outputElement.innerHTML += `<span style="color: #00b894; font-style: italic;">${formattedArgs.join(" ")}</span>\n`;
+  };
+
   console.error = function(...args) {
     const errorMessage = args.join(" ");
     outputElement.innerHTML += `<span style="color: #ff6b6b; font-style: italic;">\nError: ${errorMessage}</span>\n`;
   };
-  
+
   console.warn = function(...args) {
     const warn = args.join(" ");
     outputElement.innerHTML += `<span style="color: #feca57; font-style: italic;">\nWarning: ${warn}</span>\n`;
   };
-  
+
   console.info = function(...args) {
     const info = args.join(" ");
     outputElement.innerHTML += `<span style="color: #54a0ff; font-style: italic;">\nInfo: ${info}</span>\n`;
   };
-  
+
   // Handle unhandled promise rejections
   window.onunhandledrejection = function(event) {
     console.error("Unhandled Rejection:", event.reason);
   };
-  
-  // Start measuring execution time and memory
-  const startTime = performance.now();
-  const startMemory = window.performance.memory ? window.performance.memory.usedJSHeapSize : null;
 
   try {
-    // Wrap the code in an async function to handle async/await
-    const wrappedCode = `(async () => { ${code} })();`;
-   
-    const result = new Function(wrappedCode)();
-    
-    // If the result is a Promise, await it and handle the resolved value
-    if (result instanceof Promise) {
-        result.then(value => {
-            if (value === undefined) {
-                outputElement.innerHTML += `<span style="color: #dfe6e9; font-style: italic;">undefined</span>\n`;
-            }
-        }).catch(error => {
-            console.error(error.message);
-        });
-    } 
-
+    // Execute the code directly to preserve hoisting behavior
+    new Function(code)();
   } catch (error) {
- 
     outputElement.innerHTML += `<div style="background-color: rgba(255, 107, 107, 0.1); border-left: 3px solid #ff6b6b; padding: 10px; margin: 10px 0; border-radius: 4px;">
       <span style="color: #ff6b6b; font-style: italic;">Error:</span> ${error.message}
       ${error.stack ? `<pre style="margin-top: 10px; font-size: 14px; color: #dfe6e9;">${error.stack}</pre>` : ''}
     </div>`;
   } finally {
-    // Calculate execution time and memory usage
-    const endTime = performance.now();
-    const endMemory = window.performance.memory ? window.performance.memory.usedJSHeapSize : null;
-    const executionTime = (endTime - startTime).toFixed(2);
-    const memoryUsage = endMemory && startMemory ? ((endMemory - startMemory) / 1024).toFixed(2) + " KB" : "N/A";
-    
-    // Display metrics with improved styling
-  // Display metrics with improved styling and increased size
-  metricsElement.innerHTML = `
-    <div class="metric-row">
- 
-  <div class="metric-label">JS Engine:</div>
-    <div class="metric-value">${jsEngine}</div>
-  </div>
-  <div class="metric-row">
-    <div class="metric-label">Execution Time:</div>
-    <div class="metric-value">${executionTime} ms</div>
-  </div>
-  <div class="metric-row">
-    <div class="metric-label">Memory Usage:</div>
-    <div class="metric-value">${memoryUsage}</div>
-  </div>
- 
-  
-`;
-    
     // Restore original console methods after a delay
     setTimeout(() => {
       console.log = originalConsole.log;
       console.error = originalConsole.error;
       console.warn = originalConsole.warn;
       console.info = originalConsole.info;
-    }, 11000); // Wait for all timeouts to complete (10 seconds max)
+    }, 11000);
   }
- 
 }
-function detectJSEngine() {
-    try {
-      if (window.navigator.userAgent.includes('Chrome')) return 'V8';
-      if (window.navigator.userAgent.includes('Firefox')) return 'SpiderMonkey';
-      if (window.navigator.userAgent.includes('Safari')) return 'JavaScriptCore';
-      return 'Unknown Engine';
-    } catch (e) {
-      return 'Unknown Engine';
+
+
+  document.getElementById("clear").addEventListener("click", function() {
+    outputElement.innerText = "";
+  });
+
+  document.getElementById("download").addEventListener("click", downloadCode);
+  document.getElementById("addfile").addEventListener("click", function() {
+    document.getElementById("fileInput").click();
+  });
+  document.getElementById("run").addEventListener("click", runCode);
+  document.getElementById("interView").addEventListener("click", loadQuestionPage);
+
+  document.getElementById("fileInput").addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (file && file.name.endsWith('.js')) {
+      const reader = new FileReader();
+      const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
+
+      reader.onload = function(e) {
+        const editorvalue = editor.getValue() || ""
+        const concatValue = mergeChoice ? `${editorvalue} \n ${e.target.result}` : `${e.target.result}` 
+        editor.setValue(concatValue);
+      };
+      reader.readAsText(file);
+      editor.onDidChangeModelContent(() => {
+        localStorage.setItem("userCode", concatValue);
+      });
+    } else {
+      alert("Please select a valid JavaScript (.js) file.");
     }
-  }
-            document.getElementById("clear").addEventListener("click", clearOutput);
-            document.getElementById("download").addEventListener("click", downloadCode);
-            document.getElementById("addfile").addEventListener("click", addJsFile);
-            document.getElementById("run").addEventListener("click", runCode);
-            document.getElementById("interView").addEventListener("click", loadQuestionPage);
-         
-            function addJsFile() {
-          
-            document.getElementById("fileInput").click(); // Trigger file input
+  });
+});
+
+// Auto-completion
+monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+  target: monaco.languages.typescript.ScriptTarget.ES6,
+  allowNonTsExtensions: true
+});
+
+monaco.languages.registerCompletionItemProvider("javascript", {
+  provideCompletionItems: () => {
+    return {
+      suggestions: [
+        {
+          label: "log",
+          kind: monaco.languages.CompletionItemKind.Function,
+          insertText: 'console.log($1);',
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
         }
-
-        document.getElementById("fileInput").addEventListener("change", function(event) {
-            const file = event.target.files[0];
-            if (file && file.name.endsWith('.js')) {
-                const reader = new FileReader();
-                // Ask user for merge or replace preference
-                const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
-
-                reader.onload = function(e) {
-              const editorvalue = editor.getValue()  || ""
-              const concatValue = mergeChoice?`${editorvalue} \n ${e.target.result}` :`${e.target.result}` 
-                    editor.setValue(concatValue);
-                };
-                reader.readAsText(file);
-                editor.onDidChangeModelContent(() => {
-                localStorage.setItem("userCode", concatValue);
-            });
-
-            } else {
-                alert("Please select a valid JavaScript (.js) file.");
-            }
-        });
-
-   
-
-            function clearOutput() {
-                 outputElement.innerText = "";
-             
-                metricsElement.innerText = "";
-            }
-
-       
-        });
-         // Auto-completion
-         monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-                target: monaco.languages.typescript.ScriptTarget.ES6,
-                allowNonTsExtensions: true
-            });
-
-            monaco.languages.registerCompletionItemProvider("javascript", {
-                provideCompletionItems: () => {
-                    return {
-                        suggestions: [
-                            {
-                                label: "log",
-                                kind: monaco.languages.CompletionItemKind.Function,
-                                insertText: 'console.log($1);',
-                                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
-                            }
-                        ]
-                    };
-                }
-            });
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+      ]
+    };
+  }
+});
+</script>
 </body>
-
 </html>
