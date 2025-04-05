@@ -98,7 +98,10 @@
 .editor-heading h2:hover .gradient-text::after {
   width: 100px;
 }
-
+#format {
+      background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+      color: white;
+    }
 button {
   padding: 10px 10px;
   font-size: 12px;
@@ -361,6 +364,7 @@ pre {
       <button id="clear">🧹 Clear Output</button>
       <button id="download">📥 Download Code</button>
       <button id="interView">📚 Interview Preparation</button>
+      <button id="format">🔧 Format Code</button>
     </div>
   </div>
 </div>
@@ -526,6 +530,79 @@ require(["vs/editor/editor.main"], function() {
   });
   document.getElementById("run").addEventListener("click", runCode);
   document.getElementById("interView").addEventListener("click", loadQuestionPage);
+  document.getElementById("format").addEventListener("click", formatCode);
+
+  function formatCode() {
+  try {
+    // Get current code from editor
+    const code = editor.getValue();
+    if (!code.trim()) return;
+    
+    // Use js-beautify to format the code
+    // js-beautify exposes this as window.js_beautify or window.beautify
+    if (typeof window.js_beautify === 'undefined' && typeof window.beautify === 'undefined') {
+      // If neither function exists, dynamically load js-beautify
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js';
+      script.onload = function() {
+        applyFormatting(code);
+      };
+      document.head.appendChild(script);
+    } else {
+      // Use the available function
+      applyFormatting(code);
+    }
+  } catch (error) {
+    outputElement.innerHTML = `<span style="color: #ff6b6b; font-style: italic;">⚠️ Formatting error: ${error.message}</span>\n`;
+  }
+}
+
+// Apply formatting with available beautify function
+function applyFormatting(code) {
+  // Try different ways the function might be exposed
+  const beautifyFn = window.js_beautify || window.beautify || window.jsbeautify;
+  
+  if (typeof beautifyFn === 'function') {
+    const formattedCode = beautifyFn(code, {
+      indent_size: 2,
+      space_in_empty_paren: true,
+      preserve_newlines: true,
+      max_preserve_newlines: 2,
+      wrap_line_length: 80,
+      indent_with_tabs: false,
+      end_with_newline: true,
+      brace_style: "collapse,preserve-inline"
+    });
+    
+    // Update editor with formatted code
+    editor.setValue(formattedCode);
+    
+    // Show success message in output
+    outputElement.innerHTML = `<span style="color: #00b894; font-style: italic;">✅ Code formatted successfully!</span>\n`;
+    
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      outputElement.innerHTML = "";
+    }, 3000);
+  } else {
+    // Fallback to Monaco editor's built-in formatting
+    monaco.editor.getEditors()[0].getAction('editor.action.formatDocument').run();
+    outputElement.innerHTML = `<span style="color: #00b894; font-style: italic;">✅ Code formatted using editor's built-in formatter</span>\n`;
+    
+    setTimeout(() => {
+      outputElement.innerHTML = "";
+    }, 3000);
+  }
+}
+
+// Add a keyboard shortcut for formatting (Alt+Shift+F)
+document.addEventListener('keydown', function(e) {
+  // Alt+Shift+F
+  if (e.altKey && e.shiftKey && e.key === 'F') {
+    e.preventDefault();
+    formatCode();
+  }
+});
 
   document.getElementById("fileInput").addEventListener("change", function(event) {
     const file = event.target.files[0];
