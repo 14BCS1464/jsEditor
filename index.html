@@ -742,7 +742,8 @@ function applyFormatting(code) {
     // Clear message after 3 seconds
     setTimeout(() => {
       outputElement.innerHTML = "";
-    }, 3000);
+      runCode()
+    }, 1000);
   } else {
     // Fallback to Monaco editor's built-in formatting
     monaco.editor.getEditors()[0].getAction('editor.action.formatDocument').run();
@@ -750,7 +751,8 @@ function applyFormatting(code) {
     
     setTimeout(() => {
       outputElement.innerHTML = "";
-    }, 3000);
+      runCode()
+    }, 1000);
   }
 }
 
