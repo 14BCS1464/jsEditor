@@ -452,18 +452,14 @@ require(["vs/editor/editor.main"], function() {
 
   function runCode() {
   const code = editor.getValue();
-
-  // Clear previous output
   outputElement.innerText = "";
   
-  // Buffer for accumulated output to reduce DOM updates
   let outputBuffer = "";
   const flushOutput = () => {
     outputElement.innerHTML += outputBuffer;
     outputBuffer = "";
   };
   
-  // Flush timer to periodically update DOM during long operations
   let flushTimer = null;
   const startFlushTimer = () => {
     flushTimer = setInterval(flushOutput, 100);
@@ -476,177 +472,147 @@ require(["vs/editor/editor.main"], function() {
     }
   };
   
-  // Override console methods
   const originalConsole = { ...console };
   
+  // Helper function to format property values
+  function formatProperty(key, value, depth) {
+    const indent = '&nbsp;'.repeat(depth * 4);
+    const type = typeof value;
+    let displayValue = '';
+    
+    if (value === null) {
+      displayValue = '<span style="color: #a0a0a0;">null</span>';
+    } else if (value === undefined) {
+      displayValue = '<span style="color: #a0a0a0;">undefined</span>';
+    } else if (type === 'string') {
+      displayValue = `<span style="color: #c41a16;">"${value}"</span>`;
+    } else if (type === 'number') {
+      displayValue = `<span style="color: #1c00cf;">${value}</span>`;
+    } else if (type === 'boolean') {
+      displayValue = `<span style="color: #aa0d91;">${value}</span>`;
+    } else if (type === 'function') {
+      displayValue = `<span style="color: #5c2699;">ƒ ${value.name || '(anonymous)'}()</span>`;
+    } else if (Array.isArray(value)) {
+      displayValue = `<span style="color: #5c2699;">Array(${value.length})</span>`;
+    } else if (value instanceof Date) {
+      displayValue = `<span style="color: #0b7dda;">Date: ${value.toString()}</span>`;
+    } else if (type === 'object') {
+      displayValue = `<span style="color: #5c2699;">${value.constructor ? value.constructor.name : 'Object'}</span>`;
+    } else {
+      displayValue = `<span>${String(value)}</span>`;
+    }
+    
+    return `<div style="padding-left: ${depth * 4}px;">${indent}${key}: ${displayValue}</div>`;
+  }
+
   console.log = function(...args) {
-    // Special handling for undefined values and proper formatting
     const formattedArgs = args.map(arg => {
-      if (arg === undefined) {
-        return "undefined";
-      } else if (arg === null) {
-        return "null";
-      } else if (typeof arg === 'object') {
-        try {
-          return JSON.stringify(arg);
-        } catch (e) {
-          return String(arg);
-        }
-      } else {
-        return arg;
+      if (arg === undefined) return "undefined";
+      if (arg === null) return "null";
+      if (typeof arg === 'object') {
+        try { return JSON.stringify(arg); } 
+        catch (e) { return String(arg); }
       }
+      return arg;
     });
-    outputBuffer += `<span style="color: #00b894; font-style: italic;">${formattedArgs.join(" ")}</span>\n`;
+    outputBuffer += `<span style="color: #00b894;">${formattedArgs.join(" ")}</span>\n`;
     if (!flushTimer) startFlushTimer();
   };
   
   console.error = function(...args) {
-    const errorMessage = args.join(" ");
-    outputBuffer += `<span style="color: #ff6b6b; font-style: italic;">\nError: ${errorMessage}</span>\n`;
+    outputBuffer += `<span style="color: #ff6b6b;">Error: ${args.join(" ")}</span>\n`;
     if (!flushTimer) startFlushTimer();
   };
   
   console.warn = function(...args) {
-    const warn = args.join(" ");
-    outputBuffer += `<span style="color: #feca57; font-style: italic;">\nWarning: ${warn}</span>\n`;
+    outputBuffer += `<span style="color: #feca57;">Warning: ${args.join(" ")}</span>\n`;
     if (!flushTimer) startFlushTimer();
   };
   
   console.info = function(...args) {
-    const info = args.join(" ");
-    outputBuffer += `<span style="color: #54a0ff; font-style: italic;">\nInfo: ${info}</span>\n`;
+    outputBuffer += `<span style="color: #54a0ff;">Info: ${args.join(" ")}</span>\n`;
     if (!flushTimer) startFlushTimer();
   };
   
-  // Chrome-like console.dir implementation
   console.dir = function(obj) {
-    if (obj === null) {
-      outputBuffer += `<span style="color: #a0a0a0;">null</span>\n`;
+    if (obj === null || obj === undefined) {
+      outputBuffer += `<span style="color: #a0a0a0;">${obj === null ? 'null' : 'undefined'}</span>\n`;
       if (!flushTimer) startFlushTimer();
       return;
     }
-    
-    if (obj === undefined) {
-      outputBuffer += `<span style="color: #a0a0a0;">undefined</span>\n`;
-      if (!flushTimer) startFlushTimer();
-      return;
-    }
-    
-    if (typeof obj !== 'object' && typeof obj !== 'function') {
-      outputBuffer += `<span>${obj}</span>\n`;
-      if (!flushTimer) startFlushTimer();
-      return;
-    }
-    
-    // Format object similar to Chrome console
+
     let html = `<div style="font-family: monospace; color: #333; padding: 5px; border: 1px solid #ddd; border-radius: 4px; margin: 5px 0; background-color: #f8f8f8;">`;
     
-    // Basic object info
+    // Object type header
     const objType = obj.constructor ? obj.constructor.name : 'Object';
     html += `<div style="font-weight: bold; color: #444; margin-bottom: 5px;">${objType}</div>`;
-    
-    // Create expandable sections
-    function addProperty(key, value, depth = 0, isProto = false) {
-      const indent = '&nbsp;'.repeat(depth * 4);
-      const valueType = typeof value;
-      let displayValue = '';
-      let additionalClass = '';
-      
-      if (value === null) {
-        displayValue = '<span style="color: #a0a0a0;">null</span>';
-      } else if (value === undefined) {
-        displayValue = '<span style="color: #a0a0a0;">undefined</span>';
-      } else if (valueType === 'string') {
-        displayValue = `<span style="color: #c41a16;">"${value}"</span>`;
-      } else if (valueType === 'number') {
-        displayValue = `<span style="color: #1c00cf;">${value}</span>`;
-      } else if (valueType === 'boolean') {
-        displayValue = `<span style="color: #aa0d91;">${value}</span>`;
-      } else if (valueType === 'function') {
-        displayValue = `<span style="color: #5c2699;">ƒ ${value.name || '(anonymous)'}</span>`;
-      } else if (Array.isArray(value)) {
-        displayValue = `<span style="color: #5c2699;">Array(${value.length})</span>`;
-      } else if (valueType === 'object') {
-        const objName = value.constructor ? value.constructor.name : 'Object';
-        displayValue = `<span style="color: #5c2699;">${objName}</span>`;
-      }
-      
-      const propertyStyle = isProto ? 'color: #888;' : 'color: #333;';
-      html += `${indent}<span style="${propertyStyle}">${key}: </span>${displayValue}<br>`;
-    }
-    
+
     // Process own properties
     const ownProps = Object.getOwnPropertyNames(obj).sort();
-    ownProps.forEach(prop => {
-      try {
-        const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
-        if (descriptor && descriptor.get) {
-          addProperty(prop, '(...) Getter', 0);
-        } else if (descriptor && descriptor.set) {
-          addProperty(prop, '(...) Setter', 0);
-        } else {
-          addProperty(prop, obj[prop], 0);
-        }
-      } catch (e) {
-        addProperty(prop, '(access denied)', 0);
-      }
-    });
-    
-    // Process prototype chain
-    let proto = Object.getPrototypeOf(obj);
-    let protoDepth = 0;
-    
-    while (proto && proto !== Object.prototype && protoDepth < 3) {
-      protoDepth++;
-      html += `<div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">`;
-      html += `<span style="color: #888; font-style: italic;">[[Prototype]]: ${proto.constructor ? proto.constructor.name : 'Object'}</span><br>`;
-      
-      const protoProps = Object.getOwnPropertyNames(proto).sort();
-      protoProps.forEach(prop => {
+    if (ownProps.length > 0) {
+      html += `<div style="margin-bottom: 8px;">`;
+      ownProps.forEach(prop => {
         try {
-          const descriptor = Object.getOwnPropertyDescriptor(proto, prop);
-          if (descriptor && descriptor.get) {
-            addProperty(prop, '(...) Getter', 1, true);
-          } else if (descriptor && descriptor.set) {
-            addProperty(prop, '(...) Setter', 1, true);
+          const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
+          if (descriptor.get || descriptor.set) {
+            html += `<div>${prop}: <span style="color: #5c2699;">${descriptor.get ? 'getter' : ''}${descriptor.get && descriptor.set ? ' / ' : ''}${descriptor.set ? 'setter' : ''}</span></div>`;
           } else {
-            addProperty(prop, proto[prop], 1, true);
+            html += formatProperty(prop, obj[prop], 0);
           }
         } catch (e) {
-          addProperty(prop, '(access denied)', 1, true);
+          html += `<div>${prop}: <span style="color: #ff6b6b;">(access denied)</span></div>`;
         }
       });
+      html += `</div>`;
+    }
+
+    // Process prototype chain recursively
+    let proto = Object.getPrototypeOf(obj);
+    let depth = 0;
+    const maxDepth = 5;
+    
+    while (proto && proto !== null && depth < maxDepth) {
+      html += `<div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">`;
+      html += `<div style="color: #888; font-style: italic;">[[Prototype]]: ${proto.constructor ? proto.constructor.name : 'Object'}</div>`;
+      
+      const protoProps = Object.getOwnPropertyNames(proto).sort();
+      if (protoProps.length > 0) {
+        protoProps.forEach(prop => {
+          try {
+            const descriptor = Object.getOwnPropertyDescriptor(proto, prop);
+            if (descriptor.get || descriptor.set) {
+              html += `<div style="padding-left: ${depth * 15}px;">${prop}: <span style="color: #5c2699;">${descriptor.get ? 'getter' : ''}${descriptor.get && descriptor.set ? ' / ' : ''}${descriptor.set ? 'setter' : ''}</span></div>`;
+            } else {
+              html += formatProperty(prop, proto[prop], depth + 1);
+            }
+          } catch (e) {
+            html += `<div style="padding-left: ${depth * 15}px;">${prop}: <span style="color: #ff6b6b;">(access denied)</span></div>`;
+          }
+        });
+      } else {
+        html += `<div style="padding-left: ${depth * 15}px; color: #888;">(no enumerable properties)</div>`;
+      }
       
       html += `</div>`;
       proto = Object.getPrototypeOf(proto);
+      depth++;
     }
-    
-    // If there's more in the prototype chain
-    if (proto && proto !== null) {
-      html += `<div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">`;
-      html += `<span style="color: #888; font-style: italic;">[[Prototype]]: ${proto.constructor ? proto.constructor.name : 'Object'}</span>`;
-      html += `</div>`;
-    }
-    
+
     html += `</div>`;
     outputBuffer += html;
     if (!flushTimer) startFlushTimer();
   };
-  
-  // Handle unhandled promise rejections
+
   window.onunhandledrejection = function(event) {
     console.error("Unhandled Rejection:", event.reason);
   };
   
   try {
-    // Add loop safety - count iterations and detect infinite loops
     let loopStartTime = Date.now();
     let iterationCount = 0;
-    const maxIterationTime = 5000; // 5 seconds max for loops
+    const maxIterationTime = 5000;
     
-    // Modified eval function to monitor execution
     const monitoredEval = (code) => {
-      // Add loop monitoring to for loops
       code = code.replace(/for\s*\([^)]*\)\s*{/g, match => {
         return `${match} 
           iterationCount++; 
@@ -654,12 +620,10 @@ require(["vs/editor/editor.main"], function() {
             if (Date.now() - loopStartTime > maxIterationTime) {
               throw new Error("Loop execution time exceeded safety limit");
             }
-            // Force a flush on every 1000 iterations
             flushOutput();
           }`;
       });
       
-      // Add loop monitoring to while loops
       code = code.replace(/while\s*\([^)]*\)\s*{/g, match => {
         return `${match} 
           iterationCount++; 
@@ -667,7 +631,6 @@ require(["vs/editor/editor.main"], function() {
             if (Date.now() - loopStartTime > maxIterationTime) {
               throw new Error("Loop execution time exceeded safety limit");
             }
-            // Force a flush on every 1000 iterations
             flushOutput();
           }`;
       });
@@ -675,10 +638,8 @@ require(["vs/editor/editor.main"], function() {
       return eval(code);
     };
     
-    // Execute the code with monitoring
     const result = monitoredEval(code);
     
-    // If there's a returned promise, handle it appropriately
     if (result instanceof Promise) {
       result
         .then(value => {
@@ -695,22 +656,19 @@ require(["vs/editor/editor.main"], function() {
           stopFlushTimer();
         });
     } else {
-      // If there's a non-promise result and it's not undefined, show it
       if (result !== undefined) {
         console.log("Return value:", result);
       }
     }
   } catch (error) {
     outputBuffer += `<div style="background-color: rgba(255, 107, 107, 0.1); border-left: 3px solid #ff6b6b; padding: 10px; margin: 10px 0; border-radius: 4px;">
-      <span style="color: #ff6b6b; font-style: italic;">Error:</span> ${error.message}
+      <span style="color: #ff6b6b;">Error:</span> ${error.message}
       ${error.stack ? `<pre style="margin-top: 10px; font-size: 14px; color: #dfe6e9;">${error.stack}</pre>` : ''}
     </div>`;
   } finally {
-    // Final flush of any pending output
     flushOutput();
     stopFlushTimer();
     
-    // Restore original console methods after a delay
     setTimeout(() => {
       console.log = originalConsole.log;
       console.error = originalConsole.error;
