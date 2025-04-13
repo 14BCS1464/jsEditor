@@ -472,7 +472,14 @@ require(["vs/editor/editor.main"], function() {
     }
   };
   
-  const originalConsole = { ...console };
+  // Save original console methods
+  const originalConsole = {
+    log: console.log,
+    error: console.error,
+    warn: console.warn,
+    info: console.info,
+    dir: console.dir
+  };
   
   // Helper function to format property values
   function formatProperty(key, value, depth) {
@@ -505,6 +512,30 @@ require(["vs/editor/editor.main"], function() {
     return `<div style="padding-left: ${depth * 4}px;">${indent}${key}: ${displayValue}</div>`;
   }
 
+  // Display formatted error
+  function displayError(error) {
+    const errorName = error.name || 'Error';
+    const errorMessage = error.message || String(error);
+    let stackTrace = '';
+    
+    if (error.stack) {
+      // Format the stack trace to be more readable
+      stackTrace = error.stack
+        .split('\n')
+        .map(line => line.trim())
+        .join('\n');
+    }
+    
+    outputBuffer += `<div style="background-color: #fff0f0; border-left: 4px solid #ff5252; padding: 12px; margin: 10px 0; border-radius: 4px; font-family: monospace;">
+      <div style="color: #d32f2f; font-weight: bold; font-size: 16px; margin-bottom: 8px;">${errorName}</div>
+      <div style="color: #333; margin-bottom: 10px;">${errorMessage}</div>
+      ${stackTrace ? `<pre style="margin-top: 10px; font-size: 14px; color: #666; background: #f8f8f8; padding: 8px; border-radius: 4px; overflow-x: auto;">${stackTrace}</pre>` : ''}
+    </div>`;
+    
+    flushOutput();
+  }
+
+  // Override console methods
   console.log = function(...args) {
     const formattedArgs = args.map(arg => {
       if (arg === undefined) return "undefined";
@@ -513,7 +544,7 @@ require(["vs/editor/editor.main"], function() {
         try { return JSON.stringify(arg); } 
         catch (e) { return String(arg); }
       }
-      return arg;
+      return String(arg);
     });
     outputBuffer += `<span style="color: #00b894;">${formattedArgs.join(" ")}</span>\n`;
     if (!flushTimer) startFlushTimer();
@@ -603,78 +634,144 @@ require(["vs/editor/editor.main"], function() {
     if (!flushTimer) startFlushTimer();
   };
 
+  // Save original error handlers
+  const originalOnError = window.onerror;
+  const originalOnUnhandledRejection = window.onunhandledrejection;
+
+  // Set up error handlers
+  window.onerror = function(message, source, lineno, colno, error) {
+    if (error) {
+      displayError(error);
+    } else {
+      displayError({ name: "Error", message: message });
+    }
+    return true; // Prevent default error handling
+  };
+
   window.onunhandledrejection = function(event) {
-    console.error("Unhandled Rejection:", event.reason);
+    displayError(event.reason);
+    return true; // Prevent default error handling
   };
   
   try {
+    // Prepare environment for code execution
     let loopStartTime = Date.now();
     let iterationCount = 0;
     const maxIterationTime = 5000;
     
-    const monitoredEval = (code) => {
-      code = code.replace(/for\s*\([^)]*\)\s*{/g, match => {
-        return `${match} 
-          iterationCount++; 
-          if (iterationCount % 1000 === 0) { 
-            if (Date.now() - loopStartTime > maxIterationTime) {
-              throw new Error("Loop execution time exceeded safety limit");
-            }
-            flushOutput();
-          }`;
-      });
-      
-      code = code.replace(/while\s*\([^)]*\)\s*{/g, match => {
-        return `${match} 
-          iterationCount++; 
-          if (iterationCount % 1000 === 0) { 
-            if (Date.now() - loopStartTime > maxIterationTime) {
-              throw new Error("Loop execution time exceeded safety limit");
-            }
-            flushOutput();
-          }`;
-      });
-      
-      return eval(code);
-    };
+    // Create an iframe sandbox for safer code execution
+    // This is a better approach than using eval or Function constructor
+    const sandbox = document.createElement('iframe');
+    sandbox.style.display = 'none';
+    document.body.appendChild(sandbox);
     
-    const result = monitoredEval(code);
+    const sandboxWindow = sandbox.contentWindow;
+    const sandboxDocument = sandbox.contentDocument;
     
-    if (result instanceof Promise) {
-      result
-        .then(value => {
-          if (value !== undefined) {
-            console.log("Promise resolved:", value);
+    // Setup sandbox environment
+    sandboxWindow.console = console;
+    sandboxWindow.flushOutput = flushOutput;
+    sandboxWindow.iterationCount = iterationCount;
+    sandboxWindow.loopStartTime = loopStartTime;
+    sandboxWindow.maxIterationTime = maxIterationTime;
+    
+    // Insert a script element with our code
+    // For strict mode to work properly, we need to ensure it's at the beginning of the script
+    const strictModePrefix = code.includes('"use strict"') || code.includes("'use strict'") ? "" : "'use strict';\n";
+    
+    // Add monitoring for loops
+    let monitoredCode = code.replace(/for\s*\([^)]*\)\s*{/g, match => {
+      return `${match} 
+        iterationCount++; 
+        if (iterationCount % 1000 === 0) { 
+          if (Date.now() - loopStartTime > maxIterationTime) {
+            throw new Error("Loop execution time exceeded safety limit");
           }
           flushOutput();
-        })
-        .catch(error => {
-          console.error(error.message);
+        }`;
+    });
+    
+    monitoredCode = monitoredCode.replace(/while\s*\([^)]*\)\s*{/g, match => {
+      return `${match} 
+        iterationCount++; 
+        if (iterationCount % 1000 === 0) { 
+          if (Date.now() - loopStartTime > maxIterationTime) {
+            throw new Error("Loop execution time exceeded safety limit");
+          }
           flushOutput();
-        })
-        .finally(() => {
-          stopFlushTimer();
-        });
-    } else {
-      if (result !== undefined) {
-        console.log("Return value:", result);
+        }`;
+    });
+    
+    // Create a wrapper that captures the return value
+    const scriptContent = `
+      ${strictModePrefix}
+      (function() {
+        try {
+          let result = (function() {
+            ${monitoredCode}
+          })();
+          
+          if (result instanceof Promise) {
+            result
+              .then(value => {
+                if (value !== undefined) {
+                  console.log("Promise resolved:", value);
+                }
+                flushOutput();
+              })
+              .catch(error => {
+                throw error;
+              });
+          } else if (result !== undefined) {
+            console.log("Return value:", result);
+          }
+          
+          return result;
+        } catch (e) {
+          window.parent.postMessage({ type: 'error', error: { 
+            name: e.name, 
+            message: e.message,
+            stack: e.stack
+          }}, '*');
+          throw e;
+        }
+      })();
+    `;
+    
+    // Listen for error messages from the iframe
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'error') {
+        displayError(event.data.error);
       }
-    }
+    });
+    
+    // Execute the code in the sandbox
+    const scriptElement = sandboxDocument.createElement('script');
+    scriptElement.textContent = scriptContent;
+    
+    // Handle errors during script insertion
+    scriptElement.onerror = function(e) {
+      displayError(e.error || { name: "Error", message: "Failed to execute script" });
+    };
+    
+    sandboxDocument.body.appendChild(scriptElement);
+    
   } catch (error) {
-    outputBuffer += `<div style="background-color: rgba(255, 107, 107, 0.1); border-left: 3px solid #ff6b6b; padding: 10px; margin: 10px 0; border-radius: 4px;">
-      <span style="color: #ff6b6b;">Error:</span> ${error.message}
-      ${error.stack ? `<pre style="margin-top: 10px; font-size: 14px; color: #dfe6e9;">${error.stack}</pre>` : ''}
-    </div>`;
+    displayError(error);
   } finally {
+    // Clean up after execution
     flushOutput();
     stopFlushTimer();
     
+    // Restore original console methods and error handlers
     setTimeout(() => {
       console.log = originalConsole.log;
       console.error = originalConsole.error;
       console.warn = originalConsole.warn;
       console.info = originalConsole.info;
       console.dir = originalConsole.dir;
+      window.onerror = originalOnError;
+      window.onunhandledrejection = originalOnUnhandledRejection;
     }, 11000);
   }
 }
