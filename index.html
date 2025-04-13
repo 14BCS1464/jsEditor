@@ -481,6 +481,9 @@ require(["vs/editor/editor.main"], function() {
     dir: console.dir
   };
   
+  // Track displayed errors to prevent duplicates
+  const displayedErrors = new Set();
+  
   // Helper function to format property values
   function formatProperty(key, value, depth) {
     const indent = '&nbsp;'.repeat(depth * 4);
@@ -512,10 +515,22 @@ require(["vs/editor/editor.main"], function() {
     return `<div style="padding-left: ${depth * 4}px;">${indent}${key}: ${displayValue}</div>`;
   }
 
-  // Display formatted error
+  // Display formatted error with deduplication
   function displayError(error) {
     const errorName = error.name || 'Error';
     const errorMessage = error.message || String(error);
+    
+    // Create a unique key for this error to prevent duplicates
+    const errorKey = `${errorName}:${errorMessage}`;
+    
+    // Check if we've already displayed this error
+    if (displayedErrors.has(errorKey)) {
+      return;
+    }
+    
+    // Mark this error as displayed
+    displayedErrors.add(errorKey);
+    
     let stackTrace = '';
     
     if (error.stack) {
@@ -585,7 +600,7 @@ require(["vs/editor/editor.main"], function() {
       ownProps.forEach(prop => {
         try {
           const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
-          if (descriptor.get || descriptor.set) {
+          if (descriptor && (descriptor.get || descriptor.set)) {
             html += `<div>${prop}: <span style="color: #5c2699;">${descriptor.get ? 'getter' : ''}${descriptor.get && descriptor.set ? ' / ' : ''}${descriptor.set ? 'setter' : ''}</span></div>`;
           } else {
             html += formatProperty(prop, obj[prop], 0);
@@ -611,7 +626,7 @@ require(["vs/editor/editor.main"], function() {
         protoProps.forEach(prop => {
           try {
             const descriptor = Object.getOwnPropertyDescriptor(proto, prop);
-            if (descriptor.get || descriptor.set) {
+            if (descriptor && (descriptor.get || descriptor.set)) {
               html += `<div style="padding-left: ${depth * 15}px;">${prop}: <span style="color: #5c2699;">${descriptor.get ? 'getter' : ''}${descriptor.get && descriptor.set ? ' / ' : ''}${descriptor.set ? 'setter' : ''}</span></div>`;
             } else {
               html += formatProperty(prop, proto[prop], depth + 1);
@@ -659,102 +674,73 @@ require(["vs/editor/editor.main"], function() {
     let iterationCount = 0;
     const maxIterationTime = 5000;
     
-    // Create an iframe sandbox for safer code execution
-    // This is a better approach than using eval or Function constructor
-    const sandbox = document.createElement('iframe');
-    sandbox.style.display = 'none';
-    document.body.appendChild(sandbox);
-    
-    const sandboxWindow = sandbox.contentWindow;
-    const sandboxDocument = sandbox.contentDocument;
-    
-    // Setup sandbox environment
-    sandboxWindow.console = console;
-    sandboxWindow.flushOutput = flushOutput;
-    sandboxWindow.iterationCount = iterationCount;
-    sandboxWindow.loopStartTime = loopStartTime;
-    sandboxWindow.maxIterationTime = maxIterationTime;
-    
-    // Insert a script element with our code
-    // For strict mode to work properly, we need to ensure it's at the beginning of the script
-    const strictModePrefix = code.includes('"use strict"') || code.includes("'use strict'") ? "" : "'use strict';\n";
-    
-    // Add monitoring for loops
-    let monitoredCode = code.replace(/for\s*\([^)]*\)\s*{/g, match => {
-      return `${match} 
-        iterationCount++; 
-        if (iterationCount % 1000 === 0) { 
-          if (Date.now() - loopStartTime > maxIterationTime) {
-            throw new Error("Loop execution time exceeded safety limit");
-          }
-          flushOutput();
-        }`;
-    });
-    
-    monitoredCode = monitoredCode.replace(/while\s*\([^)]*\)\s*{/g, match => {
-      return `${match} 
-        iterationCount++; 
-        if (iterationCount % 1000 === 0) { 
-          if (Date.now() - loopStartTime > maxIterationTime) {
-            throw new Error("Loop execution time exceeded safety limit");
-          }
-          flushOutput();
-        }`;
-    });
-    
-    // Create a wrapper that captures the return value
-    const scriptContent = `
-      ${strictModePrefix}
-      (function() {
-        try {
-          let result = (function() {
-            ${monitoredCode}
-          })();
-          
-          if (result instanceof Promise) {
-            result
-              .then(value => {
-                if (value !== undefined) {
-                  console.log("Promise resolved:", value);
-                }
-                flushOutput();
-              })
-              .catch(error => {
-                throw error;
-              });
-          } else if (result !== undefined) {
+    // Use Function constructor approach instead of iframe for simplicity
+    // This focuses on properly handling and deduplicating errors
+    const executeUserCode = function() {
+      try {
+        // Add monitoring for loops
+        let monitoredCode = code.replace(/for\s*\([^)]*\)\s*{/g, match => {
+          return `${match} 
+            iterationCount++; 
+            if (iterationCount % 1000 === 0) { 
+              if (Date.now() - loopStartTime > maxIterationTime) {
+                throw new Error("Loop execution time exceeded safety limit");
+              }
+              flushOutput();
+            }`;
+        });
+        
+        monitoredCode = monitoredCode.replace(/while\s*\([^)]*\)\s*{/g, match => {
+          return `${match} 
+            iterationCount++; 
+            if (iterationCount % 1000 === 0) { 
+              if (Date.now() - loopStartTime > maxIterationTime) {
+                throw new Error("Loop execution time exceeded safety limit");
+              }
+              flushOutput();
+            }`;
+        });
+        
+        // Create a function with proper scoping for variables
+        const execFunc = new Function(
+          'console', 'iterationCount', 'loopStartTime', 'maxIterationTime', 'flushOutput',
+          `"use strict";
+           return (function() { 
+             ${monitoredCode} 
+           })();`
+        );
+        
+        const result = execFunc(console, iterationCount, loopStartTime, maxIterationTime, flushOutput);
+        
+        if (result instanceof Promise) {
+          result
+            .then(value => {
+              if (value !== undefined) {
+                console.log("Promise resolved:", value);
+              }
+              flushOutput();
+            })
+            .catch(error => {
+              displayError(error);
+            })
+            .finally(() => {
+              stopFlushTimer();
+            });
+        } else {
+          if (result !== undefined) {
             console.log("Return value:", result);
           }
-          
-          return result;
-        } catch (e) {
-          window.parent.postMessage({ type: 'error', error: { 
-            name: e.name, 
-            message: e.message,
-            stack: e.stack
-          }}, '*');
-          throw e;
         }
-      })();
-    `;
-    
-    // Listen for error messages from the iframe
-    window.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'error') {
-        displayError(event.data.error);
+        
+        return result;
+      } catch (error) {
+        displayError(error);
+        return null;
       }
-    });
-    
-    // Execute the code in the sandbox
-    const scriptElement = sandboxDocument.createElement('script');
-    scriptElement.textContent = scriptContent;
-    
-    // Handle errors during script insertion
-    scriptElement.onerror = function(e) {
-      displayError(e.error || { name: "Error", message: "Failed to execute script" });
     };
     
-    sandboxDocument.body.appendChild(scriptElement);
+    // Execute the code
+    executeUserCode();
     
   } catch (error) {
     displayError(error);
