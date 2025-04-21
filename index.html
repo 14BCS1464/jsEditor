@@ -1,391 +1,439 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Online JavaScript Editor</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-/* Modern Editor CSS */
-:root {
-  --primary-color: #6c5ce7;
-  --secondary-color: #00cec9;
-  --dark-bg: #0f0f17;
-  --card-bg: #1a1a25;
-  --text-primary: #f1f1f1;
-  --text-secondary: #a0a0a0;
-  --success: #00b894;
-  --warning: #fdcb6e;
-  --danger: #ff7675;
-  --border-radius: 16px;
-  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
+  <title>Online JavaScript Editor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-.editor-heading {
-  text-align: center;
-  margin-bottom: 10px;
-}
+  <style>
+    /* Modern Editor CSS with optimized space usage */
+    :root {
+      --primary-color: #6c5ce7;
+      --secondary-color: #00cec9;
+      --dark-bg: #0f0f17;
+      --card-bg: #1a1a25;
+      --text-primary: #f1f1f1;
+      --text-secondary: #a0a0a0;
+      --success: #00b894;
+      --warning: #fdcb6e;
+      --danger: #ff7675;
+      --border-radius: 12px;
+      --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
 
-.editor-heading h2 {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-}
+    #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
 
-.gradient-text {
-  font-size: 2rem;
-  background: linear-gradient(135deg, #6c5ce7, #00cec9);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  position: relative;
-  padding-bottom: 10px;
-}
+        .toast {
+            min-width: 250px;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 4px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: slide-in 0.3s, fade-out 0.5s 2.5s forwards;
+            overflow: hidden;
+            position: relative;
+        }
 
-.gradient-text::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 4px;
-  background: linear-gradient(90deg, #6c5ce7, #00cec9);
-  border-radius: 2px;
-}
+        .toast.success {
+            background-color: #4CAF50;
+        }
 
-.by-text {
-  font-size: 1.2rem;
-  color: #a0a0a0;
-  margin-top: 8px;
-  font-weight: 500;
-  letter-spacing: 1px;
-}
+        .toast.warning {
+            background-color: #ff9800;
+        }
 
-@media (max-width: 768px) {
-  .gradient-text {
-    font-size: 2.2rem;
-  }
-  .by-text {
-    font-size: 1rem;
-  }
-}
+        .toast.error {
+            background-color: #f44336;
+        }
 
-.gradient-text {
-  transition: transform 0.3s ease, text-shadow 0.3s ease;
-}
+        .toast.info {
+            background-color: #2196F3;
+        }
 
-.gradient-text:hover {
-  transform: translateY(-2px);
-  text-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
-}
+        .toast .close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
 
-.gradient-text::after {
-  transition: width 0.3s ease;
-}
+        .toast .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            animation: progress 3s linear;
+        }
 
-.editor-heading h2:hover .gradient-text::after {
-  width: 100px;
-}
-#format {
-      background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+        @keyframes slide-in {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fade-out {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes progress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--dark-bg);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 0;
+      margin: 0;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: rgba(26, 26, 37, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .editor-title {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .gradient-text {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6c5ce7, #00cec9);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+    }
+
+    .file-info {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 4px 12px;
+      border-radius: 16px;
+    }
+
+    #controls {
+      width: 100%;
+      background-color: rgba(26, 26, 37, 0.95);
+      padding: 8px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .control-groups {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .file-btn {
+      background: linear-gradient(135deg, #6c5ce7, #5f27cd);
       color: white;
     }
-button {
-  padding: 10px 10px;
-  font-size: 12px;
-  font-weight: 400;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  box-shadow: inset;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-}
 
-button::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-}
+    .run-btn {
+      background: linear-gradient(135deg, #00b894, #20bf6b);
+      color: white;
+    }
 
-button:hover::after {
-  transform: translateX(0);
-}
+    .tool-btn {
+      background: linear-gradient(135deg, #fdcb6e, #fab1a0);
+      color: #2d3436;
+    }
 
-button:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-}
+    .clear-btn {
+      background: linear-gradient(135deg, #ff7675, #d63031);
+      color: white;
+    }
 
-button:active {
-  transform: translateY(0);
-}
+    .container {
+      display: flex;
+      height: calc(100vh - 115px);
+      width: 100%;
+    }
 
-#run {
-  background: linear-gradient(135deg, #00b894, #20bf6b);
-  color: white;
-}
+    #editor {
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+ 
+      position: relative;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
 
-#interView {
-  background: linear-gradient(135deg, #00b894, #20bf6b);
-  color: white;
-}
+    .output-container {
+      width: 30%;
+      max-width: 500px;
+      min-width: 300px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background-color: var(--card-bg);
+    }
 
-#addfile {
-  background: linear-gradient(135deg, #6c5ce7, #5f27cd);
-  color: white;
-}
+    .output-header {
+      padding: 8px 16px;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-#clear {
-  background: linear-gradient(135deg, #ff7675, #d63031);
-  color: white;
-}
+    .output-header h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
 
-#download {
-  background: linear-gradient(135deg, #fdcb6e, #fab1a0);
-  color: #2d3436;
-}
+    .output-actions {
+      display: flex;
+      gap: 10px;
+    }
 
-button::before {
-  font-size: 1.2em;
-  margin-right: 8px;
-}
+    .output-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      font-size: 14px;
+    }
 
-@media (max-width: 768px) {
-  button {
-    padding: 14px 24px;
-    font-size: 14px;
-    min-width: 140px;
-  }
-}
+    pre {
+      white-space: pre-wrap;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      line-height: 1.6;
+    }
 
-@media (max-width: 480px) {
-  button {
-    flex: 1;
-    min-width: 120px;
-    padding: 12px 18px;
-  }
-  button::before {
-    font-size: 1.1em;
-    margin-right: 6px;
-  }
-}
+    .resize-handle {
+      width: 6px;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.05);
+      cursor: col-resize;
+      transition: background-color 0.2s;
+    }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+    .resize-handle:hover {
+      background-color: rgba(108, 92, 231, 0.5);
+    }
 
-body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--dark-bg);
-  color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  line-height: 1.6;
-}
+    @media (max-width: 992px) {
+      .container {
+        flex-direction: column;
+        height: auto;
+      }
 
-h2 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 30px;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.03em;
-}
+      #editor {
+        height: 60vh;
+        min-height: 400px;
+      }
 
-.container {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
-  height: calc(100vh - 180px);
-}
+      .output-container {
+        width: 100%;
+        max-width: none;
+        height: 40vh;
+        min-height: 200px;
+      }
 
-#editor {
-  flex: 2;
-  background: var(--card-bg);
-  border-radius: var(--border-radius);
-  padding: 24px;
-  height: 100%;
-  font-size: 18px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
+      .resize-handle {
+        display: none;
+      }
 
-#editor:hover {
-  box-shadow: 0 12px 24px rgba(108, 92, 231, 0.2);
-  border: 1px solid rgba(108, 92, 231, 0.2);
-}
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding-bottom: 12px;
+      }
 
-.output-container {
-  flex: none;
-  width: 35%;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+      .control-groups {
+        flex-direction: column;
+        width: 100%;
+      }
 
-.output-section {
-  background: var(--card-bg);
-  border-radius: var(--border-radius);
-  padding: 10px;
-  box-shadow: var(--shadow-md);
-  flex: 1;
-  overflow-y: auto;
-  font-size: 16px;
-  border: 1px solid rgba(0, 206, 201, 0.1);
-  transition: var(--transition);
-  height: 100%;
-}
+      .control-group {
+        flex-wrap: wrap;
+      }
+    }
 
-.output-section:hover {
-  box-shadow: 0 12px 24px rgba(0, 206, 201, 0.2);
-  border: 1px solid rgba(0, 206, 201, 0.2);
-}
+    /* Compact design for small screens */
+    @media (max-width: 768px) {
+      .gradient-text {
+        font-size: 1.2rem;
+      }
 
-h4 {
-  font-size: 16px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
-  margin-bottom: 15px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-pre {
-  white-space: pre-wrap;
-  font-size: 16px;
-  font-family: 'Fira Code', 'Cascadia Code', monospace;
-  line-height: 1.6;
-}
-
-@media (max-width: 1200px) {
-  .container {
-    height: auto;
-  }
-  #editor {
-    min-height: 450px;
-  }
-}
-
-@media (max-width: 992px) {
-  .container {
-    flex-direction: column;
-  }
-  #editor {
-    min-height: 400px;
-  }
-  .output-section {
-    min-height: 250px;
-  }
-}
-
-@media (max-width: 768px) {
-  h2 {
-    font-size: 2rem;
-  }
-  .btn {
-    padding: 14px 24px;
-    font-size: 14px;
-    min-width: 140px;
-  }
-  #editor {
-    font-size: 16px;
-    padding: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  h2 {
-    font-size: 1.8rem;
-  }
-  .container {
-    width: 100%;
-    gap: 20px;
-  }
-  .btn {
-    flex: 1;
-    min-width: 120px;
-    padding: 12px 18px;
-  }
-}
-</style>
+      button {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+    }
+  </style>
 </head>
 
 <body>
-<div class="editor-heading">
-  <h2>
-    <span class="gradient-text">Online The JavaScript Editor</span>
-  </h2>
+  <!-- Compact header with title and file info -->
+  <div class="header">
+    <div class="editor-title">
+      <span class="gradient-text">The JS Editor</span>
+      <div class="file-info">
+        <span>File: <strong id="fileName">No file opened</strong></span>
+        <span>Status: <strong id="fileStatus">-</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Better organized controls -->
   <div id="controls">
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-      <button id="run">▶️ Run Code</button>
-      <button id="addfile">✨ Import Code</button>
-      <button id="clear">🧹 Clear Output</button>
-      <button id="download">📥 Download Code</button>
-      <button id="interView">📚 Interview Preparation</button>
-      <button id="format">🔧 Format Code</button>
+    <div class="control-groups">
+      <div class="control-group">
+        <!-- <button id="newFileBtn" class="file-btn">📄 New</button> -->
+        <button id="openFileBtn" class="file-btn">📂 Open</button>
+        <button id="saveFileBtn" class="file-btn">💾 Save</button>
+    
+      </div>
+      
+      <div class="control-group">
+        <button id="run" class="run-btn">▶️ Run</button>
+        <button id="format" class="tool-btn">🔧 Format</button>
+        <!-- <button id="clear" class="clear-btn">🧹 Clear</button> -->
+      </div>
+      
+      <div class="control-group">
+    
+        <button id="interView" class="tool-btn">📚 Interview</button>
+      </div>
     </div>
   </div>
-</div>
-
-<div class="container">
-  <!-- Editor Section -->
-  <div id="editor"></div>
-
-  <!-- Output Section -->
-  <div class="output-container">
-    <div class="output-section">
-      <h4 style="position: sticky; top: 0; background-color: #1a1a25; padding-top: 10px; color: #f1f1f1;">Console Output</h4>
-      <pre id="output"></pre>
+  <div id="toast-container"></div>
+  <!-- Main container with resizable panels -->
+  <div class="container">
+    <!-- Editor area (maximized space) -->
+    <div id="editor"></div>
+    
+    <!-- Resizable handle -->
+    <div class="resize-handle" id="resizeHandle"></div>
+    
+    <!-- Console output (more compact) -->
+    <div class="output-container">
+      <div class="output-header">
+        <h4>Console Output</h4>
+        <div class="output-actions">
+          <button id="clear" class="clear-btn" style="padding: 4px 8px; font-size: 11px;">🧹 Clear</button>
+        </div>
+      </div>
+      <div class="output-section">
+        <pre id="output"></pre>
+      </div>
     </div>
   </div>
-</div>
-
-<input type="file" id="fileInput" accept=".js" style="display: none;">
-
 <script>
+  let editor = null;
+  let currentFileHandle = null;
+let fileContentModified = false;
+let lastSavedContent = '';
+
 require.config({
   paths: {
     vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
@@ -403,7 +451,7 @@ require(["vs/editor/editor.main"], function() {
     },
     scrollBeyondLastLine: true,
     fontFamily: "'Fira Code', 'Consolas', monospace",
-    fontSize: 14,
+    fontSize: 13.5,
     lineNumbers: "on",
     roundedSelection: true,
     scrollbar: {
@@ -412,6 +460,8 @@ require(["vs/editor/editor.main"], function() {
     }
   });
 
+
+  
   // Save code to localStorage
   editor.onDidChangeModelContent(() => {
     localStorage.setItem("userCode", editor.getValue());
@@ -426,29 +476,7 @@ require(["vs/editor/editor.main"], function() {
     window.location.href = "questions.html";
   }
 
-  function downloadCode() {
-    const code = editor.getValue();
-    if (!code) return;
-
-    let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
-    let fileName = prompt("Enter the file name (including extension):", `learn_${timestamp}.js`);
-
-    if (fileName === null) return;
-
-    if (!fileName.trim()) {
-      fileName = "code.js";
-    }
-
-    const blob = new Blob([code], { type: "text/javascript" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+ 
 
   function runCode() {
   const code = editor.getValue();
@@ -763,17 +791,513 @@ require(["vs/editor/editor.main"], function() {
 }
 
   document.getElementById("clear").addEventListener("click", function() {
+
     outputElement.innerText = "";
   });
 
-  document.getElementById("download").addEventListener("click", downloadCode);
-  document.getElementById("addfile").addEventListener("click", function() {
-    document.getElementById("fileInput").click();
-  });
   document.getElementById("run").addEventListener("click", runCode);
   document.getElementById("interView").addEventListener("click", loadQuestionPage);
   document.getElementById("format").addEventListener("click", formatCode);
+  document.getElementById('openFileBtn').addEventListener('click', openFile);
 
+  document.getElementById('saveFileBtn').addEventListener('click', saveFile);
+
+  editor.addEventListener('input', () => {
+    fileContentModified = true;
+    document.getElementById('fileStatus').textContent = 'Modified';
+  });
+  
+
+// Handle editor changes
+editor.on('change', function() {
+  fileContentModified = true;
+  const statusElement = document.getElementById('fileStatus');
+  if (statusElement) {
+    statusElement.textContent = 'Modified';
+    statusElement.style.color = 'orange';
+  }
+});
+// Global variables for file handling
+
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', async () => {
+  // Try to restore the last opened file
+  const restored = await tryRestoreLastFile();
+  
+  if (!restored) {
+    // Check if there's content in localStorage
+    const savedContent = localStorage.getItem('lastFileContent');
+    const fileName = localStorage.getItem('lastOpenedFileName');
+    
+    if (savedContent) {
+      // Restore content from localStorage
+      editor.setValue(savedContent);
+      lastSavedContent = savedContent;
+      
+      // Update UI
+      document.getElementById('fileName').textContent = fileName || 'Restored File';
+      document.getElementById('fileStatus').textContent = 'Restored (No Handle)';
+      document.getElementById('fileStatus').style.color = 'orange';
+    } else {
+      // If no file was restored, set initial state
+      document.getElementById('fileName').textContent = 'Untitled';
+      document.getElementById('fileStatus').textContent = 'New';
+    }
+  }
+  
+  // Add beforeunload event listener to warn about unsaved changes
+  window.addEventListener('beforeunload', function(e) {
+    if (fileContentModified) {
+      // Save current content to localStorage before closing
+      localStorage.setItem('lastFileContent', editor.getValue());
+      
+      // Show warning about unsaved changes
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return e.returnValue;
+    }
+  });
+});
+
+// Handle editor changes
+editor.on('change', function() {
+  const currentContent = editor.getValue();
+  
+  // Only mark as modified if content has changed from last saved state
+  if (currentContent !== lastSavedContent) {
+    fileContentModified = true;
+    const statusElement = document.getElementById('fileStatus');
+    if (statusElement) {
+      statusElement.textContent = 'Modified';
+      statusElement.style.color = 'orange';
+    }
+    
+    // Save content to localStorage for recovery
+    localStorage.setItem('lastFileContent', currentContent);
+  } else {
+    fileContentModified = false;
+    const statusElement = document.getElementById('fileStatus');
+    if (statusElement) {
+      statusElement.textContent = currentFileHandle ? 'Saved' : 'Unchanged';
+      statusElement.style.color = 'green';
+    }
+  }
+});
+
+// Function to open a file
+async function openFile() {
+  try {
+    // Check if the File System Access API is supported
+    if (!('showOpenFilePicker' in window)) {
+      showToast('Please use Chrome or Edge - this feature requires File System Access API support.', 'warning');
+      return;
+    }
+
+    // Show file picker to let user select a JavaScript file
+    const [fileHandle] = await window.showOpenFilePicker({
+      types: [
+        {
+          description: 'JavaScript Files',
+          accept: {
+            'text/javascript': ['.js'],
+          },
+        },
+      ],
+      multiple: false,
+    });
+    
+    // Store the file handle in a global variable
+    currentFileHandle = fileHandle;
+    
+    // Request permission to remember this file
+    if (fileHandle.requestPermission) {
+      const permissionState = await fileHandle.requestPermission({ mode: 'readwrite' });
+      if (permissionState === 'granted') {
+        // Store a reference to this file
+        try {
+          // We can't store the file handle directly, but we can store its id
+          // to attempt to retrieve it later
+          const fileId = await fileHandle.getUniqueId();
+          localStorage.setItem('lastOpenedFileId', fileId);
+          localStorage.setItem('lastOpenedFileName', fileHandle.name || 'unknown.js');
+        } catch (e) {
+          console.warn('Could not store file reference:', e);
+        }
+      }
+    }
+    
+    // Get file data
+    const file = await fileHandle.getFile();
+    const content = await file.text();
+    
+    // Update editor with file content
+    editor.setValue(content);
+    lastSavedContent = content;
+    
+    // Store content in localStorage for recovery after reload
+    localStorage.setItem('lastFileContent', content);
+    
+    // Update UI to show the current file
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileStatus').textContent = 'Opened';
+    document.getElementById('fileStatus').style.color = 'green';
+    fileContentModified = false;
+    
+    // Apply code formatting if available
+    if (typeof formatCode === 'function') {
+      formatCode();
+    }
+  } catch (error) {
+    console.error('Error opening file:', error);
+    showToast(`Error opening file: ${error.message}`, "error");
+    
+  }
+}
+
+
+function showToast(message, type) {
+
+            const toastContainer = document.getElementById('toast-container');
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Create message text
+            const messageText = document.createElement('span');
+            messageText.innerText = message;
+            
+            // Create close button
+            const closeButton = document.createElement('button');
+            closeButton.innerText = '×';
+            closeButton.className = 'close-btn';
+            closeButton.onclick = function() {
+                toastContainer.removeChild(toast);
+            };
+            
+            // Create progress bar
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            
+            // Assemble toast
+            toast.appendChild(messageText);
+            toast.appendChild(closeButton);
+            toast.appendChild(progressBar);
+            
+            // Add to container
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(function() {
+                if (toastContainer.contains(toast)) {
+                    toastContainer.removeChild(toast);
+                }
+            }, 3000);
+        }
+// Function to save the current file
+async function saveFile() {
+  console.log("Saving file, currentFileHandle:", currentFileHandle);
+  
+  if (!currentFileHandle) {
+    return await saveFileAs();
+  }
+  
+  try {
+    // Check if we have permission to write to this file
+    if (currentFileHandle.requestPermission) {
+      const permissionState = await currentFileHandle.requestPermission({ mode: 'readwrite' });
+      if (permissionState !== 'granted') {
+        throw new Error('Permission to write to file was denied');
+      }
+    }
+    
+    // Format code before saving (if formatCode exists)
+    if (typeof formatCode === 'function') {
+      formatCode();
+    }
+
+    // Create a FileSystemWritableFileStream to write to
+    const writable = await currentFileHandle.createWritable();
+    
+    // Get the editor content
+    const content = editor.getValue();
+    console.log("Content to save:", content.substring(0, 50) + "...");
+    
+    // Write the contents of the editor to the file
+    await writable.write(content);
+    
+    // Close the file and write the contents to disk
+    await writable.close();
+    
+    // Update last saved content
+    lastSavedContent = content;
+    
+    // Store content in localStorage for recovery after reload
+    localStorage.setItem('lastFileContent', content);
+    
+    // Update UI
+    const statusElement = document.getElementById('fileStatus');
+    if (statusElement) {
+      statusElement.textContent = 'Saved';
+      statusElement.style.color = 'green';
+    }
+    
+    fileContentModified = false;
+    console.log('File saved successfully');
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving file:', error);
+
+    showToast(`Error saving file: ${error.message}`, "error");
+    const statusElement = document.getElementById('fileStatus');
+    if (statusElement) {
+      statusElement.textContent = 'Error saving';
+      statusElement.style.color = 'red';
+    }
+    
+    return false;
+  }
+}
+
+// Function to save as a new file
+async function saveFileAs() {
+  try {
+    // Check if the File System Access API is supported
+    if (!('showSaveFilePicker' in window)) {
+     
+      showToast('Please use Chrome or Edge - this feature requires File System Access API support.', 'warning');
+      return false;
+    }
+    
+    const currentFileName = currentFileHandle ? currentFileHandle.name : 
+                           localStorage.getItem('lastOpenedFileName') || 'script.js';
+    
+    // Show file picker to let user select where to save the file
+    const fileHandle = await window.showSaveFilePicker({
+      types: [
+        {
+          description: 'JavaScript Files',
+          accept: {
+            'text/javascript': ['.js'],
+          },
+        },
+      ],
+      suggestedName: currentFileName
+    });
+    
+    // Update the current file handle
+    currentFileHandle = fileHandle;
+    
+    // Request permission to remember this file
+    if (fileHandle.requestPermission) {
+      const permissionState = await fileHandle.requestPermission({ mode: 'readwrite' });
+      if (permissionState === 'granted') {
+        try {
+          const fileId = await fileHandle.getUniqueId();
+          localStorage.setItem('lastOpenedFileId', fileId);
+          localStorage.setItem('lastOpenedFileName', fileHandle.name || 'unknown.js');
+        } catch (e) {
+          console.warn('Could not store file reference:', e);
+        }
+      }
+    }
+    
+    // Update UI to show the current file
+    const file = await fileHandle.getFile();
+    document.getElementById('fileName').textContent = file.name;
+    
+    // Save the file using the new handle
+    return await saveFile();
+  } catch (error) {
+    console.error('Error in Save As:', error);
+    showToast(`Error saving file: ${error.message}`, "error");
+  
+    return false;
+  }
+}
+
+// Function to try to restore the last opened file
+async function tryRestoreLastFile() {
+  try {
+    // First try to get the file handle by ID if the API is available
+    if ('getFileHandles' in window) {
+      const fileId = localStorage.getItem('lastOpenedFileId');
+      if (fileId) {
+        try {
+          const fileHandles = await window.getFileHandles([fileId]);
+          if (fileHandles && fileHandles.length > 0) {
+            currentFileHandle = fileHandles[0];
+            
+            // Get file data
+            const file = await currentFileHandle.getFile();
+            const content = await file.text();
+            
+            // Update editor with file content
+            editor.setValue(content);
+            lastSavedContent = content;
+            
+            // Store content in localStorage for recovery
+            localStorage.setItem('lastFileContent', content);
+            
+            // Update UI
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileStatus').textContent = 'Restored';
+            document.getElementById('fileStatus').style.color = 'green';
+            fileContentModified = false;
+            
+            return true;
+          }
+        } catch (e) {
+          console.warn('Could not restore file by ID:', e);
+        }
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error restoring file:', error);
+    return false;
+  }
+}
+
+// Function to create a new file (clears the editor)
+function newFile() {
+  // Prompt to save if there are unsaved changes
+  if (fileContentModified) {
+    if (!confirm('You have unsaved changes. Create a new file anyway?')) {
+      return;
+    }
+  }
+  
+  // Clear the editor
+  editor.setValue('');
+  lastSavedContent = '';
+  
+  // Clear the current file handle
+  currentFileHandle = null;
+  
+  // Update localStorage
+  localStorage.removeItem('lastOpenedFileId');
+  localStorage.setItem('lastOpenedFileName', 'Untitled');
+  localStorage.setItem('lastFileContent', '');
+  
+  // Update UI
+  document.getElementById('fileName').textContent = 'Untitled';
+  document.getElementById('fileStatus').textContent = 'New';
+  document.getElementById('fileStatus').style.color = 'black';
+  fileContentModified = false;
+}
+
+// Function to recover unsaved content after a crash/reload
+function recoverUnsavedContent() {
+  const savedContent = localStorage.getItem('lastFileContent');
+  if (savedContent && (!currentFileHandle || editor.getValue() !== savedContent)) {
+    if (confirm('Unsaved content from your previous session was found. Do you want to recover it?')) {
+      editor.setValue(savedContent);
+      
+      // Update UI
+      const fileName = localStorage.getItem('lastOpenedFileName') || 'Recovered File';
+      document.getElementById('fileName').textContent = fileName;
+      document.getElementById('fileStatus').textContent = 'Recovered';
+      document.getElementById('fileStatus').style.color = 'blue';
+    }
+  }
+}
+
+// Function to handle keyboard shortcuts
+function handleKeyboardShortcuts(event) {
+  // Ctrl+S or Cmd+S to save
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault();
+    if (currentFileHandle) {
+      saveFile();
+    } else {
+      saveFileAs();
+    }
+  }
+  
+  // Ctrl+O or Cmd+O to open
+  if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
+    event.preventDefault();
+    openFile();
+  }
+  
+  // Ctrl+N or Cmd+N for new file
+  if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+    event.preventDefault();
+    newFile();
+  }
+}
+
+// Add event listener for keyboard shortcuts
+document.addEventListener('keydown', handleKeyboardShortcuts);
+
+// Call this function after a short delay to allow normal restore first
+setTimeout(recoverUnsavedContent, 1000);
+
+// Function to handle keyboard shortcuts
+function handleKeyboardShortcuts(event) {
+  // Ctrl+S or Cmd+S to save
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault();
+    if (currentFileHandle) {
+      saveFile();
+    } else {
+      saveFileAs();
+    }
+  }
+  
+  // Ctrl+O or Cmd+O to open
+  if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
+    event.preventDefault();
+    openFile();
+  }
+  
+  // Ctrl+N or Cmd+N for new file
+  if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+    event.preventDefault();
+    newFile();
+  }
+}
+
+// Add event listener for keyboard shortcuts
+document.addEventListener('keydown', handleKeyboardShortcuts);
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', async () => {
+  // Try to restore the last opened file
+  const restored = await tryRestoreLastFile();
+  
+  if (!restored) {
+    // If no file was restored, set initial state
+    document.getElementById('fileName').textContent = 'Untitled';
+    document.getElementById('fileStatus').textContent = 'New';
+  }
+  
+  // Additional initialization can go here
+});
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', async () => {
+  // Try to restore the last opened file
+  const restored = await tryRestoreLastFile();
+  if (!restored) {
+    console.log('No previously opened file found or permission denied');
+  }
+  
+  // Other initialization code...
+});
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', async () => {
+  // Try to restore the last opened file
+  const restored = await tryRestoreLastFile();
+  if (!restored) {
+    console.log('No previously opened file found or permission denied');
+  }
+  
+  // Other initialization code...
+});
   function formatCode() {
   try {
     // Get current code from editor
@@ -864,7 +1388,7 @@ document.addEventListener('keydown', function(e) {
         localStorage.setItem("userCode", concatValue);
       });
     } else {
-      alert("Please select a valid JavaScript (.js) file.");
+      showToast("Please select a valid JavaScript (.js) file.","error");
     }
   });
 });
