@@ -441,31 +441,205 @@ require.config({
 });
 
 require(["vs/editor/editor.main"], function() {
+  // Define custom editor theme
+  monaco.editor.defineTheme('sunilTheme', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '569CD6', fontStyle: 'bold' },
+      { token: 'string', foreground: 'CE9178' },
+      { token: 'number', foreground: 'B5CEA8' },
+      { token: 'operator', foreground: 'D4D4D4' }
+    ],
+    colors: {
+      'editor.background': '#1E1E1E',
+      'editor.foreground': '#D4D4D4',
+      'editorCursor.foreground': '#AEAFAD',
+      'editor.lineHighlightBackground': '#2D2D30',
+      'editorLineNumber.foreground': '#858585',
+      'editor.selectionBackground': '#264F78',
+      'editor.inactiveSelectionBackground': '#3A3D41'
+    }
+  });
+
+  monaco.editor.defineTheme('sunilDarkPro', {
+  base: 'vs-dark',
+  inherit: true,
+  rules: [
+    // Basic syntax highlighting with vibrant colors
+    { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+    { token: 'keyword', foreground: 'C586C0', fontStyle: 'bold' },
+    { token: 'string', foreground: 'CE9178' },
+    { token: 'number', foreground: 'B5CEA8' },
+    { token: 'operator', foreground: 'D4D4D4' },
+    
+    // Enhanced JavaScript/TypeScript tokens
+    { token: 'type', foreground: '4EC9B0' },
+    { token: 'function', foreground: 'DCDCAA' },
+    { token: 'variable', foreground: '9CDCFE' },
+    { token: 'variable.parameter', foreground: '9CDCFE' },
+    { token: 'variable.predefined', foreground: '4FC1FF' },
+    { token: 'constant', foreground: '569CD6' },
+    { token: 'class', foreground: '4EC9B0', fontStyle: 'bold' },
+    { token: 'interface', foreground: '4EC9B0' },
+    { token: 'namespace', foreground: '569CD6' },
+    
+    // Special tokens
+    { token: 'regexp', foreground: 'D16969' },
+    { token: 'meta', foreground: 'D4D4D4' },
+    { token: 'tag', foreground: '569CD6' },
+    { token: 'tag.attribute.name', foreground: '9CDCFE' },
+    { token: 'attribute.name', foreground: '9CDCFE' },
+    { token: 'attribute.value', foreground: 'CE9178' },
+    
+    // JSON specific
+    { token: 'string.key', foreground: '9CDCFE' },
+    { token: 'string.value', foreground: 'CE9178' },
+    
+    // HTML specific
+    { token: 'delimiter.html', foreground: '808080' },
+    { token: 'tag.html', foreground: '569CD6' },
+    
+    // CSS specific
+    { token: 'attribute.name.css', foreground: 'D7BA7D' },
+    { token: 'attribute.value.css', foreground: 'CE9178' }
+  ],
+  colors: {
+    // Editor canvas
+    'editor.background': '#1E1E2E',            // Slightly blue-tinted dark background
+    'editor.foreground': '#F8F8F2',            // Bright text for contrast
+    
+    // Selection and highlights
+    'editor.selectionBackground': '#264F78',   // Blue selection
+    'editor.selectionHighlightBackground': '#2D2D4A',
+    'editor.inactiveSelectionBackground': '#3A3D41',
+    
+    // Editor widgets
+    'editorWidget.background': '#252537',
+    'editorWidget.border': '#454545',
+    'editorSuggestWidget.background': '#252537',
+    'editorSuggestWidget.border': '#454545',
+    'editorSuggestWidget.foreground': '#D4D4D4',
+    'editorSuggestWidget.highlightForeground': '#18A3FF',
+    'editorSuggestWidget.selectedBackground': '#062F4A',
+    
+    // Cursor and line numbers
+    'editorCursor.foreground': '#F8F8F2',
+    'editorLineNumber.foreground': '#858585',
+    'editorLineNumber.activeForeground': '#C6C6C6',
+    
+    // Current line highlight
+    'editor.lineHighlightBackground': '#2D2D45',
+    'editor.lineHighlightBorder': '#282840',
+    
+    // Gutter
+    'editorGutter.background': '#1E1E2E',
+    
+    // Bracket matches
+    'editorBracketMatch.background': '#0D3A58',
+    'editorBracketMatch.border': '#216694',
+    
+    // Overview ruler
+    'editorOverviewRuler.border': '#7F7F7F4D',
+    'editorOverviewRuler.findMatchForeground': '#F8C55499',
+    'editorOverviewRuler.rangeHighlightForeground': '#007ACC99',
+    'editorOverviewRuler.selectionHighlightForeground': '#A0A0A0CC',
+    'editorOverviewRuler.wordHighlightForeground': '#A0A0A0CC',
+    'editorOverviewRuler.wordHighlightStrongForeground': '#C0A0C0CC',
+    
+    // Scrollbar
+    'scrollbarSlider.activeBackground': '#6F6F9380',
+    'scrollbarSlider.background': '#48485E40',
+    'scrollbarSlider.hoverBackground': '#5A5A7A60'
+  }
+});
+
+
   var editor = monaco.editor.create(document.getElementById("editor"), {
-    value: `console.log("Developed By sunil...")`,
+    
     language: "javascript",
-    theme: "vs-dark",
+    theme: "sunilDarkPro", // Use our new custom theme
     automaticLayout: true,
     minimap: {
-      enabled: true
+      enabled: true,
+      renderCharacters: false,
+      showSlider: "always",
+      maxColumn: 80
     },
     scrollBeyondLastLine: true,
     fontFamily: "'Fira Code', 'Consolas', monospace",
-    fontSize: 13.5,
+    fontLigatures: true, // Enable font ligatures
+    fontSize: 14,
+    lineHeight: 22,
     lineNumbers: "on",
+    renderLineHighlight: "all",
     roundedSelection: true,
+    cursorBlinking: "smooth",
+    cursorSmoothCaretAnimation: true,
+    smoothScrolling: true,
     scrollbar: {
       verticalScrollbarSize: 10,
-      horizontalScrollbarSize: 10
+      horizontalScrollbarSize: 10,
+      vertical: "visible",
+      horizontal: "visible",
+      verticalHasArrows: false,
+      horizontalHasArrows: false,
+      useShadows: true
+    },
+    snippetSuggestions: "top",
+    wordWrap: "on",
+    wordWrapColumn: 80,
+    wrappingIndent: "same",
+    autoIndent: "full",
+    formatOnPaste: true,
+    formatOnType: true,
+    renderWhitespace: "selection",
+    renderControlCharacters: true,
+    bracketPairColorization: {
+      enabled: true
+    },
+    folding: true,
+    glyphMargin: true,
+    contextmenu: true,
+    codeLens: true,
+    colorDecorators: true,
+    suggest: {
+      filterGraceful: true,
+      showIcons: true,
+      maxVisibleSuggestions: 12,
+      preview: true,
+      snippetsPreventQuickSuggestions: false
+    },
+    parameterHints: {
+      enabled: true,
+      cycle: true
     }
   });
 
 
-  
-  // Save code to localStorage
-  editor.onDidChangeModelContent(() => {
-    localStorage.setItem("userCode", editor.getValue());
-  });
+  function debounce(func, wait) {
+  let timeout;
+  return function() {
+    const context = this;
+    const args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func.apply(context, args);
+    }, wait);
+  };
+}
+
+// Save code to localStorage and run it, with debouncing
+const saveAndRunCode = debounce(() => {
+  localStorage.setItem("userCode", editor.getValue());
+  runCode();
+}, 1000); // 1 second delay
+
+// Add the event listener with debounced function
+editor.onDidChangeModelContent(() => {
+  saveAndRunCode();
+});
 
   // Load saved code
   editor.setValue(localStorage.getItem("userCode") || `console.log("Best of luck with your learning journey! 🚀 Keep coding and keep growing! 😊")`);
