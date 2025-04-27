@@ -639,7 +639,10 @@ const saveAndRunCode = debounce(() => {
 editor.onDidChangeModelContent(() => {
   localStorage.setItem("userCode", editor.getValue());
   if (navigator.userAgent.indexOf('Chrome') !== -1) {
-    saveFile();
+    if (currentFileHandle) {
+      saveFile();
+    } 
+   
   }
 });
 
