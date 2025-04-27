@@ -618,12 +618,29 @@ require(["vs/editor/editor.main"], function() {
   });
 
 
+  function debounce(func, wait) {
+  let timeout;
+  return function() {
+    const context = this;
+    const args = arguments;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func.apply(context, args);
+    }, wait);
+  };
+}
+
+// Save code to localStorage and run it, with debouncing
+const saveAndRunCode = debounce(() => {
   
+}, 1000); // 1 second delay
 
 // Add the event listener with debounced function
 editor.onDidChangeModelContent(() => {
   localStorage.setItem("userCode", editor.getValue());
-
+  if (navigator.userAgent.indexOf('Chrome') !== -1) {
+    saveFile();
+  }
 });
 
   // Load saved code
