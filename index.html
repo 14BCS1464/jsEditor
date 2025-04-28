@@ -16,21 +16,42 @@
   <style>
     /* Modern Editor CSS with optimized space usage */
     :root {
-      --primary-color: #6c5ce7;
-      --secondary-color: #00cec9;
-      --dark-bg: #0f0f17;
-      --card-bg: #1a1a25;
-      --text-primary: #f1f1f1;
-      --text-secondary: #a0a0a0;
-      --success: #00b894;
-      --warning: #fdcb6e;
-      --danger: #ff7675;
-      --border-radius: 12px;
-      --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
-      --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
-      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
+  /* Primary Colors */
+  --primary-color: #7b68ee;         /* Soft vibrant purple */
+  --primary-hover: #6a5acd;         /* Slightly darker purple */
+  
+  /* Secondary Colors */
+  --secondary-color: #48d1cc;       /* Modern teal */
+  --secondary-hover: #40c9c4;       /* Slightly darker teal */
+  
+  /* Backgrounds */
+  --dark-bg: #121218;              /* Deep dark background */
+  --card-bg: #1e1e2a;              /* Slightly lighter cards */
+  --card-hover: #252534;           /* Hover state for cards */
+  
+  /* Text */
+  --text-primary: #f8f8f8;          /* Crisp white */
+  --text-secondary: #b8c2cc;        /* Soft gray for secondary text */
+  
+  /* Accents & Status */
+  --success: #2ecc71;               /* Vibrant green */
+  --warning: #f39c12;               /* Golden yellow */
+  --danger: #e74c3c;                /* Alert red */
+  --info: #3498db;                  /* Bright blue (new addition) */
+  
+  /* UI Elements */
+  --border-radius: 10px;            /* Slightly more modern than 12px */
+  --border-color: rgba(255, 255, 255, 0.1); /* Subtle borders */
+  
+  /* Shadows (More refined) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+  
+  /* Transitions */
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother curve */
+  --transition-fast: all 0.15s ease; /* For interactive elements */
+}
 
     #toast-container {
             position: fixed;
@@ -389,8 +410,8 @@
     <div class="control-groups">
       <div class="control-group">
         <!-- <button id="newFileBtn" class="file-btn">📄 New</button> -->
-        <button id="openFileBtn" class="file-btn">📂 Open</button>
-        <button id="saveFileBtn" class="file-btn"> 💾 Save</button>
+        <button id="openFileBtn" class="file-btn">📂 Open File</button>
+        <button id="saveFileBtn" class="file-btn"> 💾 Save File</button>
     
       </div>
       
@@ -398,7 +419,7 @@
       
       <div class="control-group">
     
-        <button id="interView" class="tool-btn">📚 Interview</button>
+        <button id="interView" class="tool-btn">📚 Interview Preparation</button>
       </div>
     </div>
   </div>
@@ -1246,7 +1267,7 @@ async function saveFileAs() {
     }
     
     const currentFileName = currentFileHandle ? currentFileHandle.name : 
-                           localStorage.getItem('lastOpenedFileName') || 'script.js';
+                           localStorage.getItem('lastOpenedFileName') || 'fileName.js';
     
     // Show file picker to let user select where to save the file
     const fileHandle = await window.showSaveFilePicker({
