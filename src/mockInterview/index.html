@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Interview Booking Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.8/main.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Mock Interview Booking Platform</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="calendar-section">
+                <h2>Available Slots</h2>
+                <div id="calendar"></div>
+            </div>
+            
+            <div class="interviewers-section">
+                <h2>Our Expert Interviewers</h2>
+                <div class="interviewer-card">
+                    <div class="interviewer-header">
+                        <h3 class="interviewer-name">Sarah Johnson</h3>
+                        <div class="interviewer-rating">
+                            <span class="rating-stars">★★★★★</span>
+                            <span>4.9</span>
+                        </div>
+                    </div>
+                    <p class="interviewer-bio">Former tech lead at Google with 10+ years of experience conducting technical interviews. Specializes in system design and algorithm challenges.</p>
+                    <div class="interviewer-details">
+                        <span class="detail-item">8 years experience</span>
+                        <span class="detail-item">500+ interviews</span>
+                        <span class="detail-item">Tech Lead</span>
+                    </div>
+                    <h4>Expertise</h4>
+                    <div style="margin-bottom: 10px;">
+                        <span class="skills-badge">System Design</span>
+                        <span class="skills-badge">Data Structures</span>
+                        <span class="skills-badge">Algorithms</span>
+                        <span class="skills-badge">Java</span>
+                        <span class="skills-badge">Python</span>
+                    </div>
+                    <h4>Feedback Score</h4>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Technical Depth</span>
+                            <span>98%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 98%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Constructive Feedback</span>
+                            <span>95%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 95%"></div>
+                        </div>
+                    </div>
+                    <button class="book-btn" data-interviewer="Sarah Johnson">Book Interview</button>
+                </div>
+                
+                <div class="interviewer-card">
+                    <div class="interviewer-header">
+                        <h3 class="interviewer-name">Michael Chen</h3>
+                        <div class="interviewer-rating">
+                            <span class="rating-stars">★★★★★</span>
+                            <span>4.8</span>
+                        </div>
+                    </div>
+                    <p class="interviewer-bio">Senior Engineering Manager with extensive experience at Amazon. Expert in behavioral interviews and leadership principles assessment.</p>
+                    <div class="interviewer-details">
+                        <span class="detail-item">12 years experience</span>
+                        <span class="detail-item">700+ interviews</span>
+                        <span class="detail-item">Engineering Manager</span>
+                    </div>
+                    <h4>Expertise</h4>
+                    <div style="margin-bottom: 10px;">
+                        <span class="skills-badge">Behavioral</span>
+                        <span class="skills-badge">Leadership</span>
+                        <span class="skills-badge">System Design</span>
+                        <span class="skills-badge">Architecture</span>
+                    </div>
+                    <h4>Feedback Score</h4>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Interview Simulation</span>
+                            <span>97%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 97%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Actionable Advice</span>
+                            <span>99%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 99%"></div>
+                        </div>
+                    </div>
+                    <button class="book-btn" data-interviewer="Michael Chen">Book Interview</button>
+                </div>
+                
+                <div class="interviewer-card">
+                    <div class="interviewer-header">
+                        <h3 class="interviewer-name">Aisha Patel</h3>
+                        <div class="interviewer-rating">
+                            <span class="rating-stars">★★★★☆</span>
+                            <span>4.7</span>
+                        </div>
+                    </div>
+                    <p class="interviewer-bio">Former Facebook recruiter with deep knowledge of frontend engineering interviews. Specializes in React and JavaScript challenges.</p>
+                    <div class="interviewer-details">
+                        <span class="detail-item">6 years experience</span>
+                        <span class="detail-item">400+ interviews</span>
+                        <span class="detail-item">Senior Developer</span>
+                    </div>
+                    <h4>Expertise</h4>
+                    <div style="margin-bottom: 10px;">
+                        <span class="skills-badge">Frontend</span>
+                        <span class="skills-badge">JavaScript</span>
+                        <span class="skills-badge">React</span>
+                        <span class="skills-badge">System Design</span>
+                    </div>
+                    <h4>Feedback Score</h4>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Frontend Knowledge</span>
+                            <span>96%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 96%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Detailed Feedback</span>
+                            <span>94%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 94%"></div>
+                        </div>
+                    </div>
+                    <button class="book-btn" data-interviewer="Aisha Patel">Book Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Booking Modal -->
+    <div id="booking-modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Book Mock Interview</h2>
+            <form id="booking-form">
+                <div class="form-group">
+                    <label for="interviewer">Interviewer:</label>
+                    <input type="text" id="interviewer" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="interview-date">Select Date:</label>
+                    <input type="date" id="interview-date" required>
+                </div>
+                <div class="select-time-section" id="time-section">
+                    <label>Select Time Slot:</label>
+                    <div class="time-slots" id="time-slots-container">
+                        <div class="time-slot available" data-time="09:00">9:00 AM</div>
+                        <div class="time-slot available" data-time="10:00">10:00 AM</div>
+                        <div class="time-slot booked" data-time="11:00">11:00 AM</div>
+                        <div class="time-slot available" data-time="12:00">12:00 PM</div>
+                        <div class="time-slot available" data-time="13:00">1:00 PM</div>
+                        <div class="time-slot booked" data-time="14:00">2:00 PM</div>
+                        <div class="time-slot available" data-time="15:00">3:00 PM</div>
+                        <div class="time-slot available" data-time="16:00">4:00 PM</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="interview-type">Interview Type:</label>
+                    <select id="interview-type" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="technical">Technical Interview</option>
+                        <option value="behavioral">Behavioral Interview</option>
+                        <option value="system-design">System Design Interview</option>
+                        <option value="full-loop">Full Interview Loop</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="experience-level">Your Experience Level:</label>
+                    <select id="experience-level" required>
+                        <option value="">-- Select Level --</option>
+                        <option value="junior">Junior (0-2 years)</option>
+                        <option value="mid">Mid-level (3-5 years)</option>
+                        <option value="senior">Senior (6+ years)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Additional Notes:</label>
+                    <textarea id="notes" rows="3" placeholder="Any specific areas you want to focus on?"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Confirm Booking</button>
+            </form>
+            <div class="confirmation-message" id="confirmation-message">
+                <h3>Your interview has been scheduled!</h3>
+                <p>You will receive a confirmation email with the details and preparation instructions.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.8/index.global.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

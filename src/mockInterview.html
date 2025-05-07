@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Interview Booking Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.8/index.global.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/6.1.8/main.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            margin: 0;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .calendar-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            height: 800px; /* Added fixed height */
+        }
+        
+        .interviewers-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .interviewer-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .interviewer-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .interviewer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .interviewer-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .interviewer-rating {
+            display: flex;
+            align-items: center;
+        }
+        
+        .rating-stars {
+            color: #f8ca00;
+            margin-right: 5px;
+        }
+        
+        .interviewer-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .detail-item {
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+        
+        .book-btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .book-btn:hover {
+            background-color: #1a252f;
+        }
+        
+        #booking-modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .submit-btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            width: 100%;
+        }
+        
+        .submit-btn:hover {
+            background-color: #1a252f;
+        }
+        
+        .skills-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: #4caf50;
+            border-radius: 4px;
+        }
+        
+        .interviewer-bio {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .select-time-section {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .time-slot {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .time-slot.available {
+            background-color: #e8f5e9;
+        }
+        
+        .time-slot.booked {
+            background-color: #ffebee;
+            text-decoration: line-through;
+            cursor: not-allowed;
+        }
+        
+        .time-slot.selected {
+            background-color: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+        
+        .fc-event {
+            cursor: pointer;
+        }
+        
+        .confirmation-message {
+            text-align: center;
+            padding: 20px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        #calendar {
+            height: 700px; /* Added fixed height for calendar */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Mock Interview Booking Platform</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="calendar-section">
+                <h2>Available Slots</h2>
+                <div id="calendar"></div>
+            </div>
+            
+            <div class="interviewers-section">
+                <h2>Our Expert Interviewers</h2>
+                <div class="interviewer-card">
+                    <div class="interviewer-header">
+                        <h3 class="interviewer-name">Sarah Johnson</h3>
+                        <div class="interviewer-rating">
+                            <span class="rating-stars">★★★★★</span>
+                            <span>4.9</span>
+                        </div>
+                    </div>
+                    <p class="interviewer-bio">Former tech lead at Google with 10+ years of experience conducting technical interviews. Specializes in system design and algorithm challenges.</p>
+                    <div class="interviewer-details">
+                        <span class="detail-item">8 years experience</span>
+                        <span class="detail-item">500+ interviews</span>
+                        <span class="detail-item">Tech Lead</span>
+                    </div>
+                    <h4>Expertise</h4>
+                    <div style="margin-bottom: 10px;">
+                        <span class="skills-badge">System Design</span>
+                        <span class="skills-badge">Data Structures</span>
+                        <span class="skills-badge">Algorithms</span>
+                        <span class="skills-badge">Java</span>
+                        <span class="skills-badge">Python</span>
+                    </div>
+                    <h4>Feedback Score</h4>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Technical Depth</span>
+                            <span>98%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 98%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Constructive Feedback</span>
+                            <span>95%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 95%"></div>
+                        </div>
+                    </div>
+                    <button class="book-btn" data-interviewer="Sarah Johnson">Book Interview</button>
+                </div>
+                
+                <div class="interviewer-card">
+                    <div class="interviewer-header">
+                        <h3 class="interviewer-name">Michael Chen</h3>
+                        <div class="interviewer-rating">
+                            <span class="rating-stars">★★★★★</span>
+                            <span>4.8</span>
+                        </div>
+                    </div>
+                    <p class="interviewer-bio">Senior Engineering Manager with extensive experience at Amazon. Expert in behavioral interviews and leadership principles assessment.</p>
+                    <div class="interviewer-details">
+                        <span class="detail-item">12 years experience</span>
+                        <span class="detail-item">700+ interviews</span>
+                        <span class="detail-item">Engineering Manager</span>
+                    </div>
+                    <h4>Expertise</h4>
+                    <div style="margin-bottom: 10px;">
+                        <span class="skills-badge">Behavioral</span>
+                        <span class="skills-badge">Leadership</span>
+                        <span class="skills-badge">System Design</span>
+                        <span class="skills-badge">Architecture</span>
+                    </div>
+                    <h4>Feedback Score</h4>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Interview Simulation</span>
+                            <span>97%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 97%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Actionable Advice</span>
+                            <span>99%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 99%"></div>
+                        </div>
+                    </div>
+                    <button class="book-btn" data-interviewer="Michael Chen">Book Interview</button>
+                </div>
+                
+                <div class="interviewer-card">
+                    <div class="interviewer-header">
+                        <h3 class="interviewer-name">Aisha Patel</h3>
+                        <div class="interviewer-rating">
+                            <span class="rating-stars">★★★★☆</span>
+                            <span>4.7</span>
+                        </div>
+                    </div>
+                    <p class="interviewer-bio">Former Facebook recruiter with deep knowledge of frontend engineering interviews. Specializes in React and JavaScript challenges.</p>
+                    <div class="interviewer-details">
+                        <span class="detail-item">6 years experience</span>
+                        <span class="detail-item">400+ interviews</span>
+                        <span class="detail-item">Senior Developer</span>
+                    </div>
+                    <h4>Expertise</h4>
+                    <div style="margin-bottom: 10px;">
+                        <span class="skills-badge">Frontend</span>
+                        <span class="skills-badge">JavaScript</span>
+                        <span class="skills-badge">React</span>
+                        <span class="skills-badge">System Design</span>
+                    </div>
+                    <h4>Feedback Score</h4>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Frontend Knowledge</span>
+                            <span>96%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 96%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Detailed Feedback</span>
+                            <span>94%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 94%"></div>
+                        </div>
+                    </div>
+                    <button class="book-btn" data-interviewer="Aisha Patel">Book Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Booking Modal -->
+    <div id="booking-modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Book Mock Interview</h2>
+            <form id="booking-form">
+                <div class="form-group">
+                    <label for="interviewer">Interviewer:</label>
+                    <input type="text" id="interviewer" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="interview-date">Select Date:</label>
+                    <input type="date" id="interview-date" required>
+                </div>
+                <div class="select-time-section" id="time-section">
+                    <label>Select Time Slot:</label>
+                    <div class="time-slots" id="time-slots-container">
+                        <div class="time-slot available" data-time="09:00">9:00 AM</div>
+                        <div class="time-slot available" data-time="10:00">10:00 AM</div>
+                        <div class="time-slot booked" data-time="11:00">11:00 AM</div>
+                        <div class="time-slot available" data-time="12:00">12:00 PM</div>
+                        <div class="time-slot available" data-time="13:00">1:00 PM</div>
+                        <div class="time-slot booked" data-time="14:00">2:00 PM</div>
+                        <div class="time-slot available" data-time="15:00">3:00 PM</div>
+                        <div class="time-slot available" data-time="16:00">4:00 PM</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="interview-type">Interview Type:</label>
+                    <select id="interview-type" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="technical">Technical Interview</option>
+                        <option value="behavioral">Behavioral Interview</option>
+                        <option value="system-design">System Design Interview</option>
+                        <option value="full-loop">Full Interview Loop</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="experience-level">Your Experience Level:</label>
+                    <select id="experience-level" required>
+                        <option value="">-- Select Level --</option>
+                        <option value="junior">Junior (0-2 years)</option>
+                        <option value="mid">Mid-level (3-5 years)</option>
+                        <option value="senior">Senior (6+ years)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Additional Notes:</label>
+                    <textarea id="notes" rows="3" placeholder="Any specific areas you want to focus on?"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Confirm Booking</button>
+            </form>
+            <div class="confirmation-message" id="confirmation-message">
+                <h3>Your interview has been scheduled!</h3>
+                <p>You will receive a confirmation email with the details and preparation instructions.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize FullCalendar
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                nowIndicator: true,
+                editable: false,
+                selectable: true,
+                initialDate: new Date(), // Set to current date
+                events: [
+                    {
+                        title: 'Booked - Sarah Johnson',
+                        start: new Date(new Date().setHours(11, 0, 0)),
+                        end: new Date(new Date().setHours(12, 0, 0)),
+                        color: '#e0a800'
+                    },
+                    {
+                        title: 'Booked - Michael Chen',
+                        start: new Date(new Date().setDate(new Date().getDate() + 1)),
+                        end: new Date(new Date().setDate(new Date().getDate() + 1)),
+                        color: '#e0a800'
+                    },
+                    {
+                        title: 'Booked - Aisha Patel',
+                        start: new Date(new Date().setDate(new Date().getDate() + 2)),
+                        end: new Date(new Date().setDate(new Date().getDate() + 2)),
+                        color: '#e0a800'
+                    },
+                    {
+                        title: 'Booked - Sarah Johnson',
+                        start: new Date(new Date().setDate(new Date().getDate() + 3)),
+                        end: new Date(new Date().setDate(new Date().getDate() + 3)),
+                        color: '#e0a800'
+                    }
+                ],
+                eventClick: function(info) {
+                    alert('This slot is already booked: ' + info.event.title);
+                    info.jsEvent.preventDefault();
+                },
+                dateClick: function(info) {
+                    document.getElementById('interview-date').value = info.dateStr;
+                    // Show time slots when date is selected
+                    document.getElementById('time-section').style.display = 'block';
+                },
+                eventDidMount: function(info) {
+                    // Style events
+                    info.el.style.border = 'none';
+                    info.el.style.borderRadius = '4px';
+                    info.el.style.padding = '2px 5px';
+                }
+            });
+            calendar.render();
+            
+            // Modal functionality
+            var modal = document.getElementById('booking-modal');
+            var closeBtn = document.getElementsByClassName('close')[0];
+            var bookBtns = document.querySelectorAll('.book-btn');
+            var bookingForm = document.getElementById('booking-form');
+            var timeSection = document.getElementById('time-section');
+            var interviewDateInput = document.getElementById('interview-date');
+            var confirmationMessage = document.getElementById('confirmation-message');
+            var timeSlots = document.querySelectorAll('.time-slot');
+            
+            bookBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    modal.style.display = 'block';
+                    document.getElementById('interviewer').value = this.getAttribute('data-interviewer');
+                    bookingForm.style.display = 'block';
+                    confirmationMessage.style.display = 'none';
+                    // Reset form
+                    bookingForm.reset();
+                    timeSection.style.display = 'none';
+                    // Clear any selected time slots
+                    timeSlots.forEach(function(slot) {
+                        slot.classList.remove('selected');
+                    });
+                });
+            });
+            
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+            
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+            
+            interviewDateInput.addEventListener('change', function() {
+                timeSection.style.display = 'block';
+            });
+            
+            timeSlots.forEach(function(slot) {
+                if (!slot.classList.contains('booked')) {
+                    slot.addEventListener('click', function() {
+                        timeSlots.forEach(function(s) {
+                            s.classList.remove('selected');
+                        });
+                        slot.classList.add('selected');
+                    });
+                }
+            });
+            
+            bookingForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Simulate booking process
+                bookingForm.style.display = 'none';
+                confirmationMessage.style.display = 'block';
+                
+                // Add the new booking to the calendar
+                var selectedDate = document.getElementById('interview-date').value;
+                var selectedInterviewer = document.getElementById('interviewer').value;
+                var selectedTimeSlot = document.querySelector('.time-slot.selected');
+                
+                if (selectedTimeSlot) {
+                    var time = selectedTimeSlot.getAttribute('data-time');
+                    var startTime = selectedDate + 'T' + time + ':00';
+                    var endHour = parseInt(time.split(':')[0]) + 1;
+                    var endTime = selectedDate + 'T' + (endHour < 10 ? '0' + endHour : endHour) + ':00:00';
+                    
+                    calendar.addEvent({
+                        title: 'Booked - ' + selectedInterviewer,
+                        start: startTime,
+                        end: endTime,
+                        color: '#e0a800'
+                    });
+                }
+                
+                // Reset form after 3 seconds and close modal
+                setTimeout(function() {
+                    bookingForm.reset();
+                    timeSection.style.display = 'none';
+                    timeSlots.forEach(function(s) {
+                        s.classList.remove('selected');
+                    });
+                    modal.style.display = 'none';
+                }, 3000);
+            });
+        });
+    </script>
+</body>
+</html>
