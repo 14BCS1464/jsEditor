@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JavaScript Interview Questions</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-    
+
         :root {
             --primary-color: #121212;
             --secondary-color: #1e1e1e;
@@ -16,13 +17,13 @@
             --card-bg: #2d2d2d;
             --highlight: #03dac6;
         }
-    
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-    
+
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #121212, #000000);
@@ -35,7 +36,7 @@
             align-items: center;
             justify-content: center;
         }
-    
+
         .container {
             background: rgba(45, 45, 45, 0.7);
             backdrop-filter: blur(10px);
@@ -47,13 +48,13 @@
             margin: 20px 0;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-    
+
         .header {
             text-align: center;
             margin-bottom: 20px;
             position: relative;
         }
-    
+
         .header::after {
             content: '';
             position: absolute;
@@ -65,7 +66,7 @@
             background: var(--accent-color);
             border-radius: 10px;
         }
-    
+
         h2 {
             font-size: 2rem;
             margin-bottom: 10px;
@@ -75,18 +76,18 @@
             color: transparent;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
-    
+
         h3 {
             font-size: 1.4rem;
             color: var(--text-primary);
             margin: 20px 0 10px;
             text-align: center;
         }
-    
+
         .question-container {
             margin-bottom: 15px;
         }
-    
+
         .question {
             background: var(--card-bg);
             color: var(--text-primary);
@@ -104,13 +105,13 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-    
+
         .question:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-    
+
         .question::before {
             content: '';
             position: absolute;
@@ -121,18 +122,18 @@
             background: var(--accent-color);
             border-radius: 10px 0 0 10px;
         }
-    
+
         .question::after {
             content: '↓';
             font-size: 1rem;
             transition: transform 0.3s ease;
             color: var(--accent-color);
         }
-    
+
         .question.active::after {
             transform: rotate(180deg);
         }
-    
+
         .answer {
             display: none;
             margin-top: 10px;
@@ -146,7 +147,7 @@
             transform-origin: top;
             animation: slideDown 0.3s ease forwards;
         }
-    
+
         .answer pre {
             background: #1a1a1a;
             padding: 10px;
@@ -156,26 +157,27 @@
             margin: 10px 0;
             position: relative;
         }
-    
+
         .answer strong {
             color: var(--highlight);
         }
-    
+
         .answer ul {
             padding-left: 20px;
         }
-    
+
         @keyframes slideDown {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-    
+
         .btn {
             display: block;
             width: 90%;
@@ -194,25 +196,25 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);
         }
-    
+
         .btn:hover {
             transform: translateY(-3px) scale(1.03);
             box-shadow: 0 8px 25px rgba(187, 134, 252, 0.4);
         }
-    
+
         .btn:active {
             transform: translateY(1px);
         }
-    
+
         .download-btn {
             background: var(--highlight);
             box-shadow: 0 4px 15px rgba(3, 218, 198, 0.3);
         }
-    
+
         .download-btn:hover {
             box-shadow: 0 8px 25px rgba(3, 218, 198, 0.4);
         }
-    
+
         .badge {
             position: absolute;
             top: -15px;
@@ -224,28 +226,29 @@
             font-size: 0.8rem;
             font-weight: 600;
             transform: rotate(15deg);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
-    
+
         #premiumQuestions {
             display: none;
         }
-    
+
         .unlocked {
             animation: fadeIn 0.8s ease-in-out;
         }
-    
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-    
+
         .question-number {
             display: inline-flex;
             justify-content: center;
@@ -258,14 +261,14 @@
             margin-right: 10px;
             font-size: 0.85rem;
         }
-    
+
         .separator {
             height: 3px;
             width: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
             margin: 20px 0;
         }
-    
+
         .premium-label {
             display: inline-block;
             background: var(--highlight);
@@ -279,46 +282,48 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-    
+
         /* Mobile Responsiveness */
         @media (max-width: 480px) {
             h2 {
                 font-size: 1.8rem;
             }
-    
+
             h3 {
                 font-size: 1.2rem;
             }
-    
+
             .question {
                 padding: 12px;
                 font-size: 0.9rem;
             }
-    
+
             .answer {
                 padding: 10px;
                 font-size: 0.85rem;
             }
-    
+
             .btn {
                 font-size: 0.85rem;
                 padding: 10px 15px;
             }
-    
+
             .question-number {
                 width: 20px;
                 height: 20px;
                 font-size: 0.75rem;
             }
         }
+
         .topic {
             font-size: 15px;
-    
+
             color: #21dd24;
             cursor: pointer;
             transition: 0.3s;
             text-decoration: none;
         }
+
         .topic:hover {
             color: #6fab70;
         }
@@ -328,7 +333,7 @@
             position: relative;
             margin: 10px 0;
         }
-        
+
         .editable-code {
             width: 100%;
             min-height: 160px;
@@ -341,9 +346,9 @@
             resize: vertical;
             white-space: pre;
             overflow-x: auto;
-          font-size: large;
+            font-size: large;
         }
-        
+
         .run-code-btn {
             position: absolute;
             top: 5px;
@@ -358,11 +363,11 @@
             transition: all 0.2s;
             z-index: 10;
         }
-        
+
         .run-code-btn:hover {
             background: #00c9b7;
         }
-        
+
         .code-output {
             background: #1a1a1a;
             padding: 10px;
@@ -371,13 +376,13 @@
             border-left: 3px solid var(--highlight);
             display: none;
         }
-        
+
         .code-output-title {
             font-size: 0.8rem;
             color: var(--highlight);
             margin-bottom: 5px;
         }
-        
+
         .code-output-content {
             font-family: monospace;
             white-space: pre-wrap;
@@ -387,31 +392,36 @@
 
     <!-- Razorpay Checkout Script -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
+
 </head>
+
 <body>
 
     <div class="container">
         <div class="header">
             <h2>JavaScript Interview Questions</h2>
             <p>Master these questions to ace your next interview</p>
-            
+
         </div>
         <!-- <a href="importantQuestion.html" class="topic">Click here to read an important topic</a> -->
         <!-- Free Questions -->
         <div class="question-container">
             <div class="question">
-                <span><span class="question-number">1</span> What is the difference between `let`, `const`, and `var`?</span>
+                <span><span class="question-number">1</span> What is the difference between `let`, `const`, and
+                    `var`?</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> `var` is function-scoped and can be redeclared and updated, while `let` and `const` are block-scoped. Variables declared with `let` can be updated but not redeclared, and `const` cannot be updated or redeclared after initialization.
+                <strong>Answer:</strong> `var` is function-scoped and can be redeclared and updated, while `let` and
+                `const` are block-scoped. Variables declared with `let` can be updated but not redeclared, and `const`
+                cannot be updated or redeclared after initialization.
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">2</span> Explain closures in JavaScript with an example.</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> A closure is a function that has access to its outer function's scope, even after the outer function has returned. For example:
+                <strong>Answer:</strong> A closure is a function that has access to its outer function's scope, even
+                after the outer function has returned. For example:
                 <div class="code-container">
                     <textarea class="editable-code">function createCounter() {
     let count = 0;
@@ -427,21 +437,27 @@ console.log(counter()); // 2</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-2"></div>
                 </div>
-                Here, the inner function maintains access to the `count` variable even after `createCounter` has finished execution.
+                Here, the inner function maintains access to the `count` variable even after `createCounter` has
+                finished execution.
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">3</span> What is event delegation in JavaScript?</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Event delegation is a technique where you attach an event listener to a parent element instead of individual child elements. It leverages event bubbling to handle events at a higher level, which is more efficient and works for dynamically added elements.
+                <strong>Answer:</strong> Event delegation is a technique where you attach an event listener to a parent
+                element instead of individual child elements. It leverages event bubbling to handle events at a higher
+                level, which is more efficient and works for dynamically added elements.
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">4</span> What are Promises and async/await?</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Promises are objects representing the eventual completion (or failure) of an asynchronous operation and its resulting value. `async/await` is syntactic sugar built on top of Promises, making asynchronous code easier to write and understand by allowing you to write asynchronous code that looks synchronous.
+                <strong>Answer:</strong> Promises are objects representing the eventual completion (or failure) of an
+                asynchronous operation and its resulting value. `async/await` is syntactic sugar built on top of
+                Promises, making asynchronous code easier to write and understand by allowing you to write asynchronous
+                code that looks synchronous.
                 <div class="code-container">
                     <textarea class="editable-code">async function fetchData() {
     try {
@@ -458,12 +474,14 @@ fetchData();</textarea>
                     <div class="code-output" id="output-4"></div>
                 </div>
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">5</span> Explain the difference between `==` and `===`.</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> The `==` (loose equality) operator checks for value equality after converting both values to a common type, while the `===` (strict equality) operator checks for both value and type equality without type conversion.
+                <strong>Answer:</strong> The `==` (loose equality) operator checks for value equality after converting
+                both values to a common type, while the `===` (strict equality) operator checks for both value and type
+                equality without type conversion.
                 <div class="code-container">
                     <textarea class="editable-code">console.log(5 == '5');    // true
 console.log(5 === '5');   // false
@@ -473,12 +491,15 @@ console.log(0 === false); // false</textarea>
                     <div class="code-output" id="output-5"></div>
                 </div>
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">6</span> What is the difference between `null` and `undefined`?</span>
+                <span><span class="question-number">6</span> What is the difference between `null` and
+                    `undefined`?</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> `undefined` means a variable has been declared but not assigned a value, while `null` is an intentional assignment to represent "no value" or "empty". `undefined` is a type itself, whereas `null` is an object.
+                <strong>Answer:</strong> `undefined` means a variable has been declared but not assigned a value, while
+                `null` is an intentional assignment to represent "no value" or "empty". `undefined` is a type itself,
+                whereas `null` is an object.
                 <div class="code-container">
                     <textarea class="editable-code">let a;
 console.log(a);     // undefined
@@ -491,19 +512,22 @@ console.log(typeof b); // "object"</textarea>
                     <div class="code-output" id="output-6"></div>
                 </div>
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">7</span> What are JavaScript data types?</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> JavaScript has 8 data types: String, Number, Boolean, Null, Undefined, Object, Symbol (ES6), and BigInt (ES2020). The first 6 are primitive types except for Object, which is a reference type.
+                <strong>Answer:</strong> JavaScript has 8 data types: String, Number, Boolean, Null, Undefined, Object,
+                Symbol (ES6), and BigInt (ES2020). The first 6 are primitive types except for Object, which is a
+                reference type.
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">8</span> Explain `this` keyword in JavaScript.</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> The `this` keyword refers to the object it belongs to. Its value is determined by how a function is called:
+                <strong>Answer:</strong> The `this` keyword refers to the object it belongs to. Its value is determined
+                by how a function is called:
                 <ul>
                     <li>In a method, `this` refers to the owner object</li>
                     <li>In a function, `this` refers to the global object (or undefined in strict mode)</li>
@@ -523,12 +547,16 @@ obj.greet(); // "Hello, John!"</textarea>
                     <div class="code-output" id="output-8"></div>
                 </div>
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">9</span> What is the difference between `map()` and `forEach()`?</span>
+                <span><span class="question-number">9</span> What is the difference between `map()` and
+                    `forEach()`?</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Both iterate over arrays, but `map()` returns a new array with the results of calling a function on every element, while `forEach()` simply executes a function for each element without returning anything. `map()` is immutable and better for transforming data, while `forEach()` is used for side effects.
+                <strong>Answer:</strong> Both iterate over arrays, but `map()` returns a new array with the results of
+                calling a function on every element, while `forEach()` simply executes a function for each element
+                without returning anything. `map()` is immutable and better for transforming data, while `forEach()` is
+                used for side effects.
                 <div class="code-container">
                     <textarea class="editable-code">const numbers = [1, 2, 3];
 
@@ -544,12 +572,15 @@ console.log(sum); // 6</textarea>
                     <div class="code-output" id="output-9"></div>
                 </div>
             </div>
-            
+
             <div class="question">
                 <span><span class="question-number">10</span> Explain Hoisting in JavaScript.</span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Hoisting is JavaScript's default behavior of moving declarations to the top of the current scope. Function declarations are hoisted completely, while variable declarations (not initializations) are hoisted. This allows you to use functions and variables before they're declared in the code.
+                <strong>Answer:</strong> Hoisting is JavaScript's default behavior of moving declarations to the top of
+                the current scope. Function declarations are hoisted completely, while variable declarations (not
+                initializations) are hoisted. This allows you to use functions and variables before they're declared in
+                the code.
                 <div class="code-container">
                     <textarea class="editable-code">// Function declaration is hoisted
 sayHello(); // "Hello!"
@@ -566,23 +597,28 @@ var x = 5;</textarea>
                 </div>
             </div>
         </div>
-        
+
         <div class="separator"></div>
-        
+
         <h3>Unlock Premium Questions & Answers</h3>
         <div class="badge">50% OFF</div>
         <button class="btn" id="payButton">Unlock All</button>
 
         <div id="premiumQuestions">
             <div class="question">
-                <span><span class="question-number">1</span> What is the difference between call, apply, and bind? <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">1</span> What is the difference between call, apply, and bind? <span
+                        class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> All three methods are used to control what `this` refers to:
                 <ul>
-                    <li><strong>call:</strong> Invokes the function immediately with a specified `this` value and arguments provided individually: `func.call(thisArg, arg1, arg2, ...)`</li>
-                    <li><strong>apply:</strong> Invokes the function immediately with a specified `this` value and arguments as an array: `func.apply(thisArg, [arg1, arg2, ...])`</li>
-                    <li><strong>bind:</strong> Returns a new function with a specified `this` value and initial arguments, which can be invoked later: `const boundFunc = func.bind(thisArg, arg1, arg2, ...)`</li>
+                    <li><strong>call:</strong> Invokes the function immediately with a specified `this` value and
+                        arguments provided individually: `func.call(thisArg, arg1, arg2, ...)`</li>
+                    <li><strong>apply:</strong> Invokes the function immediately with a specified `this` value and
+                        arguments as an array: `func.apply(thisArg, [arg1, arg2, ...])`</li>
+                    <li><strong>bind:</strong> Returns a new function with a specified `this` value and initial
+                        arguments, which can be invoked later: `const boundFunc = func.bind(thisArg, arg1, arg2, ...)`
+                    </li>
                 </ul>
                 <div class="code-container">
                     <textarea class="editable-code">function greet(greeting, punctuation) {
@@ -604,12 +640,15 @@ boundGreet('!!!'); // "Hey, John!!!"</textarea>
                     <div class="code-output" id="output-p1"></div>
                 </div>
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">2</span> Explain the concept of memoization in JavaScript. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">2</span> Explain the concept of memoization in JavaScript. <span
+                        class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Memoization is an optimization technique that speeds up function calls by storing the results of expensive function calls and returning the cached result when the same inputs occur again. Example:
+                <strong>Answer:</strong> Memoization is an optimization technique that speeds up function calls by
+                storing the results of expensive function calls and returning the cached result when the same inputs
+                occur again. Example:
                 <div class="code-container">
                     <textarea class="editable-code">function memoize(fn) {
     const cache = {};
@@ -638,12 +677,14 @@ console.log(fastFactorial(5)); // Returns cached result</textarea>
                     <div class="code-output" id="output-p2"></div>
                 </div>
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">3</span> Explain JavaScript currying with an example. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">3</span> Explain JavaScript currying with an example. <span
+                        class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Currying is a technique where a function with multiple arguments is transformed into a sequence of functions each with a single argument. Example:
+                <strong>Answer:</strong> Currying is a technique where a function with multiple arguments is transformed
+                into a sequence of functions each with a single argument. Example:
                 <div class="code-container">
                     <textarea class="editable-code">// Regular function
 function add(a, b, c) {
@@ -670,14 +711,19 @@ console.log(addFiveAndTwo(3)); // 10</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p3"></div>
                 </div>
-                Currying allows for partial application of functions and creating more specialized functions from general ones.
+                Currying allows for partial application of functions and creating more specialized functions from
+                general ones.
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">4</span> What are JavaScript generators and iterators? <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">4</span> What are JavaScript generators and iterators? <span
+                        class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Iterators are objects with a `next()` method that returns values in a sequence. Generators are special functions (marked with `function*`) that can pause and resume execution, yielding multiple values. They simplify the creation of iterators by automatically implementing the iterator protocol. Example:
+                <strong>Answer:</strong> Iterators are objects with a `next()` method that returns values in a sequence.
+                Generators are special functions (marked with `function*`) that can pause and resume execution, yielding
+                multiple values. They simplify the creation of iterators by automatically implementing the iterator
+                protocol. Example:
                 <div class="code-container">
                     <textarea class="editable-code">function* countUp(max) {
     let count = 0;
@@ -710,17 +756,21 @@ console.log(fib.next().value); // 3</textarea>
                     <div class="code-output" id="output-p4"></div>
                 </div>
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">5</span> What is the JavaScript Event Loop? <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">5</span> What is the JavaScript Event Loop? <span
+                        class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> The Event Loop is a fundamental part of JavaScript's concurrency model. It's responsible for executing code, collecting and processing events, and executing queued sub-tasks. It works by:
+                <strong>Answer:</strong> The Event Loop is a fundamental part of JavaScript's concurrency model. It's
+                responsible for executing code, collecting and processing events, and executing queued sub-tasks. It
+                works by:
                 <ul>
                     <li>Executing synchronous code in the call stack</li>
                     <li>If the call stack is empty, checking the message queue for callbacks to execute</li>
                     <li>If a callback is present, pushing it onto the call stack to be executed</li>
-                    <li>This process repeats, allowing JavaScript to handle asynchronous operations without blocking</li>
+                    <li>This process repeats, allowing JavaScript to handle asynchronous operations without blocking
+                    </li>
                 </ul>
                 This model allows JavaScript, which is single-threaded, to handle multiple operations concurrently.
                 <div class="code-container">
@@ -742,18 +792,24 @@ console.log('End');
                     <div class="code-output" id="output-p5"></div>
                 </div>
             </div>
-            
+
             <div class="question">
-                <span><span class="question-number">6</span> Explain browser storage options (localStorage, sessionStorage, cookies) and their differences. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">6</span> Explain browser storage options (localStorage,
+                    sessionStorage, cookies) and their differences. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Browser storage options:
                 <ul>
-                    <li><strong>localStorage:</strong> Stores data with no expiration date, persists even after browser is closed, limited to about 5MB, same-origin policy</li>
-                    <li><strong>sessionStorage:</strong> Similar to localStorage but data is cleared when the page session ends (when browser tab is closed), limited to about 5MB</li>
-                    <li><strong>Cookies:</strong> Small text files stored on the client's computer, limited to about 4KB, can set expiration time, sent with every HTTP request to the same domain, can be made secure/HTTP-only</li>
+                    <li><strong>localStorage:</strong> Stores data with no expiration date, persists even after browser
+                        is closed, limited to about 5MB, same-origin policy</li>
+                    <li><strong>sessionStorage:</strong> Similar to localStorage but data is cleared when the page
+                        session ends (when browser tab is closed), limited to about 5MB</li>
+                    <li><strong>Cookies:</strong> Small text files stored on the client's computer, limited to about
+                        4KB, can set expiration time, sent with every HTTP request to the same domain, can be made
+                        secure/HTTP-only</li>
                 </ul>
-                Choose based on persistence needs, storage size requirements, and whether data needs to be sent to the server.
+                Choose based on persistence needs, storage size requirements, and whether data needs to be sent to the
+                server.
                 <div class="code-container">
                     <textarea class="editable-code">// localStorage example
 localStorage.setItem('username', 'john_doe');
@@ -772,12 +828,12 @@ console.log(document.cookie);</textarea>
                 </div>
             </div>
 
-            <!-- <button class="btn download-btn" id="downloadButton">Download Complete PDF Guide just in ₹100</button> -->
+            <button class="btn download-btn" id="downloadButton">Download Complete PDF Guide just in ₹100</button>
         </div>
     </div>
 
     <script>
-        document.getElementById("payButton").addEventListener("click", function() {
+        document.getElementById("payButton").addEventListener("click", function () {
             // Simulate Payment Success (Replace with real payment gateway)
             document.getElementById("premiumQuestions").style.display = "block";
             document.getElementById("premiumQuestions").classList.add("unlocked");
@@ -786,7 +842,7 @@ console.log(document.cookie);</textarea>
         });
 
         document.querySelectorAll(".question").forEach(item => {
-            item.addEventListener("click", function() {
+            item.addEventListener("click", function () {
                 this.classList.toggle("active");
                 let answer = this.nextElementSibling;
                 if (answer.classList.contains("answer")) {
@@ -797,28 +853,28 @@ console.log(document.cookie);</textarea>
 
         // Add run code functionality for editable code sections
         document.querySelectorAll('.run-code-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
+            button.addEventListener('click', function (e) {
                 e.stopPropagation();
                 const codeContainer = this.parentElement;
                 const textarea = codeContainer.querySelector('.editable-code');
                 const code = textarea.value;
                 const outputId = codeContainer.querySelector('.code-output').id;
-                
+
                 try {
                     // Create a function to capture console.log output
                     const logs = [];
                     const originalConsoleLog = console.log;
-                    console.log = function() {
+                    console.log = function () {
                         logs.push(Array.from(arguments).join(' '));
                         originalConsoleLog.apply(console, arguments);
                     };
-                    
+
                     // Execute the code
                     const result = new Function(code)();
-                    
+
                     // Restore original console.log
                     console.log = originalConsoleLog;
-                    
+
                     // Display the output
                     const outputElement = document.getElementById(outputId);
                     outputElement.innerHTML = `
@@ -826,7 +882,7 @@ console.log(document.cookie);</textarea>
                         <div class="code-output-content">${logs.join('\n')}</div>
                     `;
                     outputElement.style.display = 'block';
-                    
+
                     // If no console.log was called but there's a return value
                     if (logs.length === 0 && result !== undefined) {
                         outputElement.innerHTML = `
@@ -846,7 +902,7 @@ console.log(document.cookie);</textarea>
         });
 
         // Razorpay Integration for PDF Purchase
-        document.getElementById("downloadButton") && document.getElementById("downloadButton").addEventListener("click", function() {
+        document.getElementById("downloadButton") && document.getElementById("downloadButton").addEventListener("click", function () {
             const options = {
                 key: "YOUR_KEY_ID", // Replace with your Razorpay Key ID
                 amount: 10000, // Amount in paise (10000 paise = ₹100)
@@ -854,7 +910,7 @@ console.log(document.cookie);</textarea>
                 name: "JavaScript Interview Questions",
                 description: "Complete PDF Guide",
                 order_id: "YOUR_ORDER_ID", // Replace with your Order ID (generated from backend)
-                handler: function(response) {
+                handler: function (response) {
                     alert("Payment successful! Payment ID: " + response.razorpay_payment_id);
                     // Redirect or provide download link after successful payment
                     window.location.href = "YOUR_PDF_DOWNLOAD_LINK";
@@ -875,7 +931,7 @@ console.log(document.cookie);</textarea>
             const rzp = new Razorpay(options);
             rzp.open();
 
-            rzp.on("payment.failed", function(response) {
+            rzp.on("payment.failed", function (response) {
                 alert("Payment failed! Please try again.");
                 console.error(response.error.code);
                 console.error(response.error.description);
@@ -888,4 +944,5 @@ console.log(document.cookie);</textarea>
         });
     </script>
 </body>
+
 </html>
