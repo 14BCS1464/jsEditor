@@ -32,6 +32,9 @@
     --transition-quick: all 0.2s ease;
     --transition-medium: all 0.3s ease;
     --font-main: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --js-color: #ff5733; /* Orange */
+  --react-color: #33ff57; /* Green */
+  --react-native-color: #3357ff; /* Blue */
   }
   
   /* Base styles */
@@ -101,7 +104,7 @@
     background: var(--bg-dark);
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-soft);
-    padding: 15px;
+    padding: 25px;
     transition: var(--transition-medium);
     border: 1px solid var(--bg-light);
   }
@@ -627,4 +630,14 @@
   
   .theme-toggle:hover {
     transform: rotate(30deg);
+  }
+  .heading{
+    
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    background: linear-gradient(90deg, var(--js-color), var(--react-color), var(--react-native-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }

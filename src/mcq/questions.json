@@ -1,0 +1,1788 @@
+[
+  {
+    "id": 1,
+    "question": "What is the value of typeof null?",
+    "options": [
+      "'null'",
+      "'object'",
+      "'undefined'",
+      "'number'"
+    ],
+    "answer": 1,
+    "explain": "Due to a historical bug, typeof null === 'object'."
+  },
+  {
+    "id": 2,
+    "question": "What gets logged?",
+    "code": "let a = [1,2,3];\nconst b = a;\nb.push(4);\nconsole.log(a.length);",
+    "options": [
+      "3",
+      "4",
+      "Error",
+      "undefined"
+    ],
+    "answer": 1,
+    "explain": "Arrays are reference types; a and b point to the same array."
+  },
+  {
+    "id": 3,
+    "question": "Which are truthy? (Select ALL that apply)",
+    "options": [
+      "[]",
+      "''",
+      "0",
+      "'0'"
+    ],
+    "answer": [
+      0,
+      3
+    ],
+    "explain": "Empty array is truthy; '0' is a non-empty string and truthy."
+  },
+  {
+    "id": 4,
+    "question": "What is the value of typeof NaN?",
+    "options": [
+      "'number'",
+      "'NaN'",
+      "'undefined'",
+      "'object'"
+    ],
+    "answer": 0,
+    "explain": "NaN is a special numeric value; typeof NaN === 'number'."
+  },
+  {
+    "id": 6,
+    "question": "Which are falsy? (Select ALL that apply)",
+    "options": [
+      "null",
+      "{}",
+      "undefined",
+      "[]"
+    ],
+    "answer": [
+      0,
+      2
+    ],
+    "explain": "null and undefined are falsy; {} and [] are truthy."
+  },
+  {
+    "id": 7,
+    "question": "What is the output?",
+    "code": "console.log([] == false);",
+    "options": [
+      "true",
+      "false",
+      "Error",
+      "undefined"
+    ],
+    "answer": 0,
+    "explain": "[] coerces to '' \u2192 0, so 0 == false \u2192 true."
+  },
+  {
+    "id": 8,
+    "question": "What does typeof function(){} return?",
+    "options": [
+      "'function'",
+      "'object'",
+      "'undefined'",
+      "'callable'"
+    ],
+    "answer": 0,
+    "explain": "Functions have a special typeof result: 'function'."
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].map(num => num * 2).reduce((a, b) => a + b, 0))`?",
+    "options": [
+      "6",
+      "12",
+      "0",
+      "undefined"
+    ],
+    "answer": 1,
+    "explain": "The `map` method doubles each element in `[1, 2, 3]`, resulting in `[2, 4, 6]`. The `reduce` method then sums these values with an initial value of 0, yielding `2 + 4 + 6 = 12`.",
+    "order": 1
+  },
+  {
+    "question": "What happens when you use `await` outside an async function in a JavaScript module?",
+    "options": [
+      "It works fine",
+      "SyntaxError",
+      "ReferenceError",
+      "It returns a Promise"
+    ],
+    "answer": 1,
+    "explain": "Top-level `await` is only allowed in ES modules. Outside an async function in a non-module script, using `await` causes a `SyntaxError`.",
+    "order": 2
+  },
+  {
+    "question": "What is the output of `console.log(typeof Symbol('id'))`?",
+    "options": [
+      "symbol",
+      "string",
+      "object",
+      "function"
+    ],
+    "answer": 0,
+    "explain": "The `Symbol` constructor creates a unique symbol value, and `typeof Symbol('id')` returns `'symbol'`.",
+    "order": 3
+  },
+  {
+    "question": "What does the `WeakMap` object allow as keys?",
+    "options": [
+      "Strings only",
+      "Objects only",
+      "Any primitive",
+      "Any value"
+    ],
+    "answer": 1,
+    "explain": "`WeakMap` only allows objects (including functions) as keys. Primitives like strings or numbers are not allowed.",
+    "order": 4
+  },
+  {
+    "question": "What is the output of `console.log(0.1 + 0.2 === 0.3)`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "NaN"
+    ],
+    "answer": 1,
+    "explain": "Due to floating-point precision issues in JavaScript, `0.1 + 0.2` results in approximately `0.30000000000000004`, so `0.1 + 0.2 === 0.3` is `false`.",
+    "order": 5
+  },
+  {
+    "question": "What is the purpose of the `Object.seal` method?",
+    "options": [
+      "Prevents adding or deleting properties",
+      "Prevents modifying existing properties",
+      "Freezes the object completely",
+      "Marks the object as immutable"
+    ],
+    "answer": 0,
+    "explain": "`Object.seal` prevents adding or deleting properties but allows modifying existing properties. Unlike `Object.freeze`, it does not make the object fully immutable.",
+    "order": 6
+  },
+  {
+    "question": "What will `async () => { throw new Error('fail'); }()` do when executed?",
+    "options": [
+      "Returns a resolved Promise",
+      "Returns a rejected Promise",
+      "Throws a synchronous error",
+      "Returns undefined"
+    ],
+    "answer": 1,
+    "explain": "An async function that throws an error returns a rejected Promise with the error as the reason.",
+    "order": 7
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].at(-1))`?",
+    "options": [
+      "1",
+      "3",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "The `at` method supports negative indices. `-1` refers to the last element, so `[1, 2, 3].at(-1)` returns `3`.",
+    "order": 8
+  },
+  {
+    "question": "What does the `@@iterator` symbol represent in JavaScript?",
+    "options": [
+      "A method for object cloning",
+      "A method for iteration",
+      "A method for property access",
+      "A method for error handling"
+    ],
+    "answer": 1,
+    "explain": "The `Symbol.iterator` (or `@@iterator`) is a well-known symbol that defines a method to make an object iterable, used by `for...of` loops and spread syntax.",
+    "order": 9
+  },
+  {
+    "question": "What is the output of `console.log(new Set([1, 1, 2, 2, 3]).size)`?",
+    "options": [
+      "3",
+      "5",
+      "0",
+      "undefined"
+    ],
+    "answer": 0,
+    "explain": "A `Set` removes duplicates, so `[1, 1, 2, 2, 3]` becomes `{1, 2, 3}`, and `size` returns `3`.",
+    "order": 10
+  },
+  {
+    "question": "What happens when you call `delete` on a non-configurable property?",
+    "options": [
+      "The property is deleted",
+      "TypeError is thrown",
+      "Nothing happens",
+      "The property becomes undefined"
+    ],
+    "answer": 1,
+    "explain": "Attempting to delete a non-configurable property (e.g., defined with `Object.defineProperty` and `configurable: false`) throws a `TypeError` in strict mode or fails silently in non-strict mode.",
+    "order": 11
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].flatMap(x => [x, x]))`?",
+    "options": [
+      "[1, 2, 3, 1, 2, 3]",
+      "[1, 1, 2, 2, 3, 3]",
+      "[[1, 1], [2, 2], [3, 3]]",
+      "[1, 2, 3]"
+    ],
+    "answer": 1,
+    "explain": "`flatMap` maps each element to an array `[x, x]` and flattens the result by one level, yielding `[1, 1, 2, 2, 3, 3]`.",
+    "order": 12
+  },
+  {
+    "question": "What does `Object.getOwnPropertyDescriptors` return?",
+    "options": [
+      "Property values",
+      "Property names",
+      "Property descriptors",
+      "Prototype chain"
+    ],
+    "answer": 2,
+    "explain": "`Object.getOwnPropertyDescriptors` returns an object containing all own property descriptors (including value, writable, enumerable, configurable) for an object.",
+    "order": 13
+  },
+  {
+    "question": "What is the output of `console.log(!!null)`?",
+    "options": [
+      "true",
+      "false",
+      "null",
+      "undefined"
+    ],
+    "answer": 1,
+    "explain": "The double negation `!!` coerces a value to a boolean. `null` coerces to `false`, so `!!null` is `false`.",
+    "order": 14
+  },
+  {
+    "question": "What does the `Proxy` object allow you to do?",
+    "options": [
+      "Create private fields",
+      "Intercept object operations",
+      "Clone objects",
+      "Freeze objects"
+    ],
+    "answer": 1,
+    "explain": "A `Proxy` wraps an object and allows you to intercept operations like property access, assignment, and function calls using traps like `get` and `set`.",
+    "order": 15
+  },
+  {
+    "question": "What is the output of `console.log((async () => await Promise.resolve(42))())`?",
+    "options": [
+      "42",
+      "Promise {42}",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "An async function always returns a Promise. Here, it returns `Promise.resolve(42)`, which is a Promise resolving to `42`.",
+    "order": 16
+  },
+  {
+    "question": "What is the purpose of `Reflect` in JavaScript?",
+    "options": [
+      "To create reactive objects",
+      "To provide low-level object operations",
+      "To handle errors",
+      "To optimize performance"
+    ],
+    "answer": 1,
+    "explain": "The `Reflect` object provides methods for low-level operations like property access (`Reflect.get`) and object creation, often used with `Proxy`.",
+    "order": 17
+  },
+  {
+    "question": "What is the output of `console.log(Object.is(NaN, NaN))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Object.is` performs a strict equality check, and unlike `===`, it considers `NaN` equal to `NaN`.",
+    "order": 18
+  },
+  {
+    "question": "What does the `Temporal` API aim to improve in JavaScript?",
+    "options": [
+      "String manipulation",
+      "Date and time handling",
+      "Array methods",
+      "Object cloning"
+    ],
+    "answer": 1,
+    "explain": "The `Temporal` API is a modern proposal to improve date and time handling in JavaScript, addressing issues with the `Date` object.",
+    "order": 19
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].findLast(x => x > 1))`?",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "undefined"
+    ],
+    "answer": 2,
+    "explain": "The `findLast` method returns the last element that satisfies the condition. For `[1, 2, 3]` and `x > 1`, it returns `3`.",
+    "order": 20
+  },
+  {
+    "question": "What happens when you use `new.target` in a function?",
+    "options": [
+      "Returns the function itself",
+      "Returns the constructor function",
+      "Throws an error",
+      "Returns undefined"
+    ],
+    "answer": 1,
+    "explain": "`new.target` returns the constructor function when a function is called with `new`, or `undefined` if called without `new`.",
+    "order": 21
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].toSorted())`?",
+    "options": [
+      "[1, 2, 3]",
+      "[3, 2, 1]",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`toSorted` is a non-mutating method that returns a new sorted array. Since `[1, 2, 3]` is already sorted, it returns `[1, 2, 3]`.",
+    "order": 22
+  },
+  {
+    "question": "What is the purpose of the `WeakRef` object?",
+    "options": [
+      "To create strong references",
+      "To allow garbage collection of objects",
+      "To clone objects",
+      "To freeze objects"
+    ],
+    "answer": 1,
+    "explain": "`WeakRef` creates a weak reference to an object, allowing it to be garbage-collected if there are no other strong references.",
+    "order": 23
+  },
+  {
+    "question": "What is the output of `console.log(1n + 2n)`?",
+    "options": [
+      "3",
+      "3n",
+      "12n",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`1n` and `2n` are BigInt literals. Adding them results in `3n`, another BigInt.",
+    "order": 24
+  },
+  {
+    "question": "What does the `import.meta` object provide in ES modules?",
+    "options": [
+      "Module metadata",
+      "Global scope",
+      "Prototype chain",
+      "Function context"
+    ],
+    "answer": 0,
+    "explain": "`import.meta` provides metadata about the current module, such as its URL, in ES modules.",
+    "order": 25
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].with(1, 5))`?",
+    "options": [
+      "[1, 5, 3]",
+      "[1, 2, 5]",
+      "[5, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The `with` method creates a new array with the element at index 1 replaced by 5, resulting in `[1, 5, 3]`.",
+    "order": 26
+  },
+  {
+    "question": "What happens when you use `Object.preventExtensions` on an object?",
+    "options": [
+      "Prevents adding new properties",
+      "Prevents modifying existing properties",
+      "Freezes the object",
+      "Marks it as immutable"
+    ],
+    "answer": 0,
+    "explain": "`Object.preventExtensions` prevents adding new properties but allows modifying or deleting existing ones.",
+    "order": 27
+  },
+  {
+    "question": "What is the output of `console.log(!!'0')`?",
+    "options": [
+      "true",
+      "false",
+      "0",
+      "undefined"
+    ],
+    "answer": 0,
+    "explain": "The string `'0'` is truthy in JavaScript, so `!!'0'` coerces to `true`.",
+    "order": 28
+  },
+  {
+    "question": "What does the `globalThis` object represent?",
+    "options": [
+      "The global object",
+      "The window object",
+      "The module scope",
+      "The function scope"
+    ],
+    "answer": 0,
+    "explain": "`globalThis` is a standard way to access the global object (`window` in browsers, `global` in Node.js) across environments.",
+    "order": 29
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].findIndex(x => x > 2))`?",
+    "options": [
+      "0",
+      "1",
+      "2",
+      "-1"
+    ],
+    "answer": 2,
+    "explain": "`findIndex` returns the index of the first element that satisfies the condition. For `x > 2`, it returns `2` (the index of `3`).",
+    "order": 30
+  },
+  {
+    "question": "What is the purpose of the `Atomics` object in JavaScript?",
+    "options": [
+      "To handle asynchronous operations",
+      "To manage shared memory",
+      "To create iterators",
+      "To optimize arrays"
+    ],
+    "answer": 1,
+    "explain": "The `Atomics` object provides atomic operations for shared memory, used with `SharedArrayBuffer` for thread-safe operations.",
+    "order": 31
+  },
+  {
+    "question": "What is the output of `console.log(String.raw`Hello\nWorld`)`?",
+    "options": [
+      "Hello\nWorld",
+      "Hello World",
+      "Hello\\nWorld",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "`String.raw` treats backslashes as literal characters, so `Hello\nWorld` becomes `Hello\\nWorld`.",
+    "order": 32
+  },
+  {
+    "question": "What does the `FinalizationRegistry` do?",
+    "options": [
+      "Registers cleanup callbacks for garbage-collected objects",
+      "Prevents garbage collection",
+      "Clones objects",
+      "Freezes objects"
+    ],
+    "answer": 0,
+    "explain": "`FinalizationRegistry` allows registering callbacks to run when an object is garbage-collected, useful for cleanup tasks.",
+    "order": 33
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].toReversed())`?",
+    "options": [
+      "[3, 2, 1]",
+      "[1, 2, 3]",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`toReversed` is a non-mutating method that returns a new array with elements in reverse order, yielding `[3, 2, 1]`.",
+    "order": 34
+  },
+  {
+    "question": "What is the output of `console.log(0n === 0)`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "BigInt `0n` and number `0` are different types, so `0n === 0` is `false` due to strict equality.",
+    "order": 35
+  },
+  {
+    "question": "What does the `queueMicrotask` function do?",
+    "options": [
+      "Schedules a task for the next event loop",
+      "Schedules a microtask",
+      "Blocks the main thread",
+      "Creates a Promise"
+    ],
+    "answer": 1,
+    "explain": "`queueMicrotask` schedules a function to run as a microtask, executed before the next macrotask (e.g., `setTimeout`).",
+    "order": 36
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].group(x => x % 2))`?",
+    "options": [
+      "{0: [2], 1: [1, 3]}",
+      "{0: [1, 3], 1: [2]}",
+      "[1, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The `group` method groups array elements by the result of the callback. Here, `x % 2` groups even numbers (`0`) and odd numbers (`1`), yielding `{0: [2], 1: [1, 3]}`.",
+    "order": 37
+  },
+  {
+    "question": "What is the purpose of the `Symbol.asyncIterator`?",
+    "options": [
+      "Defines synchronous iteration",
+      "Defines asynchronous iteration",
+      "Defines property access",
+      "Defines object cloning"
+    ],
+    "answer": 1,
+    "explain": "`Symbol.asyncIterator` defines a method for asynchronous iteration, used by `for await...of` loops.",
+    "order": 38
+  },
+  {
+    "question": "What is the output of `console.log(Object.getPrototypeOf([]) === Array.prototype)`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The prototype of an array (`[]`) is `Array.prototype`, so the comparison returns `true`.",
+    "order": 39
+  },
+  {
+    "question": "What happens when you use `Object.defineProperty` with `writable: false`?",
+    "options": [
+      "The property cannot be modified",
+      "The property cannot be deleted",
+      "The property cannot be enumerated",
+      "The property becomes private"
+    ],
+    "answer": 0,
+    "explain": "Setting `writable: false` makes the property read-only, preventing modification of its value.",
+    "order": 40
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].every(x => x > 0))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`every` returns `true` if all elements satisfy the condition. Since all elements in `[1, 2, 3]` are greater than 0, it returns `true`.",
+    "order": 41
+  },
+  {
+    "question": "What does the `structuredClone` function do?",
+    "options": [
+      "Shallow copies an object",
+      "Deep copies an object",
+      "Freezes an object",
+      "Serializes an object to JSON"
+    ],
+    "answer": 1,
+    "explain": "`structuredClone` creates a deep copy of an object, including nested objects and arrays, preserving their structure.",
+    "order": 42
+  },
+  {
+    "question": "What is the output of `console.log(1 / 0)`?",
+    "options": [
+      "NaN",
+      "Infinity",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "In JavaScript, dividing a non-zero number by zero results in `Infinity`.",
+    "order": 43
+  },
+  {
+    "question": "What is the purpose of the `Symbol.species` symbol?",
+    "options": [
+      "Defines object cloning",
+      "Defines constructor for derived objects",
+      "Defines iteration behavior",
+      "Defines property access"
+    ],
+    "answer": 1,
+    "explain": "`Symbol.species` specifies the constructor to use when creating derived objects, such as in `Array.prototype.map`.",
+    "order": 44
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].some(x => x > 2))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`some` returns `true` if at least one element satisfies the condition. Since `3 > 2`, it returns `true`.",
+    "order": 45
+  },
+  {
+    "question": "What happens when you use `Object.setPrototypeOf` on an object?",
+    "options": [
+      "Changes its constructor",
+      "Changes its prototype",
+      "Freezes the object",
+      "Clones the object"
+    ],
+    "answer": 1,
+    "explain": "`Object.setPrototypeOf` changes the prototype of an object, affecting its inheritance chain.",
+    "order": 46
+  },
+  {
+    "question": "What is the output of `console.log([1,,3].length)`?",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "undefined"
+    ],
+    "answer": 2,
+    "explain": "Sparse arrays include empty slots. `[1,,3]` has three slots (1, empty, 3), so `length` is `3`.",
+    "order": 47
+  },
+  {
+    "question": "What does the `ArrayBuffer` object represent?",
+    "options": [
+      "A dynamic array",
+      "A fixed-length raw binary data buffer",
+      "A resizable array",
+      "A typed array"
+    ],
+    "answer": 1,
+    "explain": "`ArrayBuffer` represents a fixed-length raw binary data buffer, used with typed arrays like `Uint8Array`.",
+    "order": 48
+  },
+  {
+    "question": "What is the output of `console.log(typeof async function(){})`?",
+    "options": [
+      "function",
+      "async",
+      "object",
+      "undefined"
+    ],
+    "answer": 0,
+    "explain": "An async function is still a function, so `typeof` returns `'function'`.",
+    "order": 49
+  },
+  {
+    "question": "What is the purpose of the `Symbol.toPrimitive` method?",
+    "options": [
+      "Defines iteration behavior",
+      "Defines string representation",
+      "Defines primitive coercion",
+      "Defines object cloning"
+    ],
+    "answer": 2,
+    "explain": "`Symbol.toPrimitive` defines how an object is coerced to a primitive value during operations like `+` or `==`.",
+    "order": 50
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].includes(2))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`includes` checks if an array contains a value. Since `2` is in `[1, 2, 3]`, it returns `true`.",
+    "order": 51
+  },
+  {
+    "question": "What does the `SharedArrayBuffer` allow?",
+    "options": [
+      "Dynamic array resizing",
+      "Shared memory between threads",
+      "Immutable arrays",
+      "Cloning arrays"
+    ],
+    "answer": 1,
+    "explain": "`SharedArrayBuffer` allows multiple threads (e.g., Web Workers) to share the same memory, used with `Atomics`.",
+    "order": 52
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].slice(-2))`?",
+    "options": [
+      "[2, 3]",
+      "[1, 2]",
+      "[3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`slice(-2)` extracts the last two elements, resulting in `[2, 3]`.",
+    "order": 53
+  },
+  {
+    "question": "What is the purpose of the `Symbol.hasInstance` method?",
+    "options": [
+      "Defines property access",
+      "Defines instanceof behavior",
+      "Defines iteration",
+      "Defines cloning"
+    ],
+    "answer": 1,
+    "explain": "`Symbol.hasInstance` customizes the behavior of the `instanceof` operator for a constructor.",
+    "order": 54
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].filter(x => x % 2))`?",
+    "options": [
+      "[1, 3]",
+      "[2]",
+      "[1, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`filter` keeps elements where the callback returns a truthy value. `x % 2` is truthy for odd numbers (`1` and `3`), so the result is `[1, 3]`.",
+    "order": 55
+  },
+  {
+    "question": "What does the `Object.getOwnPropertySymbols` method return?",
+    "options": [
+      "Property names",
+      "Symbol keys",
+      "Property values",
+      "Prototype chain"
+    ],
+    "answer": 1,
+    "explain": "`Object.getOwnPropertySymbols` returns an array of Symbol keys for an object\u2019s own properties.",
+    "order": 56
+  },
+  {
+    "question": "What is the output of `console.log((() => { return { x: 1 }; })().x)`?",
+    "options": [
+      "1",
+      "undefined",
+      "{ x: 1 }",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The IIFE returns an object `{ x: 1 }`, and accessing `.x` yields `1`.",
+    "order": 57
+  },
+  {
+    "question": "What is the purpose of the `Symbol.toStringTag` method?",
+    "options": [
+      "Defines iteration",
+      "Defines string representation",
+      "Defines primitive coercion",
+      "Defines object cloning"
+    ],
+    "answer": 1,
+    "explain": "`Symbol.toStringTag` customizes the string representation of an object when `toString()` is called, e.g., `[object MyType]`.",
+    "order": 58
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].map(x => x ** 2))`?",
+    "options": [
+      "[1, 4, 9]",
+      "[1, 2, 3]",
+      "[2, 4, 6]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`map` applies `x ** 2` to each element, so `[1, 2, 3]` becomes `[1, 4, 9]`.",
+    "order": 59
+  },
+  {
+    "question": "What happens when you use `delete` on an array element?",
+    "options": [
+      "Removes the element and shifts indices",
+      "Sets the element to undefined",
+      "Throws an error",
+      "Reduces the array length"
+    ],
+    "answer": 1,
+    "explain": "`delete` on an array element sets it to `undefined` but does not shift indices or change the array\u2019s `length`.",
+    "order": 60
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].reduceRight((a, b) => a + b))`?",
+    "options": [
+      "6",
+      "0",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`reduceRight` sums from right to left: `3 + 2 = 5`, then `5 + 1 = 6`.",
+    "order": 61
+  },
+  {
+    "question": "What does the `Symbol.match` method define?",
+    "options": [
+      "Regular expression matching",
+      "Object equality",
+      "String concatenation",
+      "Array iteration"
+    ],
+    "answer": 0,
+    "explain": "`Symbol.match` defines the behavior for regular expression matching, used by `String.prototype.match`.",
+    "order": 62
+  },
+  {
+    "question": "What is the output of `console.log(Object.is(-0, 0))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Object.is` distinguishes between `-0` and `0`, so `-0` is not equal to `0`.",
+    "order": 63
+  },
+  {
+    "question": "What is the purpose of the `Symbol.replace` method?",
+    "options": [
+      "Defines string replacement",
+      "Defines object cloning",
+      "Defines iteration",
+      "Defines property access"
+    ],
+    "answer": 0,
+    "explain": "`Symbol.replace` defines the behavior for string replacement, used by `String.prototype.replace`.",
+    "order": 64
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].join(''))`?",
+    "options": [
+      "123",
+      "1,2,3",
+      "[1,2,3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`join('')` concatenates array elements with an empty string, resulting in `'123'`.",
+    "order": 65
+  },
+  {
+    "question": "What does the `Symbol.search` method define?",
+    "options": [
+      "String searching",
+      "Object equality",
+      "Array iteration",
+      "Property access"
+    ],
+    "answer": 0,
+    "explain": "`Symbol.search` defines the behavior for string searching, used by `String.prototype.search`.",
+    "order": 66
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].pop())`?",
+    "options": [
+      "1",
+      "3",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`pop` removes and returns the last element, so `[1, 2, 3].pop()` returns `3`.",
+    "order": 67
+  },
+  {
+    "question": "What is the purpose of the `Symbol.split` method?",
+    "options": [
+      "Defines string splitting",
+      "Defines object cloning",
+      "Defines iteration",
+      "Defines property access"
+    ],
+    "answer": 0,
+    "explain": "`Symbol.split` defines the behavior for string splitting, used by `String.prototype.split`.",
+    "order": 68
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].shift())`?",
+    "options": [
+      "1",
+      "3",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`shift` removes and returns the first element, so `[1, 2, 3].shift()` returns `1`.",
+    "order": 69
+  },
+  {
+    "question": "What does the `Symbol.unscopables` method define?",
+    "options": [
+      "Defines properties excluded from `with`",
+      "Defines iteration",
+      "Defines cloning",
+      "Defines property access"
+    ],
+    "answer": 0,
+    "explain": "`Symbol.unscopables` specifies properties to exclude from the `with` statement\u2019s scope.",
+    "order": 70
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].concat([4, 5]))`?",
+    "options": [
+      "[1, 2, 3, 4, 5]",
+      "[1, 2, 3, [4, 5]]",
+      "[4, 5, 1, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`concat` creates a new array by combining the arrays, resulting in `[1, 2, 3, 4, 5]`.",
+    "order": 71
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].splice(1, 1))`?",
+    "options": [
+      "[2]",
+      "[1, 3]",
+      "[1, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`splice(1, 1)` removes 1 element at index 1 and returns it as an array, resulting in `[2]`.",
+    "order": 72
+  },
+  {
+    "question": "What does the `Symbol.isConcatSpreadable` method define?",
+    "options": [
+      "Defines array concatenation behavior",
+      "Defines iteration",
+      "Defines cloning",
+      "Defines property access"
+    ],
+    "answer": 0,
+    "explain": "`Symbol.isConcatSpreadable` determines if an object is spread during `Array.prototype.concat`.",
+    "order": 73
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].indexOf(2))`?",
+    "options": [
+      "0",
+      "1",
+      "2",
+      "-1"
+    ],
+    "answer": 1,
+    "explain": "`indexOf` returns the first index of the value `2`, which is `1`.",
+    "order": 74
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].lastIndexOf(2))`?",
+    "options": [
+      "0",
+      "1",
+      "2",
+      "-1"
+    ],
+    "answer": 1,
+    "explain": "`lastIndexOf` returns the last index of the value `2`, which is `1`.",
+    "order": 75
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].reverse())`?",
+    "options": [
+      "[3, 2, 1]",
+      "[1, 2, 3]",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`reverse` reverses the array in place and returns it, resulting in `[3, 2, 1]`.",
+    "order": 76
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].fill(0))`?",
+    "options": [
+      "[0, 0, 0]",
+      "[1, 2, 3]",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`fill` replaces all elements with the specified value, resulting in `[0, 0, 0]`.",
+    "order": 77
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].keys().next().value)`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`keys()` returns an iterator of array indices. The first call to `next().value` returns the first index, `0`.",
+    "order": 78
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].values().next().value)`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`values()` returns an iterator of array elements. The first call to `next().value` returns the first element, `1`.",
+    "order": 79
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].entries().next().value)`?",
+    "options": [
+      "[0, 1]",
+      "[1, 2]",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`entries()` returns an iterator of arrays containing index and value. The first call to `next().value` returns `[0, 1]`.",
+    "order": 80
+  },
+  {
+    "question": "What is the output of `console.log(Math.trunc(3.7))`?",
+    "options": [
+      "3",
+      "4",
+      "3.7",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.trunc` removes the decimal part, returning `3` for `3.7`.",
+    "order": 81
+  },
+  {
+    "question": "What is the output of `console.log(Math.sign(-5))`?",
+    "options": [
+      "-1",
+      "1",
+      "0",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.sign` returns `-1` for negative numbers, `1` for positive numbers, and `0` for zero.",
+    "order": 82
+  },
+  {
+    "question": "What is the output of `console.log(Math.cbrt(8))`?",
+    "options": [
+      "2",
+      "4",
+      "8",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.cbrt` returns the cube root, so `Math.cbrt(8)` returns `2`.",
+    "order": 83
+  },
+  {
+    "question": "What is the output of `console.log(Math.clz32(1))`?",
+    "options": [
+      "31",
+      "32",
+      "0",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.clz32` counts leading zeros in a 32-bit integer. For `1` (binary `000...01`), it returns `31`.",
+    "order": 84
+  },
+  {
+    "question": "What is the output of `console.log(Math.imul(2, 3))`?",
+    "options": [
+      "6",
+      "5",
+      "8",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.imul` performs 32-bit integer multiplication, so `2 * 3 = 6`.",
+    "order": 85
+  },
+  {
+    "question": "What is the output of `console.log(Math.fround(1.5))`?",
+    "options": [
+      "1.5",
+      "1",
+      "2",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.fround` rounds to the nearest 32-bit float, so `1.5` remains `1.5`.",
+    "order": 86
+  },
+  {
+    "question": "What is the output of `console.log(Math.hypot(3, 4))`?",
+    "options": [
+      "5",
+      "7",
+      "12",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.hypot` computes the square root of the sum of squares, so `Math.hypot(3, 4)` returns `sqrt(3\u00b2 + 4\u00b2) = 5`.",
+    "order": 87
+  },
+  {
+    "question": "What is the output of `console.log(Math.expm1(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.expm1(x)` computes `e^x - 1`, so for `x = 0`, it returns `e^0 - 1 = 0`.",
+    "order": 88
+  },
+  {
+    "question": "What is the output of `console.log(Math.log1p(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.log1p(x)` computes `ln(1 + x)`, so for `x = 0`, it returns `ln(1) = 0`.",
+    "order": 89
+  },
+  {
+    "question": "What is the output of `console.log(Math.sinh(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.sinh(x)` computes the hyperbolic sine, so for `x = 0`, it returns `0`.",
+    "order": 90
+  },
+  {
+    "question": "What is the output of `console.log(Math.cosh(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Math.cosh(x)` computes the hyperbolic cosine, so for `x = 0`, it returns `1`.",
+    "order": 91
+  },
+  {
+    "question": "What is the output of `console.log(Math.tanh(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.tanh(x)` computes the hyperbolic tangent, so for `x = 0`, it returns `0`.",
+    "order": 92
+  },
+  {
+    "question": "What is the output of `console.log(Math.asinh(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.asinh(x)` computes the inverse hyperbolic sine, so for `x = 0`, it returns `0`.",
+    "order": 93
+  },
+  {
+    "question": "What is the output of `console.log(Math.acosh(1))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.acosh(x)` computes the inverse hyperbolic cosine, so for `x = 1`, it returns `0`.",
+    "order": 94
+  },
+  {
+    "question": "What is the output of `console.log(Math.atanh(0))`?",
+    "options": [
+      "0",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.atanh(x)` computes the inverse hyperbolic tangent, so for `x = 0`, it returns `0`.",
+    "order": 95
+  },
+  {
+    "question": "What is the output of `console.log(Number.EPSILON)`?",
+    "options": [
+      "2.220446049250313e-16",
+      "1",
+      "0",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Number.EPSILON` represents the smallest difference between 1 and the next representable floating-point number, approximately `2.22e-16`.",
+    "order": 96
+  },
+  {
+    "question": "What is the output of `console.log(Number.MAX_SAFE_INTEGER)`?",
+    "options": [
+      "9007199254740991",
+      "Infinity",
+      "0",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Number.MAX_SAFE_INTEGER` is the largest integer that can be safely represented in JavaScript, `2^53 - 1 = 9007199254740991`.",
+    "order": 97
+  },
+  {
+    "question": "What is the output of `console.log(Number.MIN_SAFE_INTEGER)`?",
+    "options": [
+      "-9007199254740991",
+      "-Infinity",
+      "0",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Number.MIN_SAFE_INTEGER` is the smallest integer that can be safely represented, `-2^53 + 1 = -9007199254740991`.",
+    "order": 98
+  },
+  {
+    "question": "What is the output of `console.log(Number.isSafeInteger(9007199254740991))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Number.isSafeInteger` checks if a number is a safe integer (within `\u00b12^53 - 1`). `9007199254740991` is safe, so it returns `true`.",
+    "order": 99
+  },
+  {
+    "question": "What is the output of `console.log(Number.isFinite(Infinity))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Number.isFinite` checks if a value is a finite number. `Infinity` is not finite, so it returns `false`.",
+    "order": 100
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].findLastIndex(x => x > 1))`?",
+    "options": [
+      "1",
+      "2",
+      "-1",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`findLastIndex` returns the index of the last element that satisfies the condition. For `x > 1`, it returns `2` (index of `3`).",
+    "order": 101,
+    "code": "[1, 2, 3].findLastIndex(x => x > 1)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].groupToMap(x => x % 2))`?",
+    "options": [
+      "Map {0 => [2], 1 => [1, 3]}",
+      "Map {0 => [1, 3], 1 => [2]}",
+      "[1, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`groupToMap` groups array elements into a `Map` by the callback result. `x % 2` groups even numbers (`0`) and odd numbers (`1`), yielding `Map {0 => [2], 1 => [1, 3]}`.",
+    "order": 102,
+    "code": "[1, 2, 3].groupToMap(x => x % 2)"
+  },
+  {
+    "question": "What is the output of `console.log((() => { let x = 1; return () => x++; })()())`?",
+    "options": [
+      "1",
+      "2",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The outer IIFE creates a closure with `x = 1`. The inner function returns `x++`, which returns `x` (1) and then increments it.",
+    "order": 103,
+    "code": "(() => { let x = 1; return () => x++; })()()"
+  },
+  {
+    "question": "What happens when you use `Object.isExtensible` on a sealed object?",
+    "options": [
+      "Returns true",
+      "Returns false",
+      "Throws an error",
+      "Returns undefined"
+    ],
+    "answer": 1,
+    "explain": "`Object.isExtensible` returns `false` for sealed objects, as they cannot have new properties added.",
+    "order": 104,
+    "code": "const obj = Object.seal({}); console.log(Object.isExtensible(obj));"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].toSpliced(1, 1, 4))`?",
+    "options": [
+      "[1, 4, 3]",
+      "[1, 2, 3]",
+      "[1, 2, 4]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`toSpliced` is a non-mutating method that returns a new array with the element at index 1 replaced by 4, yielding `[1, 4, 3]`.",
+    "order": 105,
+    "code": "[1, 2, 3].toSpliced(1, 1, 4)"
+  },
+  {
+    "question": "What is the output of `console.log(typeof 1n)`?",
+    "options": [
+      "number",
+      "bigint",
+      "string",
+      "object"
+    ],
+    "answer": 1,
+    "explain": "BigInt literals like `1n` have the type `'bigint'`.",
+    "order": 106,
+    "code": "typeof 1n"
+  },
+  {
+    "question": "What is the output of `console.log(Promise.all([Promise.resolve(1), Promise.resolve(2)]))`?",
+    "options": [
+      "[1, 2]",
+      "Promise {[1, 2]}",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Promise.all` returns a Promise that resolves to an array of resolved values. Here, it returns `Promise {[1, 2]}`.",
+    "order": 107,
+    "code": "Promise.all([Promise.resolve(1), Promise.resolve(2)])"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].copyWithin(0, 1, 2))`?",
+    "options": [
+      "[2, 2, 3]",
+      "[1, 2, 3]",
+      "[2, 1, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`copyWithin(0, 1, 2)` copies the element at index 1 (`2`) to index 0, resulting in `[2, 2, 3]`.",
+    "order": 108,
+    "code": "[1, 2, 3].copyWithin(0, 1, 2)"
+  },
+  {
+    "question": "What is the output of `console.log(Reflect.has({ a: 1 }, 'a'))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Reflect.has` checks if a property exists on an object, similar to the `in` operator. Here, it returns `true` for property `'a'`.",
+    "order": 109,
+    "code": "Reflect.has({ a: 1 }, 'a')"
+  },
+  {
+    "question": "What is the output of `console.log(new WeakSet([{}, {}]).size)`?",
+    "options": [
+      "2",
+      "0",
+      "undefined",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "`WeakSet` does not have a `size` property, so accessing it returns `undefined`.",
+    "order": 110,
+    "code": "new WeakSet([{}, {}]).size"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].at(-2))`?",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "The `at` method with index `-2` refers to the second-to-last element, so `[1, 2, 3].at(-2)` returns `2`.",
+    "order": 111,
+    "code": "[1, 2, 3].at(-2)"
+  },
+  {
+    "question": "What happens when you use `Object.freeze` on an object with nested objects?",
+    "options": [
+      "Freezes all nested objects",
+      "Only freezes the top-level object",
+      "Throws an error",
+      "Makes the object extensible"
+    ],
+    "answer": 1,
+    "explain": "`Object.freeze` only freezes the top-level object, preventing modifications to its own properties. Nested objects remain mutable unless explicitly frozen.",
+    "order": 112,
+    "code": "const obj = { a: { b: 1 } }; Object.freeze(obj); obj.a.b = 2; console.log(obj.a.b);"
+  },
+  {
+    "question": "What is the output of `console.log(Number.parseInt('42px'))`?",
+    "options": [
+      "42",
+      "NaN",
+      "42px",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Number.parseInt` parses a string and returns an integer, stopping at the first non-digit. Here, it returns `42`.",
+    "order": 113,
+    "code": "Number.parseInt('42px')"
+  },
+  {
+    "question": "What is the output of `console.log(Number.parseFloat('3.14px'))`?",
+    "options": [
+      "3.14",
+      "NaN",
+      "3.14px",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Number.parseFloat` parses a string and returns a floating-point number, stopping at the first invalid character. Here, it returns `3.14`.",
+    "order": 114,
+    "code": "Number.parseFloat('3.14px')"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].flat(0))`?",
+    "options": [
+      "[1, 2, 3]",
+      "[[1, 2, 3]]",
+      "[]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`flat(0)` does not flatten any levels, so `[1, 2, 3]` remains unchanged.",
+    "order": 115,
+    "code": "[1, 2, 3].flat(0)"
+  },
+  {
+    "question": "What is the output of `console.log(Object.entries({ a: 1, b: 2 }))`?",
+    "options": [
+      "[['a', 1], ['b', 2]]",
+      "{ a: 1, b: 2 }",
+      "['a', 'b']",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Object.entries` returns an array of key-value pairs, so `{ a: 1, b: 2 }` becomes `[['a', 1], ['b', 2]]`.",
+    "order": 116,
+    "code": "Object.entries({ a: 1, b: 2 })"
+  },
+  {
+    "question": "What is the output of `console.log(Object.fromEntries([['a', 1], ['b', 2]]))`?",
+    "options": [
+      "{ a: 1, b: 2 }",
+      "[['a', 1], ['b', 2]]",
+      "['a', 'b']",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Object.fromEntries` converts an array of key-value pairs into an object, so `[['a', 1], ['b', 2]]` becomes `{ a: 1, b: 2 }`.",
+    "order": 117,
+    "code": "Object.fromEntries([['a', 1], ['b', 2]])"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].includes(NaN))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`includes` uses strict equality, and since `NaN` is not in the array, it returns `false`.",
+    "order": 118,
+    "code": "[1, 2, 3].includes(NaN)"
+  },
+  {
+    "question": "What is the output of `console.log([NaN].includes(NaN))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`includes` uses `SameValueZero` algorithm, which considers `NaN` equal to `NaN`, so it returns `true`.",
+    "order": 119,
+    "code": "[NaN].includes(NaN)"
+  },
+  {
+    "question": "What is the output of `console.log(new Array(3).fill(0).length)`?",
+    "options": [
+      "0",
+      "3",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`new Array(3)` creates an array with 3 empty slots. `fill(0)` sets each to `0`, and `length` returns `3`.",
+    "order": 120,
+    "code": "new Array(3).fill(0).length"
+  },
+  {
+    "question": "What is the output of `console.log(Object.keys({ [Symbol()]: 1, a: 2 }))`?",
+    "options": [
+      "['a']",
+      "['a', Symbol()]",
+      "[]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Object.keys` returns only enumerable string keys, so the Symbol key is excluded, yielding `['a']`.",
+    "order": 121,
+    "code": "Object.keys({ [Symbol()]: 1, a: 2 })"
+  },
+  {
+    "question": "What is the output of `console.log(Promise.race([Promise.resolve(1), Promise.resolve(2)]))`?",
+    "options": [
+      "Promise {1}",
+      "Promise {2}",
+      "[1, 2]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Promise.race` returns a Promise that resolves with the first resolved Promise\u2019s value, here `1`.",
+    "order": 122,
+    "code": "Promise.race([Promise.resolve(1), Promise.resolve(2)])"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].every(x => x))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`every` checks if all elements are truthy. Since `1`, `2`, and `3` are truthy, it returns `true`.",
+    "order": 123,
+    "code": "[1, 2, 3].every(x => x)"
+  },
+  {
+    "question": "What is the output of `console.log([0, 1, 2].some(x => x))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`some` checks if at least one element is truthy. Since `1` and `2` are truthy, it returns `true`.",
+    "order": 124,
+    "code": "[0, 1, 2].some(x => x)"
+  },
+  {
+    "question": "What is the output of `console.log(Math.max(...[1, 2, 3]))`?",
+    "options": [
+      "3",
+      "1",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.max` with spread syntax finds the largest value in `[1, 2, 3]`, which is `3`.",
+    "order": 125,
+    "code": "Math.max(...[1, 2, 3])"
+  },
+  {
+    "question": "What is the output of `console.log(Math.min(...[1, 2, 3]))`?",
+    "options": [
+      "1",
+      "3",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Math.min` with spread syntax finds the smallest value in `[1, 2, 3]`, which is `1`.",
+    "order": 126,
+    "code": "Math.min(...[1, 2, 3])"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].find(x => x > 1))`?",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "undefined"
+    ],
+    "answer": 1,
+    "explain": "`find` returns the first element that satisfies the condition. For `x > 1`, it returns `2`.",
+    "order": 127,
+    "code": "[1, 2, 3].find(x => x > 1)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].findIndex(x => x > 3))`?",
+    "options": [
+      "0",
+      "1",
+      "-1",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "`findIndex` returns `-1` if no element satisfies the condition. Since no element is `> 3`, it returns `-1`.",
+    "order": 128,
+    "code": "[1, 2, 3].findIndex(x => x > 3)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].slice(1, 3))`?",
+    "options": [
+      "[2, 3]",
+      "[1, 2]",
+      "[1, 2, 3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`slice(1, 3)` extracts elements from index 1 up to (but not including) index 3, resulting in `[2, 3]`.",
+    "order": 129,
+    "code": "[1, 2, 3].slice(1, 3)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].push(4))`?",
+    "options": [
+      "[1, 2, 3, 4]",
+      "4",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`push` adds an element and returns the new length of the array, which is `4`.",
+    "order": 130,
+    "code": "[1, 2, 3].push(4)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].unshift(0))`?",
+    "options": [
+      "[0, 1, 2, 3]",
+      "4",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`unshift` adds an element to the start and returns the new length of the array, which is `4`.",
+    "order": 131,
+    "code": "[1, 2, 3].unshift(0)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].join('-'))`?",
+    "options": [
+      "1-2-3",
+      "123",
+      "[1,2,3]",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`join('-')` concatenates array elements with a `-` separator, resulting in `'1-2-3'`.",
+    "order": 132,
+    "code": "[1, 2, 3].join('-')"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].toString())`?",
+    "options": [
+      "1,2,3",
+      "[1,2,3]",
+      "123",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`toString` on an array joins elements with commas, resulting in `'1,2,3'`.",
+    "order": 133,
+    "code": "[1, 2, 3].toString()"
+  },
+  {
+    "question": "What is the output of `console.log(Number.isNaN('NaN'))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Number.isNaN` only returns `true` for the actual `NaN` value, not the string `'NaN'`, so it returns `false`.",
+    "order": 134,
+    "code": "Number.isNaN('NaN')"
+  },
+  {
+    "question": "What is the output of `console.log(Object.isFrozen({}))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Object.isFrozen` returns `false` for a regular object, as it is not frozen by default.",
+    "order": 135,
+    "code": "Object.isFrozen({})"
+  },
+  {
+    "question": "What is the output of `console.log(Object.isSealed({}))`?",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`Object.isSealed` returns `false` for a regular object, as it is not sealed by default.",
+    "order": 136,
+    "code": "Object.isSealed({})"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].at(3))`?",
+    "options": [
+      "1",
+      "3",
+      "undefined",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "`at(3)` accesses the element at index 3, which is out of bounds for `[1, 2, 3]`, so it returns `undefined`.",
+    "order": 137,
+    "code": "[1, 2, 3].at(3)"
+  },
+  {
+    "question": "What is the output of `console.log([1, 2, 3].indexOf(4))`?",
+    "options": [
+      "0",
+      "1",
+      "-1",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "`indexOf` returns `-1` if the value is not found in the array.",
+    "order": 138,
+    "code": "[1, 2, 3].indexOf(4)"
+  }
+]
