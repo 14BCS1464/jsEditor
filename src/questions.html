@@ -283,41 +283,8 @@
             letter-spacing: 0.5px;
         }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 480px) {
-            h2 {
-                font-size: 1.8rem;
-            }
-
-            h3 {
-                font-size: 1.2rem;
-            }
-
-            .question {
-                padding: 12px;
-                font-size: 0.9rem;
-            }
-
-            .answer {
-                padding: 10px;
-                font-size: 0.85rem;
-            }
-
-            .btn {
-                font-size: 0.85rem;
-                padding: 10px 15px;
-            }
-
-            .question-number {
-                width: 20px;
-                height: 20px;
-                font-size: 0.75rem;
-            }
-        }
-
         .topic {
             font-size: 15px;
-
             color: #21dd24;
             cursor: pointer;
             transition: 0.3s;
@@ -328,7 +295,6 @@
             color: #6fab70;
         }
 
-        /* New styles for editable code and run functionality */
         .code-container {
             position: relative;
             margin: 10px 0;
@@ -388,6 +354,178 @@
             white-space: pre-wrap;
             font-size: 0.85rem;
         }
+
+        /* Popup Modal Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .popup-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .popup-title {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .popup-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .popup-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .popup-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            min-width: 100px;
+        }
+
+        .popup-btn.primary {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        .popup-btn.primary:hover {
+            background: #a374e6;
+        }
+
+        .popup-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .popup-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-popup:hover {
+            color: var(--text-primary);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            h3 {
+                font-size: 1.2rem;
+            }
+
+            .question {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+
+            .answer {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                font-size: 0.85rem;
+                padding: 10px 15px;
+            }
+
+            .question-number {
+                width: 20px;
+                height: 20px;
+                font-size: 0.75rem;
+            }
+
+            .popup-content {
+                padding: 20px;
+                max-width: 350px;
+            }
+
+            .popup-title {
+                font-size: 1.3rem;
+            }
+        }
     </style>
 
     <!-- Razorpay Checkout Script -->
@@ -401,9 +539,19 @@
         <div class="header">
             <h2>JavaScript Interview Questions</h2>
             <p>Master these questions to ace your next interview</p>
-
+            
         </div>
-        <!-- <a href="importantQuestion.html" class="topic">Click here to read an important topic</a> -->
+        <div id="mcq-header" style="display: flex; align-items: center; gap: 10px; margin: 18px 0 24px 0; cursor: pointer;">
+            <span style="background: linear-gradient(90deg, #6ea8fe, #22d3ee); color: #fff; font-weight: bold; font-size: 1.1rem; padding: 8px 22px; border-radius: 999px; box-shadow: 0 2px 8px rgba(34,211,238,0.10); letter-spacing: 1px;">
+                MCQ Section for Practice
+            </span>
+            <span style="color: #6ea8fe; font-size: 1.3rem; vertical-align: middle;">&#9733;</span>
+        </div>
+        <script>
+            document.getElementById('mcq-header').addEventListener('click', function() {
+                window.location.href = 'mcq/index.html';
+            });
+        </script>
         <!-- Free Questions -->
         <div class="question-container">
             <div class="question">
@@ -603,236 +751,402 @@ var x = 5;</textarea>
         <h3>Unlock Premium Questions & Answers</h3>
         <div class="badge">50% OFF</div>
         <button class="btn" id="payButton">Unlock All</button>
-
         <div id="premiumQuestions">
             <div class="question">
-                <span><span class="question-number">1</span> What is the difference between call, apply, and bind? <span
-                        class="premium-label">Premium</span></span>
+                <span><span class="question-number">1</span> What is the difference between call, apply, and bind? <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> All three methods are used to control what `this` refers to:
                 <ul>
-                    <li><strong>call:</strong> Invokes the function immediately with a specified `this` value and
-                        arguments provided individually: `func.call(thisArg, arg1, arg2, ...)`</li>
-                    <li><strong>apply:</strong> Invokes the function immediately with a specified `this` value and
-                        arguments as an array: `func.apply(thisArg, [arg1, arg2, ...])`</li>
-                    <li><strong>bind:</strong> Returns a new function with a specified `this` value and initial
-                        arguments, which can be invoked later: `const boundFunc = func.bind(thisArg, arg1, arg2, ...)`
-                    </li>
+                    <li><strong>call:</strong> Invokes the function immediately with a specified `this` value and arguments provided individually: `func.call(thisArg, arg1, arg2, ...)`</li>
+                    <li><strong>apply:</strong> Invokes the function immediately with a specified `this` value and arguments as an array: `func.apply(thisArg, [arg1, arg2, ...])`</li>
+                    <li><strong>bind:</strong> Returns a new function with a specified `this` value and initial arguments, which can be invoked later: `const boundFunc = func.bind(thisArg, arg1, arg2, ...)`</li>
                 </ul>
                 <div class="code-container">
                     <textarea class="editable-code">function greet(greeting, punctuation) {
-    console.log(`${greeting}, ${this.name}${punctuation}`);
-}
-
-const person = { name: 'John' };
-
-// call
-greet.call(person, 'Hello', '!'); // "Hello, John!"
-
-// apply
-greet.apply(person, ['Hi', '!!']); // "Hi, John!!"
-
-// bind
-const boundGreet = greet.bind(person, 'Hey');
-boundGreet('!!!'); // "Hey, John!!!"</textarea>
+            console.log(`${greeting}, ${this.name}${punctuation}`);
+        }
+        
+        const person = { name: 'John' };
+        
+        // call
+        greet.call(person, 'Hello', '!'); // "Hello, John!"
+        
+        // apply
+        greet.apply(person, ['Hi', '!!']); // "Hi, John!!"
+        
+        // bind
+        const boundGreet = greet.bind(person, 'Hey');
+        boundGreet('!!!'); // "Hey, John!!!"</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p1"></div>
                 </div>
             </div>
-
+        
             <div class="question">
-                <span><span class="question-number">2</span> Explain the concept of memoization in JavaScript. <span
-                        class="premium-label">Premium</span></span>
+                <span><span class="question-number">2</span> Explain the concept of memoization in JavaScript. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Memoization is an optimization technique that speeds up function calls by
-                storing the results of expensive function calls and returning the cached result when the same inputs
-                occur again. Example:
+                <strong>Answer:</strong> Memoization is an optimization technique that speeds up function calls by storing the results of expensive function calls and returning the cached result when the same inputs occur again. Example:
                 <div class="code-container">
                     <textarea class="editable-code">function memoize(fn) {
-    const cache = {};
-    return function(...args) {
-        const key = JSON.stringify(args);
-        if (cache[key]) {
-            return cache[key];
+            const cache = {};
+            return function(...args) {
+                const key = JSON.stringify(args);
+                if (cache[key]) {
+                    return cache[key];
+                }
+                const result = fn.apply(this, args);
+                cache[key] = result;
+                return result;
+            };
         }
-        const result = fn.apply(this, args);
-        cache[key] = result;
-        return result;
-    };
-}
-
-// Example usage with a factorial function
-function slowFactorial(n) {
-    if (n === 0 || n === 1) return 1;
-    return n * slowFactorial(n - 1);
-}
-
-const fastFactorial = memoize(slowFactorial);
-
-console.log(fastFactorial(5)); // Calculates and caches
-console.log(fastFactorial(5)); // Returns cached result</textarea>
+        
+        // Example usage with a factorial function
+        function slowFactorial(n) {
+            if (n === 0 || n === 1) return 1;
+            return n * slowFactorial(n - 1);
+        }
+        
+        const fastFactorial = memoize(slowFactorial);
+        
+        console.log(fastFactorial(5)); // Calculates and caches
+        console.log(fastFactorial(5)); // Returns cached result</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p2"></div>
                 </div>
             </div>
-
+        
             <div class="question">
-                <span><span class="question-number">3</span> Explain JavaScript currying with an example. <span
-                        class="premium-label">Premium</span></span>
+                <span><span class="question-number">3</span> Explain JavaScript currying with an example. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Currying is a technique where a function with multiple arguments is transformed
-                into a sequence of functions each with a single argument. Example:
+                <strong>Answer:</strong> Currying is a technique where a function with multiple arguments is transformed into a sequence of functions each with a single argument. Example:
                 <div class="code-container">
                     <textarea class="editable-code">// Regular function
-function add(a, b, c) {
-    return a + b + c;
-}
-
-// Curried version
-function curryAdd(a) {
-    return function(b) {
-        return function(c) {
+        function add(a, b, c) {
             return a + b + c;
-        };
-    };
-}
-
-// Usage
-console.log(add(1, 2, 3)); // 6
-console.log(curryAdd(1)(2)(3)); // 6
-
-// Practical example: creating specialized functions
-const addFive = curryAdd(5);
-const addFiveAndTwo = addFive(2);
-console.log(addFiveAndTwo(3)); // 10</textarea>
+        }
+        
+        // Curried version
+        function curryAdd(a) {
+            return function(b) {
+                return function(c) {
+                    return a + b + c;
+                };
+            };
+        }
+        
+        // Usage
+        console.log(add(1, 2, 3)); // 6
+        console.log(curryAdd(1)(2)(3)); // 6
+        
+        // Practical example: creating specialized functions
+        const addFive = curryAdd(5);
+        const addFiveAndTwo = addFive(2);
+        console.log(addFiveAndTwo(3)); // 10</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p3"></div>
                 </div>
-                Currying allows for partial application of functions and creating more specialized functions from
-                general ones.
+                Currying allows for partial application of functions and creating more specialized functions from general ones.
             </div>
-
+        
             <div class="question">
-                <span><span class="question-number">4</span> What are JavaScript generators and iterators? <span
-                        class="premium-label">Premium</span></span>
+                <span><span class="question-number">4</span> What are JavaScript generators and iterators? <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> Iterators are objects with a `next()` method that returns values in a sequence.
-                Generators are special functions (marked with `function*`) that can pause and resume execution, yielding
-                multiple values. They simplify the creation of iterators by automatically implementing the iterator
-                protocol. Example:
+                <strong>Answer:</strong> Iterators are objects with a `next()` method that returns values in a sequence. Generators are special functions (marked with `function*`) that can pause and resume execution, yielding multiple values. They simplify the creation of iterators by automatically implementing the iterator protocol. Example:
                 <div class="code-container">
                     <textarea class="editable-code">function* countUp(max) {
-    let count = 0;
-    while (count < max) {
-        yield count++;
-    }
-}
-
-const counter = countUp(3);
-console.log(counter.next().value); // 0
-console.log(counter.next().value); // 1
-console.log(counter.next().value); // 2
-console.log(counter.next().value); // undefined
-
-// Practical example: infinite sequence
-function* fibonacci() {
-    let [prev, curr] = [0, 1];
-    while (true) {
-        yield curr;
-        [prev, curr] = [curr, prev + curr];
-    }
-}
-
-const fib = fibonacci();
-console.log(fib.next().value); // 1
-console.log(fib.next().value); // 1
-console.log(fib.next().value); // 2
-console.log(fib.next().value); // 3</textarea>
+            let count = 0;
+            while (count < max) {
+                yield count++;
+            }
+        }
+        
+        const counter = countUp(3);
+        console.log(counter.next().value); // 0
+        console.log(counter.next().value); // 1
+        console.log(counter.next().value); // 2
+        console.log(counter.next().value); // undefined
+        
+        // Practical example: infinite sequence
+        function* fibonacci() {
+            let [prev, curr] = [0, 1];
+            while (true) {
+                yield curr;
+                [prev, curr] = [curr, prev + curr];
+            }
+        }
+        
+        const fib = fibonacci();
+        console.log(fib.next().value); // 1
+        console.log(fib.next().value); // 1
+        console.log(fib.next().value); // 2
+        console.log(fib.next().value); // 3</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p4"></div>
                 </div>
             </div>
-
+        
             <div class="question">
-                <span><span class="question-number">5</span> What is the JavaScript Event Loop? <span
-                        class="premium-label">Premium</span></span>
+                <span><span class="question-number">5</span> What is the JavaScript Event Loop? <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
-                <strong>Answer:</strong> The Event Loop is a fundamental part of JavaScript's concurrency model. It's
-                responsible for executing code, collecting and processing events, and executing queued sub-tasks. It
-                works by:
+                <strong>Answer:</strong> The Event Loop is a fundamental part of JavaScript's concurrency model. It's responsible for executing code, collecting and processing events, and executing queued sub-tasks. It works by:
                 <ul>
                     <li>Executing synchronous code in the call stack</li>
                     <li>If the call stack is empty, checking the message queue for callbacks to execute</li>
                     <li>If a callback is present, pushing it onto the call stack to be executed</li>
-                    <li>This process repeats, allowing JavaScript to handle asynchronous operations without blocking
-                    </li>
+                    <li>This process repeats, allowing JavaScript to handle asynchronous operations without blocking</li>
                 </ul>
                 This model allows JavaScript, which is single-threaded, to handle multiple operations concurrently.
                 <div class="code-container">
                     <textarea class="editable-code">// Example demonstrating event loop behavior
-console.log('Start');
-
-setTimeout(() => console.log('Timeout callback'), 0);
-
-Promise.resolve().then(() => console.log('Promise callback'));
-
-console.log('End');
-
-// Output order:
-// Start
-// End
-// Promise callback
-// Timeout callback</textarea>
+        console.log('Start');
+        
+        setTimeout(() => console.log('Timeout callback'), 0);
+        
+        Promise.resolve().then(() => console.log('Promise callback'));
+        
+        console.log('End');
+        
+        // Output order:
+        // Start
+        // End
+        // Promise callback
+        // Timeout callback</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p5"></div>
                 </div>
             </div>
-
+        
             <div class="question">
-                <span><span class="question-number">6</span> Explain browser storage options (localStorage,
-                    sessionStorage, cookies) and their differences. <span class="premium-label">Premium</span></span>
+                <span><span class="question-number">6</span> Explain browser storage options (localStorage, sessionStorage, cookies) and their differences. <span class="premium-label">Premium</span></span>
             </div>
             <div class="answer">
                 <strong>Answer:</strong> Browser storage options:
                 <ul>
-                    <li><strong>localStorage:</strong> Stores data with no expiration date, persists even after browser
-                        is closed, limited to about 5MB, same-origin policy</li>
-                    <li><strong>sessionStorage:</strong> Similar to localStorage but data is cleared when the page
-                        session ends (when browser tab is closed), limited to about 5MB</li>
-                    <li><strong>Cookies:</strong> Small text files stored on the client's computer, limited to about
-                        4KB, can set expiration time, sent with every HTTP request to the same domain, can be made
-                        secure/HTTP-only</li>
+                    <li><strong>localStorage:</strong> Stores data with no expiration date, persists even after browser is closed, limited to about 5MB, same-origin policy</li>
+                    <li><strong>sessionStorage:</strong> Similar to localStorage but data is cleared when the page session ends (when browser tab is closed), limited to about 5MB</li>
+                    <li><strong>Cookies:</strong> Small text files stored on the client's computer, limited to about 4KB, can set expiration time, sent with every HTTP request to the same domain, can be made secure/HTTP-only</li>
                 </ul>
-                Choose based on persistence needs, storage size requirements, and whether data needs to be sent to the
-                server.
+                Choose based on persistence needs, storage size requirements, and whether data needs to be sent to the server.
                 <div class="code-container">
                     <textarea class="editable-code">// localStorage example
-localStorage.setItem('username', 'john_doe');
-console.log(localStorage.getItem('username')); // "john_doe"
-localStorage.removeItem('username');
-
-// sessionStorage example
-sessionStorage.setItem('theme', 'dark');
-console.log(sessionStorage.getItem('theme')); // "dark"
-
-// Cookies example
-document.cookie = "username=john_doe; expires=Fri, 31 Dec 2023 23:59:59 GMT; path=/";
-console.log(document.cookie);</textarea>
+        localStorage.setItem('username', 'john_doe');
+        console.log(localStorage.getItem('username')); // "john_doe"
+        localStorage.removeItem('username');
+        
+        // sessionStorage example
+        sessionStorage.setItem('theme', 'dark');
+        console.log(sessionStorage.getItem('theme')); // "dark"
+        
+        // Cookies example
+        document.cookie = "username=john_doe; expires=Fri, 31 Dec 2023 23:59:59 GMT; path=/";
+        console.log(document.cookie);</textarea>
                     <button class="run-code-btn">Run Code</button>
                     <div class="code-output" id="output-p6"></div>
                 </div>
             </div>
-
+        
+            <div class="question">
+                <span><span class="question-number">7</span> What are JavaScript Promises and how do they work? <span class="premium-label">Premium</span></span>
+            </div>
+            <div class="answer">
+                <strong>Answer:</strong> Promises are objects representing the eventual completion (or failure) of an asynchronous operation and its resulting value. A Promise is in one of three states: pending, fulfilled, or rejected. They provide a cleaner way to handle asynchronous operations compared to callbacks, allowing chaining with `.then()` and error handling with `.catch()`.
+                <div class="code-container">
+                    <textarea class="editable-code">// Example of creating and using a Promise
+        const myPromise = new Promise((resolve, reject) => {
+            setTimeout(() => {
+                const randomNum = Math.random();
+                if (randomNum > 0.5) {
+                    resolve(`Success: ${randomNum}`);
+                } else {
+                    reject(`Error: ${randomNum} is too low`);
+                }
+            }, 1000);
+        });
+        
+        myPromise
+            .then(result => console.log(result)) // Handles success
+            .catch(error => console.log(error)); // Handles error
+        
+        // Chaining Promises
+        myPromise
+            .then(result => {
+                console.log(result);
+                return result + ' processed';
+            })
+            .then(newResult => console.log(newResult))
+            .catch(error => console.log(error));</textarea>
+                    <button class="run-code-btn">Run Code</button>
+                    <div class="code-output" id="output-p7"></div>
+                </div>
+            </div>
+        
+            <div class="question">
+                <span><span class="question-number">8</span> Explain the difference between var, let, and const in JavaScript. <span class="premium-label">Premium</span></span>
+            </div>
+            <div class="answer">
+                <strong>Answer:</strong> `var`, `let`, and `const` are used to declare variables in JavaScript, but they differ in scope, hoisting, and reassignment:
+                <ul>
+                    <li><strong>var:</strong> Function-scoped, hoisted with undefined initialization, allows redeclaration and reassignment.</li>
+                    <li><strong>let:</strong> Block-scoped, hoisted but not initialized (causes ReferenceError if accessed before declaration), allows reassignment but not redeclaration.</li>
+                    <li><strong>const:</strong> Block-scoped, hoisted but not initialized, does not allow reassignment or redeclaration (though object properties can be mutated).</li>
+                </ul>
+                <div class="code-container">
+                    <textarea class="editable-code">// var example
+        var x = 1;
+        if (true) {
+            var x = 2; // Same variable, redeclared
+            console.log(x); // 2
+        }
+        console.log(x); // 2
+        
+        // let example
+        let y = 1;
+        if (true) {
+            let y = 2; // Different variable, block-scoped
+            console.log(y); // 2
+        }
+        console.log(y); // 1
+        
+        // const example
+        const z = 1;
+        // z = 2; // Error: Assignment to constant
+        const obj = { prop: 1 };
+        obj.prop = 2; // Allowed: mutating object property
+        console.log(obj.prop); // 2</textarea>
+                    <button class="run-code-btn">Run Code</button>
+                    <div class="code-output" id="output-p8"></div>
+                </div>
+            </div>
+        
+            <div class="question">
+                <span><span class="question-number">9</span> What is the purpose of the `async` and `await` keywords in JavaScript? <span class="premium-label">Premium</span></span>
+            </div>
+            <div class="answer">
+                <strong>Answer:</strong> The `async` and `await` keywords simplify working with asynchronous code, making it look and behave like synchronous code. An `async` function always returns a Promise, and `await` can be used inside it to pause execution until a Promise resolves, improving readability over chained `.then()` calls.
+                <div class="code-container">
+                    <textarea class="editable-code">async function fetchData() {
+            try {
+                const response = await new Promise(resolve => {
+                    setTimeout(() => resolve('Data fetched!'), 1000);
+                });
+                console.log(response);
+                return response;
+            } catch (error) {
+                console.log('Error:', error);
+            }
+        }
+        
+        fetchData(); // Logs "Data fetched!" after 1 second
+        
+        // Using with real API call
+        async function getUser() {
+            try {
+                // Simulated API call
+                const user = await new Promise(resolve => {
+                    setTimeout(() => resolve({ id: 1, name: 'John' }), 1000);
+                });
+                console.log(user);
+            } catch (error) {
+                console.log('Error:', error);
+            }
+        }
+        
+        getUser(); // Logs { id: 1, name: 'John' } after 1 second</textarea>
+                    <button class="run-code-btn">Run Code</button>
+                    <div class="code-output" id="output-p9"></div>
+                </div>
+            </div>
+        
+            <div class="question">
+                <span><span class="question-number">10</span> What is a closure in JavaScript and how is it used? <span class="premium-label">Premium</span></span>
+            </div>
+            <div class="answer">
+                <strong>Answer:</strong> A closure is a function that retains access to variables from its outer (enclosing) scope even after the outer function has finished executing. Closures are commonly used for data privacy, event handlers, and creating function factories.
+                <div class="code-container">
+                    <textarea class="editable-code">function outerFunction() {
+            let outerVar = 'I am from outer scope';
+            
+            function innerFunction() {
+                console.log(outerVar); // Accesses outerVar from outer scope
+            }
+            
+            return innerFunction;
+        }
+        
+        const myClosure = outerFunction();
+        myClosure(); // Logs "I am from outer scope"
+        
+        // Practical example: counter
+        function createCounter() {
+            let count = 0;
+            return {
+                increment: function() {
+                    return ++count;
+                },
+                decrement: function() {
+                    return --count;
+                }
+            };
+        }
+        
+        const counter = createCounter();
+        console.log(counter.increment()); // 1
+        console.log(counter.increment()); // 2
+        console.log(counter.decrement()); // 1</textarea>
+                    <button class="run-code-btn">Run Code</button>
+                    <div class="code-output" id="output-p10"></div>
+                </div>
+            </div>
+        
             <button class="btn download-btn" id="downloadButton">Download Complete PDF Guide just in ₹100</button>
+        </div>
+       
+       
+         
+        </div>
+    </div>
+
+    <!-- Popup Modal -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-content">
+            <button class="close-popup" id="closePopup">&times;</button>
+            <div class="popup-header">
+                <h3 class="popup-title">Enter Your Details</h3>
+                <p class="popup-subtitle">We need your information to proceed with the download</p>
+            </div>
+            <form id="userDetailsForm">
+                <div class="form-group">
+                    <label class="form-label" for="userName">Full Name *</label>
+                    <input type="text" id="userName" class="form-input" placeholder="Enter your full name" required>
+                    <div class="error-message" id="nameError">Please enter your full name</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="userEmail">Email Address *</label>
+                    <input type="email" id="userEmail" class="form-input" placeholder="Enter your email address" required>
+                    <div class="error-message" id="emailError">Please enter a valid email address</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="userContact">Phone Number *</label>
+                    <input type="tel" id="userContact" class="form-input" placeholder="Enter your phone number" required>
+                    <div class="error-message" id="contactError">Please enter a valid phone number</div>
+                </div>
+                <div class="popup-buttons">
+                    <button type="button" class="popup-btn secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="popup-btn primary" id="proceedBtn">Proceed to Payment</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
+        // Global variables
+        let userDetails = {};
+
         document.getElementById("payButton").addEventListener("click", function () {
             // Simulate Payment Success (Replace with real payment gateway)
             document.getElementById("premiumQuestions").style.display = "block";
@@ -901,30 +1215,125 @@ console.log(document.cookie);</textarea>
             });
         });
 
+        // Popup functionality
+        const popupOverlay = document.getElementById('popupOverlay');
+        const closePopup = document.getElementById('closePopup');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const userDetailsForm = document.getElementById('userDetailsForm');
+        const downloadButton = document.getElementById('downloadButton');
+
+        // Show popup when download button is clicked
+        downloadButton.addEventListener('click', function() {
+            popupOverlay.style.display = 'flex';
+        });
+
+        // Close popup functions
+        function hidePopup() {
+            popupOverlay.style.display = 'none';
+            clearForm();
+        }
+
+        closePopup.addEventListener('click', hidePopup);
+        cancelBtn.addEventListener('click', hidePopup);
+
+        // Close popup when clicking outside
+        popupOverlay.addEventListener('click', function(e) {
+            if (e.target === popupOverlay) {
+                hidePopup();
+            }
+        });
+
+        // Form validation
+        function validateForm() {
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const contact = document.getElementById('userContact').value.trim();
+            
+            let isValid = true;
+
+            // Clear previous error messages
+            document.querySelectorAll('.error-message').forEach(error => {
+                error.style.display = 'none';
+            });
+
+            // Validate name
+            if (name.length < 2) {
+                document.getElementById('nameError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                document.getElementById('emailError').style.display = 'block';
+                isValid = false;
+            }
+
+            // Validate contact (basic validation for 10 digits)
+            const contactRegex = /^[0-9]{10}$/;
+            if (!contactRegex.test(contact.replace(/\s+/g, ''))) {
+                document.getElementById('contactError').style.display = 'block';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function clearForm() {
+            document.getElementById('userDetailsForm').reset();
+            document.querySelectorAll('.error-message').forEach(error => {
+                error.style.display = 'none';
+            });
+        }
+
+        // Handle form submission
+        userDetailsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (validateForm()) {
+                // Store user details
+                userDetails = {
+                    name: document.getElementById('userName').value.trim(),
+                    email: document.getElementById('userEmail').value.trim(),
+                    contact: document.getElementById('userContact').value.trim()
+                };
+                
+                // Hide popup
+                hidePopup();
+                
+                // Proceed with payment
+                initiatePayment();
+            }
+        });
+
         // Razorpay Integration for PDF Purchase
-        document.getElementById("downloadButton") && document.getElementById("downloadButton").addEventListener("click", function () {
+        function initiatePayment() {
             const options = {
-                key: "YOUR_KEY_ID", // Replace with your Razorpay Key ID
-                amount: 10000, // Amount in paise (10000 paise = ₹100)
+                key: "YM3Rgnutn7CI5v4asGKLOYGU", // Replace with your Razorpay Key ID
+                amount: 1000, // Amount in paise (10000 paise = ₹100)
                 currency: "INR",
                 name: "JavaScript Interview Questions",
                 description: "Complete PDF Guide",
-                order_id: "YOUR_ORDER_ID", // Replace with your Order ID (generated from backend)
+                order_id: "423423423", // Replace with your Order ID (generated from backend)
                 handler: function (response) {
                     alert("Payment successful! Payment ID: " + response.razorpay_payment_id);
+                    // Here you can send the user details and payment info to your backend
+                    console.log("User Details:", userDetails);
+                    console.log("Payment Response:", response);
+                    
                     // Redirect or provide download link after successful payment
                     window.location.href = "YOUR_PDF_DOWNLOAD_LINK";
                 },
                 prefill: {
-                    name: "John Doe",
-                    email: "john.doe@example.com",
-                    contact: "9999999999"
+                    name: userDetails.name,
+                    email: userDetails.email,
+                    contact: userDetails.contact
                 },
                 notes: {
-                    address: "Razorpay Corporate Office"
+                    address: "JavaScript Interview Questions Purchase"
                 },
                 theme: {
-                    color: "#3399cc"
+                    color: "#bb86fc"
                 }
             };
 
@@ -933,14 +1342,18 @@ console.log(document.cookie);</textarea>
 
             rzp.on("payment.failed", function (response) {
                 alert("Payment failed! Please try again.");
-                console.error(response.error.code);
-                console.error(response.error.description);
-                console.error(response.error.source);
-                console.error(response.error.step);
-                console.error(response.error.reason);
-                console.error(response.error.metadata.order_id);
-                console.error(response.error.metadata.payment_id);
+                console.error("Payment failed:", response.error);
+                
+                // Show popup again for retry
+                popupOverlay.style.display = 'flex';
             });
+        }
+
+        // Add escape key functionality to close popup
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && popupOverlay.style.display === 'flex') {
+                hidePopup();
+            }
         });
     </script>
 </body>
