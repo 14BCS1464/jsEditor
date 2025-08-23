@@ -1,3 +1,6 @@
+// ===================== script.js (Complete) =====================
+
+// Globals
 let editor = null;
 let currentFileHandle = null;
 let fileContentModified = false;
@@ -13,7 +16,7 @@ const KEYS = {
   lastOpenedFileId: 'lastOpenedFileId',
 };
 
-// ----- Monaco loader -----
+// ---------------- Monaco Loader ----------------
 require.config({
   paths: {
     vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
@@ -21,7 +24,7 @@ require.config({
 });
 
 require(["vs/editor/editor.main"], function () {
-  // Themes
+  // ---------------- Themes ----------------
   monaco.editor.defineTheme('sunilTheme', {
     base: 'vs-dark',
     inherit: true,
@@ -107,7 +110,7 @@ require(["vs/editor/editor.main"], function () {
     }
   });
 
-  // TS/JS compiler/intellisense defaults
+  // ---------------- TS/JS Compiler & IntelliSense ----------------
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ES2020,
     allowJs: true,
@@ -124,7 +127,7 @@ require(["vs/editor/editor.main"], function () {
     allowNonTsExtensions: true,
   });
 
-  // Create editor
+  // ---------------- Create Editor ----------------
   editor = monaco.editor.create(document.getElementById("editor"), {
     language: currentLanguage,
     theme: "sunilDarkPro",
@@ -167,15 +170,24 @@ require(["vs/editor/editor.main"], function () {
     parameterHints: { enabled: true, cycle: true }
   });
 
-  // Restore per-language code
-  const initialCode = localStorage.getItem(currentLanguage === 'typescript' ? KEYS.codeTS : KEYS.codeJS)
-    || (currentLanguage === 'typescript'
-        ? `// TypeScript sample\nfunction greet(name: string): string { return "Hi " + name }\nconsole.log(greet("Sunil"));`
-        : `console.log("Best of luck with your learning journey! 🚀 Keep coding and keep growing! 😊")`);
-  editor.setValue(initialCode);
-
-  // Wire UI
-  const outputElement = document.getElementById("output");
+  // ---------------- Initial Content ----------------
+  const initialCode =
+  localStorage.getItem(currentLanguage === 'typescript' ? KEYS.codeTS : KEYS.codeJS)
+  || (currentLanguage === 'typescript'
+      ? `// Welcome to our Code Editor! Learn JavaScript and improve your skills.
+function decrement(num:number) {
+  return num - 1;
+}
+console.log(decrement(10)); // Output: 9
+`
+      : `// Welcome to our Code Editor! Master JavaScript with simple, fun examples.
+function increment(num) {
+  return num + 1;
+}
+console.log(increment(5)); // Output: 6
+`);
+editor.setValue(initialCode);
+  // ---------------- Wire UI ----------------
   const langSelect = document.getElementById("language");
   if (langSelect) {
     langSelect.value = currentLanguage;
@@ -183,7 +195,6 @@ require(["vs/editor/editor.main"], function () {
       currentLanguage = langSelect.value;
       localStorage.setItem(KEYS.lang, currentLanguage);
       monaco.editor.setModelLanguage(editor.getModel(), currentLanguage);
-      // Load saved code for that language (don’t nuke current code if same)
       const saved = localStorage.getItem(currentLanguage === 'typescript' ? KEYS.codeTS : KEYS.codeJS);
       if (saved != null) editor.setValue(saved);
       setStatus(currentLanguage.toUpperCase());
@@ -199,7 +210,7 @@ require(["vs/editor/editor.main"], function () {
   });
 
   // Buttons
-  document.getElementById("clear").addEventListener("click", () => outputElement.innerText = "");
+  document.getElementById("clear").addEventListener("click", () => setOutput(""));
   document.getElementById("run").addEventListener("click", runCode);
   document.getElementById("format").addEventListener("click", formatCode);
   document.getElementById("openFileBtn").addEventListener("click", openFile);
@@ -208,7 +219,7 @@ require(["vs/editor/editor.main"], function () {
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcuts);
 
-  // Try restore last file (FS Access, if available)
+  // Try restore last file / session
   (async () => {
     const restored = await tryRestoreLastFile();
     if (!restored) restoreFromLocalSession();
@@ -224,11 +235,11 @@ require(["vs/editor/editor.main"], function () {
     }
   });
 
-  // After a short delay, offer recovery if needed
+  // Recovery prompt
   setTimeout(recoverUnsavedContent, 800);
 });
 
-// ---------- Helpers ----------
+// ---------------- Helpers ----------------
 function setStatus(text, color) {
   const el = document.getElementById('fileStatus');
   if (!el) return;
@@ -245,20 +256,50 @@ function showToast(message, type) {
   setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 2500);
 }
 
-// ---------- Run (JS or TS->JS) ----------
+// -------- Output helpers (auto-scroll) --------
+function getOutputEl() {
+  return document.getElementById("output");
+}
+function getOutputSection() {
+  return document.querySelector(".output-section");
+}
+function appendToOutput(text) {
+  const out = getOutputEl();
+  if (!out) return;
+  out.innerText += text;
+
+  // auto-scroll both possibilities (pre and its container)
+  const section = getOutputSection();
+  if (section) section.scrollTop = section.scrollHeight;
+  out.scrollTop = out.scrollHeight;
+
+  // ensure after layout
+  requestAnimationFrame(() => {
+    if (section) section.scrollTop = section.scrollHeight;
+    out.scrollTop = out.scrollHeight;
+  });
+}
+function setOutput(text) {
+  const out = getOutputEl();
+  if (!out) return;
+  out.innerText = text;
+  appendToOutput(""); // trigger scroll
+}
+
+// ---------------- Run (JS or TS->JS) ----------------
 function runCode() {
   const code = editor.getValue();
-  const outputElement = document.getElementById("output");
-  outputElement.innerText = "— Running —\n";
+  setOutput(`🚀 Running (${currentLanguage.toUpperCase()})...\n\n`);
 
   const execute = (js) => {
     // capture console to output pane
     const original = { log: console.log, error: console.error, warn: console.warn, info: console.info };
-    console.log = (...a) => (outputElement.innerText += a.map(String).join(" ") + "\n");
-    console.error = (...a) => (outputElement.innerText += "Error: " + a.map(String).join(" ") + "\n");
-    console.warn = (...a) => (outputElement.innerText += "Warning: " + a.map(String).join(" ") + "\n");
-    console.info = (...a) => (outputElement.innerText += "Info: " + a.map(String).join(" ") + "\n");
-    try { new Function(js)(); } catch (e) { outputElement.innerText += String(e) + "\n"; }
+    console.log  = (...a) => appendToOutput(a.map(String).join(" ") + "\n");
+    console.error= (...a) => appendToOutput("Error: "   + a.map(String).join(" ") + "\n");
+    console.warn = (...a) => appendToOutput("Warning: " + a.map(String).join(" ") + "\n");
+    console.info = (...a) => appendToOutput("Info: "    + a.map(String).join(" ") + "\n");
+
+    try { new Function(js)(); } catch (e) { appendToOutput(String(e) + "\n"); }
     finally {
       console.log = original.log; console.error = original.error; console.warn = original.warn; console.info = original.info;
     }
@@ -281,14 +322,14 @@ function runCode() {
       });
       execute(result.outputText);
     } catch (e) {
-      outputElement.innerText += `Transpile error: ${e && e.message ? e.message : e}\n`;
+      appendToOutput(`Transpile error: ${e && e.message ? e.message : e}\n`);
     }
   } else {
     execute(code);
   }
 }
 
-// ---------- Format ----------
+// ---------------- Format ----------------
 function formatCode() {
   const code = editor.getValue();
   if (!code.trim()) return;
@@ -297,9 +338,8 @@ function formatCode() {
     // Prefer Monaco’s formatter for TS
     editor.getAction('editor.action.formatDocument').run().then(() => {
       setStatus('Formatted');
-      const out = document.getElementById("output");
-      out.innerText = "✅ Formatted by Monaco (TS)\n";
-      setTimeout(() => (out.innerText = ""), 1000);
+      setOutput("✅ Formatted by Monaco (TS)\n");
+      setTimeout(() => setOutput(""), 1000);
     }).catch(() => showToast('TS formatter not available', 'error'));
     return;
   }
@@ -318,104 +358,224 @@ function formatCode() {
       brace_style: "collapse,preserve-inline"
     });
     editor.setValue(formatted);
-    const out = document.getElementById("output");
-    out.innerText = "✅ Code formatted successfully!\n";
+    setOutput("✅ Code formatted successfully!\n");
     setStatus('Formatted');
-    setTimeout(() => (out.innerText = ""), 800);
+    setTimeout(() => setOutput(""), 800);
   } else {
     editor.getAction('editor.action.formatDocument').run().then(() => {
-      const out = document.getElementById("output");
-      out.innerText = "✅ Formatted by Monaco (JS)\n";
-      setTimeout(() => (out.innerText = ""), 800);
+      setOutput("✅ Formatted by Monaco (JS)\n");
+      setTimeout(() => setOutput(""), 800);
     });
   }
 }
 
-// ---------- File actions ----------
+// ---------------- File actions ----------------
+// ---------------- File actions ----------------
 async function openFile() {
-  try {
-    if (!('showOpenFilePicker' in window)) {
-      showToast('Use Chrome/Edge for file access features.', 'warning');
-      return;
-    }
-    const [fileHandle] = await window.showOpenFilePicker({
-      types: [
-        {
-          description: 'JS/TS Files',
-          accept: {
-            'text/javascript': ['.js'],
-            'text/typescript': ['.ts'],
-            'application/typescript': ['.ts']
-          }
+    try {
+      // Try File System Access API first (Chrome/Edge)
+      if ('showOpenFilePicker' in window) {
+        const [fileHandle] = await window.showOpenFilePicker({
+          types: [
+            {
+              description: 'JS/TS Files',
+              accept: {
+                'text/javascript': ['.js'],
+                'text/typescript': ['.ts'],
+                'application/typescript': ['.ts']
+              }
+            }
+          ],
+          multiple: false
+        });
+  
+        currentFileHandle = fileHandle;
+  
+        if (fileHandle.requestPermission) {
+          await fileHandle.requestPermission({ mode: 'readwrite' });
         }
-      ],
-      multiple: false
-    });
-
-    currentFileHandle = fileHandle;
-
-    if (fileHandle.requestPermission) {
-      await fileHandle.requestPermission({ mode: 'readwrite' });
+  
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+  
+        // Guess language by extension
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        currentLanguage = ext === 'ts' ? 'typescript' : 'javascript';
+        localStorage.setItem(KEYS.lang, currentLanguage);
+  
+        // Update UI/editor
+        if (editor) {
+          monaco.editor.setModelLanguage(editor.getModel(), currentLanguage);
+          editor.setValue(content);
+        }
+        lastSavedContent = content;
+        localStorage.setItem(KEYS.lastFileContent, content);
+        localStorage.setItem(KEYS.lastOpenedFileName, file.name);
+  
+        const langSelect = document.getElementById('language');
+        if (langSelect) langSelect.value = currentLanguage;
+  
+        document.getElementById('fileName').textContent = file.name;
+        setStatus('Opened', 'green');
+        fileContentModified = false;
+      } else {
+        // Fallback: Use <input type="file"> for other browsers
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.js,.ts';
+  
+        input.onchange = async (event) => {
+          const file = event.target.files[0];
+          if (!file) {
+            showToast('No file selected', 'warning');
+            return;
+          }
+  
+          const content = await file.text();
+          const ext = (file.name.split('.').pop() || '').toLowerCase();
+          currentLanguage = ext === 'ts' ? 'typescript' : 'javascript';
+          localStorage.setItem(KEYS.lang, currentLanguage);
+  
+          // Update UI/editor
+          if (editor) {
+            monaco.editor.setModelLanguage(editor.getModel(), currentLanguage);
+            editor.setValue(content);
+          }
+          lastSavedContent = content;
+          localStorage.setItem(KEYS.lastFileContent, content);
+          localStorage.setItem(KEYS.lastOpenedFileName, file.name);
+  
+          const langSelect = document.getElementById('language');
+          if (langSelect) langSelect.value = currentLanguage;
+  
+          document.getElementById('fileName').textContent = file.name;
+          setStatus('Opened', 'green');
+          fileContentModified = false;
+  
+          // Clean up
+          input.remove();
+        };
+  
+        input.click();
+      }
+    } catch (error) {
+      console.error('Error opening file:', error);
+      showToast(`Error opening file: ${error.message}`, 'error');
     }
-
-    const file = await fileHandle.getFile();
-    const content = await file.text();
-
-    // Guess language by extension
-    const ext = (file.name.split('.').pop() || '').toLowerCase();
-    currentLanguage = ext === 'ts' ? 'typescript' : 'javascript';
-    localStorage.setItem(KEYS.lang, currentLanguage);
-
-    // Update UI/editor
-    if (editor) {
-      monaco.editor.setModelLanguage(editor.getModel(), currentLanguage);
-      editor.setValue(content);
-    }
-    lastSavedContent = content;
-    localStorage.setItem(KEYS.lastFileContent, content);
-    localStorage.setItem(KEYS.lastOpenedFileName, file.name);
-
-    const langSelect = document.getElementById('language');
-    if (langSelect) langSelect.value = currentLanguage;
-
-    document.getElementById('fileName').textContent = file.name;
-    setStatus('Opened', 'green');
-    fileContentModified = false;
-  } catch (error) {
-    console.error('Error opening file:', error);
-    showToast(`Error opening file: ${error.message}`, "error");
   }
-}
-
-async function saveFile() {
-  if (!currentFileHandle) return await saveFileAs();
-  try {
-    if (currentFileHandle.requestPermission) {
-      const state = await currentFileHandle.requestPermission({ mode: 'readwrite' });
-      if (state !== 'granted') throw new Error('Write permission denied');
+  
+  async function saveFile() {
+    if (!currentFileHandle && 'showSaveFilePicker' in window) {
+      return await saveFileAs();
     }
-
-    // Format before save to keep file tidy
-    await Promise.resolve(formatCode());
-
-    const writable = await currentFileHandle.createWritable();
-    const content = editor.getValue();
-    await writable.write(content);
-    await writable.close();
-
-    lastSavedContent = content;
-    localStorage.setItem(KEYS.lastFileContent, content);
-    setStatus('Saved', 'green');
-    fileContentModified = false;
-    return true;
-  } catch (error) {
-    console.error('Error saving file:', error);
-    showToast(`Error saving file: ${error.message}`, "error");
-    setStatus('Error saving', 'red');
-    return false;
+  
+    try {
+      // Try File System Access API if fileHandle exists
+      if (currentFileHandle && 'createWritable' in currentFileHandle) {
+        if (currentFileHandle.requestPermission) {
+          const state = await currentFileHandle.requestPermission({ mode: 'readwrite' });
+          if (state !== 'granted') throw new Error('Write permission denied');
+        }
+  
+        // Format before save to keep file tidy
+        await Promise.resolve(formatCode());
+  
+        const writable = await currentFileHandle.createWritable();
+        const content = editor.getValue();
+        await writable.write(content);
+        await writable.close();
+  
+        lastSavedContent = content;
+        localStorage.setItem(KEYS.lastFileContent, content);
+        setStatus('Saved', 'green');
+        fileContentModified = false;
+        return true;
+      } else {
+        // Fallback: Use Blob and download
+        await Promise.resolve(formatCode());
+        const content = editor.getValue();
+        const blob = new Blob([content], { type: 'text/plain' });
+        const fileName = localStorage.getItem(KEYS.lastOpenedFileName) || (currentLanguage === 'typescript' ? 'file.ts' : 'file.js');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        a.remove();
+  
+        lastSavedContent = content;
+        localStorage.setItem(KEYS.lastFileContent, content);
+        setStatus('Saved (Downloaded)', 'green');
+        fileContentModified = false;
+        return true;
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+      showToast(`Error saving file: ${error.message}`, 'error');
+      setStatus('Error saving', 'red');
+      return false;
+    }
   }
-}
-
+  
+  async function saveFileAs() {
+    try {
+      // Try File System Access API first
+      if ('showSaveFilePicker' in window) {
+        const suggestedName =
+          currentFileHandle ? currentFileHandle.name :
+          (localStorage.getItem(KEYS.lastOpenedFileName) || (currentLanguage === 'typescript' ? 'file.ts' : 'file.js'));
+  
+        const fileHandle = await window.showSaveFilePicker({
+          types: [
+            {
+              description: 'JS/TS Files',
+              accept: {
+                'text/javascript': ['.js'],
+                'text/typescript': ['.ts'],
+                'application/typescript': ['.ts']
+              }
+            }
+          ],
+          suggestedName
+        });
+  
+        currentFileHandle = fileHandle;
+        if (fileHandle.requestPermission) {
+          await fileHandle.requestPermission({ mode: 'readwrite' });
+        }
+  
+        const file = await fileHandle.getFile();
+        document.getElementById('fileName').textContent = file.name;
+  
+        return await saveFile();
+      } else {
+        // Fallback: Use Blob and download
+        await Promise.resolve(formatCode());
+        const content = editor.getValue();
+        const blob = new Blob([content], { type: 'text/plain' });
+        const suggestedName = localStorage.getItem(KEYS.lastOpenedFileName) || (currentLanguage === 'typescript' ? 'file.ts' : 'file.js');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = suggestedName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        a.remove();
+  
+        lastSavedContent = content;
+        localStorage.setItem(KEYS.lastFileContent, content);
+        localStorage.setItem(KEYS.lastOpenedFileName, suggestedName);
+        document.getElementById('fileName').textContent = suggestedName;
+        setStatus('Saved (Downloaded)', 'green');
+        fileContentModified = false;
+        return true;
+      }
+    } catch (error) {
+      console.error('Error in Save As:', error);
+      showToast(`Error saving file: ${error.message}`, 'error');
+      return false;
+    }
+  }
 async function saveFileAs() {
   try {
     if (!('showSaveFilePicker' in window)) {
@@ -457,8 +617,7 @@ async function saveFileAs() {
   }
 }
 
-// Restore previously opened file (if your environment provides an ID-based API)
-// Kept simple; falls back to localStorage session restore.
+// Try to restore last file (placeholder for environments with stable handles)
 async function tryRestoreLastFile() {
   try {
     // No cross-origin stable FileHandle IDs on most browsers; skip.
@@ -469,33 +628,37 @@ async function tryRestoreLastFile() {
 }
 
 function restoreFromLocalSession() {
-  const savedContent = localStorage.getItem(KEYS.lastFileContent);
-  const fileName = localStorage.getItem(KEYS.lastOpenedFileName);
-  if (savedContent) {
-    editor && editor.setValue(savedContent);
-    lastSavedContent = savedContent;
-    if (fileName) document.getElementById('fileName').textContent = fileName;
-    setStatus('Restored (Session)', 'orange');
-  } else {
-    document.getElementById('fileName').textContent = 'Untitled';
-    setStatus(currentLanguage.toUpperCase());
-  }
+    const savedContent = localStorage.getItem(KEYS.lastFileContent);
+    const fileName = localStorage.getItem(KEYS.lastOpenedFileName);
+    if (savedContent) {
+      editor && editor.setValue(savedContent);
+      lastSavedContent = savedContent;
+      if (fileName) document.getElementById('fileName').textContent = fileName;
+      setStatus('Restored (Session)', 'orange');
+    } else {
+  
+      const defaultFileName = `Untitled.${currentLanguage === 'typescript' ? 'ts' : 'js'}`;
+      document.getElementById('fileName').textContent = defaultFileName;
+      localStorage.setItem(KEYS.lastOpenedFileName, defaultFileName);
+      setStatus(currentLanguage.toUpperCase(), 'blue');
+    }
 }
 
 function newFile() {
-  if (fileContentModified && !confirm('You have unsaved changes. Create a new file anyway?')) return;
+    if (fileContentModified && !confirm('You have unsaved changes. Create a new file anyway?')) return;
 
-  editor && editor.setValue('');
-  lastSavedContent = '';
-  currentFileHandle = null;
-
-  localStorage.removeItem(KEYS.lastOpenedFileId);
-  localStorage.setItem(KEYS.lastOpenedFileName, 'Untitled');
-  localStorage.setItem(KEYS.lastFileContent, '');
-
-  document.getElementById('fileName').textContent = 'Untitled';
-  setStatus('New');
-  fileContentModified = false;
+    editor && editor.setValue('');
+    lastSavedContent = '';
+    currentFileHandle = null;
+  
+    localStorage.removeItem(KEYS.lastOpenedFileId);
+    const newFileName = `Untitled.${currentLanguage === 'typescript' ? 'ts' : 'js'}`;
+    localStorage.setItem(KEYS.lastOpenedFileName, newFileName);
+    localStorage.setItem(KEYS.lastFileContent, '');
+  
+    document.getElementById('fileName').textContent = newFileName;
+    setStatus('New', 'blue');
+    fileContentModified = false;
 }
 
 function recoverUnsavedContent() {
@@ -510,7 +673,7 @@ function recoverUnsavedContent() {
   }
 }
 
-// Shortcuts: Save, Open, New, Run, Format
+// ---------------- Shortcuts: Save, Open, New, Run, Format ----------------
 function handleKeyboardShortcuts(e) {
   // Save
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -539,7 +702,7 @@ function handleKeyboardShortcuts(e) {
   }
 }
 
-// --------- Optional: small JS completions example ----------
+// ---------------- Optional: Small JS/TS completions ----------------
 document.addEventListener('DOMContentLoaded', function () {
   if (typeof monaco !== 'undefined') {
     monaco.languages.registerCompletionItemProvider("javascript", {
@@ -564,3 +727,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// ===================== End of script.js =====================
