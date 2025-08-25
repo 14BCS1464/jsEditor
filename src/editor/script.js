@@ -387,7 +387,7 @@ const formatPrototypeChain = (proto, depth = 0, maxDepth = 10, seen = new WeakSe
   if (seen.has(proto)) {
     return `${indent}[[Prototype]]: ${protoName} { [Circular] }`;
   }
-  seen.add(proto);
+  seen.add(proto); 
 
   let result = `${indent}[[Prototype]]: ${protoName} {\n`;
 
