@@ -375,6 +375,62 @@ function setOutput(text) {
 }
 
 // ---------------- Run (JS or TS->JS) ----------------
+// Show full prototype chain recursively
+const formatPrototypeChain = (proto, depth = 0, maxDepth = 10, seen = new WeakSet()) => {
+  if (!proto) return `${'  '.repeat(depth)}[[Prototype]]: null`;
+
+  const indent = '  '.repeat(depth);
+  const protoName =
+    proto.constructor?.name ||
+    Object.prototype.toString.call(proto).slice(8, -1);
+
+  if (seen.has(proto)) {
+    return `${indent}[[Prototype]]: ${protoName} { [Circular] }`;
+  }
+  seen.add(proto);
+
+  let result = `${indent}[[Prototype]]: ${protoName} {\n`;
+
+  if (depth > maxDepth) {
+    result += `${indent}  [Max Depth Reached]\n`;
+  } else {
+    // Show own properties
+    const props = Object.getOwnPropertyNames(proto);
+    const symbols = Object.getOwnPropertySymbols(proto);
+
+    for (const prop of props) {
+      const descriptor = Object.getOwnPropertyDescriptor(proto, prop);
+      const value = descriptor?.value;
+      const isAccessor = descriptor?.get || descriptor?.set;
+
+      result += `${indent}  ${prop}: `;
+
+      if (isAccessor) {
+        result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
+      } else {
+        result += typeof value === 'function'
+          ? `ƒ ${value.name || 'anonymous'}() { [Function] }`
+          : String(value);
+      }
+      result += `\n`;
+    }
+
+    for (const sym of symbols) {
+      result += `${indent}  ${sym.toString()}: ${String(proto[sym])}\n`;
+    }
+
+    // Recurse to parent prototype
+    const parent = Object.getPrototypeOf(proto);
+    if (parent) {
+      result += formatPrototypeChain(parent, depth + 1, maxDepth, seen);
+    } else {
+      result += `${indent}  [[Prototype]]: null\n`;
+    }
+  }
+
+  result += `${indent}}\n`;
+  return result;
+};
 function runCode() {
   const model = editor.getModel();
   const lang = model.getLanguageId();
@@ -382,15 +438,285 @@ function runCode() {
   setOutput(`🚀 Running (${lang.toUpperCase()})...\n\n`);
 
   const execute = (js) => {
-    const original = { log: console.log, error: console.error, warn: console.warn, info: console.info };
-    console.log  = (...a) => appendToOutput(a.map(String).join(" ") + "\n");
-    console.error= (...a) => appendToOutput("Error: "   + a.map(String).join(" ") + "\n");
-    console.warn = (...a) => appendToOutput("Warning: " + a.map(String).join(" ") + "\n");
-    console.info = (...a) => appendToOutput("Info: "    + a.map(String).join(" ") + "\n");
+    // Store original console methods
+    const original = {
+      log: console.log,
+      error: console.error,
+      warn: console.warn,
+      info: console.info,
+      dir: console.dir,
+      table: console.table
+    };
 
-    try { new Function(js)(); } catch (e) { appendToOutput(String(e) + "\n"); }
-    finally {
-      console.log = original.log; console.error = original.error; console.warn = original.warn; console.info = original.info;
+    // Override console methods to capture output
+    console.log = (...a) => appendToOutput(a.map(String).join(" ") + "\n");
+    console.error = (...a) => appendToOutput("Error: " + a.map(String).join(" ") + "\n");
+    console.warn = (...a) => appendToOutput("Warning: " + a.map(String).join(" ") + "\n");
+    console.info = (...a) => appendToOutput("Info: " + a.map(String).join(" ") + "\n");
+
+    // Enhanced console.dir with Chrome-like hierarchy
+    console.dir = (obj, options = {}) => {
+      try {
+        const maxDepth = options.depth || 10;
+        const seen = new WeakSet();
+
+        const inspectObject = (target, depth = 0, path = '') => {
+          if (depth > maxDepth) return '[Max Depth Reached]';
+          if (target === null) return 'null';
+          if (target === undefined) return 'undefined';
+
+          const indent = '  '.repeat(depth);
+          const type = typeof target;
+
+          // Handle primitives
+          if (type === 'string') return `"${target}"`;
+          if (type === 'number' || type === 'boolean') return String(target);
+          if (type === 'bigint') return `${target}n`;
+          if (type === 'symbol') return `Symbol(${target.description || target.toString().slice(7, -1)})`;
+
+          // Handle functions
+          if (type === 'function') {
+            const funcName = target.name || 'anonymous';
+            const isNative = target.toString().includes('[native code]');
+            return `ƒ ${funcName}() { ${isNative ? '[native code]' : '[Function]'} }`;
+          }
+
+          // Handle arrays
+          if (Array.isArray(target)) {
+            if (seen.has(target)) return '[Circular]';
+            seen.add(target);
+
+            const preview = target.length > 3
+              ? `Array(${target.length}) [${target.slice(0, 3).map(item => inspectObject(item, depth + 1)).join(', ')}, …]`
+              : `Array(${target.length}) [${target.map(item => inspectObject(item, depth + 1)).join(', ')}]`;
+            if (depth >= maxDepth) return preview;
+
+            let result = `${preview}\n${indent}{`;
+            for (let i = 0; i < target.length; i++) {
+              result += `\n${indent}  ${i}: ${inspectObject(target[i], depth + 1, `${path}[${i}]`)}`;
+            }
+
+            // Non-index properties
+            const ownProps = Object.getOwnPropertyNames(target).filter(prop => !(/^\d+$/.test(prop)) && prop !== 'length');
+            for (const prop of ownProps) {
+              const descriptor = Object.getOwnPropertyDescriptor(target, prop);
+              const value = descriptor.value;
+              const isAccessor = descriptor.get || descriptor.set;
+              result += `\n${indent}  ${prop}: `;
+              if (isAccessor) {
+                result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
+                if (descriptor.get) {
+                  try {
+                    const getterValue = descriptor.get.call(target);
+                    result += ` => ${inspectObject(getterValue, depth + 1, `${path}.${prop}`)}`;
+                  } catch (e) {
+                    result += ` [Getter Error: ${e.message}]`;
+                  }
+                }
+              } else {
+                result += inspectObject(value, depth + 1, `${path}.${prop}`);
+              }
+            }
+
+            result += `\n${indent}}`;
+            seen.delete(target);
+            return result;
+          }
+
+          // Handle objects
+          if (type === 'object') {
+            if (seen.has(target)) return '[Circular]';
+            seen.add(target);
+
+            const objType = Object.prototype.toString.call(target).slice(8, -1);
+            const constructorName = target.constructor?.name || objType;
+            const preview = constructorName === 'Object' ? 'Object' : `${constructorName} {}`;
+            if (depth >= maxDepth) return preview;
+
+            let result = `${preview}\n${indent}{`;
+            const ownProps = Object.getOwnPropertyNames(target);
+            const ownSymbols = Object.getOwnPropertySymbols(target);
+
+            for (const prop of ownProps) {
+              const descriptor = Object.getOwnPropertyDescriptor(target, prop);
+              const value = descriptor.value;
+              const isAccessor = descriptor.get || descriptor.set;
+              result += `\n${indent}  ${prop}: `;
+              if (isAccessor) {
+                result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
+                if (descriptor.get) {
+                  try {
+                    const getterValue = descriptor.get.call(target);
+                    result += ` => ${inspectObject(getterValue, depth + 1, `${path}.${prop}`)}`;
+                  } catch (e) {
+                    result += ` [Getter Error: ${e.message}]`;
+                  }
+                }
+              } else {
+                result += inspectObject(value, depth + 1, `${path}.${prop}`);
+              }
+            }
+
+            for (const sym of ownSymbols) {
+              const value = target[sym];
+              result += `\n${indent}  ${sym.toString()}: ${inspectObject(value, depth + 1, `${path}[${sym.toString()}]`)}`;
+            }
+
+let proto = Object.getPrototypeOf(target);
+if (proto) {
+  result += `\n${indent}${formatPrototypeChain(proto, depth + 1)}`;
+}
+
+          else if (proto && proto !== Object.prototype) {
+              const protoName = proto.constructor?.name || Object.prototype.toString.call(proto).slice(8, -1);
+              result += `\n${indent}  [[Prototype]]: ${protoName} { [Collapsed - Max Depth] }`;
+            }
+
+            result += `\n${indent}}`;
+            seen.delete(target);
+            return result;
+          }
+
+          return String(target);
+        };
+
+        const output = inspectObject(obj);
+        appendToOutput("Dir:\n" + output + "\n\n");
+      } catch (e) {
+        appendToOutput("Dir: [Error: " + e.message + "]\n");
+      }
+    };
+
+    // Enhanced console.table support
+    console.table = (data, columns) => {
+      try {
+        let output = "Table:\n";
+
+        if (Array.isArray(data)) {
+          if (data.length === 0) {
+            output += "(empty array)\n";
+            appendToOutput(output);
+            return;
+          }
+
+          // Create headers
+          const headers = ["(index)"];
+          const isObjectArray = data.some(item => typeof item === 'object' && item !== null);
+
+          if (isObjectArray) {
+            const allKeys = new Set();
+            data.forEach(item => {
+              if (typeof item === 'object' && item !== null) {
+                Object.keys(item).forEach(key => allKeys.add(key));
+              }
+            });
+            headers.push(...Array.from(allKeys));
+          } else {
+            headers.push("Value");
+          }
+
+          // Filter columns if specified
+          const displayHeaders = columns ? ["(index)", ...columns.filter(col => headers.includes(col))] : headers;
+
+          // Calculate column widths
+          const colWidths = displayHeaders.map(header => {
+            let maxWidth = header.length;
+            data.forEach((item, index) => {
+              let cellValue = "";
+              if (header === "(index)") {
+                cellValue = String(index);
+              } else if (isObjectArray && typeof item === 'object' && item !== null) {
+                cellValue = item[header] !== undefined ? String(item[header]) : "";
+              } else if (header === "Value") {
+                cellValue = String(item);
+              }
+              maxWidth = Math.max(maxWidth, cellValue.length);
+            });
+            return Math.min(maxWidth, 50);
+          });
+
+          // Create separator
+          const separator = "+" + colWidths.map(w => "-".repeat(w + 2)).join("+") + "+\n";
+
+          // Create header row
+          output += separator;
+          output += "|" + displayHeaders.map((header, i) => ` ${header.padEnd(colWidths[i])} `).join("|") + "|\n";
+          output += separator;
+
+          // Create data rows
+          data.forEach((item, index) => {
+            const row = displayHeaders.map((header, i) => {
+              let cellValue = "";
+              if (header === "(index)") {
+                cellValue = String(index);
+              } else if (isObjectArray && typeof item === 'object' && item !== null) {
+                const val = item[header];
+                cellValue = val !== undefined ? (typeof val === 'object' ? JSON.stringify(val) : String(val)) : "";
+              } else if (header === "Value") {
+                cellValue = typeof item === 'object' ? JSON.stringify(item) : String(item);
+              }
+
+              if (cellValue.length > colWidths[i]) {
+                cellValue = cellValue.substring(0, colWidths[i] - 3) + "...";
+              }
+
+              return ` ${cellValue.padEnd(colWidths[i])} `;
+            });
+            output += "|" + row.join("|") + "|\n";
+          });
+          output += separator;
+
+        } else if (typeof data === 'object' && data !== null) {
+          const entries = Object.entries(data);
+          if (entries.length === 0) {
+            output += "(empty object)\n";
+            appendToOutput(output);
+            return;
+          }
+
+          const keyWidth = Math.min(Math.max(...entries.map(([key]) => key.length), 10), 30);
+          const valueWidth = Math.min(Math.max(...entries.map(([, value]) => String(value).length), 10), 50);
+
+          const separator = "+" + "-".repeat(keyWidth + 2) + "+" + "-".repeat(valueWidth + 2) + "+\n";
+
+          output += separator;
+          output += `| ${"Key".padEnd(keyWidth)} | ${"Value".padEnd(valueWidth)} |\n`;
+          output += separator;
+
+          entries.forEach(([key, value]) => {
+            let keyStr = String(key);
+            let valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+
+            if (keyStr.length > keyWidth) keyStr = keyStr.substring(0, keyWidth - 3) + "...";
+            if (valueStr.length > valueWidth) valueStr = valueStr.substring(0, valueWidth - 3) + "...";
+
+            output += `| ${keyStr.padEnd(keyWidth)} | ${valueStr.padEnd(valueWidth)} |\n`;
+          });
+          output += separator;
+
+        } else {
+          output += `Cannot display table for type: ${typeof data}\n`;
+          output += `Value: ${String(data)}\n`;
+        }
+
+        appendToOutput(output + "\n");
+      } catch (e) {
+        appendToOutput("Table: [Error: " + e.message + "]\n");
+      }
+    };
+
+    try {
+      new Function(js)();
+    } catch (e) {
+      appendToOutput(String(e) + "\n");
+    } finally {
+      // Restore original console methods
+      console.log = original.log;
+      console.error = original.error;
+      console.warn = original.warn;
+      console.info = original.info;
+      console.dir = original.dir;
+      console.table = original.table;
     }
   };
 
@@ -400,7 +726,6 @@ function runCode() {
       return;
     }
     try {
-      // Read Monaco TS options and map to TS compiler enums
       const mco = monaco.languages.typescript.typescriptDefaults.getCompilerOptions?.() || {};
       const compilerOptions = {
         target: mapEnum(monaco.languages.typescript.ScriptTarget, ts.ScriptTarget, mco.target, ts.ScriptTarget.ES2020),
@@ -426,6 +751,8 @@ function runCode() {
     execute(code);
   }
 }
+
+
 function mapEnum(srcEnum, dstEnum, value, fallback) {
     const name = Object.keys(srcEnum).find(k => srcEnum[k] === value && isNaN(+k));
     return (name && Object.prototype.hasOwnProperty.call(dstEnum, name)) ? dstEnum[name] : fallback;
