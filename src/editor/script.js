@@ -121,7 +121,7 @@ require(["vs/editor/editor.main"], function () {
     module: monaco.languages.typescript.ModuleKind.ESNext,
     moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
     esModuleInterop: true,
-   // lib: ["es2020", "dom"],
+    // lib: ["es2020", "dom"],
   };
 
   const TS_PROFILE = {
@@ -161,14 +161,14 @@ require(["vs/editor/editor.main"], function () {
   // ---------------- Create Models + Editor ----------------
   const initialJS =
     localStorage.getItem(KEYS.codeJS) ||
-`// Welcome to our Code Editor! Master JavaScript with simple, fun examples.
+    `// Welcome to our Code Editor! Master JavaScript with simple, fun examples.
 function increment(num) { return num + 1; }
 console.log(increment(5)); // Output: 6
 `;
 
   const initialTS =
     localStorage.getItem(KEYS.codeTS) ||
-`// Welcome to our Code Editor! Learn TypeScript and improve your skills.
+    `// Welcome to our Code Editor! Learn TypeScript and improve your skills.
 function decrement(num: number): number { return num - 1; }
 console.log(decrement(10)); // Output: 9
 `;
@@ -387,7 +387,7 @@ const formatPrototypeChain = (proto, depth = 0, maxDepth = 10, seen = new WeakSe
   if (seen.has(proto)) {
     return `${indent}[[Prototype]]: ${protoName} { [Circular] }`;
   }
-  seen.add(proto); 
+  seen.add(proto);
 
   let result = `${indent}[[Prototype]]: ${protoName} {\n`;
 
@@ -454,13 +454,43 @@ function runCode() {
     console.warn = (...a) => appendToOutput("Warning: " + a.map(String).join(" ") + "\n");
     console.info = (...a) => appendToOutput("Info: " + a.map(String).join(" ") + "\n");
 
-    // Enhanced console.dir with Chrome-like hierarchy
+    // Enhanced console.dir with proper prototype chain and promise handling
     console.dir = (obj, options = {}) => {
       try {
         const maxDepth = options.depth || 10;
         const seen = new WeakSet();
 
-        const inspectObject = (target, depth = 0, path = '') => {
+        const formatPrototypeChain = (proto, depth = 0, maxChainDepth = 3) => {
+          if (!proto || proto === Object.prototype || depth > maxChainDepth) return '';
+          
+          const indent = '  '.repeat(depth);
+          const protoName = proto.constructor?.name || Object.prototype.toString.call(proto).slice(8, -1);
+          
+          let result = `\n${indent}[[Prototype]]: ${protoName}`;
+          
+          // Show some key properties of the prototype
+          const protoProps = Object.getOwnPropertyNames(proto).filter(prop => 
+            prop !== 'constructor' && typeof proto[prop] === 'function'
+          ).slice(0, 3);
+          
+          if (protoProps.length > 0) {
+            result += ' {';
+            protoProps.forEach((prop, i) => {
+              result += `${i > 0 ? ',' : ''} ${prop}: ƒ`;
+            });
+            result += protoProps.length > 3 ? ', ...' : '';
+            result += ' }';
+          }
+          
+          const nextProto = Object.getPrototypeOf(proto);
+          if (nextProto && nextProto !== Object.prototype && depth < maxChainDepth) {
+            result += formatPrototypeChain(nextProto, depth + 1, maxChainDepth);
+          }
+          
+          return result;
+        };
+
+        const inspectObject = async (target, depth = 0, path = '') => {
           if (depth > maxDepth) return '[Max Depth Reached]';
           if (target === null) return 'null';
           if (target === undefined) return 'undefined';
@@ -478,7 +508,29 @@ function runCode() {
           if (type === 'function') {
             const funcName = target.name || 'anonymous';
             const isNative = target.toString().includes('[native code]');
-            return `ƒ ${funcName}() { ${isNative ? '[native code]' : '[Function]'} }`;
+            const isAsync = target.constructor.name === 'AsyncFunction';
+            const prefix = isAsync ? 'async ƒ' : 'ƒ';
+            return `${prefix} ${funcName}() { ${isNative ? '[native code]' : '[Function]'} }`;
+          }
+
+          // Handle Promises
+          if (target instanceof Promise) {
+            return new Promise((resolve) => {
+              const timeoutId = setTimeout(() => {
+                resolve('Promise { <pending> }');
+              }, 100); // Short timeout to avoid blocking
+
+              target.then(
+                (value) => {
+                  clearTimeout(timeoutId);
+                  resolve(`Promise { <resolved>: ${typeof value === 'object' ? JSON.stringify(value) : String(value)} }`);
+                },
+                (reason) => {
+                  clearTimeout(timeoutId);
+                  resolve(`Promise { <rejected>: ${String(reason)} }`);
+                }
+              );
+            });
           }
 
           // Handle arrays
@@ -487,38 +539,55 @@ function runCode() {
             seen.add(target);
 
             const preview = target.length > 3
-              ? `Array(${target.length}) [${target.slice(0, 3).map(item => inspectObject(item, depth + 1)).join(', ')}, …]`
-              : `Array(${target.length}) [${target.map(item => inspectObject(item, depth + 1)).join(', ')}]`;
+              ? `Array(${target.length}) [${target.slice(0, 3).map(item => typeof item === 'object' ? '[Object]' : String(item)).join(', ')}, …]`
+              : `Array(${target.length}) [${target.map(item => typeof item === 'object' ? '[Object]' : String(item)).join(', ')}]`;
+            
             if (depth >= maxDepth) return preview;
 
-            let result = `${preview}\n${indent}{`;
-            for (let i = 0; i < target.length; i++) {
-              result += `\n${indent}  ${i}: ${inspectObject(target[i], depth + 1, `${path}[${i}]`)}`;
-            }
-
-            // Non-index properties
-            const ownProps = Object.getOwnPropertyNames(target).filter(prop => !(/^\d+$/.test(prop)) && prop !== 'length');
-            for (const prop of ownProps) {
-              const descriptor = Object.getOwnPropertyDescriptor(target, prop);
-              const value = descriptor.value;
-              const isAccessor = descriptor.get || descriptor.set;
-              result += `\n${indent}  ${prop}: `;
-              if (isAccessor) {
-                result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
-                if (descriptor.get) {
-                  try {
-                    const getterValue = descriptor.get.call(target);
-                    result += ` => ${inspectObject(getterValue, depth + 1, `${path}.${prop}`)}`;
-                  } catch (e) {
-                    result += ` [Getter Error: ${e.message}]`;
-                  }
-                }
-              } else {
-                result += inspectObject(value, depth + 1, `${path}.${prop}`);
+            let result = `${preview}`;
+            
+            if (target.length > 0 || Object.getOwnPropertyNames(target).some(prop => !(/^\d+$/.test(prop)) && prop !== 'length')) {
+              result += `\n${indent}{`;
+              
+              // Show array indices
+              for (let i = 0; i < Math.min(target.length, 10); i++) {
+                result += `\n${indent}  ${i}: ${await inspectObject(target[i], depth + 1, `${path}[${i}]`)}`;
               }
-            }
+              if (target.length > 10) {
+                result += `\n${indent}  ... ${target.length - 10} more items`;
+              }
 
-            result += `\n${indent}}`;
+              // Non-index properties
+              const ownProps = Object.getOwnPropertyNames(target).filter(prop => !(/^\d+$/.test(prop)) && prop !== 'length');
+              for (const prop of ownProps) {
+                const descriptor = Object.getOwnPropertyDescriptor(target, prop);
+                const value = descriptor.value;
+                const isAccessor = descriptor.get || descriptor.set;
+                result += `\n${indent}  ${prop}: `;
+                if (isAccessor) {
+                  result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
+                  if (descriptor.get && depth < maxDepth - 1) {
+                    try {
+                      const getterValue = descriptor.get.call(target);
+                      result += ` => ${await inspectObject(getterValue, depth + 1, `${path}.${prop}`)}`;
+                    } catch (e) {
+                      result += ` [Getter Error: ${e.message}]`;
+                    }
+                  }
+                } else {
+                  result += await inspectObject(value, depth + 1, `${path}.${prop}`);
+                }
+              }
+
+              // Show prototype chain
+              const proto = Object.getPrototypeOf(target);
+              if (proto && proto !== Array.prototype) {
+                result += formatPrototypeChain(proto, depth + 1);
+              }
+
+              result += `\n${indent}}`;
+            }
+            
             seen.delete(target);
             return result;
           }
@@ -530,49 +599,71 @@ function runCode() {
 
             const objType = Object.prototype.toString.call(target).slice(8, -1);
             const constructorName = target.constructor?.name || objType;
+            
+            // Special handling for built-in objects
+            if (objType === 'Date') {
+              return `${constructorName} ${target.toISOString()}`;
+            }
+            if (objType === 'RegExp') {
+              return `${constructorName} ${target.toString()}`;
+            }
+            if (objType === 'Error') {
+              return `${constructorName}: ${target.message}`;
+            }
+            
             const preview = constructorName === 'Object' ? 'Object' : `${constructorName} {}`;
             if (depth >= maxDepth) return preview;
 
-            let result = `${preview}\n${indent}{`;
+            let result = `${preview}`;
             const ownProps = Object.getOwnPropertyNames(target);
             const ownSymbols = Object.getOwnPropertySymbols(target);
 
-            for (const prop of ownProps) {
-              const descriptor = Object.getOwnPropertyDescriptor(target, prop);
-              const value = descriptor.value;
-              const isAccessor = descriptor.get || descriptor.set;
-              result += `\n${indent}  ${prop}: `;
-              if (isAccessor) {
-                result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
-                if (descriptor.get) {
-                  try {
-                    const getterValue = descriptor.get.call(target);
-                    result += ` => ${inspectObject(getterValue, depth + 1, `${path}.${prop}`)}`;
-                  } catch (e) {
-                    result += ` [Getter Error: ${e.message}]`;
+            if (ownProps.length > 0 || ownSymbols.length > 0) {
+              result += `\n${indent}{`;
+              
+              // Show own properties
+              for (const prop of ownProps.slice(0, 20)) { // Limit to first 20 properties
+                const descriptor = Object.getOwnPropertyDescriptor(target, prop);
+                if (!descriptor) continue;
+                
+                const value = descriptor.value;
+                const isAccessor = descriptor.get || descriptor.set;
+                result += `\n${indent}  ${prop}: `;
+                
+                if (isAccessor) {
+                  result += `[Getter${descriptor.set ? '/Setter' : ''}]`;
+                  if (descriptor.get && depth < maxDepth - 1) {
+                    try {
+                      const getterValue = descriptor.get.call(target);
+                      result += ` => ${await inspectObject(getterValue, depth + 1, `${path}.${prop}`)}`;
+                    } catch (e) {
+                      result += ` [Getter Error: ${e.message}]`;
+                    }
                   }
+                } else {
+                  result += await inspectObject(value, depth + 1, `${path}.${prop}`);
                 }
-              } else {
-                result += inspectObject(value, depth + 1, `${path}.${prop}`);
               }
+              
+              if (ownProps.length > 20) {
+                result += `\n${indent}  ... ${ownProps.length - 20} more properties`;
+              }
+
+              // Show symbol properties
+              for (const sym of ownSymbols.slice(0, 5)) {
+                const value = target[sym];
+                result += `\n${indent}  ${sym.toString()}: ${await inspectObject(value, depth + 1, `${path}[${sym.toString()}]`)}`;
+              }
+
+              // Show prototype chain
+              const proto = Object.getPrototypeOf(target);
+              if (proto && proto !== Object.prototype) {
+                result += formatPrototypeChain(proto, depth + 1);
+              }
+
+              result += `\n${indent}}`;
             }
 
-            for (const sym of ownSymbols) {
-              const value = target[sym];
-              result += `\n${indent}  ${sym.toString()}: ${inspectObject(value, depth + 1, `${path}[${sym.toString()}]`)}`;
-            }
-
-let proto = Object.getPrototypeOf(target);
-if (proto) {
-  result += `\n${indent}${formatPrototypeChain(proto, depth + 1)}`;
-}
-
-          else if (proto && proto !== Object.prototype) {
-              const protoName = proto.constructor?.name || Object.prototype.toString.call(proto).slice(8, -1);
-              result += `\n${indent}  [[Prototype]]: ${protoName} { [Collapsed - Max Depth] }`;
-            }
-
-            result += `\n${indent}}`;
             seen.delete(target);
             return result;
           }
@@ -580,14 +671,35 @@ if (proto) {
           return String(target);
         };
 
-        const output = inspectObject(obj);
-        appendToOutput("Dir:\n" + output + "\n\n");
+        // Handle async inspection
+        const handleInspection = async () => {
+          try {
+            const output = await inspectObject(obj);
+            appendToOutput("Dir:\n" + output + "\n\n");
+          } catch (e) {
+            appendToOutput("Dir: [Error: " + e.message + "]\n");
+          }
+        };
+
+        // For promises and other async objects, handle asynchronously
+        if (obj instanceof Promise || (typeof obj === 'object' && obj !== null)) {
+          handleInspection().catch(e => {
+            appendToOutput("Dir: [Async Error: " + e.message + "]\n");
+          });
+        } else {
+          // For synchronous objects, handle immediately
+          inspectObject(obj).then(output => {
+            appendToOutput("Dir:\n" + output + "\n\n");
+          }).catch(e => {
+            appendToOutput("Dir: [Error: " + e.message + "]\n");
+          });
+        }
       } catch (e) {
         appendToOutput("Dir: [Error: " + e.message + "]\n");
       }
     };
 
-    // Enhanced console.table support
+    // Enhanced console.table support (unchanged from original)
     console.table = (data, columns) => {
       try {
         let output = "Table:\n";
@@ -754,9 +866,9 @@ if (proto) {
 
 
 function mapEnum(srcEnum, dstEnum, value, fallback) {
-    const name = Object.keys(srcEnum).find(k => srcEnum[k] === value && isNaN(+k));
-    return (name && Object.prototype.hasOwnProperty.call(dstEnum, name)) ? dstEnum[name] : fallback;
-  }
+  const name = Object.keys(srcEnum).find(k => srcEnum[k] === value && isNaN(+k));
+  return (name && Object.prototype.hasOwnProperty.call(dstEnum, name)) ? dstEnum[name] : fallback;
+}
 
 // ---------------- Format ----------------
 function formatCode() {
@@ -949,7 +1061,7 @@ async function saveFileAs() {
     const lang = editor.getModel().getLanguageId();
     const suggestedName =
       currentFileHandle ? currentFileHandle.name :
-      (localStorage.getItem(KEYS.lastOpenedFileName) || (lang === 'typescript' ? 'file.ts' : 'file.js'));
+        (localStorage.getItem(KEYS.lastOpenedFileName) || (lang === 'typescript' ? 'file.ts' : 'file.js'));
 
     const fileHandle = await window.showSaveFilePicker({
       types: [

@@ -40,12 +40,16 @@
       <div class="control-group">
         <label for="language" style="font-size:12px; color:var(--muted)">Language</label>
         <select id="language" class="file-btn">
-          <option value="javascript">JavaScript</option>
+          <option value="javascript" selected>JavaScript</option>
           <option value="typescript">TypeScript</option>
         </select>
       </div>
 
-     
+      <div class="control-group" style="margin-left:auto">
+        <button id="clear" class="clear-btn" title="Clear console" style="padding: 6px 10px; font-size: 12px;">🧹 Clear</button>
+        <button id="run" class="run-btn">▶️ Run</button>
+        <button id="format" class="tool-btn">🔧 Format</button>
+      </div>
     </div>
   </div>
 
@@ -59,13 +63,7 @@
         <h4>Console Output</h4>
         <div class="control-group"></div>
       </div>
-      <div class="control-group" style="margin-left:auto">
-        <button id="clear" class="clear-btn" title="Clear console" style="padding: 6px 10px; font-size: 12px;">🧹 Clear</button>
-        <button id="run" class="run-btn">▶️ Run</button>
-        <button id="format" class="tool-btn">🔧 Format</button>
-      </div>
       <div class="output-section">
-      
         <pre id="output"></pre>
       </div>
     </div>
