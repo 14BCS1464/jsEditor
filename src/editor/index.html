@@ -2,76 +2,1335 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced JavaScript Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
 
-  <title>Online JavaScript/TypeScript Editor</title>
+<style>
+/* Modern Editor CSS */
+:root {
+  --primary-color: #6c5ce7;
+  --secondary-color: #00cec9;
+  --dark-bg: #0f0f17;
+  --card-bg: #1a1a25;
+  --text-primary: #f1f1f1;
+  --text-secondary: #a0a0a0;
+  --success: #00b894;
+  --warning: #fdcb6e;
+  --danger: #ff7675;
+  --border-radius: 16px;
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
 
-  <!-- ✅ Correct way to include CSS -->
-  <link rel="stylesheet" href="styles.css" />
+.editor-heading {
+  text-align: center;
+  margin-bottom: 10px;
+}
 
-  <!-- ✅ Scripts that can be in head -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/typescript@5/lib/typescript.js"></script>
+.editor-heading h2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.gradient-text {
+  font-size: 2rem;
+  background: linear-gradient(135deg, #6c5ce7, #00cec9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.gradient-text::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #6c5ce7, #00cec9);
+  border-radius: 2px;
+}
+
+.by-text {
+  font-size: 1.2rem;
+  color: #a0a0a0;
+  margin-top: 8px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .gradient-text {
+    font-size: 2.2rem;
+  }
+  .by-text {
+    font-size: 1rem;
+  }
+}
+
+.gradient-text {
+  transition: transform 0.3s ease, text-shadow 0.3s ease;
+}
+
+.gradient-text:hover {
+  transform: translateY(-2px);
+  text-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
+}
+
+.gradient-text::after {
+  transition: width 0.3s ease;
+}
+
+.editor-heading h2:hover .gradient-text::after {
+  width: 100px;
+}
+
+#format {
+  background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+  color: white;
+}
+
+button {
+  padding: 10px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+button:hover::after {
+  transform: translateX(0);
+}
+
+button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+#run {
+  background: linear-gradient(135deg, #00b894, #20bf6b);
+  color: white;
+}
+
+#addfile {
+  background: linear-gradient(135deg, #6c5ce7, #5f27cd);
+  color: white;
+}
+
+#clear {
+  background: linear-gradient(135deg, #ff7675, #d63031);
+  color: white;
+}
+
+#download {
+  background: linear-gradient(135deg, #fdcb6e, #fab1a0);
+  color: #2d3436;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.03em;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 95%;
+  max-width: 1600px;
+  margin: 0 auto;
+  height: calc(100vh - 180px);
+}
+
+#editor {
+  flex: 2;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  height: 100%;
+  font-size: 18px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+#editor:hover {
+  box-shadow: 0 12px 24px rgba(108, 92, 231, 0.2);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+}
+
+.output-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 15px;
+}
+
+.output-section {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  flex: 1;
+  overflow-y: auto;
+  font-size: 14px;
+  border: 1px solid rgba(0, 206, 201, 0.1);
+  transition: var(--transition);
+  min-height: 0;
+}
+
+.output-section:hover {
+  border: 1px solid rgba(0, 206, 201, 0.2);
+}
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.output-header h4 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.clear-btn {
+  background: linear-gradient(135deg, #ff7675, #d63031);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.clear-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 118, 117, 0.3);
+}
+
+.output-content {
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  line-height: 1.6;
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+}
+
+.log-entry {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  position: relative;
+}
+
+.log-entry.log {
+  background: rgba(0, 184, 148, 0.1);
+  border-left-color: #00b894;
+  color: #00b894;
+}
+
+.log-entry.error {
+  background: rgba(255, 107, 107, 0.1);
+  border-left-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.log-entry.warn {
+  background: rgba(254, 202, 87, 0.1);
+  border-left-color: #feca57;
+  color: #feca57;
+}
+
+.log-entry.info {
+  background: rgba(84, 160, 255, 0.1);
+  border-left-color: #54a0ff;
+  color: #54a0ff;
+}
+
+.log-timestamp {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.object-inspector {
+  margin: 8px 0;
+  font-family: 'Fira Code', monospace;
+}
+
+.object-tree {
+  margin-left: 20px;
+}
+
+.object-key {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.object-value {
+  color: #00b894;
+}
+
+.object-string {
+  color: #feca57;
+}
+
+.object-number {
+  color: #54a0ff;
+}
+
+.object-boolean {
+  color: #a29bfe;
+}
+
+.object-null {
+  color: #636e72;
+  font-style: italic;
+}
+
+.object-undefined {
+  color: #636e72;
+  font-style: italic;
+}
+
+.prototype-section {
+  background: rgba(108, 92, 231, 0.1);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 8px 0;
+}
+
+.prototype-header {
+  color: #6c5ce7;
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.prototype-content {
+  margin-left: 15px;
+  font-size: 11px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.expandable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.expandable::before {
+  content: "▶";
+  margin-right: 5px;
+  transition: transform 0.3s ease;
+}
+
+.expandable.expanded::before {
+  transform: rotate(90deg);
+}
+
+.collapsed {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .container {
+    height: auto;
+  }
+  #editor {
+    min-height: 450px;
+  }
+}
+
+@media (max-width: 992px) {
+  .container {
+    flex-direction: column;
+  }
+  #editor {
+    min-height: 400px;
+  }
+  .output-section {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  h2 {
+    font-size: 2rem;
+  }
+  button {
+    padding: 14px 24px;
+    font-size: 14px;
+    min-width: 140px;
+  }
+  #editor {
+    font-size: 16px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  h2 {
+    font-size: 1.8rem;
+  }
+  .container {
+    width: 100%;
+    gap: 20px;
+  }
+  button {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 18px;
+  }
+}
+</style>
 </head>
 
 <body>
-
-  <div class="header">
-    <div class="editor-title">
-      <span class="gradient-text">Online The JavaScript Editor</span>
-      <div class="file-info">
-        <span>File: <strong id="fileName">No file opened</strong></span>
-        <span>Status: <strong id="fileStatus">-</strong></span>
-      </div>
-    </div>
-  </div>
-
-
+<div class="editor-heading">
+  <h2>
+    <span class="gradient-text">Advanced JavaScript Editor</span>
+  </h2>
   <div id="controls">
-    <div class="control-groups">
-      <div class="control-group">
-        <button id="openFileBtn" class="file-btn">📂 Open File</button>
-        <button id="saveFileBtn" class="file-btn">💾 Save File</button>
-      </div>
-
-      <div class="control-group">
-        <label for="language" style="font-size:12px; color:var(--muted)">Language</label>
-        <select id="language" class="file-btn">
-          <option value="javascript" selected>JavaScript</option>
-          <option value="typescript">TypeScript</option>
-        </select>
-      </div>
-
-      <div class="control-group" style="margin-left:auto">
-        <button id="clear" class="clear-btn" title="Clear console" style="padding: 6px 10px; font-size: 12px;">🧹 Clear</button>
-        <button id="run" class="run-btn">▶️ Run</button>
-        <button id="format" class="tool-btn">🔧 Format</button>
-      </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+      <button id="run">▶️ Run Code</button>
+      <button id="addfile">✨ Import Code</button>
+      <button id="download">📥 Download Code</button>
+      <button id="format">🔧 Format Code</button>
     </div>
   </div>
+</div>
 
-  <div id="toast-container"></div>
+<div class="container">
+  <!-- Editor Section -->
+  <div id="editor"></div>
 
-  <div class="container" id="container">
-    <div id="editor"></div>
-    <div class="resize-handle" id="resizeHandle"></div>
-    <div class="output-container">
+  <!-- Output Section -->
+  <div class="output-container">
+    <div class="output-section">
       <div class="output-header">
-        <h4>Console Output</h4>
-        <div class="control-group"></div>
+        <h4>Advanced Console Output</h4>
+        <button class="clear-btn" onclick="clearOutput()">🗑️ Clear</button>
       </div>
-      <div class="output-section">
-        <pre id="output"></pre>
-      </div>
+      <div id="output" class="output-content"></div>
     </div>
   </div>
+</div>
 
+<input type="file" id="fileInput" accept=".js" style="display: none;">
 
-  <input type="file" id="fileInput" style="display:none" accept=".js,.ts" />
+<script>
+require.config({
+  paths: {
+    vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
+  }
+});
 
-  <script src="script.js"></script>
+require(["vs/editor/editor.main"], function() {
+  // Check if there's saved code in localStorage
+  const savedCode = localStorage.getItem('jsEditorCode');
+  const initialCode = savedCode || `// Test the prototype chain display
+function Person(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+Person.prototype.greet = function() {
+  return "Hello, my name is " + this.name;
+};
+
+function Employee(name, age, jobTitle) {
+  Person.call(this, name, age);
+  this.jobTitle = jobTitle;
+}
+
+Employee.prototype = Object.create(Person.prototype);
+Employee.prototype.constructor = Employee;
+
+Employee.prototype.work = function() {
+  return this.name + " is working as a " + this.jobTitle;
+};
+
+const john = new Employee("John Doe", 30, "Developer");
+console.log("Employee object:", john);
+console.log("Prototype chain inspection:");
+console.dir(john);
+
+// Try calling methods from the prototype chain
+console.log(john.greet());
+console.log(john.work());
+
+// Test array prototype chain
+const arr = [1, 2, 3];
+console.log("Array prototype:", arr);`;
+
+  var editor = monaco.editor.create(document.getElementById("editor"), {
+    value: initialCode,
+    language: "javascript",
+    theme: "vs-dark",
+    automaticLayout: true,
+    minimap: {
+      enabled: true
+    },
+    scrollBeyondLastLine: true,
+    fontFamily: "'Fira Code', 'Consolas', monospace",
+    fontSize: 14,
+    lineNumbers: "on",
+    roundedSelection: true,
+    scrollbar: {
+      verticalScrollbarSize: 10,
+      horizontalScrollbarSize: 10
+    }
+  });
+
+  const outputElement = document.getElementById("output");
+  let logCount = 0;
+  let autoExecuteEnabled = true;
+  let autoExecuteTimer = null;
+  let executionCount = 0;
+  let lastExecutionTime = 0;
+  const MAX_EXECUTIONS_PER_MINUTE = 20;
+  const EXECUTION_DELAY = 300; // 1.5 seconds delay
+
+  // Safety measures to prevent browser crashes
+  const SAFETY_LIMITS = {
+    maxCodeLength: 10000,
+    maxOutputLines: 1000,
+    maxExecutionTime: 5000, // 5 seconds
+    dangerousPatterns: [
+      /while\s*\(\s*true\s*\)/gi,
+      /for\s*\(\s*;\s*;\s*\)/gi,
+      /setInterval/gi,
+      /alert\s*\(/gi,
+      /confirm\s*\(/gi,
+      /prompt\s*\(/gi,
+      /document\.write/gi,
+      /eval\s*\(/gi,
+      /Function\s*\(/gi,
+      /setTimeout.*setTimeout/gi, // Nested setTimeout
+      /\.innerHTML\s*=/gi // Direct HTML injection
+    ]
+  };
+
+  // Function to save code to localStorage
+  function saveCodeToStorage() {
+    const code = editor.getValue();
+    try {
+      localStorage.setItem('jsEditorCode', code);
+      // Show a subtle indicator that code was saved
+      const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
+      saveIndicator.style.opacity = '1';
+      setTimeout(() => {
+        saveIndicator.style.opacity = '0';
+      }, 1000);
+    } catch (e) {
+      console.error('Failed to save code to localStorage:', e);
+    }
+  }
+
+  // Create a save indicator element
+  function createSaveIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'saveIndicator';
+    indicator.textContent = '💾 Saved';
+    indicator.style.position = 'absolute';
+    indicator.style.bottom = '10px';
+    indicator.style.right = '10px';
+    indicator.style.background = 'rgba(0, 184, 148, 0.8)';
+    indicator.style.color = 'white';
+    indicator.style.padding = '5px 10px';
+    indicator.style.borderRadius = '4px';
+    indicator.style.fontSize = '12px';
+    indicator.style.transition = 'opacity 0.3s ease';
+    indicator.style.opacity = '0';
+    indicator.style.zIndex = '1000';
+    document.getElementById('editor').appendChild(indicator);
+    return indicator;
+  }
+
+  // Rate limiting function
+  function isRateLimited() {
+    const now = Date.now();
+    if (now - lastExecutionTime < 60000) { // Within last minute
+      executionCount++;
+    } else {
+      executionCount = 1; // Reset count
+      lastExecutionTime = now;
+    }
+    
+    if (executionCount > MAX_EXECUTIONS_PER_MINUTE) {
+      addLogEntry('⚠️ Rate limit exceeded. Auto-execution paused for 1 minute.', 'warn');
+      return true;
+    }
+    return false;
+  }
+
+  // Safety checker function
+  function isSafeCode(code) {
+    if (!code || code.length > SAFETY_LIMITS.maxCodeLength) {
+      return { safe: false, reason: 'Code too long or empty' };
+    }
+
+    // Check for dangerous patterns
+    for (const pattern of SAFETY_LIMITS.dangerousPatterns) {
+      if (pattern.test(code)) {
+        return { 
+          safe: false, 
+          reason: `Potentially dangerous pattern detected: ${pattern.source}` 
+        };
+      }
+    }
+
+    // Check for excessive loops
+    const loopCount = (code.match(/for\s*\(|while\s*\(|do\s*{/gi) || []).length;
+    if (loopCount > 5) {
+      return { safe: false, reason: 'Too many loops detected' };
+    }
+
+    // Check for excessive function calls
+    const functionCallCount = (code.match(/\w+\s*\(/gi) || []).length;
+    if (functionCallCount > 50) {
+      return { safe: false, reason: 'Too many function calls detected' };
+    }
+
+    return { safe: true };
+  }
+
+  // Auto-execute function with safety measures
+  function safeAutoExecute() {
+    if (!autoExecuteEnabled || isRateLimited()) return;
+
+    const code = editor.getValue();
+    const safetyCheck = isSafeCode(code);
+    
+    if (!safetyCheck.safe) {
+      addLogEntry(`🚫 Auto-execution skipped: ${safetyCheck.reason}`, 'warn');
+      return;
+    }
+
+    // Clear any existing timeout
+    if (autoExecuteTimer) {
+      clearTimeout(autoExecuteTimer);
+    }
+
+    // Set timeout for auto-execution
+    autoExecuteTimer = setTimeout(() => {
+      try {
+        runCodeSafely(code);
+      } catch (error) {
+        addLogEntry(`Auto-execution error: ${error.message}`, 'error');
+      }
+    }, EXECUTION_DELAY);
+  }
+
+  // Safe code execution with timeout
+  function runCodeSafely(code) {
+    const startTime = Date.now();
+    let executionTimer = null;
+
+    // Set execution timeout
+    executionTimer = setTimeout(() => {
+      addLogEntry('⏱️ Execution timeout - code took too long to run', 'error');
+      throw new Error('Execution timeout');
+    }, SAFETY_LIMITS.maxExecutionTime);
+
+    try {
+      // Clear previous output for auto-execution
+      if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
+        clearOutput();
+        addLogEntry('🧹 Output cleared due to size limit', 'info');
+      }
+
+      runCode();
+      
+    } finally {
+      clearTimeout(executionTimer);
+      const executionTime = Date.now() - startTime;
+      
+      // Add execution info for debugging
+      if (executionTime > 1000) {
+        addLogEntry(`⏱️ Execution time: ${executionTime}ms`, 'info');
+      }
+    }
+  }
+
+  // Add toggle button for auto-execution
+  function createAutoExecuteToggle() {
+    const controlsDiv = document.getElementById('controls').querySelector('div');
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'autoExecute';
+    toggleBtn.innerHTML = '🔄 Auto-Execute: ON';
+    toggleBtn.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
+    toggleBtn.style.color = 'white';
+    
+    toggleBtn.addEventListener('click', function() {
+      autoExecuteEnabled = !autoExecuteEnabled;
+      if (autoExecuteEnabled) {
+        this.innerHTML = '🔄 Auto-Execute: ON';
+        this.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
+        addLogEntry('✅ Auto-execution enabled', 'info');
+        safeAutoExecute(); // Execute immediately when enabled
+      } else {
+        this.innerHTML = '⏸️ Auto-Execute: OFF';
+        this.style.background = 'linear-gradient(135deg, #ff7675, #d63031)';
+        if (autoExecuteTimer) {
+          clearTimeout(autoExecuteTimer);
+        }
+        addLogEntry('⏸️ Auto-execution disabled', 'warn');
+      }
+    });
+    
+    controlsDiv.appendChild(toggleBtn);
+  }
+
+  // Initialize auto-execute toggle
+  createAutoExecuteToggle();
+
+  // Listen for editor changes
+  let changeTimer = null;
+  let saveTimer = null;
+  editor.onDidChangeModelContent(() => {
+    const code = editor.getValue();
+    
+    // Debounce saving to localStorage
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+    }
+    saveTimer = setTimeout(() => {
+      saveCodeToStorage();
+    }, 1000);
+    
+    // Only auto-execute if enabled and content has meaningful changes
+    if (autoExecuteEnabled && code.trim()) {
+      // Clear any existing timer to debounce rapid changes
+      if (changeTimer) {
+        clearTimeout(changeTimer);
+      }
+      
+      // Set a small delay to avoid executing on every keystroke
+      changeTimer = setTimeout(() => {
+        safeAutoExecute();
+      }, 800);
+    }
+  });
+
+  // Enhanced object inspector
+  function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+    if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
+    
+    if (obj === null) return '<span class="object-null">null</span>';
+    if (obj === undefined) return '<span class="object-undefined">undefined</span>';
+    
+    const type = typeof obj;
+    
+    if (type === 'string') {
+      return `<span class="object-string">"${obj}"</span>`;
+    }
+    if (type === 'number') {
+      return `<span class="object-number">${obj}</span>`;
+    }
+    if (type === 'boolean') {
+      return `<span class="object-boolean">${obj}</span>`;
+    }
+    if (type === 'function') {
+      return `<span class="object-value">ƒ ${obj.name || 'anonymous'}(${getFunctionParams(obj)})</span>`;
+    }
+    
+    if (Array.isArray(obj)) {
+      if (obj.length === 0) return '<span class="object-value">[]</span>';
+      
+      const id = `array_${Date.now()}_${Math.random()}`;
+      let html = `<div class="object-inspector">`;
+      html += `<span class="expandable" onclick="toggleExpand('${id}')">Array(${obj.length})</span>`;
+      html += `<div id="${id}" class="object-tree collapsed">`;
+      
+      obj.slice().reverse().forEach((item, revIndex, arr) => {
+        const origIndex = obj.length - 1 - revIndex;
+        html += `<div><span class="object-key">${origIndex}:</span> ${createObjectInspector(item, depth + 1, maxDepth, seen)}</div>`;
+      });
+      
+      html += `</div></div>`;
+      return html;
+    }
+    
+    if (type === 'object') {
+      // Check for circular references
+      if (seen.has(obj)) {
+        return '<span class="object-circular">[Circular Reference]</span>';
+      }
+      seen.add(obj);
+      
+      const keys = Object.keys(obj);
+      if (keys.length === 0) return '<span class="object-value">{}</span>';
+      
+      const id = `obj_${Date.now()}_${Math.random()}`;
+      let html = `<div class="object-inspector">`;
+      html += `<span class="expandable" onclick="toggleExpand('${id}')">${obj.constructor.name || 'Object'}</span>`;
+      html += `<div id="${id}" class="object-tree collapsed">`;
+      
+      // Show own properties
+      keys.forEach(key => {
+        html += `<div><span class="object-key">${key}:</span> ${createObjectInspector(obj[key], depth + 1, maxDepth, seen)}</div>`;
+      });
+      
+      // Show prototype information
+      const prototype = Object.getPrototypeOf(obj);
+      if (prototype && prototype !== Object.prototype) {
+        html += createPrototypeSection(prototype, 0, new WeakSet([...seen]));
+      }
+      
+      html += `</div></div>`;
+      return html;
+    }
+    
+    return `<span class="object-value">${String(obj)}</span>`;
+  }
+
+  function createPrototypeSection(prototype, depth = 0, visitedProtos = new WeakSet()) {
+    if (!prototype || prototype === Object.prototype || depth > 5) return '';
+    
+    // Prevent circular references in prototype chain
+    const protoKey = prototype.constructor ? prototype.constructor.name : 'Unknown';
+    if (visitedProtos.has(prototype)) {
+      return `<div class="prototype-section">
+        <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular reference)</div>
+      </div>`;
+    }
+    visitedProtos.add(prototype);
+    
+    const id = `proto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let html = `<div class="prototype-section">`;
+    html += `<div class="prototype-header expandable" onclick="toggleExpand('${id}')">`;
+    html += `🔗 [[Prototype]]: ${protoKey}`;
+    html += `</div>`;
+    html += `<div id="${id}" class="prototype-content collapsed">`;
+    
+    try {
+      // Get all property names including non-enumerable ones
+      const allKeys = Object.getOwnPropertyNames(prototype);
+      const descriptors = Object.getOwnPropertyDescriptors(prototype);
+      
+      // Sort keys: methods first, then properties
+      const sortedKeys = allKeys
+        .filter(key => key !== 'constructor')
+        .sort((a, b) => {
+          const aIsFunction = typeof descriptors[a]?.value === 'function';
+          const bIsFunction = typeof descriptors[b]?.value === 'function';
+          if (aIsFunction && !bIsFunction) return -1;
+          if (!aIsFunction && bIsFunction) return 1;
+          return a.localeCompare(b);
+        });
+      
+      let methodCount = 0;
+      let propertyCount = 0;
+      
+      sortedKeys.forEach(key => {
+        const descriptor = descriptors[key];
+        if (!descriptor) return;
+        
+        const isMethod = typeof descriptor.value === 'function';
+        const isGetter = typeof descriptor.get === 'function';
+        const isSetter = typeof descriptor.set === 'function';
+        
+        if (isMethod) {
+          methodCount++;
+          const params = getFunctionParams(descriptor.value);
+          html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(0, 184, 148, 0.1); border-radius: 4px;">`;
+          html += `<span class="object-key">⚡ ${key}:</span> `;
+          html += `<span class="object-value">ƒ ${key}(${params})</span>`;
+          html += `</div>`;
+        } else if (isGetter || isSetter) {
+          propertyCount++;
+          html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(108, 92, 231, 0.1); border-radius: 4px;">`;
+          html += `<span class="object-key">🔧 ${key}:</span> `;
+          if (isGetter && isSetter) {
+            html += `<span class="object-value">[Getter/Setter]</span>`;
+          } else if (isGetter) {
+            html += `<span class="object-value">[Getter]</span>`;
+          } else {
+            html += `<span class="object-value">[Setter]</span>`;
+          }
+          html += `</div>`;
+        } else {
+          propertyCount++;
+          html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(255, 118, 117, 0.1); border-radius: 4px;">`;
+          html += `<span class="object-key">📦 ${key}:</span> `;
+          try {
+            html += createObjectInspector(descriptor.value, 0, 1, new WeakSet());
+          } catch (e) {
+            html += `<span class="object-value">[Cannot access]</span>`;
+          }
+          html += `</div>`;
+        }
+      });
+      
+      // Add summary
+      html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
+      html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
+      html += `</div>`;
+      
+    } catch (error) {
+      html += `<div style="color: #ff6b6b; font-style: italic;">Error inspecting prototype: ${error.message}</div>`;
+    }
+    
+    // Recursively show parent prototype
+    const parentProto = Object.getPrototypeOf(prototype);
+    if (parentProto && parentProto !== Object.prototype && depth < 4) {
+      html += createPrototypeSection(parentProto, depth + 1, visitedProtos);
+    }
+    
+    html += `</div></div>`;
+    return html;
+  }
+
+  function getFunctionParams(func) {
+    const funcStr = func.toString();
+    const match = funcStr.match(/\(([^)]*)\)/);
+    return match ? match[1] : '';
+  }
+
+  window.toggleExpand = function(id) {
+    const element = document.getElementById(id);
+    const trigger = element.previousElementSibling;
+    
+    if (element.classList.contains('collapsed')) {
+      element.classList.remove('collapsed');
+      trigger.classList.add('expanded');
+    } else {
+      element.classList.add('collapsed');
+      trigger.classList.remove('expanded');
+    }
+  };
+
+  function addLogEntry(content, type = 'log') {
+    logCount++;
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${type}`;
+    logEntry.innerHTML = `
+      <div class="log-timestamp">[${timestamp}] #${logCount}</div>
+      <div>${content}</div>
+    `;
+    
+    outputElement.appendChild(logEntry);
+    outputElement.scrollTop = outputElement.scrollHeight;
+  }
+
+  function runCode() {
+    const code = editor.getValue();
+    if (!code) return;
+
+    outputElement.innerHTML = "";
+    logCount = 0;
+
+    // Override console methods
+    const originalConsole = { ...console };
+
+    // Track recursion to prevent infinite loops
+    const seenObjects = new WeakSet();
+    const MAX_OUTPUT_SIZE = 100000; // Limit output size to prevent browser hangs
+    let currentOutputSize = 0;
+
+    // Helper function to create an expandable object inspector with prototype chain
+    function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+        // Prevent browser hang by limiting output size
+        if (currentOutputSize > MAX_OUTPUT_SIZE) {
+            return '<span class="object-error">[Output truncated: Too large]</span>';
+        }
+
+        if (depth > maxDepth) return '<span class="object-depth">...</span>';
+        if (obj === null) return '<span class="object-null">null</span>';
+        if (obj === undefined) return '<span class="object-undefined">undefined</span>';
+        if (typeof obj !== 'object') {
+            if (typeof obj === 'string') return `<span class="object-string">"${obj}"</span>`;
+            if (typeof obj === 'number') return `<span class="object-number">${obj}</span>`;
+            if (typeof obj === 'boolean') return `<span class="object-boolean">${obj}</span>`;
+            return `<span class="object-value">${obj}</span>`;
+        }
+
+        // Prevent circular references
+        if (seen.has(obj)) {
+            return '<span class="object-circular">[Circular Reference]</span>';
+        }
+        seen.add(obj);
+
+        let output = '<div class="object-inspector">';
+        output += `<span class="object-type">[${obj.constructor?.name || 'Object'}]</span> {`;
+        currentOutputSize += output.length;
+
+        const props = Object.getOwnPropertyNames(obj);
+        if (props.length > 0) {
+            output += '<ul style="margin: 0; padding-left: 20px;">';
+            for (const prop of props) {
+                let value;
+                try {
+                    value = obj[prop];
+                } catch (e) {
+                    value = `<span class="object-error">[Error: ${e.message}]</span>`;
+                }
+                const valueDisplay = typeof value === 'object' && value !== null
+                    ? createObjectInspector(value, depth + 1, maxDepth, seen)
+                    : createObjectInspector(value, depth + 1, maxDepth, seen);
+                output += `<li><span class="object-key">${prop}</span>: ${valueDisplay}</li>`;
+                currentOutputSize += valueDisplay.length;
+                if (currentOutputSize > MAX_OUTPUT_SIZE) {
+                    output += '<li><span class="object-error">[Output truncated: Too large]</span></li>';
+                    break;
+                }
+            }
+            output += '</ul>';
+        }
+
+        // Display prototype chain in an expandable section
+        let proto = Object.getPrototypeOf(obj);
+        if (proto && depth < maxDepth) {
+            output += '<details style="margin-top: 8px; padding-left: 20px;">';
+            output += `<summary><span class="object-proto">[[Prototype]]: [${proto.constructor?.name || 'Object'}]</span></summary>`;
+            output += createObjectInspector(proto, depth + 1, maxDepth, new WeakSet([...seen]));
+            output += '</details>';
+            currentOutputSize += output.length;
+        }
+
+        output += '}</div>';
+        return output;
+    }
+
+    console.log = function(...args) {
+        currentOutputSize = 0; // Reset size tracking for each log
+        let content = args.map(arg => {
+            if (typeof arg === 'object' && arg !== null) {
+                return createObjectInspector(arg, 0, 3, new WeakSet());
+            } else if (arg === undefined) {
+                return '<span class="object-undefined">undefined</span>';
+            } else if (arg === null) {
+                return '<span class="object-null">null</span>';
+            } else if (typeof arg === 'string') {
+                return `<span class="object-string">"${arg}"</span>`;
+            } else if (typeof arg === 'number') {
+                return `<span class="object-number">${arg}</span>`;
+            } else if (typeof arg === 'boolean') {
+                return `<span class="object-boolean">${arg}</span>`;
+            } else {
+                return `<span class="object-value">${arg}</span>`;
+            }
+        }).join(' ');
+        addLogEntry(content, 'log');
+    };
+
+    console.dir = function(obj) {
+        currentOutputSize = 0;
+        const content = createObjectInspector(obj, 0, 5, new WeakSet());
+        addLogEntry(content, 'dir');
+    };
+
+    console.table = function(data, columns) {
+        if (!data) return;
+        currentOutputSize = 0;
+
+        let output = '<table style="border-collapse: collapse; width: 100%; font-size: 12px;">';
+        
+        // Handle array of objects or single object
+        const isArray = Array.isArray(data);
+        const rows = isArray ? data : [data];
+        const keys = columns || (rows[0] ? Object.keys(rows[0]) : []);
+
+        // Header
+        output += '<thead><tr>';
+        if (isArray) output += '<th style="border: 1px solid #ccc; padding: 8px;">(index)</th>';
+        for (const key of keys) {
+            output += `<th style="border: 1px solid #ccc; padding: 8px;">${key}</th>`;
+        }
+        output += '</tr></thead>';
+
+        // Body
+        output += '<tbody>';
+        for (let i = 0; i < rows.length && currentOutputSize < MAX_OUTPUT_SIZE; i++) {
+            const row = rows[i];
+            output += '<tr>';
+            if (isArray) output += `<td style="border: 1px solid #ccc; padding: 8px;">${i}</td>`;
+            for (const key of keys) {
+                const value = row[key];
+                const display = typeof value === 'object' && value !== null
+                    ? createObjectInspector(value, 0, 1, new WeakSet())
+                    : createObjectInspector(value, 0, 1, new WeakSet());
+                output += `<td style="border: 1px solid #ccc; padding: 8px;">${display}</td>`;
+                currentOutputSize += display.length;
+                if (currentOutputSize > MAX_OUTPUT_SIZE) {
+                    output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) + 
+                        '" style="border: 1px solid #ccc; padding: 8px;">[Output truncated: Too large]</td></tr>';
+                    break;
+                }
+            }
+            output += '</tr>';
+        }
+        output += '</tbody></table>';
+
+        addLogEntry(output, 'table');
+    };
+
+    console.error = function(...args) {
+        currentOutputSize = 0;
+        const content = args.map(arg => {
+            if (arg instanceof Error) {
+                return `<strong>${arg.name}:</strong> ${arg.message}<br><pre style="margin-top: 8px; font-size: 11px; opacity: 0.8;">${arg.stack}</pre>`;
+            }
+            return String(arg);
+        }).join(' ');
+        addLogEntry(content, 'error');
+    };
+
+    console.warn = function(...args) {
+        currentOutputSize = 0;
+        const content = args.join(' ');
+        addLogEntry(content, 'warn');
+    };
+
+    console.info = function(...args) {
+        currentOutputSize = 0;
+        const content = args.join(' ');
+        addLogEntry(content, 'info');
+    };
+
+    // Handle unhandled promise rejections
+    window.onunhandledrejection = function(event) {
+        console.error("Unhandled Promise Rejection:", event.reason);
+    };
+
+    try {
+        const result = eval(code);
+        
+        if (result instanceof Promise) {
+            result.catch(error => {
+                console.error(error);
+            });
+        }
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setTimeout(() => {
+            console.log = originalConsole.log;
+            console.error = originalConsole.error;
+            console.warn = originalConsole.warn;
+            console.info = originalConsole.info;
+            console.dir = originalConsole.dir;
+            console.table = originalConsole.table;
+        }, 1000);
+    }
+}
+  window.clearOutput = function() {
+    outputElement.innerHTML = "";
+    logCount = 0;
+  };
+
+  function downloadCode() {
+    const code = editor.getValue();
+    if (!code) return;
+
+    let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
+    let fileName = prompt("Enter the file name (including extension):", `advanced_js_${timestamp}.js`);
+
+    if (fileName === null) return;
+    if (!fileName.trim()) fileName = "code.js";
+
+    const blob = new Blob([code], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function formatCode() {
+    try {
+      const code = editor.getValue();
+      if (!code.trim()) return;
+      
+      if (typeof window.js_beautify === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js';
+        script.onload = function() {
+          applyFormatting(code);
+        };
+        document.head.appendChild(script);
+      } else {
+        applyFormatting(code);
+      }
+    } catch (error) {
+      addLogEntry(`⚠️ Formatting error: ${error.message}`, 'error');
+    }
+  }
+
+  function applyFormatting(code) {
+    const beautifyFn = window.js_beautify || window.beautify;
+    
+    if (typeof beautifyFn === 'function') {
+      const formattedCode = beautifyFn(code, {
+        indent_size: 2,
+        space_in_empty_paren: true,
+        preserve_newlines: true,
+        max_preserve_newlines: 2,
+        wrap_line_length: 80,
+        indent_with_tabs: false,
+        end_with_newline: true,
+        brace_style: "collapse,preserve-inline"
+      });
+      
+      editor.setValue(formattedCode);
+      addLogEntry('✅ Code formatted successfully!', 'info');
+    } else {
+      monaco.editor.getEditors()[0].getAction('editor.action.formatDocument').run();
+      addLogEntry('✅ Code formatted using built-in formatter', 'info');
+    }
+  }
+
+  // Event listeners
+  document.getElementById("run").addEventListener("click", runCode);
+  document.getElementById("download").addEventListener("click", downloadCode);
+  document.getElementById("format").addEventListener("click", formatCode);
+
+  document.getElementById("addfile").addEventListener("click", function() {
+    document.getElementById("fileInput").click();
+  });
+
+  document.getElementById("fileInput").addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (file && file.name.endsWith('.js')) {
+      const reader = new FileReader();
+      const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
+
+      reader.onload = function(e) {
+        const editorValue = editor.getValue() || "";
+        const newValue = mergeChoice ? `${editorValue}\n\n${e.target.result}` : e.target.result;
+        editor.setValue(newValue);
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Please select a valid JavaScript (.js) file.");
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+     
+      runCode();
+    }
+    if (e.altKey && e.shiftKey && e.key === 'F') {
+      e.preventDefault();
+      formatCode();
+    }
+  });
+});
+
+// Auto-completion
+monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+  target: monaco.languages.typescript.ScriptTarget.ES6,
+  allowNonTsExtensions: true
+});
+
+monaco.languages.registerCompletionItemProvider("javascript", {
+  provideCompletionItems: () => {
+    return {
+      suggestions: [
+        {
+          label: "log",
+          kind: monaco.languages.CompletionItemKind.Function,
+          insertText: 'console.log($1);',
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+        }
+      ]
+    };
+  }
+});
+</script>
 </body>
 </html>
