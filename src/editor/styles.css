@@ -148,24 +148,26 @@ body {
 
 /* Enhanced Button Styles */
 button {
-    padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px);
-    font-size: clamp(11px, 2vw, 14px);
-    font-weight: 600;
-    border-radius: 12px;
+    padding: clamp(8px, 2vw, 12px) clamp(14px, 2.5vw, 20px);
+    font-size: clamp(11px, 1.8vw, 13px);
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: var(--transition);
+    box-shadow: var(--shadow-md);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     position: relative;
     overflow: hidden;
     white-space: nowrap;
-    min-height: 44px;
+    min-height: 36px;
     touch-action: manipulation;
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
 }
 
 button::before {
@@ -176,9 +178,9 @@ button::before {
     width: 0;
     height: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.4);
     transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+    transition: width 0.5s ease, height 0.5s ease;
 }
 
 button:active::before {
@@ -193,9 +195,9 @@ button::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.4s ease;
 }
 
 button:hover::after {
@@ -203,58 +205,60 @@ button:hover::after {
 }
 
 button:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: var(--shadow-lg);
+    filter: brightness(1.1) drop-shadow(0 8px 20px rgba(108, 92, 231, 0.5));
 }
 
 button:active {
-    transform: translateY(-1px) scale(0.98);
+    transform: translateY(-2px) scale(0.97);
 }
 
 button:focus-visible {
-    outline: 3px solid rgba(108, 92, 231, 0.5);
-    outline-offset: 3px;
+    outline: 3px solid rgba(108, 92, 231, 0.6);
+    outline-offset: 4px;
 }
 
 #format {
-    background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+    background: linear-gradient(135deg, #a29bfe, #6c5ce7, #5f27cd);
     color: white;
 }
 
 #run {
-    background: linear-gradient(135deg, #00b894, #20bf6b);
+    background: linear-gradient(135deg, #00b894, #20bf6b, #00a676);
     color: white;
 }
 
 #addfile {
-    background: linear-gradient(135deg, #6c5ce7, #5f27cd);
+    background: linear-gradient(135deg, #6c5ce7, #5f27cd, #4834d4);
     color: white;
 }
 
 #clear {
-    background: linear-gradient(135deg, #ff7675, #d63031);
+    background: linear-gradient(135deg, #ff7675, #d63031, #c0392b);
     color: white;
 }
 
 #download {
-    background: linear-gradient(135deg, #fdcb6e, #fab1a0);
+    background: linear-gradient(135deg, #fdcb6e, #fab1a0, #e17055);
     color: #2d3436;
 }
 
 .layout-btn {
-    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    background: linear-gradient(135deg, #74b9ff, #0984e3, #0652dd);
     color: white;
-    transition: all 0.3s ease;
 }
 
 .layout-btn.active {
-    background: linear-gradient(135deg, #6c5ce7, #5f27cd);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(108, 92, 231, 0.4);
+    background: linear-gradient(135deg, #6c5ce7, #5f27cd, #4834d4);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(108, 92, 231, 0.5);
+    filter: brightness(1.15);
 }
 
 .layout-btn:hover {
-    background: linear-gradient(135deg, #5f27cd, #6c5ce7);
+    background: linear-gradient(135deg, #5f27cd, #6c5ce7, #a29bfe);
+    filter: brightness(1.1) drop-shadow(0 8px 20px rgba(108, 92, 231, 0.5));
 }
 
 /* Container Styles */
@@ -586,7 +590,7 @@ button:focus-visible {
     
     button {
         gap: 6px;
-        padding: 12px 18px;
+        padding: 10px 16px;
     }
     
     #editor {
@@ -614,9 +618,9 @@ button:focus-visible {
     }
     
     button {
-        font-size: 12px;
-        padding: 10px 14px;
-        min-width: 100px;
+        font-size: 11px;
+        padding: 8px 12px;
+        min-width: 90px;
     }
 }
 
@@ -638,8 +642,8 @@ button:focus-visible {
     button {
         flex: 1;
         min-width: auto;
-        padding: 10px 12px;
-        font-size: 11px;
+        padding: 8px 10px;
+        font-size: 10px;
     }
     
     .log-entry {
