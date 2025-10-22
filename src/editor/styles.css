@@ -590,7 +590,7 @@ button:focus-visible {
     
     button {
         gap: 6px;
-        padding: 10px 16px;
+        padding: 5px 6px;
     }
     
     #editor {

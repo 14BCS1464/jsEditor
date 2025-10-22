@@ -1,14 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  query, 
-  orderBy 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-
-
 const firebaseConfig = {
   apiKey: "AIzaSyD4KvJRvfN-bVhfvQ7yb81iazQnR_wImd0",
   authDomain: "editor-a7587.firebaseapp.com",
@@ -19,18 +8,18 @@ const firebaseConfig = {
   measurementId: "G-TF8GD94RV0"
 };
 
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const analytics = firebase.analytics();
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const analytics = getAnalytics(app);
-
-
+// Global variables
 let QUESTIONS = [];
-let index = 0; // current question index
-let score = 0; // number of correct answers
+let index = 0; 
+let score = 0; 
 const userSelections = new Map(); // questionId -> Set(indices)
 
-// --- DOM Refs ---
+// DOM References
 const qtext = document.getElementById('qtext');
 const qcode = document.getElementById('qcode');
 const optionsEl = document.getElementById('options');
@@ -46,33 +35,166 @@ const checkBtn = document.getElementById('checkBtn');
 const nextBtn = document.getElementById('nextBtn');
 const finishBtn = document.getElementById('finishBtn');
 
-// --- Helpers ---
+// Modal elements
+const scoreModal = document.getElementById('scoreModal');
+const modalContent = document.getElementById('modalContent');
+const scoreIcon = document.getElementById('scoreIcon');
+const modalTitle = document.getElementById('modalTitle');
+const modalScore = document.getElementById('modalScore');
+const modalMessage = document.getElementById('modalMessage');
+const retryBtn = document.getElementById('retryBtn');
+const homeBtn = document.getElementById('homeBtn');
+const reviewBtn = document.getElementById('reviewBtn');
+
+// Utility functions
 const isMulti = (q) => Array.isArray(q.answer);
 const eqSet = (a, b) => a.size === b.size && [...a].every(v => b.has(v));
 
-// --- Firebase Functions ---
+// Score popup functionality
+function showScorePopup(score, total, percentage) {
+  let config = getScoreConfig(percentage);
+
+  modalContent.className = 'modal-content ' + config.class;
+  scoreIcon.textContent = config.icon;
+  modalTitle.textContent = config.title;
+  modalScore.textContent = `${score}/${total} (${percentage}%)`;
+  modalMessage.textContent = config.message;
+
+  if (percentage >= 90) {
+    createConfetti();
+  }
+
+  scoreModal.style.display = 'block';
+
+  if (percentage < 40) {
+    modalContent.style.animation = 'modalSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), shake 0.5s ease-in-out 1s';
+  }
+
+  playScoreSound(percentage);
+}
+
+function createConfetti() {
+  const colors = ['#ff6b6b', '#ffd93d', '#6bcf7f', '#4d9de0', '#ff8cc8', '#a8e6cf'];
+
+  for (let i = 0; i < 50; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    confetti.style.animationDelay = Math.random() * 2 + 's';
+    modalContent.appendChild(confetti);
+
+    setTimeout(() => {
+      if (confetti.parentNode) {
+        confetti.parentNode.removeChild(confetti);
+      }
+    }, 5000);
+  }
+}
+
+function playScoreSound(percentage) {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    if (percentage >= 90) {
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+    } else if (percentage >= 70) {
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+      oscillator.frequency.setValueAtTime(554.37, audioContext.currentTime + 0.1); // C#5
+    } else if (percentage >= 50) {
+      oscillator.frequency.setValueAtTime(349.23, audioContext.currentTime); // F4
+    } else {
+      oscillator.frequency.setValueAtTime(261.63, audioContext.currentTime); // C4
+      oscillator.frequency.setValueAtTime(246.94, audioContext.currentTime + 0.1); // B3
+    }
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.log('Audio not available');
+  }
+}
+
+function getScoreConfig(percentage) {
+  if (percentage >= 90) {
+    return {
+      class: 'score-excellent',
+      icon: '🏆',
+      title: 'OUTSTANDING!',
+      message: '🌟 Absolutely incredible! You\'ve mastered JavaScript fundamentals like a true pro! 🚀'
+    };
+  } else if (percentage >= 70) {
+    return {
+      class: 'score-good',
+      icon: '🎯',
+      title: 'EXCELLENT!',
+      message: '💪 Great work! You have a solid understanding of JavaScript. Keep up the momentum! ⚡'
+    };
+  } else if (percentage >= 50) {
+    return {
+      class: 'score-average',
+      icon: '📈',
+      title: 'GOOD EFFORT!',
+      message: '🎓 You\'re on the right track! Review the concepts and come back stronger! 💡'
+    };
+  } else {
+    return {
+      class: 'score-poor',
+      icon: '💪',
+      title: 'KEEP PUSHING!',
+      message: '🌱 Every expert was once a beginner! Practice makes perfect - you\'ve got this! 🔥'
+    };
+  }
+}
+
+// Quiz functionality
+function resetQuiz() {
+  index = 0;
+  score = 0;
+  userSelections.clear();
+  sessionStorage.clear();
+  scoreModal.style.display = 'none';
+  result.style.display = 'none';
+  scorePill.textContent = `Score: ${score}`;
+  render();
+}
+
+function goHome() {
+  window.location.href = '/';
+}
+
+function showReviewAnswers() {
+  scoreModal.style.display = 'none';
+  result.style.display = 'block';
+  result.scrollIntoView({ behavior: 'smooth' });
+}
+
 async function loadQuestionsFromFirestore() {
   try {
-    // Show loading state
     qtext.textContent = 'Loading questions...';
-    
-    // Query questions collection, optionally ordered
-    const q = query(collection(db, "questions"), orderBy("order", "asc"));
-    const querySnapshot = await getDocs(q);
-    
+    const querySnapshot = await db.collection('questions').orderBy('order', 'asc').get();
     const questions = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       questions.push({
-        id: doc.id, // Use Firestore document ID
+        id: doc.id,
         ...data
       });
     });
-    
     if (questions.length === 0) {
       throw new Error('No questions found in Firestore');
     }
-    
     return questions;
   } catch (error) {
     console.error('Error loading questions from Firestore:', error);
@@ -80,7 +202,6 @@ async function loadQuestionsFromFirestore() {
   }
 }
 
-// --- Quiz Functions ---
 function render() {
   const q = QUESTIONS[index];
   counter.textContent = `Q ${index + 1}/${QUESTIONS.length}`;
@@ -90,12 +211,12 @@ function render() {
   feedback.className = 'feedback';
 
   qtext.textContent = q.question;
-  if (q.code) { 
-    qcode.classList.remove('hidden'); 
-    qcode.textContent = q.code; 
-  } else { 
-    qcode.classList.add('hidden'); 
-    qcode.textContent = ''; 
+  if (q.code) {
+    qcode.classList.remove('hidden');
+    qcode.textContent = q.code;
+  } else {
+    qcode.classList.add('hidden');
+    qcode.textContent = '';
   }
 
   optionsEl.innerHTML = '';
@@ -111,11 +232,11 @@ function render() {
     input.checked = saved.has(i);
     input.addEventListener('change', () => {
       const set = userSelections.get(q.id) || new Set();
-      if (isMulti(q)) { 
-        input.checked ? set.add(i) : set.delete(i); 
-      } else { 
-        set.clear(); 
-        set.add(i); 
+      if (isMulti(q)) {
+        input.checked ? set.add(i) : set.delete(i);
+      } else {
+        set.clear();
+        set.add(i);
       }
       userSelections.set(q.id, set);
     });
@@ -140,7 +261,6 @@ function checkAnswer() {
     return;
   }
 
-  // Determine correctness
   let correct = false;
   if (isMulti(q)) {
     const ans = new Set(q.answer);
@@ -152,7 +272,6 @@ function checkAnswer() {
   if (correct) {
     feedback.classList.add('ok');
     feedback.textContent = 'Correct! ' + (q.explain || '');
-    // Increase score only on the first time a question becomes correct
     const key = `scored-${q.id}`;
     if (!sessionStorage.getItem(key)) {
       score += 1;
@@ -168,10 +287,13 @@ function checkAnswer() {
 
 function finishQuiz() {
   const total = QUESTIONS.length;
-  const pct = Math.round((score / total) * 100);
+  const percentage = total > 0 ? Math.round((score / total) * 10000) / 100 : 0;
+
+  showScorePopup(score, total, percentage);
+
   result.innerHTML = `
     <h3 style="margin:0 0 8px">Your Result</h3>
-    <p>Score: <strong>${score}</strong> / ${total} (${pct}%)</p>
+    <p>Score: <strong>${score}</strong> / ${total} (${percentage}%)</p>
     <details>
       <summary>Review answers</summary>
       <ol style="margin-top:10px; line-height:1.7">
@@ -183,7 +305,7 @@ function finishQuiz() {
           const ansText = ans.map(i => q.options[i]).join(', ');
           return `<li>
             <div><strong>${q.question}</strong></div>
-            ${q.code ? `<pre class='code'>${q.code.replace(/[<>&]/g, ch => ({'<': '&lt;', '>': '&gt;', '&': '&amp;'}[ch]))}</pre>` : ''}
+            ${q.code ? `<pre class='code'>${q.code.replace(/[<>&]/g, ch => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[ch]))}</pre>` : ''}
             <div class="pill" style="${ok ? 'background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.25)' : 'background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.25)'}">${ok ? 'Correct' : 'Incorrect'}</div>
             <div><em>Your answer:</em> ${selText}</div>
             <div><em>Correct answer:</em> ${ansText}</div>
@@ -193,56 +315,55 @@ function finishQuiz() {
       </ol>
     </details>
   `;
-  result.style.display = 'block';
 }
 
-// --- Event Listeners ---
-prevBtn.addEventListener('click', () => { 
-  if (index > 0) { 
-    index--; 
-    render(); 
-  } 
+// Event Listeners
+prevBtn.addEventListener('click', () => {
+  if (index > 0) {
+    index--;
+    render();
+  }
 });
 
-nextBtn.addEventListener('click', () => { 
-  if (index < QUESTIONS.length - 1) { 
-    index++; 
-    render(); 
-  } 
+nextBtn.addEventListener('click', () => {
+  if (index < QUESTIONS.length - 1) {
+    index++;
+    render();
+  }
 });
 
-skipBtn.addEventListener('click', () => { 
-  if (index < QUESTIONS.length - 1) { 
-    index++; 
-    render(); 
-  } 
+skipBtn.addEventListener('click', () => {
+  if (index < QUESTIONS.length - 1) {
+    index++;
+    render();
+  }
 });
 
 checkBtn.addEventListener('click', checkAnswer);
 finishBtn.addEventListener('click', finishQuiz);
 
-// --- Initialize Quiz ---
+retryBtn.addEventListener('click', resetQuiz);
+homeBtn.addEventListener('click', goHome);
+reviewBtn.addEventListener('click', showReviewAnswers);
+
+scoreModal.addEventListener('click', (e) => {
+  if (e.target === scoreModal) {
+    scoreModal.style.display = 'none';
+  }
+});
+
+// Initialize quiz
 async function initializeQuiz() {
   try {
-    // Load questions from Firestore
     QUESTIONS = await loadQuestionsFromFirestore();
-    
-    // Initialize score display
     scorePill.textContent = `Score: ${score}`;
-    
-    // Render first question
     render();
-    
   } catch (error) {
-    console.error('Failed to initialize quiz:', error);
-    qtext.textContent = 'Failed to load questions. Please check your internet connection and try again.';
-    
-    // Optionally, you could fall back to local questions.json
-    fallbackToLocalQuestions();
+    console.error('Failed to load from Firestore:', error);
+    await fallbackToLocalQuestions();
   }
 }
 
-// Optional: Fallback to local JSON if Firestore fails
 async function fallbackToLocalQuestions() {
   try {
     const response = await fetch('questions.json');
@@ -257,5 +378,5 @@ async function fallbackToLocalQuestions() {
   }
 }
 
-// Start the quiz when the page loads
+// Start the quiz
 initializeQuiz();
