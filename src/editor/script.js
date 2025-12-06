@@ -81,7 +81,7 @@ function initializeSocket() {
            
             updateConnectionStatus(false);
              addLogEntry(`Connection error: ${error.message}`, 'error');
-            alert(`Connection error: ${error.message}`);
+         
             console.error("❌ Connection error:", error);
         });
 
