@@ -47,7 +47,7 @@ function createSaveIndicator() {
     return indicator;
 }
 function getSocketUrl() {
-    return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
 }
 function getSocket() {
     return io(getSocketUrl(), {
