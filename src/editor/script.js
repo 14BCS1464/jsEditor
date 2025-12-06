@@ -7,7 +7,7 @@ const roomId = getOrCreateRoomId();
 let socket = null;
 let isRemoteChange = false; // Flag to prevent infinite loops
 let editor = null; // Global editor reference
-
+let logCount = 0;
 let changeTimer = null;
 let saveTimer = null;
 
@@ -47,7 +47,10 @@ function createSaveIndicator() {
     return indicator;
 }
 function getSocketUrl() {
-    return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+    const isLocal =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+    return isLocal ? "http://localhost:4000" : "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
 }
 function getSocket() {
     return io(getSocketUrl(), {
@@ -284,7 +287,7 @@ require(["vs/editor/editor.main"], async function () {
     });
     initializeSocket();
     const outputElement = document.getElementById("output");
-    let logCount = 0;
+   
     let autoExecuteEnabled = true;
     let autoExecuteTimer = null;
     let executionCount = 0;
