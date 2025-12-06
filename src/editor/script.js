@@ -46,27 +46,27 @@ function createSaveIndicator() {
     document.getElementById('editor').appendChild(indicator);
     return indicator;
 }
+function getSocketUrl() {
+    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+}
+function getSocket() {
+    return io(getSocketUrl(), {
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000,
+    });
+}
 function initializeSocket() {
     if (socket) return;
 
     try {
         console.log("Initializing socket connection to room:", roomId);
-        socket = io("http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com/", {
-            transports: ["websocket", "polling"],
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 10000
-          });
-        // socket = io("http://localhost:4000", {
-        //         transports: ["websocket", "polling"],
-        //         reconnection: true,
-        //         reconnectionAttempts: 5,
-        //         reconnectionDelay: 1000,
-        //         timeout: 10000
-        // });
-        //http://localhost:4000 
-        // Connection events
+        
+
+        socket = getSocket();
+
         socket.on("connect", () => {
             console.log("✅ Connected to server. Socket ID:", socket.id);
             socket.emit("join-room", { roomId });
@@ -77,14 +77,14 @@ function initializeSocket() {
         socket.on("connect_error", (error) => {
             console.error("❌ Connection error:", error);
             updateConnectionStatus(false);
-            // addLogEntry(`Connection error: ${error.message}`, 'error');
+             addLogEntry(`Connection error: ${error.message}`, 'error');
             // alert(`Connection error: ${error.message}`);
         });
 
         socket.on("disconnect", (reason) => {
             console.log("⚠️ Disconnected:", reason);
             updateConnectionStatus(false);
-            // addLogEntry(`Disconnected: ${reason}`, 'warn');
+            addLogEntry(`Disconnected: ${reason}`, 'warn');
             console.log(`Disconnected from server: ${reason}`);
         });
 
@@ -187,10 +187,24 @@ function initializeSocket() {
     } catch (error) {
         console.error("Socket initialization error:", error);
         addLogEntry(`Socket error: ${error.message}`, 'error');
-        alert(`Socket error: ${error.message}`);
+        //alert(`Socket error: ${error.message}`);
     }
 }
 
+function addLogEntry(content, type = 'log') {
+    logCount++;
+    const timestamp = new Date().toLocaleTimeString();
+
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry ${type}`;
+    logEntry.innerHTML = `
+        <div class="log-timestamp">[${timestamp}] #${logCount}</div>
+        <div>${content}</div>
+    `;
+
+    outputElement.appendChild(logEntry);
+    outputElement.scrollTop = outputElement.scrollHeight;
+}
 function saveCodeToStorage() {
     const code = editor.getValue();
 
@@ -1071,20 +1085,7 @@ require(["vs/editor/editor.main"], async function () {
     }
 
     addCopyRoomButton();
-    function addLogEntry(content, type = 'log') {
-        logCount++;
-        const timestamp = new Date().toLocaleTimeString();
-
-        const logEntry = document.createElement('div');
-        logEntry.className = `log-entry ${type}`;
-        logEntry.innerHTML = `
-            <div class="log-timestamp">[${timestamp}] #${logCount}</div>
-            <div>${content}</div>
-        `;
-
-        outputElement.appendChild(logEntry);
-        outputElement.scrollTop = outputElement.scrollHeight;
-    }
+   
     monaco.languages.registerCompletionItemProvider("javascript", {
         provideCompletionItems: () => {
             return {
