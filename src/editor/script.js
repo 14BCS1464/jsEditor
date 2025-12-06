@@ -3,45 +3,254 @@ require.config({
         vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
     }
 });
+const roomId = getOrCreateRoomId();
+let socket = null;
+let isRemoteChange = false; // Flag to prevent infinite loops
+let editor = null; // Global editor reference
 
-require(["vs/editor/editor.main"], function() {
+let changeTimer = null;
+let saveTimer = null;
+
+let lastSentCode = '';
+let debounceSendTimer = null;
+function getOrCreateRoomId() {
+    const params = new URLSearchParams(window.location.search);
+    let roomId = params.get("room");
+
+    if (!roomId) {
+        roomId = generateRoomId();
+        params.set("room", roomId);
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, "", newUrl);
+    }
+
+    return roomId;
+}
+
+// Initialize Socket.IO connection
+function createSaveIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'saveIndicator';
+    indicator.textContent = '💾 Saved';
+    indicator.style.position = 'absolute';
+    indicator.style.bottom = '10px';
+    indicator.style.right = '10px';
+    indicator.style.background = 'rgba(0, 184, 148, 0.8)';
+    indicator.style.color = 'white';
+    indicator.style.padding = '5px 10px';
+    indicator.style.borderRadius = '4px';
+    indicator.style.fontSize = '12px';
+    indicator.style.transition = 'opacity 0.3s ease';
+    indicator.style.opacity = '0';
+    indicator.style.zIndex = '1000';
+    document.getElementById('editor').appendChild(indicator);
+    return indicator;
+}
+function initializeSocket() {
+    if (socket) return;
+
+    try {
+        console.log("Initializing socket connection to room:", roomId);
+        socket = io("http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com/", {
+            transports: ["websocket", "polling"],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 10000
+          });
+        // socket = io("http://localhost:4000", {
+        //         transports: ["websocket", "polling"],
+        //         reconnection: true,
+        //         reconnectionAttempts: 5,
+        //         reconnectionDelay: 1000,
+        //         timeout: 10000
+        // });
+        //http://localhost:4000 
+        // Connection events
+        socket.on("connect", () => {
+            console.log("✅ Connected to server. Socket ID:", socket.id);
+            socket.emit("join-room", { roomId });
+            updateConnectionStatus(true);
+            console.log("✅ Connected to the server. Collaborative editing is enabled!");
+        });
+
+        socket.on("connect_error", (error) => {
+            console.error("❌ Connection error:", error);
+            updateConnectionStatus(false);
+            // addLogEntry(`Connection error: ${error.message}`, 'error');
+            // alert(`Connection error: ${error.message}`);
+        });
+
+        socket.on("disconnect", (reason) => {
+            console.log("⚠️ Disconnected:", reason);
+            updateConnectionStatus(false);
+            // addLogEntry(`Disconnected: ${reason}`, 'warn');
+            console.log(`Disconnected from server: ${reason}`);
+        });
+
+        socket.on("reconnect", (attemptNumber) => {
+            console.log("🔄 Reconnected after", attemptNumber, "attempts");
+            socket.emit("join-room", { roomId });
+            updateConnectionStatus(true);
+            console.log(`🔄 Reconnected to the server after ${attemptNumber} attempt(s).`);
+        });
+
+        // Initialize with existing code
+        socket.on("init-code", (code) => {
+            console.log("📥 Received init-code:", code ? "Code received" : "Empty");
+            if (editor && typeof editor.setValue === "function") {
+                const current = editor.getValue();
+
+                isRemoteChange = true;
+                const pos = editor.getPosition();
+                editor.setValue(code.code || '');
+                if (pos) editor.setPosition(pos);
+                setTimeout(() => { isRemoteChange = false; }, 100);
+                console.log("Received the initial code from server.");
+
+            }
+        });
+
+        // Handle code updates from other users
+        socket.on("code-update", (data) => {
+            const { code, updatedBy } = data;
+
+            // Critical: Skip updates from ourselves
+            if (updatedBy === socket.id) {
+                console.log('🔄 Ignoring self-update');
+                return;
+            }
+
+            console.log(`📥 Update from ${updatedBy}, length: ${code.length}`);
+
+            const currentCode = editor.getValue();
+
+            // Only update if different
+            if (currentCode !== code) {
+                // Save current state
+                const cursorState = editor.saveViewState();
+
+                // Apply update
+                isRemoteChange = true;
+                editor.setValue(code);
+                isRemoteChange = false;
+
+                // Restore cursor if possible
+                if (cursorState) {
+                    setTimeout(() => {
+                        editor.restoreViewState(cursorState);
+                    }, 10);
+                }
+
+                // Update tracking
+                lastSentCode = code;
+
+                // Auto-save this remote update
+                saveCodeToStorage();
+            }
+        });
+
+        // Handle connection/disconnection
+        socket.on("user-joined", (data) => {
+            console.log(`👤 User ${data.socketId} joined the room`);
+        });
+
+        socket.on("user-left", (data) => {
+            console.log(`👤 User ${data.socketId} left the room`);
+        });
+
+        // Optional: Add typing indicator
+        let typingTimer = null;
+        editor.onDidChangeModelContent(() => {
+            if (isRemoteChange) return;
+
+            // Send typing start
+            socket.emit("typing-start", { roomId });
+
+            // Clear previous timer
+            if (typingTimer) clearTimeout(typingTimer);
+
+            // Send typing end after 1 second of inactivity
+            typingTimer = setTimeout(() => {
+                socket.emit("typing-end", { roomId });
+            }, 1000);
+        });
+
+        socket.on("user-typing", (data) => {
+            // Show typing indicator for other users
+            if (data.socketId !== socket.id) {
+                console.log(`✍️ User ${data.socketId} is typing...`);
+                // Update UI to show typing indicator
+            }
+        });
+
+    } catch (error) {
+        console.error("Socket initialization error:", error);
+        addLogEntry(`Socket error: ${error.message}`, 'error');
+        alert(`Socket error: ${error.message}`);
+    }
+}
+
+function saveCodeToStorage() {
+    const code = editor.getValue();
+
+    try {
+        localStorage.setItem('jsEditorCode', code);
+        const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
+        saveIndicator.style.opacity = '1';
+        setTimeout(() => {
+            saveIndicator.style.opacity = '0';
+        }, 1000);
+    } catch (e) {
+        console.error('Failed to save code to localStorage:', e);
+    }
+}
+
+function updateConnectionStatus(isConnected) {
+    let statusElement = document.getElementById('connectionStatus');
+    if (!statusElement) {
+        statusElement = document.createElement('div');
+        statusElement.id = 'connectionStatus';
+        statusElement.style.position = 'fixed';
+        statusElement.style.bottom = '10px';
+        statusElement.style.left = '10px';
+        statusElement.style.padding = '5px 10px';
+        statusElement.style.borderRadius = '4px';
+        statusElement.style.fontSize = '12px';
+        statusElement.style.zIndex = '1000';
+        statusElement.style.fontFamily = 'monospace';
+        document.body.appendChild(statusElement);
+    }
+
+    if (isConnected) {
+        statusElement.textContent = `🟢 Connected (Room: ${roomId})`;
+        statusElement.style.background = 'rgba(0, 184, 148, 0.9)';
+        statusElement.style.color = 'white';
+        statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    } else {
+        statusElement.textContent = '🔴 Disconnected';
+        statusElement.style.background = 'rgba(214, 48, 49, 0.9)';
+        statusElement.style.color = 'white';
+        statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    }
+}
+// Simple random ID generator
+function generateRoomId(length = 6) {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let id = "";
+    for (let i = 0; i < length; i++) {
+        id += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return id;
+}
+
+
+require(["vs/editor/editor.main"], async function () {
     const savedCode = localStorage.getItem('jsEditorCode');
-    const initialCode = savedCode || `// Test the prototype chain display
-function Person(name, age) {
-  this.name = name;
-  this.age = age;
-}
 
-Person.prototype.greet = function() {
-  return "Hello, my name is " + this.name;
-};
+    const initialCode = savedCode || `console.log("Developed By sunil...")`;
 
-function Employee(name, age, jobTitle) {
-  Person.call(this, name, age);
-  this.jobTitle = jobTitle;
-}
-
-Employee.prototype = Object.create(Person.prototype);
-Employee.prototype.constructor = Employee;
-
-Employee.prototype.work = function() {
-  return this.name + " is working as a " + this.jobTitle;
-};
-
-const john = new Employee("John Doe", 30, "Developer");
-console.log("Employee object:", john);
-console.log("Prototype chain inspection:");
-console.dir(john);
-
-// Try calling methods from the prototype chain
-console.log(john.greet());
-console.log(john.work());
-
-// Test array prototype chain
-const arr = [1, 2, 3];
-console.log("Array prototype:", arr);`;
-
-    var editor = monaco.editor.create(document.getElementById("editor"), {
+    editor = monaco.editor.create(document.getElementById("editor"), {
         value: initialCode,
         language: "javascript",
         theme: "vs-dark",
@@ -59,7 +268,7 @@ console.log("Array prototype:", arr);`;
             horizontalScrollbarSize: 10
         }
     });
-
+    initializeSocket();
     const outputElement = document.getElementById("output");
     let logCount = 0;
     let autoExecuteEnabled = true;
@@ -99,7 +308,7 @@ console.log("Array prototype:", arr);`;
         columnLayoutBtn.classList.add('active');
     }
 
-    rowLayoutBtn.addEventListener('click', function() {
+    rowLayoutBtn.addEventListener('click', function () {
         container.classList.remove('column-layout');
         rowLayoutBtn.classList.add('active');
         columnLayoutBtn.classList.remove('active');
@@ -107,7 +316,7 @@ console.log("Array prototype:", arr);`;
         setTimeout(() => editor.layout(), 100);
     });
 
-    columnLayoutBtn.addEventListener('click', function() {
+    columnLayoutBtn.addEventListener('click', function () {
         container.classList.add('column-layout');
         rowLayoutBtn.classList.remove('active');
         columnLayoutBtn.classList.add('active');
@@ -115,19 +324,7 @@ console.log("Array prototype:", arr);`;
         setTimeout(() => editor.layout(), 100);
     });
 
-    function saveCodeToStorage() {
-        const code = editor.getValue();
-        try {
-            localStorage.setItem('jsEditorCode', code);
-            const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
-            saveIndicator.style.opacity = '1';
-            setTimeout(() => {
-                saveIndicator.style.opacity = '0';
-            }, 1000);
-        } catch (e) {
-            console.error('Failed to save code to localStorage:', e);
-        }
-    }
+
 
     function createSaveIndicator() {
         const indicator = document.createElement('div');
@@ -170,9 +367,9 @@ console.log("Array prototype:", arr);`;
 
         for (const pattern of SAFETY_LIMITS.dangerousPatterns) {
             if (pattern.test(code)) {
-                return { 
-                    safe: false, 
-                    reason: `Potentially dangerous pattern detected: ${pattern.source}` 
+                return {
+                    safe: false,
+                    reason: `Potentially dangerous pattern detected: ${pattern.source}`
                 };
             }
         }
@@ -249,7 +446,7 @@ console.log("Array prototype:", arr);`;
         toggleBtn.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
         toggleBtn.style.color = 'white';
 
-        toggleBtn.addEventListener('click', function() {
+        toggleBtn.addEventListener('click', function () {
             autoExecuteEnabled = !autoExecuteEnabled;
             if (autoExecuteEnabled) {
                 this.innerHTML = '🔄 Auto-Execute: ON';
@@ -271,28 +468,58 @@ console.log("Array prototype:", arr);`;
 
     createAutoExecuteToggle();
 
-    let changeTimer = null;
-    let saveTimer = null;
-    editor.onDidChangeModelContent(() => {
+
+
+    editor.onDidChangeModelContent((event) => {
+        // Skip if this is a remote change
+        if (isRemoteChange) return;
+
         const code = editor.getValue();
 
+        // Debounce the socket emission to prevent flooding
+        if (debounceSendTimer) {
+            clearTimeout(debounceSendTimer);
+        }
+
+        debounceSendTimer = setTimeout(() => {
+            // Only send if code actually changed
+            if (code !== lastSentCode) {
+                try {
+                    socket.emit("code-change", {
+                        roomId,
+                        code,
+                        timestamp: Date.now(),
+                        senderId: socket.id // Include sender ID for filtering
+                    });
+                    lastSentCode = code;
+                    console.log('📤 Sent code update');
+                } catch (e) {
+                    console.error("Error emitting code-change:", e);
+                }
+            }
+        }, 150); // 150ms debounce for socket sends
+
+        // Auto-save with separate debounce
         if (saveTimer) {
             clearTimeout(saveTimer);
         }
         saveTimer = setTimeout(() => {
             saveCodeToStorage();
+            console.log('💾 Auto-saved to local storage');
         }, 1000);
 
+        // Auto-execute with separate debounce
         if (autoExecuteEnabled && code.trim()) {
             if (changeTimer) {
                 clearTimeout(changeTimer);
             }
-
             changeTimer = setTimeout(() => {
                 safeAutoExecute();
+                console.log('⚡ Auto-executed');
             }, 800);
         }
     });
+
 
     function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
         if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
@@ -459,7 +686,7 @@ console.log("Array prototype:", arr);`;
         return match ? match[1] : '';
     }
 
-    window.toggleExpand = function(id) {
+    window.toggleExpand = function (id) {
         const element = document.getElementById(id);
         const trigger = element.previousElementSibling;
 
@@ -472,20 +699,7 @@ console.log("Array prototype:", arr);`;
         }
     };
 
-    function addLogEntry(content, type = 'log') {
-        logCount++;
-        const timestamp = new Date().toLocaleTimeString();
 
-        const logEntry = document.createElement('div');
-        logEntry.className = `log-entry ${type}`;
-        logEntry.innerHTML = `
-            <div class="log-timestamp">[${timestamp}] #${logCount}</div>
-            <div>${content}</div>
-        `;
-
-        outputElement.appendChild(logEntry);
-        outputElement.scrollTop = outputElement.scrollHeight;
-    }
 
     function runCode() {
         const code = editor.getValue();
@@ -560,7 +774,7 @@ console.log("Array prototype:", arr);`;
             return output;
         }
 
-        console.log = function(...args) {
+        console.log = function (...args) {
             currentOutputSize = 0;
             let content = args.map(arg => {
                 if (typeof arg === 'object' && arg !== null) {
@@ -582,13 +796,13 @@ console.log("Array prototype:", arr);`;
             addLogEntry(content, 'log');
         };
 
-        console.dir = function(obj) {
+        console.dir = function (obj) {
             currentOutputSize = 0;
             const content = createObjectInspector(obj, 0, 5, new WeakSet());
             addLogEntry(content, 'dir');
         };
 
-        console.table = function(data, columns) {
+        console.table = function (data, columns) {
             if (!data) return;
             currentOutputSize = 0;
 
@@ -617,7 +831,7 @@ console.log("Array prototype:", arr);`;
                     output += `<td style="border: 1px solid #ccc; padding: 8px;">${display}</td>`;
                     currentOutputSize += display.length;
                     if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                        output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) + 
+                        output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) +
                             '" style="border: 1px solid #ccc; padding: 8px;">[Output truncated: Too large]</td></tr>';
                         break;
                     }
@@ -629,7 +843,7 @@ console.log("Array prototype:", arr);`;
             addLogEntry(output, 'table');
         };
 
-        console.error = function(...args) {
+        console.error = function (...args) {
             currentOutputSize = 0;
             const content = args.map(arg => {
                 if (arg instanceof Error) {
@@ -640,19 +854,19 @@ console.log("Array prototype:", arr);`;
             addLogEntry(content, 'error');
         };
 
-        console.warn = function(...args) {
+        console.warn = function (...args) {
             currentOutputSize = 0;
             const content = args.join(' ');
             addLogEntry(content, 'warn');
         };
 
-        console.info = function(...args) {
+        console.info = function (...args) {
             currentOutputSize = 0;
             const content = args.join(' ');
             addLogEntry(content, 'info');
         };
 
-        window.onunhandledrejection = function(event) {
+        window.onunhandledrejection = function (event) {
             console.error("Unhandled Promise Rejection:", event.reason);
         };
 
@@ -678,7 +892,7 @@ console.log("Array prototype:", arr);`;
         }
     }
 
-    window.clearOutput = function() {
+    window.clearOutput = function () {
         outputElement.innerHTML = "";
         logCount = 0;
     };
@@ -712,7 +926,7 @@ console.log("Array prototype:", arr);`;
             if (typeof window.js_beautify === 'undefined') {
                 const script = document.createElement('script');
                 script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js';
-                script.onload = function() {
+                script.onload = function () {
                     applyFormatting(code);
                 };
                 document.head.appendChild(script);
@@ -751,17 +965,17 @@ console.log("Array prototype:", arr);`;
     document.getElementById("download").addEventListener("click", downloadCode);
     document.getElementById("format").addEventListener("click", formatCode);
 
-    document.getElementById("addfile").addEventListener("click", function() {
+    document.getElementById("addfile").addEventListener("click", function () {
         document.getElementById("fileInput").click();
     });
 
-    document.getElementById("fileInput").addEventListener("change", function(event) {
+    document.getElementById("fileInput").addEventListener("change", function (event) {
         const file = event.target.files[0];
         if (file && file.name.endsWith('.js')) {
             const reader = new FileReader();
             const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
 
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const editorValue = editor.getValue() || "";
                 const newValue = mergeChoice ? `${editorValue}\n\n${e.target.result}` : e.target.result;
                 editor.setValue(newValue);
@@ -772,7 +986,7 @@ console.log("Array prototype:", arr);`;
         }
     });
 
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             runCode();
@@ -787,7 +1001,90 @@ console.log("Array prototype:", arr);`;
         target: monaco.languages.typescript.ScriptTarget.ES6,
         allowNonTsExtensions: true
     });
+    function addDebugButton() {
+        const debugBtn = document.createElement('button');
+        debugBtn.textContent = '🔧 Debug Socket';
+        debugBtn.style.marginLeft = '10px';
+        debugBtn.style.padding = '8px 12px';
+        debugBtn.style.background = 'linear-gradient(135deg, #6c5ce7, #a29bfe)';
+        debugBtn.style.color = 'white';
+        debugBtn.style.border = 'none';
+        debugBtn.style.borderRadius = '4px';
+        debugBtn.style.cursor = 'pointer';
 
+        debugBtn.addEventListener('click', () => {
+            if (socket) {
+                const status = {
+                    connected: socket.connected,
+                    id: socket.id,
+                    roomId: roomId,
+                    listeners: socket._callbacks
+                };
+                console.log('Socket debug info:', status);
+
+                addLogEntry(`Socket: ${socket.connected ? 'Connected' : 'Disconnected'}`,
+                    socket.connected ? 'info' : 'error');
+                addLogEntry(`Room: ${roomId}`, 'info');
+
+                if (socket.connected) {
+                    // Test emit
+                    socket.emit("test", {
+                        message: "Debug test",
+                        timestamp: Date.now(),
+                        roomId: roomId
+                    });
+                }
+            } else {
+                addLogEntry('Socket not initialized', 'error');
+            }
+        });
+
+        const controlsDiv = document.getElementById('controls').querySelector('div');
+        controlsDiv.appendChild(debugBtn);
+    }
+
+
+    //  addDebugButton()
+    // Add copy room URL button
+    function addCopyRoomButton() {
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = '📋 Copy Room URL';
+        copyBtn.style.marginLeft = '10px';
+        copyBtn.style.padding = '8px 12px';
+        copyBtn.style.background = 'linear-gradient(135deg, #fd79a8, #e84393)';
+        copyBtn.style.color = 'white';
+        copyBtn.style.border = 'none';
+        copyBtn.style.borderRadius = '4px';
+        copyBtn.style.cursor = 'pointer';
+
+        copyBtn.addEventListener('click', () => {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                addLogEntry(`Room URL copied to clipboard: ${url}`, 'info');
+            }).catch(err => {
+                addLogEntry(`Failed to copy URL: ${err}`, 'error');
+            });
+        });
+
+        const controlsDiv = document.getElementById('controls').querySelector('div');
+        controlsDiv.appendChild(copyBtn);
+    }
+
+    addCopyRoomButton();
+    function addLogEntry(content, type = 'log') {
+        logCount++;
+        const timestamp = new Date().toLocaleTimeString();
+
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry ${type}`;
+        logEntry.innerHTML = `
+            <div class="log-timestamp">[${timestamp}] #${logCount}</div>
+            <div>${content}</div>
+        `;
+
+        outputElement.appendChild(logEntry);
+        outputElement.scrollTop = outputElement.scrollHeight;
+    }
     monaco.languages.registerCompletionItemProvider("javascript", {
         provideCompletionItems: () => {
             return {
