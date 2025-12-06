@@ -50,7 +50,7 @@ function getSocketUrl() {
     const isLocal =
         window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
-    return isLocal ? "http://localhost:4000" : "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+    return isLocal ? "http://localhost:4000" : "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
 }
 function getSocket() {
     return io(getSocketUrl(), {
