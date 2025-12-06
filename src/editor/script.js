@@ -78,7 +78,7 @@ function initializeSocket() {
             console.error("❌ Connection error:", error);
             updateConnectionStatus(false);
              addLogEntry(`Connection error: ${error.message}`, 'error');
-            // alert(`Connection error: ${error.message}`);
+            alert(`Connection error: ${error.message}`);
         });
 
         socket.on("disconnect", (reason) => {
