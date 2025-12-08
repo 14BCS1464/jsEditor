@@ -47,28 +47,52 @@ function createSaveIndicator() {
     return indicator;
 }
 function getSocketUrl() {
-    const isLocal =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
-    return isLocal ? "http://localhost:4000" : "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+   //const isLocal =
+//         window.location.hostname === "localhost" ||
+//         window.location.hostname === "127.0.0.1";
+//     return isLocal ? "http://localhost:4000" : "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+
+
+    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com/";
 }
-function getSocket() {
-    return io(getSocketUrl(), {
-        transports: ["websocket", "polling"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: 10000,
-    });
+async function getSocket() {
+
+    try {
+        // return io(getSocketUrl(), {
+        //     transports: ["websocket", "polling"],
+        //     reconnection: true,
+        //     reconnectionAttempts: 5,
+        //     reconnectionDelay: 1000,
+        //     timeout: 10000,
+        // });
+
+   return io(getSocketUrl(), {
+            // Try WebSocket first, fallback to polling
+            transports: ['websocket', 'polling'],
+            // Force secure connection if page is HTTPS
+
+            pingTimeout: 60000,
+            pingInterval: 25000,
+ 
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+        
+    } catch (error) {
+        alert("Failed to initialize socket:", error);
+        return null;
+    }
 }
-function initializeSocket() {
+async function initializeSocket() {
+
     if (socket) return;
 
     try {
         console.log("Initializing socket connection to room:", roomId);
         
 
-        socket = getSocket();
+        socket = await getSocket();
 
         socket.on("connect", () => {
             console.log("✅ Connected to server. Socket ID:", socket.id);
@@ -287,7 +311,7 @@ require(["vs/editor/editor.main"], async function () {
             horizontalScrollbarSize: 10
         }
     });
-    initializeSocket();
+
     const outputElement = document.getElementById("output");
    
     let autoExecuteEnabled = true;
@@ -1032,6 +1056,7 @@ require(["vs/editor/editor.main"], async function () {
         debugBtn.style.cursor = 'pointer';
 
         debugBtn.addEventListener('click', () => {
+            debugSocketConnection();
             if (socket) {
                 const status = {
                     connected: socket.connected,
@@ -1062,8 +1087,31 @@ require(["vs/editor/editor.main"], async function () {
         controlsDiv.appendChild(debugBtn);
     }
 
+    function debugSocketConnection() {
+        console.log('=== Socket.IO Debug Info ===');
+        console.log('Page URL:', window.location.href);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Socket.IO loaded:', typeof io !== 'undefined');
+        
+        // Test WebSocket support
+        console.log('WebSocket supported:', 'WebSocket' in window);
+        
+        // Test connection to your server
+        const testWs = new WebSocket('wss://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com');
+        
+        testWs.onopen = () => {
+            console.log('✅ Raw WebSocket connection successful');
+            testWs.close();
+        };
+        
+        testWs.onerror = (error) => {
+            console.log('❌ Raw WebSocket connection failed');
+            console.log('Error:', error);
+        };
+    }
+    
 
-    //  addDebugButton()
+     addDebugButton()
     // Add copy room URL button
     function addCopyRoomButton() {
         const copyBtn = document.createElement('button');
@@ -1077,11 +1125,18 @@ require(["vs/editor/editor.main"], async function () {
         copyBtn.style.cursor = 'pointer';
 
         copyBtn.addEventListener('click', () => {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => {
-                addLogEntry(`Room URL copied to clipboard: ${url}`, 'info');
+            initializeSocket().then((response) => {
+                if (response) {
+                    const url = window.location.href;
+                    navigator.clipboard.writeText(url).then(() => {
+                        addLogEntry(`Room URL copied to clipboard: ${url}`, 'info');
+                    }).catch(err => {
+                        addLogEntry(`Failed to copy URL: ${err}`, 'error');
+                    });
+                }
             }).catch(err => {
                 addLogEntry(`Failed to copy URL: ${err}`, 'error');
+                alert(`Failed to copy URL: ${err}`);
             });
         });
 
