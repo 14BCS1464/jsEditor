@@ -84,14 +84,14 @@ body {
 }
 
 .gradient-text {
-    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-size: clamp(1.0rem, 5vw, 2rem);
     background: linear-gradient(135deg, #6c5ce7, #00cec9, #a29bfe);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     position: relative;
-    padding-bottom: 15px;
+    padding-bottom: 0px;
     animation: gradientShift 5s ease infinite;
     transition: transform 0.3s ease, filter 0.3s ease;
 }

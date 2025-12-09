@@ -47,52 +47,85 @@ function createSaveIndicator() {
     return indicator;
 }
 function getSocketUrl() {
-   //const isLocal =
-//         window.location.hostname === "localhost" ||
-//         window.location.hostname === "127.0.0.1";
-//     return isLocal ? "http://localhost:4000" : "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
-
-
-    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com/";
+    // const hostname = window.location.hostname;
+    // const protocol = window.location.protocol;
+    
+    // // Development environments
+    // if (hostname === "localhost" || 
+    //     hostname === "127.0.0.1" || 
+    //     hostname.includes("local")) {
+    //     return "http://localhost:4000";
+    // }
+    
+    // // Your Elastic Beanstalk environment (production)
+    // if (hostname.includes("jseditor-env") || 
+    //     hostname.includes("elasticbeanstalk")) {
+    //     return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
+    // }
+    
+    // // Your production domain (adjust as needed)
+    // if (hostname === "thejseditors.com" || 
+    //     hostname === "www.thejseditors.com") {
+    //     return "https://api.thejseditors.com"; // Or your production API endpoint
+    // }
+    
+    // // Fallback: Use same protocol and port as current page
+    // // If your frontend is on port 3000 and backend on 4000, this won't work in production
+    // // Better to have an environment variable or config
+    // const port = window.location.port;
+    // const baseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
+    
+    // // Try to guess the API URL based on common patterns
+    // if (port === "3000") {
+    //     // React dev server typically on 3000, backend on 4000
+    //     return "http://localhost:4000";
+    // } else if (port === "5173") {
+    //     // Vite dev server typically on 5173, backend on 4000
+    //     return "http://localhost:4000";
+    // } else if (!port || port === "80" || port === "443") {
+    //     // Production - use same domain with API prefix
+    //     return `${protocol}//${hostname}/api`;
+    // }
+    
+    // Default fallback
+    //return "http://localhost:4000";
+return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
 }
-async function getSocket() {
-
-    try {
-        // return io(getSocketUrl(), {
-        //     transports: ["websocket", "polling"],
-        //     reconnection: true,
-        //     reconnectionAttempts: 5,
-        //     reconnectionDelay: 1000,
-        //     timeout: 10000,
-        // });
-
-   return io(getSocketUrl(), {
-            // Try WebSocket first, fallback to polling
-            transports: ['websocket', 'polling'],
-            // Force secure connection if page is HTTPS
-
-            pingTimeout: 60000,
-            pingInterval: 25000,
- 
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
-        });
-        
-    } catch (error) {
-        alert("Failed to initialize socket:", error);
-        return null;
-    }
-}
+const socketUrl = getSocketUrl();
+const isSecure = socketUrl.startsWith('https://');
 async function initializeSocket() {
 
-    if (socket) return;
+ if (socket) return;
 
     try {
-        console.log("Initializing socket connection to room:", roomId);
+       
+        socket = await io(socketUrl, {
+            // Conservative settings for maximum compatibility
+        transports: ['polling'], // Polling only - most reliable
+        upgrade: false, // Don't attempt to upgrade to WebSocket
+        forceNew: true, // Always create new connection
+        timeout: 10000, // 10 second timeout
+        pingTimeout: 30000,
+        pingInterval: 15000,
+        reconnection: false, // We'll handle reconnection manually
+        reconnectionAttempts: 0,
         
+        // Query parameters
+        query: {
+            roomId: roomId,
+            client: 'editor',
+       
+            timestamp: Date.now()
+        },
+        
+        // Path (important!)
+        path: '/socket.io/',
+        
+        // Security
+        withCredentials: false,
+        rejectUnauthorized: false // Only for testi
+        });
 
-        socket = await getSocket();
 
         socket.on("connect", () => {
             console.log("✅ Connected to server. Socket ID:", socket.id);
@@ -102,10 +135,10 @@ async function initializeSocket() {
         });
 
         socket.on("connect_error", (error) => {
-           
+
             updateConnectionStatus(false);
-             addLogEntry(`Connection error: ${error.message}`, 'error');
-         
+            addLogEntry(`Connection error: ${error.message}`, 'error');
+
             console.error("❌ Connection error:", error);
         });
 
@@ -313,7 +346,7 @@ require(["vs/editor/editor.main"], async function () {
     });
 
     const outputElement = document.getElementById("output");
-   
+
     let autoExecuteEnabled = true;
     let autoExecuteTimer = null;
     let executionCount = 0;
@@ -1092,26 +1125,26 @@ require(["vs/editor/editor.main"], async function () {
         console.log('Page URL:', window.location.href);
         console.log('Protocol:', window.location.protocol);
         console.log('Socket.IO loaded:', typeof io !== 'undefined');
-        
+
         // Test WebSocket support
         console.log('WebSocket supported:', 'WebSocket' in window);
-        
+
         // Test connection to your server
         const testWs = new WebSocket('wss://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com');
-        
+
         testWs.onopen = () => {
             console.log('✅ Raw WebSocket connection successful');
             testWs.close();
         };
-        
+
         testWs.onerror = (error) => {
             console.log('❌ Raw WebSocket connection failed');
             console.log('Error:', error);
         };
     }
-    
 
-     addDebugButton()
+
+    addDebugButton()
     // Add copy room URL button
     function addCopyRoomButton() {
         const copyBtn = document.createElement('button');
@@ -1145,7 +1178,7 @@ require(["vs/editor/editor.main"], async function () {
     }
 
     addCopyRoomButton();
-   
+
     monaco.languages.registerCompletionItemProvider("javascript", {
         provideCompletionItems: () => {
             return {
