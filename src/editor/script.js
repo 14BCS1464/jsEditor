@@ -89,7 +89,7 @@ function getSocketUrl() {
     
     // Default fallback
     //return "http://localhost:4000";
-return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
+return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
 }
 const socketUrl = getSocketUrl();
 const isSecure = socketUrl.startsWith('https://');
