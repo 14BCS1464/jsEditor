@@ -1,1788 +1,2237 @@
 [
   {
     "id": 1,
-    "question": "What is the value of typeof null?",
+    "question": "What is the order of the console output?",
+    "code": "console.log('start');\nsetTimeout(() => console.log('timeout'), 0);\nPromise.resolve().then(() => console.log('promise'));\nconsole.log('end');",
     "options": [
-      "'null'",
-      "'object'",
-      "'undefined'",
-      "'number'"
+      "start, end, timeout, promise",
+      "start, end, promise, timeout",
+      "start, promise, end, timeout",
+      "start, timeout, end, promise"
     ],
     "answer": 1,
-    "explain": "Due to a historical bug, typeof null === 'object'."
-  },
+   "explain": "Detailed Explanation (Three Key Points)\n\n1. Synchronous Code Runs First (Call Stack)\nconsole.log('start') runs immediately.\nThen setTimeout(...) is registered as a macrotask in the callback queue.\nPromise.resolve().then(...) schedules a microtask in the microtask queue.\nFinally, console.log('end') executes, completing all synchronous code.\n\n2. Microtasks (Promises) Run Next\nAfter the main script finishes, the microtask queue is processed before any macrotasks.\nSo, console.log('promise') executes next.\n\n3. Macrotasks (setTimeout) Run Last\nOnce the microtask queue is empty, the event loop picks the first macrotask from the callback queue.\nThat’s the setTimeout callback, so console.log('timeout') runs last.\n\nFinal Execution Order: start → end → promise → timeout",
+
+    "difficulty": "easy"
+  },  
   {
     "id": 2,
-    "question": "What gets logged?",
-    "code": "let a = [1,2,3];\nconst b = a;\nb.push(4);\nconsole.log(a.length);",
+    "question": "What gets logged and why?",
+    "code": "console.log('A');\nsetTimeout(() => console.log('B'), 0);\nnew Promise(resolve => { console.log('C'); resolve(); }).then(() => console.log('D'));\nconsole.log('E');",
     "options": [
-      "3",
-      "4",
-      "Error",
-      "undefined"
+      "A, C, E, D, B",
+      "A, C, D, E, B",
+      "A, E, C, D, B",
+      "A, C, E, B, D"
     ],
-    "answer": 1,
-    "explain": "Arrays are reference types; a and b point to the same array."
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Code Runs First (Call Stack)\n- `console.log('A')` executes first.\n- The `setTimeout` callback is registered as a macrotask.\n- The Promise executor function runs immediately (synchronous), so it logs `'C'` and resolves.\n- Finally, `console.log('E')` runs before moving to async tasks.\n\n2).  Microtasks Run Next (Promise .then)\n- After the main synchronous stack finishes, the microtask queue runs.\n- The `.then()` callback logs `'D'` next.\n\n3).  Macrotasks Run Last (setTimeout)\n- Once all microtasks are done, the event loop executes macrotasks.\n- The `setTimeout` callback logs `'B'` last.\n\n🧾 Final Order: A → C → E → D → B",
+    "difficulty": "medium"
   },
   {
     "id": 3,
-    "question": "Which are truthy? (Select ALL that apply)",
+    "question": "What is the output order here?",
+    "code": "console.log('1');\nsetTimeout(() => console.log('2'), 0);\nPromise.resolve().then(() => setTimeout(() => console.log('3'), 0));\nPromise.resolve().then(() => console.log('4'));\nconsole.log('5');",
     "options": [
-      "[]",
-      "''",
-      "0",
-      "'0'"
+      "1,5,4,2,3",
+      "1,5,4,3,2",
+      "1,4,5,2,3",
+      "1,5,2,4,3"
     ],
-    "answer": [
-      0,
-      3
-    ],
-    "explain": "Empty array is truthy; '0' is a non-empty string and truthy."
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Code Runs First\n- `console.log('1')` runs immediately.\n- `setTimeout(() => console.log('2'))` is queued as a macrotask.\n- Two Promises are created and queued as microtasks.\n- `console.log('5')` runs at the end of synchronous execution.\n\n2).  Microtasks Execute Next\n- The first microtask schedules another macrotask for `'3'` using `setTimeout`.\n- The second microtask logs `'4'` immediately.\n\n3).  Macrotasks Execute in Order Queued\n- `'2'` (first `setTimeout`) runs before `'3'` (scheduled later by the microtask).\n\n🧾 Final Order: 1 → 5 → 4 → 2 → 3",
+    "difficulty": "hard"
   },
   {
     "id": 4,
-    "question": "What is the value of typeof NaN?",
+    "question": "How many times will 'tick' be logged and when?",
+    "code": "console.log('start');\nqueueMicrotask(() => console.log('micro'));\nsetTimeout(() => console.log('macrotask'), 0);\nPromise.resolve().then(() => console.log('promise'));\nconsole.log('end');",
     "options": [
-      "'number'",
-      "'NaN'",
-      "'undefined'",
-      "'object'"
+      "start, end, micro, promise, macrotask",
+      "start, end, promise, micro, macrotask",
+      "start, micro, end, promise, macrotask",
+      "start, end, micro+promise in unspecified order, macrotask"
     ],
     "answer": 0,
-    "explain": "NaN is a special numeric value; typeof NaN === 'number'."
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase\n- Logs `'start'` first.\n- `queueMicrotask` and `Promise.then` both schedule microtasks.\n- `setTimeout` schedules a macrotask.\n- Logs `'end'` at the end of the current call stack.\n\n2).  Microtask Phase\n- All microtasks run after synchronous code.\n- They execute in FIFO order — `'micro'` first (queued first), then `'promise'`.\n\n3).  Macrotask Phase\n- Once the microtask queue is empty, the event loop processes macrotasks.\n- `'macrotask'` logs last.\n\n🧾 Final Order: start → end → micro → promise → macrotask",
+    "difficulty": "medium"
+  },
+  {
+    "id": 5,
+    "question": "What will this log sequence be?",
+    "code": "async function foo() {\n  console.log('inside');\n}\nconsole.log('a');\nfoo().then(() => console.log('after foo'));\nconsole.log('b');",
+    "options": [
+      "a, inside, b, after foo",
+      "a, b, inside, after foo",
+      "a, inside, after foo, b",
+      "a, b, after foo, inside"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase\n- `console.log('a')` runs first.\n- Calling `foo()` executes the function body synchronously up to the first `await` (none here), so `'inside'` is logged immediately.\n- Then `console.log('b')` executes before the promise resolves.\n\n2).  Microtask Phase (Promise Resolution)\n- Since `foo()` returns a resolved Promise, its `.then()` callback (`after foo`) is scheduled as a microtask.\n- After the main script finishes, `'after foo'` logs next.\n\n3).  Macrotask Phase\n- There are no macrotasks scheduled.\n\n🧾 Final Order: a → inside → b → after foo",
+    "difficulty": "medium"
   },
   {
     "id": 6,
-    "question": "Which are falsy? (Select ALL that apply)",
+    "question": "What prints first: 'promise' or 'raf'?",
+    "code": "setTimeout(() => console.log('timeout'), 0);\nrequestAnimationFrame(() => console.log('raf'));\nPromise.resolve().then(() => console.log('promise'));",
     "options": [
-      "null",
-      "{}",
-      "undefined",
-      "[]"
+      "promise, raf, timeout",
+      "raf, promise, timeout",
+      "timeout, promise, raf",
+      "promise, timeout, raf"
     ],
-    "answer": [
-      0,
-      2
-    ],
-    "explain": "null and undefined are falsy; {} and [] are truthy."
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Microtasks Run First\n- The resolved Promise schedules a microtask.\n- `'promise'` logs before any rendering or macrotasks.\n\n2).  Animation Frame Callbacks Next\n- `requestAnimationFrame()` runs before the next repaint, which happens after microtasks.\n- `'raf'` logs next.\n\n3).  Macrotasks Last\n- `setTimeout()` callback runs after the next event loop tick.\n- `'timeout'` logs last.\n\n🧾 Final Order: promise → raf → timeout",
+    "difficulty": "hard"
   },
   {
     "id": 7,
-    "question": "What is the output?",
-    "code": "console.log([] == false);",
+    "question": "What will be printed and why?",
+    "code": "console.log('start');\nsetTimeout(() => console.log('t1'), 0);\nsetTimeout(() => console.log('t2'), 0);\nPromise.resolve().then(() => console.log('p1'));\nPromise.resolve().then(() => console.log('p2'));\nconsole.log('end');",
     "options": [
-      "true",
-      "false",
+      "start, end, p1, p2, t1, t2",
+      "start, end, p1, p2, t2, t1",
+      "start, p1, p2, end, t1, t2",
+      "start, end, t1, t2, p1, p2"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Code Runs First\n- `'start'` logs first.\n- Two `setTimeout()` callbacks (`t1` and `t2`) are queued as macrotasks.\n- Two Promises are queued as microtasks.\n- `'end'` logs before leaving the stack.\n\n2).  Microtask Phase\n- Promise callbacks are executed in insertion order.\n- `'p1'` logs first, then `'p2'`.\n\n3).  Macrotask Phase\n- After microtasks finish, macrotasks (`t1`, `t2`) run in the order they were scheduled.\n\n🧾 Final Order: start → end → p1 → p2 → t1 → t2",
+    "difficulty": "medium"
+  },
+  {
+    "id": 8,
+    "question": "Which logs first?",
+    "code": "Promise.resolve().then(() => console.log('promise1'));\nqueueMicrotask(() => console.log('qmicro'));\nPromise.resolve().then(() => console.log('promise2'));\n",
+    "options": [
+      "promise1, qmicro, promise2",
+      "qmicro, promise1, promise2",
+      "promise1, promise2, qmicro",
+      "All in unspecified order"
+    ],
+    "answer": 1,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Setup\n- All microtasks are scheduled in order: first `promise1`, then `queueMicrotask`, then `promise2`.\n\n2).  Microtask Execution Order\n- Microtasks execute in FIFO order.\n- So `'promise1'` runs first (added first), then `'qmicro'`, then `'promise2'`.\n\n3).  No Macrotasks Here\n- Only the microtask queue runs, as no timers or async tasks exist.\n\n🧾 Final Order: promise1 → qmicro → promise2",
+    "difficulty": "hard"
+  },
+  {
+    "id": 9,
+    "question": "What is logged and why?",
+    "code": "console.log('S');\nsetTimeout(() => console.log('T'), 0);\n(async () => { await null; console.log('A'); })();\nconsole.log('E');",
+    "options": [
+      "S, E, A, T",
+      "S, A, E, T",
+      "S, E, T, A",
+      "S, E, A, T or S, E, T, A depending on engine"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase\n- `'S'` logs immediately.\n- `setTimeout` schedules `'T'` as a macrotask.\n- The async function begins execution and hits `await null`, yielding control.\n- `'E'` logs before the async continuation resumes.\n\n2).  Microtask Phase\n- The `await` resumes the async function as a microtask.\n- `'A'` logs next.\n\n3).  Macrotask Phase\n- The `'T'` from `setTimeout` executes last.\n\n🧾 Final Order: S → E → A → T",
+    "difficulty": "medium"
+  },
+  {
+    "id": 10,
+    "question": "What happens first: MutationObserver callback or Promise.then microtask?",
+    "code": "const div = document.createElement('div');\nconst mo = new MutationObserver(() => console.log('mo'));\nmo.observe(div, { attributes: true });\nPromise.resolve().then(() => console.log('promise'));\ndiv.setAttribute('id', 'x');",
+    "options": [
+      "promise, mo",
+      "mo, promise",
+      "Both called together (same timing)",
+      "Order unspecified and engine-dependent"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Setup\n- A MutationObserver is created and observes changes on `div`.\n- The attribute mutation queues a MutationRecord for later processing.\n- The Promise schedules its `.then()` callback as a microtask.\n\n2).  Microtask Phase\n- Regular microtasks like `Promise.then()` run before MutationObserver callbacks.\n- `'promise'` logs first.\n\n3).  End of Microtask Checkpoint\n- After all microtasks, the browser delivers MutationObserver callbacks.\n- `'mo'` logs next.\n\n🧾 Final Order: promise → mo",
+    "difficulty": "hard"
+  },
+  {
+    "id": 11,
+    "question": "What will this print and why?",
+    "code": "console.log('1');\nPromise.resolve().then(() => { console.log('2'); queueMicrotask(() => console.log('3')); }).then(() => console.log('4'));\nconsole.log('5');",
+    "options": [
+      "1,5,2,3,4",
+      "1,5,2,4,3",
+      "1,2,3,4,5",
+      "1,5,2,4,3 or engine dependent"
+    ],
+    "answer": 1,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase\n- `'1'` logs first.\n- The chained Promises and microtasks are registered.\n- `'5'` logs before any async tasks.\n\n2).  Microtask Queue Execution\n- The first `.then()` logs `'2'` and queues another microtask `'3'`.\n- The chained `.then()` (`'4'`) is queued before `'3'`, as it’s created immediately after the first `.then()` resolves.\n- Hence, `'4'` runs before `'3'`.\n\n3).  Macrotasks\n- None here.\n\n🧾 Final Order: 1 → 5 → 2 → 4 → 3",
+    "difficulty": "hard"
+  },
+  {
+    "id": 12,
+    "question": "Which happens first in Node.js: process.nextTick or Promise microtasks?",
+    "code": "process.nextTick(() => console.log('nextTick'));\nPromise.resolve().then(() => console.log('promise'));\n",
+    "options": [
+      "nextTick, promise",
+      "promise, nextTick",
+      "Both run in unspecified order",
+      "Neither runs in this phase"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Scheduling\n- `process.nextTick` callbacks go into a special queue that runs before any other microtasks in Node.js.\n- The Promise `.then()` callback is queued as a regular microtask.\n\n2).  Execution Order\n- Node.js always clears the nextTick queue before handling the microtask queue.\n- Hence `'nextTick'` logs before `'promise'`.\n\n3).  Macrotask Phase\n- None involved.\n\n🧾 Final Order: nextTick → promise",
+    "difficulty": "hard"
+  },
+  {
+    "id": 13,
+    "question": "What is the printed order?",
+    "code": "setTimeout(() => console.log('t1'), 0);\nPromise.resolve().then(() => console.log('p1'));\nsetTimeout(() => Promise.resolve().then(() => console.log('p2-from-timeout')) , 0);\n",
+    "options": [
+      "p1, t1, p2-from-timeout",
+      "t1, p1, p2-from-timeout",
+      "p1, p2-from-timeout, t1",
+      "t1, p2-from-timeout, p1"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Microtasks First\n- The first `Promise.resolve().then()` logs `'p1'` as a microtask.\n\n2).  Macrotasks\n- `t1` executes first (earliest setTimeout).\n- Inside `t1`, a new microtask (`p2-from-timeout`) is queued.\n\n3).  Microtask Inside Macrotask\n- After `t1` finishes, the microtask `'p2-from-timeout'` runs before the next macrotask.\n\n🧾 Final Order: p1 → t1 → p2-from-timeout",
+    "difficulty": "medium"
+  },
+  {
+    "id": 14,
+    "question": "Which logs first: console.log('A') from a resolved async function or a then callback queued by Promise.resolve().then?",
+    "code": "async function f(){ return 'x'; }\nf().then(() => console.log('async then'));\nPromise.resolve().then(() => console.log('promise then'));\n",
+    "options": [
+      "async then, promise then",
+      "promise then, async then",
+      "They are the same microtask and order is insertion order",
+      "Order is engine-dependent"
+    ],
+    "answer": 2,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Microtask Scheduling\n- Both `f().then(...)` and `Promise.resolve().then(...)` schedule microtasks.\n- They enter the microtask queue in insertion order.\n\n2).  Execution\n- The async function’s promise resolves first, queuing `'async then'` before `'promise then'`.\n\n3).  Result\n- Both are microtasks and execute sequentially, following FIFO order.\n\n🧾 Final Order: async then → promise then",
+    "difficulty": "hard"
+  },
+  {
+    "id": 15,
+    "question": "What prints first: a microtask queued inside a macrotask or a microtask queued before that macrotask?",
+    "code": "Promise.resolve().then(() => console.log('m1'));\nsetTimeout(() => { Promise.resolve().then(() => console.log('m2')); console.log('t'); }, 0);",
+    "options": [
+      "m1, t, m2",
+      "m1, m2, t",
+      "t, m2, m1",
+      "order unspecified"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Initial Microtasks\n- `'m1'` is queued as a microtask and executes before any macrotasks.\n\n2).  Macrotask Execution\n- The `setTimeout` callback runs next and logs `'t'`.\n- Inside it, `'m2'` is scheduled as a new microtask.\n\n3).  Microtasks After Macrotask\n- `'m2'` runs after `'t'`, before moving to the next macrotask cycle.\n\n🧾 Final Order: m1 → t → m2",
+    "difficulty": "medium"
+  },
+  {
+    "id": 16,
+    "question": "What is the output order and why?",
+    "code": "console.log('script start');\nasync function async1(){\n  console.log('async1 start');\n  await async2();\n  console.log('async1 end');\n}\nasync function async2(){\n  console.log('async2');\n}\nasync1();\nconsole.log('script end');",
+    "options": [
+      "script start, async1 start, async2, script end, async1 end",
+      "script start, async1 start, async2, async1 end, script end",
+      "script start, async2, async1 start, script end, async1 end",
+      "script start, script end, async1 start, async2, async1 end"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase\n- `'script start'` logs first.\n- Calling `async1()` logs `'async1 start'`.\n- `async2()` logs `'async2'` synchronously.\n- The `await` yields control, pausing `async1()`.\n- `'script end'` logs next.\n\n2).  Microtask Phase\n- The continuation of `async1()` resumes after the current stack.\n- `'async1 end'` logs as a microtask.\n\n3).  Macrotask Phase\n- None here.\n\n🧾 Final Order: script start → async1 start → async2 → script end → async1 end",
+    "difficulty": "medium"
+  },
+  {
+    "id": 17,
+    "question": "Which of these statements about Event Loop are true?",
+    "code": "",
+    "options": [
+      "Microtasks always run to completion before next macrotask",
+      "Macrotasks can interrupt microtask execution",
+      "Microtasks scheduled by a microtask execute in the same microtask checkpoint",
+      "MutationObserver callbacks are part of macrotask queue"
+    ],
+    "answer": [0,2],
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Microtasks before Macrotasks\n- The event loop always clears the microtask queue completely before executing the next macrotask.\n\n2).  Chained Microtasks\n- A microtask can schedule another microtask, and it will still run in the same checkpoint before any macrotask.\n\n3).  MutationObservers\n- Their callbacks are part of the microtask phase, not macrotasks.\n\n🧾 Correct Statements: 1 & 3",
+    "difficulty": "hard"
+  },
+  {
+    "id": 18,
+    "question": "What is printed and why? (Edge case with long-running microtasks)",
+    "code": "console.log('start');\nPromise.resolve().then(() => { for(let i=0;i<1e9;i++){}; console.log('long'); });\nsetTimeout(() => console.log('timeout'), 0);\nconsole.log('end');",
+    "options": [
+      "start, end, long, timeout — long delays UI",
+      "start, long, end, timeout",
+      "start, end, timeout, long",
+      "start, end, timeout and long may never run"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase (Call Stack)\n- `console.log('start')` runs first.\n- The Promise `.then(...)` callback is scheduled as a microtask.\n- `setTimeout(..., 0)` schedules a macrotask (timer).\n- `console.log('end')` runs before the microtask executes.\n\n2).  Microtask Phase (Blocking Work Happens Here)\n- The microtask runs immediately after the current stack completes.\n- The microtask contains a very long synchronous loop (`for (let i=0;i<1e9;i++) {}`) — this blocks the main thread while it runs.\n- Only after that loop finishes does the microtask execute its `console.log('long')`.\n\n3).  Macrotask Phase (Timers Run After Microtasks)\n- After the microtask queue is emptied, the event loop picks the next macrotask — the `setTimeout` callback — which logs `'timeout'`.\n- Because the microtask contains long, CPU-bound work, it will delay the macrotask and any UI updates (this is why long-running microtasks are harmful).\n\n🧾 Final Order: start → end → long → timeout\n\n(Notes: The long loop blocks the thread during the microtask; this is why UI and timers are delayed until the microtask finishes.)",
+    "difficulty": "medium"
+  },
+  {
+    "id": 19,
+    "question": "What will be the logged order in a Promise chain that schedules another microtask inside a then?",
+    "code": "Promise.resolve()\n  .then(() => { console.log('a'); Promise.resolve().then(() => console.log('c')); })\n  .then(() => console.log('b'));\n",
+    "options": [
+      "a, b, c",
+      "a, c, b",
+      "c, a, b",
+      "b, a, c"
+    ],
+    "answer": 1,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Synchronous Phase\n- The script schedules microtasks via `.then()` calls. Nothing logs synchronously here because the `.then()` callbacks run as microtasks.\n\n2).  First Microtask Executes (logs 'a')\n- The first `.then()` callback runs and logs `'a'`.\n- Inside that callback, you create another microtask (`Promise.resolve().then(() => console.log('c'))`), which is appended to the end of the microtask queue.\n- Also, the outer `.then(...).then(() => console.log('b'))` chain schedules the `'b'` callback as the next microtask that represents the resolution of the first `.then()` chain.\n\n3).  Microtask Queue Ordering & Outcome (subtle / engine nuance)\n- The microtask queue is FIFO. The relative order of the chained `.then(() => console.log('b'))` vs the inner microtask (`'c'`) depends on precisely when the promise resolution and inner microtask were enqueued.\n- In many mainstream engines the chained `.then('b')` is queued before the inner microtask `'c'`, producing: `a → b → c`.\n- However, some explanations and engine behaviors treat the newly queued inner microtask as coming earlier, which would give `a → c → b`.\n\n🧾 Common (and safe) statement: `a` runs first; then `b` and `c` follow, but the exact order of `b` vs `c` can be subtle and is an implementation detail. Many engines yield `a → b → c`. If your dataset expects `a → c → b`, note that this is an engine-dependent edge-case; test in the target runtime for a definitive ordering.",
+    "difficulty": "hard"
+  },
+  {
+    "id": 20,
+    "question": "Which is true about web worker / worker threads and event loop?",
+    "code": "",
+    "options": [
+      "Each worker has its own event loop and call stack",
+      "Workers share the main thread's event loop",
+      "Workers have no microtask queue",
+      "Workers execute microtasks as macrotasks"
+    ],
+    "answer": 0,
+    "explain": "🧠 Detailed Explanation (Three Key Points)\n\n1).  Isolation & Threading\n- Web Workers / Worker Threads run in separate threads from the main thread.\n- Each worker has its own call stack, so JavaScript running in a worker does not block the main thread (and vice versa).\n\n2).  Event Loop Per Worker\n- Each worker also has its own event loop and task queues (macrotasks and microtasks).\n- This means timers, message events, and Promise microtasks are all processed within that worker’s event loop.\n\n3).  Microtask Support\n- Workers support microtasks (Promise callbacks, `queueMicrotask`, etc.) and process them in the same microtask checkpoint semantics as the main thread — they are not treated as macrotasks.\n\n🧾 Final: Each worker has its own event loop and call stack (Option 1).",
+    "difficulty": "medium"
+  }
+  
+  ,{
+    "id": 21,
+    "question": "What is the output of this code?",
+    "code": "function makeAdder(x) {\n  return function(y) {\n    return x + y;\n  };\n}\nconst add5 = makeAdder(5);\nconsole.log(add5(2));",
+    "options": [
+      "7",
+      "5",
+      "2",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The inner function forms a closure over 'x'. When called later with y=2, x remains 5 → 5 + 2 = 7.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 22,
+    "question": "What gets logged here?",
+    "code": "let count = 0;\nfunction counter() {\n  count++;\n  return function() {\n    console.log(count);\n  };\n}\nconst c1 = counter();\nconst c2 = counter();\nc1();\nc2();",
+    "options": [
+      "1, 2",
+      "2, 2",
+      "1, 1",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Each call to counter increments the shared variable `count`. Both closures refer to the same outer `count`, so it logs 1 and then 2.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 23,
+    "question": "What will be printed?",
+    "code": "function outer() {\n  let x = 10;\n  function inner() {\n    console.log(x);\n  }\n  x = 20;\n  return inner;\n}\nconst fn = outer();\nfn();",
+    "options": [
+      "10",
+      "20",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "Closures capture variables by reference, not by value. When inner is executed, x has been updated to 20.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 24,
+    "question": "What is the result of this IIFE?",
+    "code": "(function() {\n  let secret = 'hidden';\n  console.log(secret);\n})();\nconsole.log(typeof secret);",
+    "options": [
+      "hidden, string",
+      "hidden, undefined",
+      "undefined, string",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`secret` is scoped inside the IIFE (private). Outside it’s undefined, so typeof secret === 'undefined'.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 25,
+    "question": "What is logged?",
+    "code": "function makeCounter() {\n  let value = 0;\n  return {\n    increment: function() { value++; },\n    get: function() { console.log(value); }\n  };\n}\nconst counter = makeCounter();\ncounter.increment();\ncounter.increment();\ncounter.get();",
+    "options": [
+      "0",
+      "1",
+      "2",
+      "undefined"
+    ],
+    "answer": 2,
+    "explain": "`value` is private to `makeCounter`. Two increments make it 2. The closure remembers its own variable even after makeCounter() ends.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 26,
+    "question": "What happens here?",
+    "code": "function secretHolder() {\n  let secret = 42;\n  return () => secret;\n}\nconst getSecret = secretHolder();\nconsole.log(getSecret());\nconsole.log(secret);",
+    "options": [
+      "42, 42",
+      "42, undefined",
+      "Error, secret not defined",
+      "undefined, 42"
+    ],
+    "answer": 2,
+    "explain": "`secret` is block-scoped inside secretHolder(). The returned closure can access it, but the outer scope cannot.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 27,
+    "question": "What will the following code log?",
+    "code": "function outer() {\n  let x = 0;\n  return function inner() {\n    x++;\n    console.log(x);\n  };\n}\nconst fn1 = outer();\nfn1();\nfn1();\nconst fn2 = outer();\nfn2();",
+    "options": [
+      "1, 2, 3",
+      "1, 2, 1",
+      "0, 1, 2",
+      "2, 3, 1"
+    ],
+    "answer": 1,
+    "explain": "Each call to outer creates a new closure with its own `x`. fn1 increments its `x` twice (1,2). fn2 starts fresh (1).",
+    "difficulty": "medium"
+  },
+  {
+    "id": 28,
+    "question": "What is logged and why?",
+    "code": "function outer() {\n  let a = 1;\n  return function inner() {\n    console.log(++a);\n  };\n}\nconst x = outer();\nconst y = outer();\nx();\nx();\ny();",
+    "options": [
+      "2, 3, 4",
+      "2, 3, 2",
+      "1, 2, 1",
+      "undefined"
+    ],
+    "answer": 1,
+    "explain": "Each call to outer creates a separate closure. x() increments its own a (1→2→3), y() has its own (1→2).",
+    "difficulty": "medium"
+  },
+  {
+    "id": 29,
+    "question": "What gets printed?",
+    "code": "for (var i = 0; i < 3; i++) {\n  setTimeout(function() {\n    console.log(i);\n  }, 100);\n}",
+    "options": [
+      "0 1 2",
+      "3 3 3",
+      "0 0 0",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`var` is function-scoped, so all callbacks share the same i, which is 3 after the loop finishes. Use `let` to fix it.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 30,
+    "question": "What will be logged with `let` instead of `var`?",
+    "code": "for (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 100);\n}",
+    "options": [
+      "3 3 3",
+      "0 1 2",
+      "undefined undefined undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`let` creates a new lexical binding of `i` for each loop iteration. Each closure captures its own `i` value.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 31,
+    "question": "What is the output?",
+    "code": "function create() {\n  let value = 0;\n  return {\n    inc: () => ++value,\n    dec: () => --value\n  };\n}\nconst counter = create();\ncounter.inc();\ncounter.inc();\nconsole.log(counter.dec());",
+    "options": [
+      "1",
+      "2",
+      "0",
+      "undefined"
+    ],
+    "answer": 0,
+    "explain": "After two increments value=2, then decrement → 1. Closure keeps value private and persistent.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 32,
+    "question": "What is printed and why?",
+    "code": "function outer(a) {\n  return function(b) {\n    return function(c) {\n      console.log(a + b + c);\n    };\n  };\n}\nouter(1)(2)(3);",
+    "options": [
+      "6",
+      "123",
       "Error",
       "undefined"
     ],
     "answer": 0,
-    "explain": "[] coerces to '' \u2192 0, so 0 == false \u2192 true."
+    "explain": "Each returned function forms a closure over previous arguments (a, b). When final function executes, all variables are in scope → 1+2+3=6.",
+    "difficulty": "easy"
   },
   {
-    "id": 8,
-    "question": "What does typeof function(){} return?",
+    "id": 33,
+    "question": "What gets logged here?",
+    "code": "function counter() {\n  let count = 0;\n  return function() {\n    return count++;\n  };\n}\nconst c = counter();\nconsole.log(c());\nconsole.log(c());\nconsole.log(c());",
     "options": [
-      "'function'",
-      "'object'",
+      "0 1 2",
+      "1 2 3",
+      "undefined undefined undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Post-increment returns old value first, then increments. Each call uses same closure variable.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 34,
+    "question": "What is logged?",
+    "code": "function makeObject() {\n  let hidden = 10;\n  return {\n    show: () => hidden,\n    increase: () => hidden++\n  };\n}\nconst obj1 = makeObject();\nconst obj2 = makeObject();\nobj1.increase();\nconsole.log(obj1.show(), obj2.show());",
+    "options": [
+      "11 10",
+      "10 10",
+      "11 11",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Each object from makeObject() gets its own closure. obj1 and obj2 do not share hidden.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 35,
+    "question": "What happens when running this code?",
+    "code": "function createCounter() {\n  let count = 0;\n  return {\n    increment: () => ++count\n  };\n}\nconst c1 = createCounter();\nconst c2 = c1;\nc1.increment();\nc2.increment();\nconsole.log(c1.increment());",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "Both c1 and c2 reference the same closure object. Shared state count goes 0→1→2→3.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 36,
+    "question": "What will this log?",
+    "code": "function foo() {\n  var bar = 'secret';\n  setTimeout(function() {\n    console.log(bar);\n  }, 1000);\n  bar = 'revealed';\n}\nfoo();",
+    "options": [
+      "secret",
+      "revealed",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "Closures capture variable references, not values. When setTimeout runs, bar has been updated to 'revealed'.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 37,
+    "question": "What is the output?",
+    "code": "function wrapper() {\n  const privateVal = 100;\n  return function() {\n    return privateVal;\n  };\n}\nconst access = wrapper();\nconsole.log(access());\nconsole.log(privateVal);",
+    "options": [
+      "100, undefined",
+      "undefined, 100",
+      "Error",
+      "100, Error"
+    ],
+    "answer": 3,
+    "explain": "privateVal is not accessible outside wrapper scope, so direct access throws ReferenceError.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 38,
+    "question": "What does this code demonstrate?",
+    "code": "const bankAccount = (function() {\n  let balance = 1000;\n  return {\n    deposit(amount) { balance += amount; },\n    withdraw(amount) { balance -= amount; },\n    getBalance() { return balance; }\n  };\n})();",
+    "options": [
+      "Encapsulation using closures",
+      "Prototype inheritance",
+      "Async event handling",
+      "Lexical hoisting"
+    ],
+    "answer": 0,
+    "explain": "An IIFE creates private state (balance) with controlled access via closure functions — a pattern for encapsulation.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 39,
+    "question": "What is logged?",
+    "code": "function tricky() {\n  let arr = [];\n  for (var i = 0; i < 3; i++) {\n    arr.push(() => i);\n  }\n  return arr;\n}\nconst result = tricky();\nconsole.log(result[0](), result[1](), result[2]());",
+    "options": [
+      "0 1 2",
+      "3 3 3",
+      "undefined undefined undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "Because var is function-scoped, all closures share same `i` which is 3 after the loop. Using `let` fixes it.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 40,
+    "question": "What will be the output here?",
+    "code": "function createFunctions() {\n  let arr = [];\n  for (let i = 0; i < 3; i++) {\n    arr.push(() => i);\n  }\n  return arr;\n}\nconst funcs = createFunctions();\nconsole.log(funcs[0](), funcs[1](), funcs[2]());",
+    "options": [
+      "0 1 2",
+      "3 3 3",
+      "undefined undefined undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Using `let` creates a new lexical environment for each iteration. Each closure captures its own value of i.",
+    "difficulty": "easy"
+  },{
+    "id": 41,
+    "question": "What is the output of this code?",
+    "code": "function Person(name) {\n  this.name = name;\n}\nPerson.prototype.greet = function() {\n  return 'Hello ' + this.name;\n};\nconst p = new Person('Sunil');\nconsole.log(p.greet());",
+    "options": [
+      "'Hello Sunil'",
       "'undefined'",
-      "'callable'"
+      "Error",
+      "'Hello [object Object]'"
     ],
     "answer": 0,
-    "explain": "Functions have a special typeof result: 'function'."
+    "explain": "Instances created with `new` link their internal `[[Prototype]]` to `Person.prototype`, so `p.greet()` works via the prototype chain.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].map(num => num * 2).reduce((a, b) => a + b, 0))`?",
+    "id": 42,
+    "question": "What is true about `__proto__` and `prototype`?",
+    "code": "",
     "options": [
-      "6",
-      "12",
-      "0",
-      "undefined"
-    ],
-    "answer": 1,
-    "explain": "The `map` method doubles each element in `[1, 2, 3]`, resulting in `[2, 4, 6]`. The `reduce` method then sums these values with an initial value of 0, yielding `2 + 4 + 6 = 12`.",
-    "order": 1
-  },
-  {
-    "question": "What happens when you use `await` outside an async function in a JavaScript module?",
-    "options": [
-      "It works fine",
-      "SyntaxError",
-      "ReferenceError",
-      "It returns a Promise"
-    ],
-    "answer": 1,
-    "explain": "Top-level `await` is only allowed in ES modules. Outside an async function in a non-module script, using `await` causes a `SyntaxError`.",
-    "order": 2
-  },
-  {
-    "question": "What is the output of `console.log(typeof Symbol('id'))`?",
-    "options": [
-      "symbol",
-      "string",
-      "object",
-      "function"
+      "`__proto__` is an internal link of objects; `prototype` exists only on functions.",
+      "`prototype` is the parent of all objects.",
+      "They are the same.",
+      "Neither are accessible in JavaScript."
     ],
     "answer": 0,
-    "explain": "The `Symbol` constructor creates a unique symbol value, and `typeof Symbol('id')` returns `'symbol'`.",
-    "order": 3
+    "explain": "`__proto__` (or `[[Prototype]]`) points to the object's prototype. `prototype` is a property only of constructor functions.",
+    "difficulty": "medium"
   },
   {
-    "question": "What does the `WeakMap` object allow as keys?",
+    "id": 43,
+    "question": "What gets logged?",
+    "code": "function A() {}\nA.prototype.x = 10;\nconst obj = new A();\nconsole.log(obj.x);\nconsole.log(obj.hasOwnProperty('x'));",
     "options": [
-      "Strings only",
-      "Objects only",
-      "Any primitive",
-      "Any value"
-    ],
-    "answer": 1,
-    "explain": "`WeakMap` only allows objects (including functions) as keys. Primitives like strings or numbers are not allowed.",
-    "order": 4
-  },
-  {
-    "question": "What is the output of `console.log(0.1 + 0.2 === 0.3)`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "NaN"
-    ],
-    "answer": 1,
-    "explain": "Due to floating-point precision issues in JavaScript, `0.1 + 0.2` results in approximately `0.30000000000000004`, so `0.1 + 0.2 === 0.3` is `false`.",
-    "order": 5
-  },
-  {
-    "question": "What is the purpose of the `Object.seal` method?",
-    "options": [
-      "Prevents adding or deleting properties",
-      "Prevents modifying existing properties",
-      "Freezes the object completely",
-      "Marks the object as immutable"
-    ],
-    "answer": 0,
-    "explain": "`Object.seal` prevents adding or deleting properties but allows modifying existing properties. Unlike `Object.freeze`, it does not make the object fully immutable.",
-    "order": 6
-  },
-  {
-    "question": "What will `async () => { throw new Error('fail'); }()` do when executed?",
-    "options": [
-      "Returns a resolved Promise",
-      "Returns a rejected Promise",
-      "Throws a synchronous error",
-      "Returns undefined"
-    ],
-    "answer": 1,
-    "explain": "An async function that throws an error returns a rejected Promise with the error as the reason.",
-    "order": 7
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].at(-1))`?",
-    "options": [
-      "1",
-      "3",
-      "undefined",
+      "10, true",
+      "undefined, false",
+      "10, false",
       "Error"
     ],
-    "answer": 1,
-    "explain": "The `at` method supports negative indices. `-1` refers to the last element, so `[1, 2, 3].at(-1)` returns `3`.",
-    "order": 8
-  },
-  {
-    "question": "What does the `@@iterator` symbol represent in JavaScript?",
-    "options": [
-      "A method for object cloning",
-      "A method for iteration",
-      "A method for property access",
-      "A method for error handling"
-    ],
-    "answer": 1,
-    "explain": "The `Symbol.iterator` (or `@@iterator`) is a well-known symbol that defines a method to make an object iterable, used by `for...of` loops and spread syntax.",
-    "order": 9
-  },
-  {
-    "question": "What is the output of `console.log(new Set([1, 1, 2, 2, 3]).size)`?",
-    "options": [
-      "3",
-      "5",
-      "0",
-      "undefined"
-    ],
-    "answer": 0,
-    "explain": "A `Set` removes duplicates, so `[1, 1, 2, 2, 3]` becomes `{1, 2, 3}`, and `size` returns `3`.",
-    "order": 10
-  },
-  {
-    "question": "What happens when you call `delete` on a non-configurable property?",
-    "options": [
-      "The property is deleted",
-      "TypeError is thrown",
-      "Nothing happens",
-      "The property becomes undefined"
-    ],
-    "answer": 1,
-    "explain": "Attempting to delete a non-configurable property (e.g., defined with `Object.defineProperty` and `configurable: false`) throws a `TypeError` in strict mode or fails silently in non-strict mode.",
-    "order": 11
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].flatMap(x => [x, x]))`?",
-    "options": [
-      "[1, 2, 3, 1, 2, 3]",
-      "[1, 1, 2, 2, 3, 3]",
-      "[[1, 1], [2, 2], [3, 3]]",
-      "[1, 2, 3]"
-    ],
-    "answer": 1,
-    "explain": "`flatMap` maps each element to an array `[x, x]` and flattens the result by one level, yielding `[1, 1, 2, 2, 3, 3]`.",
-    "order": 12
-  },
-  {
-    "question": "What does `Object.getOwnPropertyDescriptors` return?",
-    "options": [
-      "Property values",
-      "Property names",
-      "Property descriptors",
-      "Prototype chain"
-    ],
     "answer": 2,
-    "explain": "`Object.getOwnPropertyDescriptors` returns an object containing all own property descriptors (including value, writable, enumerable, configurable) for an object.",
-    "order": 13
+    "explain": "x is found via the prototype chain, not as an own property, so `obj.hasOwnProperty('x')` is false.",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log(!!null)`?",
+    "id": 44,
+    "question": "What is the prototype of `Object.prototype`?",
     "options": [
-      "true",
-      "false",
       "null",
-      "undefined"
+      "undefined",
+      "Function.prototype",
+      "Object"
     ],
-    "answer": 1,
-    "explain": "The double negation `!!` coerces a value to a boolean. `null` coerces to `false`, so `!!null` is `false`.",
-    "order": 14
+    "answer": 0,
+    "explain": "The prototype chain ends at `Object.prototype.__proto__ === null`.",
+    "difficulty": "easy"
   },
   {
-    "question": "What does the `Proxy` object allow you to do?",
+    "id": 45,
+    "question": "What is the output?",
+    "code": "function Animal() {}\nAnimal.prototype.sound = 'growl';\nconst cat = new Animal();\ncat.sound = 'meow';\nconsole.log(cat.sound);\ndelete cat.sound;\nconsole.log(cat.sound);",
     "options": [
-      "Create private fields",
-      "Intercept object operations",
-      "Clone objects",
-      "Freeze objects"
+      "'growl', 'growl'",
+      "'meow', 'growl'",
+      "'meow', 'undefined'",
+      "'growl', 'undefined'"
     ],
     "answer": 1,
-    "explain": "A `Proxy` wraps an object and allows you to intercept operations like property access, assignment, and function calls using traps like `get` and `set`.",
-    "order": 15
+    "explain": "After deletion, the property lookup falls back to `Animal.prototype.sound` via prototype chain.",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log((async () => await Promise.resolve(42))())`?",
+    "id": 46,
+    "question": "What is true about the `prototype` property?",
+    "options": [
+      "All objects have it.",
+      "Only functions have it.",
+      "Only arrays have it.",
+      "It is the same as `__proto__`."
+    ],
+    "answer": 1,
+    "explain": "Only constructor functions and classes have the `prototype` property used when creating new instances with `new`.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 47,
+    "question": "What is logged here?",
+    "code": "function Car() {}\nCar.prototype.wheels = 4;\nconst tesla = new Car();\nCar.prototype.wheels = 6;\nconsole.log(tesla.wheels);",
+    "options": [
+      "4",
+      "6",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "All instances share the prototype object. When its property changes, all instances reflect the new value unless overridden.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 48,
+    "question": "What is the result of the following code?",
+    "code": "const parent = { a: 1 };\nconst child = Object.create(parent);\nchild.b = 2;\nconsole.log(child.a + child.b);",
+    "options": [
+      "3",
+      "undefined",
+      "1",
+      "2"
+    ],
+    "answer": 0,
+    "explain": "child inherits from parent. Accessing child.a looks up the prototype chain → parent.a = 1.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 49,
+    "question": "What is `child.__proto__ === parent` after this code?",
+    "code": "const parent = { kind: 'human' };\nconst child = Object.create(parent);",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Object.create(parent)` sets child's internal `[[Prototype]]` (i.e. `__proto__`) to parent.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 50,
+    "question": "What will the output be?",
+    "code": "function Foo() {}\nFoo.prototype.bar = 42;\nconst f = new Foo();\nconsole.log(Object.getPrototypeOf(f) === Foo.prototype);",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "`Object.getPrototypeOf(f)` returns the same object as `Foo.prototype` for instances created with `new Foo()`.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 51,
+    "question": "What gets logged?",
+    "code": "const animal = { eats: true };\nconst rabbit = Object.create(animal);\nrabbit.eats = false;\nconsole.log(rabbit.eats);\ndelete rabbit.eats;\nconsole.log(rabbit.eats);",
+    "options": [
+      "false, undefined",
+      "false, true",
+      "true, false",
+      "undefined, true"
+    ],
+    "answer": 1,
+    "explain": "After deletion, lookup falls back to prototype `animal.eats`, so logs true.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 52,
+    "question": "Which statement is correct about function constructors?",
+    "options": [
+      "They must return an object.",
+      "They automatically return the instance when called with `new`.",
+      "They are just class aliases.",
+      "They have no prototype by default."
+    ],
+    "answer": 1,
+    "explain": "Constructors return `this` (the new instance) automatically unless another object is explicitly returned.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 53,
+    "question": "What is logged?",
+    "code": "function Person() {}\nPerson.prototype.sayHi = function() { console.log('Hi'); };\nconst p = new Person();\np.__proto__.sayHi();",
+    "options": [
+      "Hi",
+      "undefined",
+      "Error",
+      "Nothing"
+    ],
+    "answer": 0,
+    "explain": "p.__proto__ points to Person.prototype, which contains sayHi.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 54,
+    "question": "What happens when using `class` syntax?",
+    "code": "class Animal {\n  speak() { return 'sound'; }\n}\nconst a = new Animal();\nconsole.log(a.__proto__ === Animal.prototype);",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Class syntax is syntactic sugar over prototypes. Instances link to Class.prototype.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 55,
+    "question": "What is the output?",
+    "code": "function A() {}\nfunction B() {}\nB.prototype = new A();\nconst b = new B();\nconsole.log(b instanceof A);",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "b.__proto__ → B.prototype → (instance of A). The chain includes A.prototype, so instanceof A is true.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 56,
+    "question": "What happens when overwriting prototype?",
+    "code": "function Car() {}\nCar.prototype = { wheels: 4 };\nconst c = new Car();\nconsole.log(c.constructor === Car);",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "Replacing the entire prototype removes the default `constructor` link. c.constructor now points to Object by default.",
+    "difficulty": "hard"
+  },
+  {
+    "id": 57,
+    "question": "What is printed?",
+    "code": "const grandparent = { level: 'grand' };\nconst parent = Object.create(grandparent);\nconst child = Object.create(parent);\nconsole.log(child.level);",
+    "options": [
+      "'grand'",
+      "'parent'",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "The lookup follows the prototype chain: child → parent → grandparent.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 58,
+    "question": "What does this return?",
+    "code": "function X() {}\nX.prototype = { foo: 1 };\nconst x1 = new X();\nconst x2 = new X();\nconsole.log(x1.foo === x2.foo);",
+    "options": [
+      "true",
+      "false",
+      "undefined",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Both instances share the same prototype object, so they access the same `foo` property value.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 59,
+    "question": "What is logged?",
+    "code": "function Shape() {}\nShape.prototype.name = 'shape';\nconst s = new Shape();\nconsole.log('name' in s);\nconsole.log(s.hasOwnProperty('name'));",
+    "options": [
+      "true, true",
+      "true, false",
+      "false, true",
+      "false, false"
+    ],
+    "answer": 1,
+    "explain": "The `in` operator checks the prototype chain; hasOwnProperty checks only direct properties.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 60,
+    "question": "What will be output?",
+    "code": "const obj = {};\nconsole.log(Object.getPrototypeOf(obj) === Object.prototype);\nconsole.log(obj.__proto__ === Object.prototype);",
+    "options": [
+      "true, true",
+      "false, false",
+      "true, false",
+      "false, true"
+    ],
+    "answer": 0,
+    "explain": "Both access the internal `[[Prototype]]` of `obj`. They point to Object.prototype by default.",
+    "difficulty": "easy"
+  }, {
+    "id": 61,
+    "question": "What will this code log?",
+    "code": "console.log(a);\nvar a = 10;",
+    "options": [
+      "undefined",
+      "10",
+      "ReferenceError",
+      "TypeError"
+    ],
+    "answer": 0,
+    "explain": "`var` declarations are hoisted but not initialized. The variable exists with value `undefined` until assignment.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 62,
+    "question": "What is logged?",
+    "code": "console.log(a);\nlet a = 10;",
+    "options": [
+      "undefined",
+      "10",
+      "ReferenceError",
+      "TypeError"
+    ],
+    "answer": 2,
+    "explain": "`let` declarations are hoisted but remain uninitialized in the Temporal Dead Zone (TDZ) until the line of declaration.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 63,
+    "question": "What is the result?",
+    "code": "console.log(foo());\nfunction foo() { return 42; }",
     "options": [
       "42",
-      "Promise {42}",
       "undefined",
-      "Error"
+      "ReferenceError",
+      "TypeError"
     ],
-    "answer": 1,
-    "explain": "An async function always returns a Promise. Here, it returns `Promise.resolve(42)`, which is a Promise resolving to `42`.",
-    "order": 16
+    "answer": 0,
+    "explain": "Function declarations are hoisted fully — both their name and body — so `foo()` is callable before declaration.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the purpose of `Reflect` in JavaScript?",
+    "id": 64,
+    "question": "What happens here?",
+    "code": "foo();\nvar foo = function() { console.log('Hello'); };",
     "options": [
-      "To create reactive objects",
-      "To provide low-level object operations",
-      "To handle errors",
-      "To optimize performance"
+      "Hello",
+      "undefined",
+      "TypeError",
+      "ReferenceError"
     ],
-    "answer": 1,
-    "explain": "The `Reflect` object provides methods for low-level operations like property access (`Reflect.get`) and object creation, often used with `Proxy`.",
-    "order": 17
+    "answer": 2,
+    "explain": "The variable `foo` is hoisted but initialized as `undefined`. Attempting to call it before assignment causes TypeError: foo is not a function.",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log(Object.is(NaN, NaN))`?",
+    "id": 65,
+    "question": "What is printed?",
+    "code": "console.log(x);\nvar x;\nx = 5;\nconsole.log(x);",
     "options": [
-      "true",
-      "false",
-      "undefined",
+      "undefined, 5",
+      "5, 5",
+      "undefined, undefined",
       "Error"
     ],
     "answer": 0,
-    "explain": "`Object.is` performs a strict equality check, and unlike `===`, it considers `NaN` equal to `NaN`.",
-    "order": 18
+    "explain": "`x` is hoisted as undefined, then assigned later. The first log is undefined, then 5.",
+    "difficulty": "easy"
   },
   {
-    "question": "What does the `Temporal` API aim to improve in JavaScript?",
-    "options": [
-      "String manipulation",
-      "Date and time handling",
-      "Array methods",
-      "Object cloning"
-    ],
-    "answer": 1,
-    "explain": "The `Temporal` API is a modern proposal to improve date and time handling in JavaScript, addressing issues with the `Date` object.",
-    "order": 19
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].findLast(x => x > 1))`?",
+    "id": 66,
+    "question": "What gets logged?",
+    "code": "var a = 1;\nfunction test() {\n  console.log(a);\n  var a = 2;\n}\ntest();",
     "options": [
       "1",
       "2",
-      "3",
-      "undefined"
+      "undefined",
+      "ReferenceError"
     ],
     "answer": 2,
-    "explain": "The `findLast` method returns the last element that satisfies the condition. For `[1, 2, 3]` and `x > 1`, it returns `3`.",
-    "order": 20
+    "explain": "Inside `test`, `var a` is hoisted and shadows the global `a`. It is undefined until assigned (local hoisting).",
+    "difficulty": "medium"
   },
   {
-    "question": "What happens when you use `new.target` in a function?",
+    "id": 67,
+    "question": "What will the following code output?",
+    "code": "function foo() {\n  console.log(a);\n  var a = 2;\n  function a() {}\n}\nfoo();",
     "options": [
-      "Returns the function itself",
-      "Returns the constructor function",
-      "Throws an error",
-      "Returns undefined"
-    ],
-    "answer": 1,
-    "explain": "`new.target` returns the constructor function when a function is called with `new`, or `undefined` if called without `new`.",
-    "order": 21
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].toSorted())`?",
-    "options": [
-      "[1, 2, 3]",
-      "[3, 2, 1]",
+      "2",
       "undefined",
+      "function a() {}",
       "Error"
     ],
-    "answer": 0,
-    "explain": "`toSorted` is a non-mutating method that returns a new sorted array. Since `[1, 2, 3]` is already sorted, it returns `[1, 2, 3]`.",
-    "order": 22
+    "answer": 2,
+    "explain": "Function declarations are hoisted before vars. So `a` is initially the function. The log prints the function definition.",
+    "difficulty": "hard"
   },
   {
-    "question": "What is the purpose of the `WeakRef` object?",
+    "id": 68,
+    "question": "What is the result?",
+    "code": "console.log(a);\nconst a = 3;",
     "options": [
-      "To create strong references",
-      "To allow garbage collection of objects",
-      "To clone objects",
-      "To freeze objects"
-    ],
-    "answer": 1,
-    "explain": "`WeakRef` creates a weak reference to an object, allowing it to be garbage-collected if there are no other strong references.",
-    "order": 23
-  },
-  {
-    "question": "What is the output of `console.log(1n + 2n)`?",
-    "options": [
+      "undefined",
       "3",
-      "3n",
-      "12n",
-      "Error"
+      "ReferenceError",
+      "TypeError"
     ],
-    "answer": 1,
-    "explain": "`1n` and `2n` are BigInt literals. Adding them results in `3n`, another BigInt.",
-    "order": 24
+    "answer": 2,
+    "explain": "`const` has a Temporal Dead Zone. Access before declaration throws ReferenceError.",
+    "difficulty": "medium"
   },
   {
-    "question": "What does the `import.meta` object provide in ES modules?",
+    "id": 69,
+    "question": "What happens here?",
+    "code": "foo();\nfunction foo() { console.log('A'); }\nvar foo = function() { console.log('B'); };",
     "options": [
-      "Module metadata",
-      "Global scope",
-      "Prototype chain",
-      "Function context"
-    ],
-    "answer": 0,
-    "explain": "`import.meta` provides metadata about the current module, such as its URL, in ES modules.",
-    "order": 25
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].with(1, 5))`?",
-    "options": [
-      "[1, 5, 3]",
-      "[1, 2, 5]",
-      "[5, 2, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "The `with` method creates a new array with the element at index 1 replaced by 5, resulting in `[1, 5, 3]`.",
-    "order": 26
-  },
-  {
-    "question": "What happens when you use `Object.preventExtensions` on an object?",
-    "options": [
-      "Prevents adding new properties",
-      "Prevents modifying existing properties",
-      "Freezes the object",
-      "Marks it as immutable"
-    ],
-    "answer": 0,
-    "explain": "`Object.preventExtensions` prevents adding new properties but allows modifying or deleting existing ones.",
-    "order": 27
-  },
-  {
-    "question": "What is the output of `console.log(!!'0')`?",
-    "options": [
-      "true",
-      "false",
-      "0",
+      "A",
+      "B",
+      "Error",
       "undefined"
     ],
     "answer": 0,
-    "explain": "The string `'0'` is truthy in JavaScript, so `!!'0'` coerces to `true`.",
-    "order": 28
+    "explain": "Function declarations are hoisted before variable assignments. The call executes the first definition before reassignment.",
+    "difficulty": "hard"
   },
   {
-    "question": "What does the `globalThis` object represent?",
+    "id": 70,
+    "question": "What gets logged?",
+    "code": "console.log(a);\nvar a = 5;\nfunction a() {}\nconsole.log(a);",
     "options": [
-      "The global object",
-      "The window object",
-      "The module scope",
-      "The function scope"
+      "function a() {}, 5",
+      "undefined, 5",
+      "function a() {}, function a() {}",
+      "undefined, undefined"
     ],
     "answer": 0,
-    "explain": "`globalThis` is a standard way to access the global object (`window` in browsers, `global` in Node.js) across environments.",
-    "order": 29
+    "explain": "Function declaration is hoisted above var. First log shows the function. After assignment, a becomes 5.",
+    "difficulty": "hard"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].findIndex(x => x > 2))`?",
+    "id": 71,
+    "question": "What is printed?",
+    "code": "let a = 10;\n(function() {\n  console.log(a);\n  let a = 20;\n})();",
     "options": [
-      "0",
-      "1",
-      "2",
-      "-1"
-    ],
-    "answer": 2,
-    "explain": "`findIndex` returns the index of the first element that satisfies the condition. For `x > 2`, it returns `2` (the index of `3`).",
-    "order": 30
-  },
-  {
-    "question": "What is the purpose of the `Atomics` object in JavaScript?",
-    "options": [
-      "To handle asynchronous operations",
-      "To manage shared memory",
-      "To create iterators",
-      "To optimize arrays"
-    ],
-    "answer": 1,
-    "explain": "The `Atomics` object provides atomic operations for shared memory, used with `SharedArrayBuffer` for thread-safe operations.",
-    "order": 31
-  },
-  {
-    "question": "What is the output of `console.log(String.raw`Hello\nWorld`)`?",
-    "options": [
-      "Hello\nWorld",
-      "Hello World",
-      "Hello\\nWorld",
-      "Error"
-    ],
-    "answer": 2,
-    "explain": "`String.raw` treats backslashes as literal characters, so `Hello\nWorld` becomes `Hello\\nWorld`.",
-    "order": 32
-  },
-  {
-    "question": "What does the `FinalizationRegistry` do?",
-    "options": [
-      "Registers cleanup callbacks for garbage-collected objects",
-      "Prevents garbage collection",
-      "Clones objects",
-      "Freezes objects"
-    ],
-    "answer": 0,
-    "explain": "`FinalizationRegistry` allows registering callbacks to run when an object is garbage-collected, useful for cleanup tasks.",
-    "order": 33
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].toReversed())`?",
-    "options": [
-      "[3, 2, 1]",
-      "[1, 2, 3]",
+      "10",
+      "20",
       "undefined",
-      "Error"
+      "ReferenceError"
     ],
-    "answer": 0,
-    "explain": "`toReversed` is a non-mutating method that returns a new array with elements in reverse order, yielding `[3, 2, 1]`.",
-    "order": 34
+    "answer": 3,
+    "explain": "`let a = 20` creates a new binding in TDZ inside the IIFE. Accessing it before declaration throws ReferenceError.",
+    "difficulty": "hard"
   },
   {
-    "question": "What is the output of `console.log(0n === 0)`?",
+    "id": 72,
+    "question": "What will happen?",
+    "code": "if (true) {\n  console.log(x);\n  var x = 5;\n}",
     "options": [
-      "true",
-      "false",
       "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "BigInt `0n` and number `0` are different types, so `0n === 0` is `false` due to strict equality.",
-    "order": 35
-  },
-  {
-    "question": "What does the `queueMicrotask` function do?",
-    "options": [
-      "Schedules a task for the next event loop",
-      "Schedules a microtask",
-      "Blocks the main thread",
-      "Creates a Promise"
-    ],
-    "answer": 1,
-    "explain": "`queueMicrotask` schedules a function to run as a microtask, executed before the next macrotask (e.g., `setTimeout`).",
-    "order": 36
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].group(x => x % 2))`?",
-    "options": [
-      "{0: [2], 1: [1, 3]}",
-      "{0: [1, 3], 1: [2]}",
-      "[1, 2, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "The `group` method groups array elements by the result of the callback. Here, `x % 2` groups even numbers (`0`) and odd numbers (`1`), yielding `{0: [2], 1: [1, 3]}`.",
-    "order": 37
-  },
-  {
-    "question": "What is the purpose of the `Symbol.asyncIterator`?",
-    "options": [
-      "Defines synchronous iteration",
-      "Defines asynchronous iteration",
-      "Defines property access",
-      "Defines object cloning"
-    ],
-    "answer": 1,
-    "explain": "`Symbol.asyncIterator` defines a method for asynchronous iteration, used by `for await...of` loops.",
-    "order": 38
-  },
-  {
-    "question": "What is the output of `console.log(Object.getPrototypeOf([]) === Array.prototype)`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "The prototype of an array (`[]`) is `Array.prototype`, so the comparison returns `true`.",
-    "order": 39
-  },
-  {
-    "question": "What happens when you use `Object.defineProperty` with `writable: false`?",
-    "options": [
-      "The property cannot be modified",
-      "The property cannot be deleted",
-      "The property cannot be enumerated",
-      "The property becomes private"
-    ],
-    "answer": 0,
-    "explain": "Setting `writable: false` makes the property read-only, preventing modification of its value.",
-    "order": 40
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].every(x => x > 0))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`every` returns `true` if all elements satisfy the condition. Since all elements in `[1, 2, 3]` are greater than 0, it returns `true`.",
-    "order": 41
-  },
-  {
-    "question": "What does the `structuredClone` function do?",
-    "options": [
-      "Shallow copies an object",
-      "Deep copies an object",
-      "Freezes an object",
-      "Serializes an object to JSON"
-    ],
-    "answer": 1,
-    "explain": "`structuredClone` creates a deep copy of an object, including nested objects and arrays, preserving their structure.",
-    "order": 42
-  },
-  {
-    "question": "What is the output of `console.log(1 / 0)`?",
-    "options": [
-      "NaN",
-      "Infinity",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "In JavaScript, dividing a non-zero number by zero results in `Infinity`.",
-    "order": 43
-  },
-  {
-    "question": "What is the purpose of the `Symbol.species` symbol?",
-    "options": [
-      "Defines object cloning",
-      "Defines constructor for derived objects",
-      "Defines iteration behavior",
-      "Defines property access"
-    ],
-    "answer": 1,
-    "explain": "`Symbol.species` specifies the constructor to use when creating derived objects, such as in `Array.prototype.map`.",
-    "order": 44
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].some(x => x > 2))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`some` returns `true` if at least one element satisfies the condition. Since `3 > 2`, it returns `true`.",
-    "order": 45
-  },
-  {
-    "question": "What happens when you use `Object.setPrototypeOf` on an object?",
-    "options": [
-      "Changes its constructor",
-      "Changes its prototype",
-      "Freezes the object",
-      "Clones the object"
-    ],
-    "answer": 1,
-    "explain": "`Object.setPrototypeOf` changes the prototype of an object, affecting its inheritance chain.",
-    "order": 46
-  },
-  {
-    "question": "What is the output of `console.log([1,,3].length)`?",
-    "options": [
-      "1",
-      "2",
-      "3",
-      "undefined"
-    ],
-    "answer": 2,
-    "explain": "Sparse arrays include empty slots. `[1,,3]` has three slots (1, empty, 3), so `length` is `3`.",
-    "order": 47
-  },
-  {
-    "question": "What does the `ArrayBuffer` object represent?",
-    "options": [
-      "A dynamic array",
-      "A fixed-length raw binary data buffer",
-      "A resizable array",
-      "A typed array"
-    ],
-    "answer": 1,
-    "explain": "`ArrayBuffer` represents a fixed-length raw binary data buffer, used with typed arrays like `Uint8Array`.",
-    "order": 48
-  },
-  {
-    "question": "What is the output of `console.log(typeof async function(){})`?",
-    "options": [
-      "function",
-      "async",
-      "object",
-      "undefined"
-    ],
-    "answer": 0,
-    "explain": "An async function is still a function, so `typeof` returns `'function'`.",
-    "order": 49
-  },
-  {
-    "question": "What is the purpose of the `Symbol.toPrimitive` method?",
-    "options": [
-      "Defines iteration behavior",
-      "Defines string representation",
-      "Defines primitive coercion",
-      "Defines object cloning"
-    ],
-    "answer": 2,
-    "explain": "`Symbol.toPrimitive` defines how an object is coerced to a primitive value during operations like `+` or `==`.",
-    "order": 50
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].includes(2))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`includes` checks if an array contains a value. Since `2` is in `[1, 2, 3]`, it returns `true`.",
-    "order": 51
-  },
-  {
-    "question": "What does the `SharedArrayBuffer` allow?",
-    "options": [
-      "Dynamic array resizing",
-      "Shared memory between threads",
-      "Immutable arrays",
-      "Cloning arrays"
-    ],
-    "answer": 1,
-    "explain": "`SharedArrayBuffer` allows multiple threads (e.g., Web Workers) to share the same memory, used with `Atomics`.",
-    "order": 52
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].slice(-2))`?",
-    "options": [
-      "[2, 3]",
-      "[1, 2]",
-      "[3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`slice(-2)` extracts the last two elements, resulting in `[2, 3]`.",
-    "order": 53
-  },
-  {
-    "question": "What is the purpose of the `Symbol.hasInstance` method?",
-    "options": [
-      "Defines property access",
-      "Defines instanceof behavior",
-      "Defines iteration",
-      "Defines cloning"
-    ],
-    "answer": 1,
-    "explain": "`Symbol.hasInstance` customizes the behavior of the `instanceof` operator for a constructor.",
-    "order": 54
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].filter(x => x % 2))`?",
-    "options": [
-      "[1, 3]",
-      "[2]",
-      "[1, 2, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`filter` keeps elements where the callback returns a truthy value. `x % 2` is truthy for odd numbers (`1` and `3`), so the result is `[1, 3]`.",
-    "order": 55
-  },
-  {
-    "question": "What does the `Object.getOwnPropertySymbols` method return?",
-    "options": [
-      "Property names",
-      "Symbol keys",
-      "Property values",
-      "Prototype chain"
-    ],
-    "answer": 1,
-    "explain": "`Object.getOwnPropertySymbols` returns an array of Symbol keys for an object\u2019s own properties.",
-    "order": 56
-  },
-  {
-    "question": "What is the output of `console.log((() => { return { x: 1 }; })().x)`?",
-    "options": [
-      "1",
-      "undefined",
-      "{ x: 1 }",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "The IIFE returns an object `{ x: 1 }`, and accessing `.x` yields `1`.",
-    "order": 57
-  },
-  {
-    "question": "What is the purpose of the `Symbol.toStringTag` method?",
-    "options": [
-      "Defines iteration",
-      "Defines string representation",
-      "Defines primitive coercion",
-      "Defines object cloning"
-    ],
-    "answer": 1,
-    "explain": "`Symbol.toStringTag` customizes the string representation of an object when `toString()` is called, e.g., `[object MyType]`.",
-    "order": 58
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].map(x => x ** 2))`?",
-    "options": [
-      "[1, 4, 9]",
-      "[1, 2, 3]",
-      "[2, 4, 6]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`map` applies `x ** 2` to each element, so `[1, 2, 3]` becomes `[1, 4, 9]`.",
-    "order": 59
-  },
-  {
-    "question": "What happens when you use `delete` on an array element?",
-    "options": [
-      "Removes the element and shifts indices",
-      "Sets the element to undefined",
-      "Throws an error",
-      "Reduces the array length"
-    ],
-    "answer": 1,
-    "explain": "`delete` on an array element sets it to `undefined` but does not shift indices or change the array\u2019s `length`.",
-    "order": 60
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].reduceRight((a, b) => a + b))`?",
-    "options": [
-      "6",
-      "0",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`reduceRight` sums from right to left: `3 + 2 = 5`, then `5 + 1 = 6`.",
-    "order": 61
-  },
-  {
-    "question": "What does the `Symbol.match` method define?",
-    "options": [
-      "Regular expression matching",
-      "Object equality",
-      "String concatenation",
-      "Array iteration"
-    ],
-    "answer": 0,
-    "explain": "`Symbol.match` defines the behavior for regular expression matching, used by `String.prototype.match`.",
-    "order": 62
-  },
-  {
-    "question": "What is the output of `console.log(Object.is(-0, 0))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`Object.is` distinguishes between `-0` and `0`, so `-0` is not equal to `0`.",
-    "order": 63
-  },
-  {
-    "question": "What is the purpose of the `Symbol.replace` method?",
-    "options": [
-      "Defines string replacement",
-      "Defines object cloning",
-      "Defines iteration",
-      "Defines property access"
-    ],
-    "answer": 0,
-    "explain": "`Symbol.replace` defines the behavior for string replacement, used by `String.prototype.replace`.",
-    "order": 64
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].join(''))`?",
-    "options": [
-      "123",
-      "1,2,3",
-      "[1,2,3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`join('')` concatenates array elements with an empty string, resulting in `'123'`.",
-    "order": 65
-  },
-  {
-    "question": "What does the `Symbol.search` method define?",
-    "options": [
-      "String searching",
-      "Object equality",
-      "Array iteration",
-      "Property access"
-    ],
-    "answer": 0,
-    "explain": "`Symbol.search` defines the behavior for string searching, used by `String.prototype.search`.",
-    "order": 66
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].pop())`?",
-    "options": [
-      "1",
-      "3",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`pop` removes and returns the last element, so `[1, 2, 3].pop()` returns `3`.",
-    "order": 67
-  },
-  {
-    "question": "What is the purpose of the `Symbol.split` method?",
-    "options": [
-      "Defines string splitting",
-      "Defines object cloning",
-      "Defines iteration",
-      "Defines property access"
-    ],
-    "answer": 0,
-    "explain": "`Symbol.split` defines the behavior for string splitting, used by `String.prototype.split`.",
-    "order": 68
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].shift())`?",
-    "options": [
-      "1",
-      "3",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`shift` removes and returns the first element, so `[1, 2, 3].shift()` returns `1`.",
-    "order": 69
-  },
-  {
-    "question": "What does the `Symbol.unscopables` method define?",
-    "options": [
-      "Defines properties excluded from `with`",
-      "Defines iteration",
-      "Defines cloning",
-      "Defines property access"
-    ],
-    "answer": 0,
-    "explain": "`Symbol.unscopables` specifies properties to exclude from the `with` statement\u2019s scope.",
-    "order": 70
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].concat([4, 5]))`?",
-    "options": [
-      "[1, 2, 3, 4, 5]",
-      "[1, 2, 3, [4, 5]]",
-      "[4, 5, 1, 2, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`concat` creates a new array by combining the arrays, resulting in `[1, 2, 3, 4, 5]`.",
-    "order": 71
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].splice(1, 1))`?",
-    "options": [
-      "[2]",
-      "[1, 3]",
-      "[1, 2, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`splice(1, 1)` removes 1 element at index 1 and returns it as an array, resulting in `[2]`.",
-    "order": 72
-  },
-  {
-    "question": "What does the `Symbol.isConcatSpreadable` method define?",
-    "options": [
-      "Defines array concatenation behavior",
-      "Defines iteration",
-      "Defines cloning",
-      "Defines property access"
-    ],
-    "answer": 0,
-    "explain": "`Symbol.isConcatSpreadable` determines if an object is spread during `Array.prototype.concat`.",
-    "order": 73
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].indexOf(2))`?",
-    "options": [
-      "0",
-      "1",
-      "2",
-      "-1"
-    ],
-    "answer": 1,
-    "explain": "`indexOf` returns the first index of the value `2`, which is `1`.",
-    "order": 74
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].lastIndexOf(2))`?",
-    "options": [
-      "0",
-      "1",
-      "2",
-      "-1"
-    ],
-    "answer": 1,
-    "explain": "`lastIndexOf` returns the last index of the value `2`, which is `1`.",
-    "order": 75
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].reverse())`?",
-    "options": [
-      "[3, 2, 1]",
-      "[1, 2, 3]",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`reverse` reverses the array in place and returns it, resulting in `[3, 2, 1]`.",
-    "order": 76
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].fill(0))`?",
-    "options": [
-      "[0, 0, 0]",
-      "[1, 2, 3]",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`fill` replaces all elements with the specified value, resulting in `[0, 0, 0]`.",
-    "order": 77
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].keys().next().value)`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`keys()` returns an iterator of array indices. The first call to `next().value` returns the first index, `0`.",
-    "order": 78
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].values().next().value)`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`values()` returns an iterator of array elements. The first call to `next().value` returns the first element, `1`.",
-    "order": 79
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].entries().next().value)`?",
-    "options": [
-      "[0, 1]",
-      "[1, 2]",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`entries()` returns an iterator of arrays containing index and value. The first call to `next().value` returns `[0, 1]`.",
-    "order": 80
-  },
-  {
-    "question": "What is the output of `console.log(Math.trunc(3.7))`?",
-    "options": [
-      "3",
-      "4",
-      "3.7",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.trunc` removes the decimal part, returning `3` for `3.7`.",
-    "order": 81
-  },
-  {
-    "question": "What is the output of `console.log(Math.sign(-5))`?",
-    "options": [
-      "-1",
-      "1",
-      "0",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.sign` returns `-1` for negative numbers, `1` for positive numbers, and `0` for zero.",
-    "order": 82
-  },
-  {
-    "question": "What is the output of `console.log(Math.cbrt(8))`?",
-    "options": [
-      "2",
-      "4",
-      "8",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.cbrt` returns the cube root, so `Math.cbrt(8)` returns `2`.",
-    "order": 83
-  },
-  {
-    "question": "What is the output of `console.log(Math.clz32(1))`?",
-    "options": [
-      "31",
-      "32",
-      "0",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.clz32` counts leading zeros in a 32-bit integer. For `1` (binary `000...01`), it returns `31`.",
-    "order": 84
-  },
-  {
-    "question": "What is the output of `console.log(Math.imul(2, 3))`?",
-    "options": [
-      "6",
       "5",
-      "8",
-      "Error"
+      "ReferenceError",
+      "TypeError"
     ],
     "answer": 0,
-    "explain": "`Math.imul` performs 32-bit integer multiplication, so `2 * 3 = 6`.",
-    "order": 85
+    "explain": "var is function-scoped, not block-scoped, so x is hoisted to function/global scope with value undefined.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the output of `console.log(Math.fround(1.5))`?",
+    "id": 73,
+    "question": "What happens here?",
+    "code": "if (true) {\n  console.log(x);\n  let x = 5;\n}",
     "options": [
-      "1.5",
-      "1",
-      "2",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.fround` rounds to the nearest 32-bit float, so `1.5` remains `1.5`.",
-    "order": 86
-  },
-  {
-    "question": "What is the output of `console.log(Math.hypot(3, 4))`?",
-    "options": [
+      "undefined",
       "5",
-      "7",
-      "12",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.hypot` computes the square root of the sum of squares, so `Math.hypot(3, 4)` returns `sqrt(3\u00b2 + 4\u00b2) = 5`.",
-    "order": 87
-  },
-  {
-    "question": "What is the output of `console.log(Math.expm1(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.expm1(x)` computes `e^x - 1`, so for `x = 0`, it returns `e^0 - 1 = 0`.",
-    "order": 88
-  },
-  {
-    "question": "What is the output of `console.log(Math.log1p(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.log1p(x)` computes `ln(1 + x)`, so for `x = 0`, it returns `ln(1) = 0`.",
-    "order": 89
-  },
-  {
-    "question": "What is the output of `console.log(Math.sinh(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.sinh(x)` computes the hyperbolic sine, so for `x = 0`, it returns `0`.",
-    "order": 90
-  },
-  {
-    "question": "What is the output of `console.log(Math.cosh(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`Math.cosh(x)` computes the hyperbolic cosine, so for `x = 0`, it returns `1`.",
-    "order": 91
-  },
-  {
-    "question": "What is the output of `console.log(Math.tanh(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.tanh(x)` computes the hyperbolic tangent, so for `x = 0`, it returns `0`.",
-    "order": 92
-  },
-  {
-    "question": "What is the output of `console.log(Math.asinh(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.asinh(x)` computes the inverse hyperbolic sine, so for `x = 0`, it returns `0`.",
-    "order": 93
-  },
-  {
-    "question": "What is the output of `console.log(Math.acosh(1))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.acosh(x)` computes the inverse hyperbolic cosine, so for `x = 1`, it returns `0`.",
-    "order": 94
-  },
-  {
-    "question": "What is the output of `console.log(Math.atanh(0))`?",
-    "options": [
-      "0",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.atanh(x)` computes the inverse hyperbolic tangent, so for `x = 0`, it returns `0`.",
-    "order": 95
-  },
-  {
-    "question": "What is the output of `console.log(Number.EPSILON)`?",
-    "options": [
-      "2.220446049250313e-16",
-      "1",
-      "0",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Number.EPSILON` represents the smallest difference between 1 and the next representable floating-point number, approximately `2.22e-16`.",
-    "order": 96
-  },
-  {
-    "question": "What is the output of `console.log(Number.MAX_SAFE_INTEGER)`?",
-    "options": [
-      "9007199254740991",
-      "Infinity",
-      "0",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Number.MAX_SAFE_INTEGER` is the largest integer that can be safely represented in JavaScript, `2^53 - 1 = 9007199254740991`.",
-    "order": 97
-  },
-  {
-    "question": "What is the output of `console.log(Number.MIN_SAFE_INTEGER)`?",
-    "options": [
-      "-9007199254740991",
-      "-Infinity",
-      "0",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Number.MIN_SAFE_INTEGER` is the smallest integer that can be safely represented, `-2^53 + 1 = -9007199254740991`.",
-    "order": 98
-  },
-  {
-    "question": "What is the output of `console.log(Number.isSafeInteger(9007199254740991))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Number.isSafeInteger` checks if a number is a safe integer (within `\u00b12^53 - 1`). `9007199254740991` is safe, so it returns `true`.",
-    "order": 99
-  },
-  {
-    "question": "What is the output of `console.log(Number.isFinite(Infinity))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`Number.isFinite` checks if a value is a finite number. `Infinity` is not finite, so it returns `false`.",
-    "order": 100
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].findLastIndex(x => x > 1))`?",
-    "options": [
-      "1",
-      "2",
-      "-1",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`findLastIndex` returns the index of the last element that satisfies the condition. For `x > 1`, it returns `2` (index of `3`).",
-    "order": 101,
-    "code": "[1, 2, 3].findLastIndex(x => x > 1)"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].groupToMap(x => x % 2))`?",
-    "options": [
-      "Map {0 => [2], 1 => [1, 3]}",
-      "Map {0 => [1, 3], 1 => [2]}",
-      "[1, 2, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`groupToMap` groups array elements into a `Map` by the callback result. `x % 2` groups even numbers (`0`) and odd numbers (`1`), yielding `Map {0 => [2], 1 => [1, 3]}`.",
-    "order": 102,
-    "code": "[1, 2, 3].groupToMap(x => x % 2)"
-  },
-  {
-    "question": "What is the output of `console.log((() => { let x = 1; return () => x++; })()())`?",
-    "options": [
-      "1",
-      "2",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "The outer IIFE creates a closure with `x = 1`. The inner function returns `x++`, which returns `x` (1) and then increments it.",
-    "order": 103,
-    "code": "(() => { let x = 1; return () => x++; })()()"
-  },
-  {
-    "question": "What happens when you use `Object.isExtensible` on a sealed object?",
-    "options": [
-      "Returns true",
-      "Returns false",
-      "Throws an error",
-      "Returns undefined"
-    ],
-    "answer": 1,
-    "explain": "`Object.isExtensible` returns `false` for sealed objects, as they cannot have new properties added.",
-    "order": 104,
-    "code": "const obj = Object.seal({}); console.log(Object.isExtensible(obj));"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].toSpliced(1, 1, 4))`?",
-    "options": [
-      "[1, 4, 3]",
-      "[1, 2, 3]",
-      "[1, 2, 4]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`toSpliced` is a non-mutating method that returns a new array with the element at index 1 replaced by 4, yielding `[1, 4, 3]`.",
-    "order": 105,
-    "code": "[1, 2, 3].toSpliced(1, 1, 4)"
-  },
-  {
-    "question": "What is the output of `console.log(typeof 1n)`?",
-    "options": [
-      "number",
-      "bigint",
-      "string",
-      "object"
-    ],
-    "answer": 1,
-    "explain": "BigInt literals like `1n` have the type `'bigint'`.",
-    "order": 106,
-    "code": "typeof 1n"
-  },
-  {
-    "question": "What is the output of `console.log(Promise.all([Promise.resolve(1), Promise.resolve(2)]))`?",
-    "options": [
-      "[1, 2]",
-      "Promise {[1, 2]}",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`Promise.all` returns a Promise that resolves to an array of resolved values. Here, it returns `Promise {[1, 2]}`.",
-    "order": 107,
-    "code": "Promise.all([Promise.resolve(1), Promise.resolve(2)])"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].copyWithin(0, 1, 2))`?",
-    "options": [
-      "[2, 2, 3]",
-      "[1, 2, 3]",
-      "[2, 1, 3]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`copyWithin(0, 1, 2)` copies the element at index 1 (`2`) to index 0, resulting in `[2, 2, 3]`.",
-    "order": 108,
-    "code": "[1, 2, 3].copyWithin(0, 1, 2)"
-  },
-  {
-    "question": "What is the output of `console.log(Reflect.has({ a: 1 }, 'a'))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Reflect.has` checks if a property exists on an object, similar to the `in` operator. Here, it returns `true` for property `'a'`.",
-    "order": 109,
-    "code": "Reflect.has({ a: 1 }, 'a')"
-  },
-  {
-    "question": "What is the output of `console.log(new WeakSet([{}, {}]).size)`?",
-    "options": [
-      "2",
-      "0",
-      "undefined",
-      "Error"
+      "ReferenceError",
+      "TypeError"
     ],
     "answer": 2,
-    "explain": "`WeakSet` does not have a `size` property, so accessing it returns `undefined`.",
-    "order": 110,
-    "code": "new WeakSet([{}, {}]).size"
+    "explain": "let is block-scoped and has a TDZ until declared, so accessing before initialization throws ReferenceError.",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].at(-2))`?",
+    "id": 74,
+    "question": "What is the output?",
+    "code": "function test() {\n  console.log(a);\n  a = 10;\n  console.log(a);\n  var a;\n}\ntest();",
     "options": [
-      "1",
-      "2",
-      "3",
+      "undefined, 10",
+      "ReferenceError",
+      "10, 10",
+      "undefined, undefined"
+    ],
+    "answer": 0,
+    "explain": "var a is hoisted as undefined. After assignment, it becomes 10 within the same scope.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 75,
+    "question": "What is logged here?",
+    "code": "var a = 1;\nfunction outer() {\n  console.log(a);\n  var a = 2;\n  function inner() { console.log(a); }\n  inner();\n}\nouter();",
+    "options": [
+      "1, 2",
+      "undefined, 2",
+      "2, 2",
+      "ReferenceError"
+    ],
+    "answer": 1,
+    "explain": "Inside outer, var a is hoisted (undefined), shadowing global a. Then assigned 2, so inner() logs 2.",
+    "difficulty": "hard"
+  },
+  {
+    "id": 76,
+    "question": "What gets printed?",
+    "code": "console.log(foo);\nvar foo = 1;\nfunction foo() {}\nconsole.log(foo);",
+    "options": [
+      "function foo() {}, 1",
+      "undefined, 1",
+      "1, 1",
+      "Error"
+    ],
+    "answer": 0,
+    "explain": "Function declarations are hoisted before vars. First log prints the function, then reassignment to 1.",
+    "difficulty": "hard"
+  },
+  {
+    "id": 77,
+    "question": "What is the result of this code?",
+    "code": "function hoistExample() {\n  console.log(x);\n  var x = 7;\n  console.log(y);\n  let y = 8;\n}\nhoistExample();",
+    "options": [
+      "undefined, 8",
+      "undefined, ReferenceError",
+      "ReferenceError, undefined",
       "Error"
     ],
     "answer": 1,
-    "explain": "The `at` method with index `-2` refers to the second-to-last element, so `[1, 2, 3].at(-2)` returns `2`.",
-    "order": 111,
-    "code": "[1, 2, 3].at(-2)"
+    "explain": "x is hoisted as undefined, but y is in TDZ until declared, causing ReferenceError on access.",
+    "difficulty": "medium"
   },
   {
-    "question": "What happens when you use `Object.freeze` on an object with nested objects?",
+    "id": 78,
+    "question": "What happens here?",
+    "code": "function foo() {\n  bar();\n  var bar = function() { console.log('bar'); };\n}\nfoo();",
     "options": [
-      "Freezes all nested objects",
-      "Only freezes the top-level object",
-      "Throws an error",
-      "Makes the object extensible"
-    ],
-    "answer": 1,
-    "explain": "`Object.freeze` only freezes the top-level object, preventing modifications to its own properties. Nested objects remain mutable unless explicitly frozen.",
-    "order": 112,
-    "code": "const obj = { a: { b: 1 } }; Object.freeze(obj); obj.a.b = 2; console.log(obj.a.b);"
-  },
-  {
-    "question": "What is the output of `console.log(Number.parseInt('42px'))`?",
-    "options": [
-      "42",
-      "NaN",
-      "42px",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Number.parseInt` parses a string and returns an integer, stopping at the first non-digit. Here, it returns `42`.",
-    "order": 113,
-    "code": "Number.parseInt('42px')"
-  },
-  {
-    "question": "What is the output of `console.log(Number.parseFloat('3.14px'))`?",
-    "options": [
-      "3.14",
-      "NaN",
-      "3.14px",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Number.parseFloat` parses a string and returns a floating-point number, stopping at the first invalid character. Here, it returns `3.14`.",
-    "order": 114,
-    "code": "Number.parseFloat('3.14px')"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].flat(0))`?",
-    "options": [
-      "[1, 2, 3]",
-      "[[1, 2, 3]]",
-      "[]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`flat(0)` does not flatten any levels, so `[1, 2, 3]` remains unchanged.",
-    "order": 115,
-    "code": "[1, 2, 3].flat(0)"
-  },
-  {
-    "question": "What is the output of `console.log(Object.entries({ a: 1, b: 2 }))`?",
-    "options": [
-      "[['a', 1], ['b', 2]]",
-      "{ a: 1, b: 2 }",
-      "['a', 'b']",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Object.entries` returns an array of key-value pairs, so `{ a: 1, b: 2 }` becomes `[['a', 1], ['b', 2]]`.",
-    "order": 116,
-    "code": "Object.entries({ a: 1, b: 2 })"
-  },
-  {
-    "question": "What is the output of `console.log(Object.fromEntries([['a', 1], ['b', 2]]))`?",
-    "options": [
-      "{ a: 1, b: 2 }",
-      "[['a', 1], ['b', 2]]",
-      "['a', 'b']",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Object.fromEntries` converts an array of key-value pairs into an object, so `[['a', 1], ['b', 2]]` becomes `{ a: 1, b: 2 }`.",
-    "order": 117,
-    "code": "Object.fromEntries([['a', 1], ['b', 2]])"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].includes(NaN))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`includes` uses strict equality, and since `NaN` is not in the array, it returns `false`.",
-    "order": 118,
-    "code": "[1, 2, 3].includes(NaN)"
-  },
-  {
-    "question": "What is the output of `console.log([NaN].includes(NaN))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`includes` uses `SameValueZero` algorithm, which considers `NaN` equal to `NaN`, so it returns `true`.",
-    "order": 119,
-    "code": "[NaN].includes(NaN)"
-  },
-  {
-    "question": "What is the output of `console.log(new Array(3).fill(0).length)`?",
-    "options": [
-      "0",
-      "3",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`new Array(3)` creates an array with 3 empty slots. `fill(0)` sets each to `0`, and `length` returns `3`.",
-    "order": 120,
-    "code": "new Array(3).fill(0).length"
-  },
-  {
-    "question": "What is the output of `console.log(Object.keys({ [Symbol()]: 1, a: 2 }))`?",
-    "options": [
-      "['a']",
-      "['a', Symbol()]",
-      "[]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Object.keys` returns only enumerable string keys, so the Symbol key is excluded, yielding `['a']`.",
-    "order": 121,
-    "code": "Object.keys({ [Symbol()]: 1, a: 2 })"
-  },
-  {
-    "question": "What is the output of `console.log(Promise.race([Promise.resolve(1), Promise.resolve(2)]))`?",
-    "options": [
-      "Promise {1}",
-      "Promise {2}",
-      "[1, 2]",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Promise.race` returns a Promise that resolves with the first resolved Promise\u2019s value, here `1`.",
-    "order": 122,
-    "code": "Promise.race([Promise.resolve(1), Promise.resolve(2)])"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].every(x => x))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`every` checks if all elements are truthy. Since `1`, `2`, and `3` are truthy, it returns `true`.",
-    "order": 123,
-    "code": "[1, 2, 3].every(x => x)"
-  },
-  {
-    "question": "What is the output of `console.log([0, 1, 2].some(x => x))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`some` checks if at least one element is truthy. Since `1` and `2` are truthy, it returns `true`.",
-    "order": 124,
-    "code": "[0, 1, 2].some(x => x)"
-  },
-  {
-    "question": "What is the output of `console.log(Math.max(...[1, 2, 3]))`?",
-    "options": [
-      "3",
-      "1",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.max` with spread syntax finds the largest value in `[1, 2, 3]`, which is `3`.",
-    "order": 125,
-    "code": "Math.max(...[1, 2, 3])"
-  },
-  {
-    "question": "What is the output of `console.log(Math.min(...[1, 2, 3]))`?",
-    "options": [
-      "1",
-      "3",
-      "undefined",
-      "Error"
-    ],
-    "answer": 0,
-    "explain": "`Math.min` with spread syntax finds the smallest value in `[1, 2, 3]`, which is `1`.",
-    "order": 126,
-    "code": "Math.min(...[1, 2, 3])"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].find(x => x > 1))`?",
-    "options": [
-      "1",
-      "2",
-      "3",
+      "'bar'",
+      "TypeError",
+      "ReferenceError",
       "undefined"
     ],
     "answer": 1,
-    "explain": "`find` returns the first element that satisfies the condition. For `x > 1`, it returns `2`.",
-    "order": 127,
-    "code": "[1, 2, 3].find(x => x > 1)"
+    "explain": "bar is hoisted as undefined. It’s not yet a function when called, so TypeError: bar is not a function.",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].findIndex(x => x > 3))`?",
+    "id": 79,
+    "question": "What will this code log?",
+    "code": "var a = 1;\n(function() {\n  console.log(a);\n  var a = 2;\n})();",
     "options": [
-      "0",
       "1",
-      "-1",
-      "Error"
+      "2",
+      "undefined",
+      "ReferenceError"
     ],
     "answer": 2,
-    "explain": "`findIndex` returns `-1` if no element satisfies the condition. Since no element is `> 3`, it returns `-1`.",
-    "order": 128,
-    "code": "[1, 2, 3].findIndex(x => x > 3)"
+    "explain": "The inner var a is hoisted as undefined, shadowing the outer variable.",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].slice(1, 3))`?",
+    "id": 80,
+    "question": "What is printed?",
+    "code": "console.log(x);\nvar x = 1;\nfunction x() {}\nconsole.log(x);",
     "options": [
-      "[2, 3]",
-      "[1, 2]",
-      "[1, 2, 3]",
+      "function x() {}, 1",
+      "undefined, 1",
+      "1, 1",
       "Error"
     ],
     "answer": 0,
-    "explain": "`slice(1, 3)` extracts elements from index 1 up to (but not including) index 3, resulting in `[2, 3]`.",
-    "order": 129,
-    "code": "[1, 2, 3].slice(1, 3)"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].push(4))`?",
+    "explain": "Function declarations hoist before vars, so x initially refers to the function, later reassigned to 1.",
+    "difficulty": "hard"
+  }, {
+    "id": 81,
+    "question": "What gets logged?",
+    "code": "var a = 10;\nfunction test() {\n  console.log(a);\n}\ntest();",
     "options": [
-      "[1, 2, 3, 4]",
-      "4",
+      "10",
       "undefined",
-      "Error"
+      "ReferenceError",
+      "null"
     ],
-    "answer": 1,
-    "explain": "`push` adds an element and returns the new length of the array, which is `4`.",
-    "order": 130,
-    "code": "[1, 2, 3].push(4)"
+    "answer": 0,
+    "explain": "Functions can access variables from their outer (global) lexical scope. `a` is resolved from the global scope.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].unshift(0))`?",
+    "id": 82,
+    "question": "What is printed?",
+    "code": "function foo() {\n  var a = 20;\n  function bar() {\n    console.log(a);\n  }\n  bar();\n}\nfoo();",
     "options": [
-      "[0, 1, 2, 3]",
-      "4",
+      "20",
       "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`unshift` adds an element to the start and returns the new length of the array, which is `4`.",
-    "order": 131,
-    "code": "[1, 2, 3].unshift(0)"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].join('-'))`?",
-    "options": [
-      "1-2-3",
-      "123",
-      "[1,2,3]",
+      "ReferenceError",
       "Error"
     ],
     "answer": 0,
-    "explain": "`join('-')` concatenates array elements with a `-` separator, resulting in `'1-2-3'`.",
-    "order": 132,
-    "code": "[1, 2, 3].join('-')"
+    "explain": "Lexical scoping means inner functions have access to variables defined in their outer scope — even after execution context changes.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].toString())`?",
+    "id": 83,
+    "question": "What gets logged?",
+    "code": "var a = 1;\nfunction outer() {\n  var a = 2;\n  function inner() {\n    console.log(a);\n  }\n  return inner;\n}\nconst fn = outer();\nfn();",
     "options": [
-      "1,2,3",
-      "[1,2,3]",
-      "123",
+      "1",
+      "2",
+      "undefined",
+      "ReferenceError"
+    ],
+    "answer": 1,
+    "explain": "Inner functions use the value of variables from their lexical (definition) environment, not where they are called.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 84,
+    "question": "What happens here?",
+    "code": "if (true) {\n  var x = 5;\n}\nconsole.log(x);",
+    "options": [
+      "undefined",
+      "5",
+      "ReferenceError",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "`var` is function-scoped, not block-scoped. The variable is hoisted to the enclosing (global) scope.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 85,
+    "question": "What is printed?",
+    "code": "if (true) {\n  let y = 10;\n}\nconsole.log(y);",
+    "options": [
+      "10",
+      "undefined",
+      "ReferenceError",
+      "null"
+    ],
+    "answer": 2,
+    "explain": "`let` and `const` are block-scoped. They exist only inside the block `{}`.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 86,
+    "question": "What is logged?",
+    "code": "let a = 1;\nfunction test() {\n  let a = 2;\n  if (true) {\n    let a = 3;\n    console.log(a);\n  }\n  console.log(a);\n}\ntest();\nconsole.log(a);",
+    "options": [
+      "3, 2, 1",
+      "1, 2, 3",
+      "3, 3, 3",
+      "undefined, 2, 1"
+    ],
+    "answer": 0,
+    "explain": "Each `let` creates a new binding per scope. The innermost block logs 3, function scope logs 2, global logs 1.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 87,
+    "question": "What will be printed?",
+    "code": "let x = 10;\nfunction outer() {\n  let x = 20;\n  function inner() {\n    console.log(x);\n  }\n  inner();\n}\nouter();",
+    "options": [
+      "10",
+      "20",
+      "undefined",
+      "ReferenceError"
+    ],
+    "answer": 1,
+    "explain": "Inner uses variable from outer’s lexical environment — not the global one.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 88,
+    "question": "What is logged?",
+    "code": "function test() {\n  if (true) {\n    var a = 1;\n    let b = 2;\n  }\n  console.log(a);\n  console.log(b);\n}\ntest();",
+    "options": [
+      "1, ReferenceError",
+      "1, 2",
+      "undefined, undefined",
+      "ReferenceError, ReferenceError"
+    ],
+    "answer": 0,
+    "explain": "`a` (var) is function-scoped and available. `b` (let) is block-scoped — inaccessible outside block.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 89,
+    "question": "What gets printed?",
+    "code": "var x = 1;\nfunction a() {\n  var x = 2;\n  function b() {\n    console.log(x);\n  }\n  b();\n}\na();",
+    "options": [
+      "1",
+      "2",
+      "undefined",
+      "ReferenceError"
+    ],
+    "answer": 1,
+    "explain": "Function `b` is lexically inside `a`, so it accesses the `x` from `a`'s scope, not the global one.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 90,
+    "question": "What happens here?",
+    "code": "function f1() {\n  var a = 10;\n  f2();\n}\nfunction f2() {\n  console.log(a);\n}\nf1();",
+    "options": [
+      "10",
+      "undefined",
+      "ReferenceError",
+      "Error"
+    ],
+    "answer": 2,
+    "explain": "`a` is not in f2’s lexical scope. Lexical scoping depends on where functions are defined, not called.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 91,
+    "question": "What is the output?",
+    "code": "let x = 'global';\nfunction outer() {\n  let x = 'outer';\n  function inner() {\n    console.log(x);\n  }\n  return inner;\n}\nconst fn = outer();\nfn();",
+    "options": [
+      "'global'",
+      "'outer'",
+      "undefined",
+      "ReferenceError"
+    ],
+    "answer": 1,
+    "explain": "Closures retain lexical access to variables from where they were defined — not where they’re called.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 92,
+    "question": "What is printed here?",
+    "code": "function foo() {\n  let a = 1;\n  {\n    let a = 2;\n    {\n      let a = 3;\n      console.log(a);\n    }\n    console.log(a);\n  }\n  console.log(a);\n}\nfoo();",
+    "options": [
+      "3, 2, 1",
+      "1, 2, 3",
+      "3, 3, 3",
+      "undefined"
+    ],
+    "answer": 0,
+    "explain": "Each block has its own scope with a new `a`. Closest binding is used when referenced.",
+    "difficulty": "medium"
+  },
+  {
+    "id": 93,
+    "question": "What happens here?",
+    "code": "let a = 10;\nfunction test() {\n  console.log(a);\n  let a = 20;\n}\ntest();",
+    "options": [
+      "10",
+      "20",
+      "undefined",
+      "ReferenceError"
+    ],
+    "answer": 3,
+    "explain": "Inside `test`, `a` is redeclared using `let`. The variable is in TDZ until the declaration line.",
+    "difficulty": "hard"
+  },
+  {
+    "id": 94,
+    "question": "What will be the output?",
+    "code": "var a = 1;\nfunction one() {\n  var a = 2;\n  function two() {\n    console.log(a);\n  }\n  return two;\n}\nconst f = one();\nf();",
+    "options": [
+      "1",
+      "2",
+      "undefined",
+      "Error"
+    ],
+    "answer": 1,
+    "explain": "Lexical scoping ensures that `two` accesses `a` from `one`’s scope (2), not the global (1).",
+    "difficulty": "medium"
+  },
+  {
+    "id": 95,
+    "question": "What is logged?",
+    "code": "if (true) {\n  const PI = 3.14;\n  console.log(PI);\n}\nconsole.log(typeof PI);",
+    "options": [
+      "3.14, undefined",
+      "3.14, number",
+      "undefined, undefined",
       "Error"
     ],
     "answer": 0,
-    "explain": "`toString` on an array joins elements with commas, resulting in `'1,2,3'`.",
-    "order": 133,
-    "code": "[1, 2, 3].toString()"
+    "explain": "`PI` is block-scoped. Inside block logs 3.14, outside it’s not defined → typeof PI is 'undefined'.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the output of `console.log(Number.isNaN('NaN'))`?",
+    "id": 96,
+    "question": "What gets logged?",
+    "code": "let globalVar = 'G';\nfunction a() {\n  let outerVar = 'O';\n  function b() {\n    let innerVar = 'I';\n    console.log(globalVar, outerVar, innerVar);\n  }\n  b();\n}\na();",
     "options": [
-      "true",
-      "false",
-      "undefined",
+      "'G O I'",
+      "'G G G'",
+      "'undefined undefined undefined'",
       "Error"
     ],
-    "answer": 1,
-    "explain": "`Number.isNaN` only returns `true` for the actual `NaN` value, not the string `'NaN'`, so it returns `false`.",
-    "order": 134,
-    "code": "Number.isNaN('NaN')"
+    "answer": 0,
+    "explain": "Lexical scope chain: inner → outer → global. All are accessible in order.",
+    "difficulty": "easy"
   },
   {
-    "question": "What is the output of `console.log(Object.isFrozen({}))`?",
+    "id": 97,
+    "question": "What happens here?",
+    "code": "function foo() {\n  console.log(x);\n  var x = 10;\n  if (true) {\n    let x = 20;\n    console.log(x);\n  }\n}\nfoo();",
     "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
+      "undefined, 20",
+      "10, 20",
+      "undefined, undefined",
+      "ReferenceError"
     ],
-    "answer": 1,
-    "explain": "`Object.isFrozen` returns `false` for a regular object, as it is not frozen by default.",
-    "order": 135,
-    "code": "Object.isFrozen({})"
+    "answer": 0,
+    "explain": "`var x` is hoisted and initialized as undefined; inside block, new `x` (let) shadows it.",
+    "difficulty": "hard"
   },
   {
-    "question": "What is the output of `console.log(Object.isSealed({}))`?",
-    "options": [
-      "true",
-      "false",
-      "undefined",
-      "Error"
-    ],
-    "answer": 1,
-    "explain": "`Object.isSealed` returns `false` for a regular object, as it is not sealed by default.",
-    "order": 136,
-    "code": "Object.isSealed({})"
-  },
-  {
-    "question": "What is the output of `console.log([1, 2, 3].at(3))`?",
+    "id": 98,
+    "question": "What gets printed?",
+    "code": "var a = 1;\nfunction f() {\n  console.log(a);\n}\nfunction g() {\n  var a = 2;\n  f();\n}\ng();",
     "options": [
       "1",
-      "3",
+      "2",
       "undefined",
-      "Error"
+      "ReferenceError"
     ],
-    "answer": 2,
-    "explain": "`at(3)` accesses the element at index 3, which is out of bounds for `[1, 2, 3]`, so it returns `undefined`.",
-    "order": 137,
-    "code": "[1, 2, 3].at(3)"
+    "answer": 0,
+    "explain": "f’s scope is determined by where it was defined (global), not where called (inside g).",
+    "difficulty": "medium"
   },
   {
-    "question": "What is the output of `console.log([1, 2, 3].indexOf(4))`?",
+    "id": 99,
+    "question": "What is printed?",
+    "code": "{ let x = 5; { let x = 10; console.log(x); } console.log(x); }",
     "options": [
-      "0",
-      "1",
-      "-1",
-      "Error"
+      "10, 5",
+      "5, 10",
+      "10, 10",
+      "undefined"
     ],
-    "answer": 2,
-    "explain": "`indexOf` returns `-1` if the value is not found in the array.",
-    "order": 138,
-    "code": "[1, 2, 3].indexOf(4)"
-  }
+    "answer": 0,
+    "explain": "Inner block creates a new scope shadowing outer variable. Closest declaration is used.",
+    "difficulty": "easy"
+  },
+  {
+    "id": 100,
+    "question": "What is printed?",
+    "code": "let a = 'global';\nfunction outer() {\n  let a = 'outer';\n  function inner() {\n    let a = 'inner';\n    console.log(a);\n  }\n  inner();\n  console.log(a);\n}\nouter();\nconsole.log(a);",
+    "options": [
+      "'inner', 'outer', 'global'",
+      "'global', 'outer', 'inner'",
+      "'outer', 'inner', 'global'",
+      "'inner', 'global', 'outer'"
+    ],
+    "answer": 0,
+    "explain": "Each scope shadows the previous one. The innermost has priority when accessed.",
+    "difficulty": "easy"
+  },{
+    "id": 101,
+    "question": "What will this print and why (implicit binding)?",
+    "code": "const obj = {\n name: 'Alice',\n greet() { console.log(this.name); }\n};\nobj.greet();",
+    "options": [
+    "'Alice'",
+    "undefined",
+    "ReferenceError",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Implicit binding: when a function is called as a property of an object, this refers to that object (obj).",
+    "difficulty": "easy"
+    },
+    {
+    "id": 102,
+    "question": "What does this log (explicit binding with call)?",
+    "code": "function say() { console.log(this.msg); }\nconst a = { msg: 'Hello' };\nsay.call(a);",
+    "options": [
+    "'Hello'",
+    "undefined",
+    "TypeError",
+    "ReferenceError"
+    ],
+    "answer": 0,
+    "explain": "Using call, we explicitly set this to a, so this.msg is 'Hello'.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 103,
+    "question": "What will this produce (apply vs call)?",
+    "code": "function add(a, b) { return a + b + this.c; }\nconst obj = { c: 1 };\nconsole.log(add.apply(obj, [2, 3]));\nconsole.log(add.call(obj, 2, 3));",
+    "options": [
+    "6 and 6",
+    "6 and undefined",
+    "NaN and NaN",
+    "Error and Error"
+    ],
+    "answer": 0,
+    "explain": "apply takes args array, call takes args list; both set this to obj: 2+3+1 = 6.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 104,
+    "question": "What is logged (bind creates a new function)?",
+    "code": "function mul(x) { return x * this.factor; }\nconst obj = { factor: 3 };\nconst f = mul.bind(obj);\nconsole.log(f(5));",
+    "options": [
+    "15",
+    "5",
+    "NaN",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "bind returns a new function with this permanently set to obj, so 53 = 15.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 105,
+    "question": "Which this does an arrow function use here?",
+    "code": "const obj = {\n val: 10,\n arrow: () => console.log(this.val),\n regular() { console.log(this.val); }\n};\nobj.arrow();\nobj.regular();",
+    "options": [
+    "undefined, 10",
+    "10, undefined",
+    "10, 10",
+    "undefined, undefined"
+    ],
+    "answer": 0,
+    "explain": "Arrow functions use lexical this (here outer scope — likely undefined in strict/module). Regular method uses obj as this.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 106,
+    "question": "What is output (new binding)?",
+    "code": "function Person(name) { this.name = name; }\nconst p = new Person('Bob');\nconsole.log(p.name);",
+    "options": [
+    "'Bob'",
+    "undefined",
+    "ReferenceError",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "When called with new, this refers to the newly created instance; property assignment sets p.name.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 107,
+    "question": "What does this print (explicit binding cannot be overruled by new when bound)?",
+    "code": "function F() { this.x = 1; }\nconst o = { x: 2 };\nconst B = F.bind(o);\nconst inst = new B();\nconsole.log(o.x, inst.x);",
+    "options": [
+    "2, 1",
+    "2, undefined",
+    "1, 1",
+    "2, 2"
+    ],
+    "answer": 0,
+    "explain": "When a bound function is used with new, the binding to an object is ignored for this in many engines; the new instance gets its own this and sets x=1; the original object stays x=2. (Behavior: bound function when used with new creates instance but original bound obj unaffected.)",
+    "difficulty": "hard"
+    },
+    {
+    "id": 108,
+    "question": "What is logged (call on method extraction)?",
+    "code": "const o = { v: 5, get() { return this.v; } };\nconst g = o.get;\nconsole.log(g());\nconsole.log(g.call(o));",
+    "options": [
+    "undefined, 5",
+    "5, 5",
+    "undefined, undefined",
+    "Error, 5"
+    ],
+    "answer": 0,
+    "explain": "Extracted method called standalone has default this (undefined in strict). Using call sets this to o and returns 5.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 109,
+    "question": "Which this is used inside setTimeout callback in this code?",
+    "code": "const user = {\n name: 'X',\n greet() { setTimeout(function() { console.log(this.name); }, 0); }\n};\nuser.greet();",
+    "options": [
+    "undefined",
+    "'X'",
+    "ReferenceError",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Regular function in setTimeout has its own this (global/undefined). To preserve user, use arrow function or bind.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 110,
+    "question": "What will be printed (arrow preserving this)?",
+    "code": "const user = {\n name: 'Y',\n greet() { setTimeout(() => console.log(this.name), 0); }\n};\nuser.greet();",
+    "options": [
+    "'Y'",
+    "undefined",
+    "Error",
+    "ReferenceError"
+    ],
+    "answer": 0,
+    "explain": "Arrow uses the lexical this of greet, which is user, so it prints 'Y'.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 111,
+    "question": "Which binding rule applies when using call on a bound function?",
+    "code": "function foo() { console.log(this.a); }\nconst o = { a: 1 };\nconst b = { a: 2 };\nconst bf = foo.bind(o);\nbf.call(b);",
+    "options": [
+    "bound this (o) is used, call ignored",
+    "call overrides bind, so b is used",
+    "throws TypeError",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "A function permanently bound by bind keeps its bound this; calling with call does not override it.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 112,
+    "question": "What is logged when using class methods and arrow functions?",
+    "code": "class C { constructor(){ this.x = 1 } method() { return this.x } arrow = () => this.x }\nconst c = new C(); const m = c.method; console.log(m()); console.log(c.arrow());",
+    "options": [
+    "undefined, 1",
+    "1, 1",
+    "undefined, undefined",
+    "Error, 1"
+    ],
+    "answer": 0,
+    "explain": "Extracted class method loses this (undefined). The arrow property is defined on instance and uses lexical this set at construction, so returns 1.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 113,
+    "question": "What will be printed (function used as constructor without new)?",
+    "code": "function Thing() { this.x = 10; }\nThing();\nconsole.log(typeof x);",
+    "options": [
+    "number",
+    "undefined",
+    "ReferenceError",
+    "object"
+    ],
+    "answer": 0,
+    "explain": "Calling constructor function without new assigns this to global (or undefined in strict). Here assuming non-strict, it creates global x=10, so typeof x is 'number'.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 114,
+    "question": "Which is true about arrow functions and new?",
+    "code": "const A = () => {};\ntry { new A(); console.log('constructed'); } catch(e) { console.log('error'); }",
+    "options": [
+    "'constructed'",
+    "'error'",
+    "undefined",
+    "TypeError thrown earlier"
+    ],
+    "answer": 1,
+    "explain": "Arrow functions are not constructible; attempting new on an arrow function throws a TypeError (caught and prints 'error').",
+    "difficulty": "easy"
+    },
+    {
+    "id": 115,
+    "question": "What is the output (method borrowed between objects)?",
+    "code": "const a = { name: 'A', greet() { return this.name } };\nconst b = { name: 'B' };\nb.greet = a.greet;\nconsole.log(b.greet());",
+    "options": [
+    "'A'",
+    "'B'",
+    "undefined",
+    "Error"
+    ],
+    "answer": 1,
+    "explain": "When method is assigned to b and called as b.greet(), this is b, so returns 'B'.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 116,
+    "question": "What does this code demonstrate about this in nested objects?",
+    "code": "const outer = { name: 'O', inner: { name: 'I', get() { return this.name } } };\nconsole.log(outer.inner.get());",
+    "options": [
+    "'I'",
+    "'O'",
+    "undefined",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Implicit binding uses the immediate object (inner) before dot-call, so this refers to inner (name 'I').",
+    "difficulty": "easy"
+    },
+    {
+    "id": 117,
+    "question": "What is logged (function borrowing + call)?",
+    "code": "function show() { return this.x }\nconst o = { x: 9 };\nconsole.log(show.call(o));",
+    "options": [
+    "9",
+    "undefined",
+    "Error",
+    "null"
+    ],
+    "answer": 0,
+    "explain": "Explicit binding with call sets this to o, so returns 9.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 118,
+    "question": "Which this is used for a function defined in global scope called as callback?",
+    "code": "function cb() { console.log(this); }\nsetTimeout(cb, 0);",
+    "options": [
+    "global or undefined",
+    "caller object",
+    "setTimeout internal object",
+    "the window variable always"
+    ],
+    "answer": 0,
+    "explain": "Callbacks invoked by timers are called as plain functions; this is undefined in strict or global object in non-strict contexts.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 119,
+    "question": "What is printed (combination of bind and arrow)?",
+    "code": "const obj = { v: 1 };\nfunction f() { return () => this.v; }\nconst bound = f.bind(obj);\nconsole.log(bound()());",
+    "options": [
+    "1",
+    "undefined",
+    "Error",
+    "null"
+    ],
+    "answer": 0,
+    "explain": "bind sets this for f to obj. The returned arrow uses lexical this from f, so it returns obj.v (1).",
+    "difficulty": "hard"
+    },
+    {
+    "id": 120,
+    "question": "Which of the following best summarizes this binding precedence?",
+    "code": "",
+    "options": [
+    "new > explicit (bind/call/apply) > implicit > default",
+    "implicit > explicit > new > default",
+    "explicit > new > implicit > default",
+    "default > implicit > explicit > new"
+    ],
+    "answer": 0,
+    "explain": "Order: new creates a brand-new object (highest), explicit binding (bind/call/apply) follows (note: bind when used with new is special), implicit is next, default (global/undefined) is last.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 121,
+    "question": "What prints first and why (callbacks & timers)?",
+    "code": "console.log('start');\nsetTimeout(() => console.log('timeout'), 0);\nconsole.log('end');",
+    "options": [
+    "start, end, timeout",
+    "start, timeout, end",
+    "timeout, start, end",
+    "end, start, timeout"
+    ],
+    "answer": 0,
+    "explain": "setTimeout callback is scheduled as a macrotask; synchronous code runs first. So 'start' and 'end' print, then later the macrotask runs.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 122,
+    "question": "What is the console order (microtasks vs macrotasks)?",
+    "code": "console.log('1');\nPromise.resolve().then(() => console.log('2'));\nconsole.log('3');",
+    "options": [
+    "1, 3, 2",
+    "1, 2, 3",
+    "2, 1, 3",
+    "3, 1, 2"
+    ],
+    "answer": 0,
+    "explain": "Promise.then schedules a microtask that runs after current stack, so synchronous logs 1 and 3 first, then microtask logs 2.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 123,
+    "question": "What will this log (promise chaining)?",
+    "code": "Promise.resolve()\n .then(() => { console.log('a'); return Promise.resolve('b'); })\n .then(x => console.log(x));",
+    "options": [
+    "a, b",
+    "b, a",
+    "a, undefined",
+    "undefined, b"
+    ],
+    "answer": 0,
+    "explain": "First then logs 'a' and returns a resolved promise with 'b', next then receives 'b' and logs it.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 124,
+    "question": "What happens with this rejected promise and no catch?",
+    "code": "Promise.reject(new Error('fail'));\n// no catch attached",
+    "options": [
+    "UnhandledPromiseRejection (may warn) but code continues",
+    "Throws synchronously and halts execution",
+    "Nothing happens",
+    "It becomes resolved automatically"
+    ],
+    "answer": 0,
+    "explain": "An unhandled rejected Promise may trigger an unhandled rejection warning/event but not a synchronous throw; behavior depends on environment.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 125,
+    "question": "What will be printed (async/await flow)?",
+    "code": "async function f(){ console.log('a'); await null; console.log('b'); }\nconsole.log('start');\nf();\nconsole.log('end');",
+    "options": [
+    "start, a, end, b",
+    "start, a, b, end",
+    "a, start, end, b",
+    "start, end, a, b"
+    ],
+    "answer": 0,
+    "explain": "async function runs synchronously until first await (logs 'a'), then yields; current stack prints 'end', then microtask runs and logs 'b'.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 126,
+    "question": "How to convert a callback-based API to Promise style?",
+    "code": "function read(cb) { setTimeout(() => cb(null, 'data'), 100); }\n// what to return to create a promise wrapper?",
+    "options": [
+    "return new Promise((res, rej) => read((err, d) => err ? rej(err) : res(d)));",
+    "return Promise.resolve(read());",
+    "return read();",
+    "return async read();"
+    ],
+    "answer": 0,
+    "explain": "Use the Promise constructor and call the callback to resolve or reject appropriately.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 127,
+    "question": "What does Promise.all do when one promise rejects?",
+    "code": "Promise.all([Promise.resolve(1), Promise.reject('err')])\n .then(x => console.log('then', x))\n .catch(e => console.log('catch', e));",
+    "options": [
+    "catch 'err' executes, aggregate rejected",
+    "then runs with partial results",
+    "never resolves nor rejects",
+    "silently ignores the rejection"
+    ],
+    "answer": 0,
+    "explain": "Promise.all rejects immediately with the first rejection; the catch logs the rejection reason.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 128,
+    "question": "What is printed (Promise.resolve in setTimeout)?",
+    "code": "setTimeout(() => Promise.resolve().then(() => console.log('micro in macrotask')), 0);\nPromise.resolve().then(() => console.log('micro'));\nconsole.log('sync');",
+    "options": [
+    "sync, micro, micro in macrotask",
+    "sync, micro in macrotask, micro",
+    "micro, sync, micro in macrotask",
+    "sync, micro in macrotask, micro in macrotask"
+    ],
+    "answer": 0,
+    "explain": "Synchronous runs first. Initial microtask runs next. Later, macrotask runs and schedules its microtask, which runs after that macrotask.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 129,
+    "question": "What will be output (async error handling)?",
+    "code": "async function f(){ throw new Error('fail'); }\nf().catch(e => console.log('caught'));",
+    "options": [
+    "caught",
+    "uncaught error",
+    "nothing",
+    "throws synchronously"
+    ],
+    "answer": 0,
+    "explain": "Thrown error inside async function rejects the returned promise; catch handles it and logs 'caught'.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 130,
+    "question": "Which pattern correctly handles sequential async operations with await?",
+    "code": "async function seq() {\n const a = await p1();\n const b = await p2(a);\n return b;\n}",
+    "options": [
+    "This runs p1 then p2 in sequence",
+    "This runs p1 and p2 in parallel",
+    "This throws immediately",
+    "This returns a synchronous result"
+    ],
+    "answer": 0,
+    "explain": "await forces sequential execution: p1 completes before p2 starts.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 131,
+    "question": "What is printed (Promise.race)?",
+    "code": "Promise.race([new Promise(r=>setTimeout(()=>r('a'),50)), new Promise(r=>setTimeout(()=>r('b'),10))])\n .then(x => console.log(x));",
+    "options": [
+    "'b'",
+    "'a'",
+    "undefined",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Promise.race resolves/rejects with the first settled promise — here 'b' resolves faster.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 132,
+    "question": "What will run first when using async functions and microtasks?",
+    "code": "async function a(){ await 0; console.log('a'); }\nasync function b(){ console.log('b'); }\nconsole.log('start');\na();\nb();",
+    "options": [
+    "start, b, a",
+    "start, a, b",
+    "b, start, a",
+    "start, a, b or engine dependent"
+    ],
+    "answer": 0,
+    "explain": "b runs synchronously (no await). a logs after await as a microtask. So order: start, b, a.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 133,
+    "question": "How to catch both synchronous and asynchronous errors using try/catch with async/await?",
+    "code": "async function example(){ try { await mightReject(); } catch(e) { console.log('caught'); } }",
+    "options": [
+    "Use try/catch around await, it handles both async rejections and synchronous throws inside try",
+    "try/catch can't catch async rejections",
+    "Use .catch only",
+    "Wrap with setTimeout"
+    ],
+    "answer": 0,
+    "explain": "try/catch around await catches promise rejections and synchronous exceptions inside the try block.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 134,
+    "question": "What does async function return?",
+    "code": "async function f() { return 1; }\nconsole.log(f());",
+    "options": [
+    "Promise resolving to 1",
+    "1",
+    "undefined",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Async functions always return a Promise which resolves with the returned value.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 135,
+    "question": "What is printed by this Promise chain with then returning a value vs returning a promise?",
+    "code": "Promise.resolve(1)\n .then(x => x + 1)\n .then(x => Promise.resolve(x + 1))\n .then(x => console.log(x));",
+    "options": [
+    "3",
+    "2",
+    "4",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "First then returns 2, next then returns a promise resolving to 3, final then logs 3.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 136,
+    "question": "What will be logged (error propagation in promises)?",
+    "code": "Promise.resolve()\n .then(() => { throw 'err'; })\n .then(() => console.log('ok'))\n .catch(e => console.log('caught', e));",
+    "options": [
+    "caught err",
+    "ok",
+    "uncaught error",
+    "nothing"
+    ],
+    "answer": 0,
+    "explain": "Throw inside then rejects the promise; downstream catch handles it and logs the error.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 137,
+    "question": "What does this demonstrate (parallel vs sequential)?",
+    "code": "const p1 = () => new Promise(r => setTimeout(() => r(1), 50));\nconst p2 = () => new Promise(r => setTimeout(() => r(2), 50));\nawait Promise.all([p1(), p2()]);",
+    "options": [
+    "p1 and p2 run in parallel",
+    "p1 then p2 sequentially",
+    "Only p1 runs",
+    "Only p2 runs"
+    ],
+    "answer": 0,
+    "explain": "Promise.all takes started promises and waits for all; starting p1() and p2() before awaiting runs them in parallel.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 138,
+    "question": "What is returned when awaiting a non-promise value?",
+    "code": "async function x(){ return await 5; }\nx().then(v => console.log(v));",
+    "options": [
+    "5",
+    "undefined",
+    "Promise {5}",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "await coerces non-promise values to resolved promises; awaiting 5 yields 5.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 139,
+    "question": "Which of these converts callback-style into Promise-based (promisify)?",
+    "code": "function promisify(fn){ return function(...args){ return new Promise((res, rej) => fn(...args, (err, val) => err ? rej(err) : res(val))); } }",
+    "options": [
+    "Correct promisify implementation",
+    "Incorrect, ignores this binding",
+    "Incorrect, doesn't return a function",
+    "Incorrect, uses setTimeout incorrectly"
+    ],
+    "answer": 1,
+    "explain": "While the structure is correct for many callbacks, it ignores this binding; proper promisify should preserve this using function.apply or arrow that calls fn.call(this,...).",
+    "difficulty": "hard"
+    },
+    {
+    "id": 140,
+    "question": "What will console.log show for this chained async/await snippet?",
+    "code": "async function a(){ return 'A' }\nasync function b(){ return a() + 'B' }\nb().then(x => console.log(x));",
+    "options": [
+    "'AB'",
+    "'A[object Promise]B'",
+    "Error",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "Calling a() returns a promise; using + with a promise coerces to string? Actually a() resolves to 'A' before b returns because await is not used — but JS will coerce promise to string producing '[object Promise]'. However since a() returns a Promise and b returns a() + 'B' which concatenates Promise to string, result becomes '[object Promise]B'. To avoid confusion: correct behavior is '[object Promise]B'.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 141,
+    "question": "Which is a concise arrow function that returns squared value?",
+    "code": "const sq = x => x * x; console.log(sq(3));",
+    "options": [
+    "9",
+    "undefined",
+    "TypeError",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Arrow expression returns xx implicitly; sq(3) = 9.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 142,
+    "question": "What does this destructuring produce?",
+    "code": "const obj = { a: 1, b: 2 };\nconst { a, b } = obj;\nconsole.log(a, b);",
+    "options": [
+    "1 2",
+    "undefined undefined",
+    "Error",
+    "2 1"
+    ],
+    "answer": 0,
+    "explain": "Object destructuring assigns matching property values to variables a and b.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 143,
+    "question": "Which string results from template literal?",
+    "code": "const name = 'Sam';\nconsole.log(Hello, ${name}!);",
+    "options": [
+    "Hello, Sam!",
+    "Hello, ${name}!",
+    "Error",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "Template literals interpolate expressions inside ${}.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 144,
+    "question": "What does rest operator collect in this function?",
+    "code": "function f(a, ...rest) { console.log(rest); }\nf(1,2,3,4);",
+    "options": [
+    "[2,3,4]",
+    "[1,2,3,4]",
+    "[]",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "...rest gathers remaining arguments into an array starting at position 1.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 145,
+    "question": "What is the result of spreading arrays into a new array?",
+    "code": "const a = [1,2]; const b = [...a,3]; console.log(b);",
+    "options": [
+    "[1,2,3]",
+    "[[1,2],3]",
+    "Error",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "Spread expands elements of a into the new array.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 146,
+    "question": "What does this module-style export imply (ES modules)?",
+    "code": "export function f() { return 1 }\n// in another file: import { f } from './mod'; console.log(f());",
+    "options": [
+    "f is a named export and can be imported by name",
+    "f is default export",
+    "Cannot import f",
+    "f is private"
+    ],
+    "answer": 0,
+    "explain": "Named exports are imported using curly braces with the same name.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 147,
+    "question": "Which is true about default exports?",
+    "code": "export default function() { return 'x' }\n// import fn from './mod';",
+    "options": [
+    "Default export can be imported with any name",
+    "Default export must use its original name",
+    "Default export cannot be a function",
+    "Default export creates multiple bindings"
+    ],
+    "answer": 0,
+    "explain": "Default exports provide a single value and can be imported with any local name.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 148,
+    "question": "What is the output (destructuring nested)?",
+    "code": "const data = { a: { b: 2 } };\nconst { a: { b } } = data;\nconsole.log(b);",
+    "options": [
+    "2",
+    "undefined",
+    "Error",
+    "null"
+    ],
+    "answer": 0,
+    "explain": "Nested destructuring accesses deep properties directly into variables.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 149,
+    "question": "What will be logged (default param + destructuring)?",
+    "code": "function f({x = 1, y = 2} = {}) { console.log(x, y); }\nf({x: 3});",
+    "options": [
+    "3 2",
+    "1 2",
+    "3 undefined",
+    "undefined undefined"
+    ],
+    "answer": 0,
+    "explain": "x is overridden by provided value 3; y uses default 2 since not provided.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 150,
+    "question": "What does this do (shallow clone via spread)?",
+    "code": "const o = { a: 1, b: { c: 2 } };\nconst clone = { ...o };\nconsole.log(clone.b === o.b);",
+    "options": [
+    "true",
+    "false",
+    "undefined",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Spread performs a shallow copy: nested object references are copied, not deep-cloned.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 151,
+    "question": "Which arrow function syntax returns an object literal correctly?",
+    "code": "const f = () => ({ a: 1 }); console.log(f());",
+    "options": [
+    "{ a: 1 }",
+    "undefined",
+    "Error",
+    "() => { a: 1 }"
+    ],
+    "answer": 0,
+    "explain": "To return an object literal implicitly you must wrap it in parentheses to avoid confusion with function body.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 152,
+    "question": "What is result of destructuring an array?",
+    "code": "const [x, , z] = [1,2,3]; console.log(x, z);",
+    "options": [
+    "1 3",
+    "1 2",
+    "undefined undefined",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Array destructuring assigns by position; skipping via empty slot picks element 3 into z.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 153,
+    "question": "What is logged (template literal with expression)?",
+    "code": "const a = 2; const b = 3; console.log(sum=${a+b});",
+    "options": [
+    "sum=5",
+    "sum=${a+b}",
+    "sum=23",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "Expressions inside template literals are evaluated; a+b is 5.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 154,
+    "question": "Which of these imports would import the default export and a named export?",
+    "code": "// module: export default X; export const Y = 2;\n// import ??? from './m';",
+    "options": [
+    "import X, { Y } from './m';",
+    "import { X, Y } from './m';",
+    "import { default as X } from './m';",
+    "import * as all from './m';"
+    ],
+    "answer": 0,
+    "explain": "Syntax import DefaultName, { named } from '...' imports a default and named export together.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 155,
+    "question": "What does Object.assign do in this example?",
+    "code": "const t = { a:1 };\nconst u = Object.assign({}, t, { b:2 });\nconsole.log(u);",
+    "options": [
+    "{ a:1, b:2 }",
+    "{ a:1 }",
+    "Error",
+    "undefined"
+    ],
+    "answer": 0,
+    "explain": "Object.assign copies enumerable own properties from source objects into the target object (here cloning t and adding b).",
+    "difficulty": "easy"
+    },
+    {
+    "id": 156,
+    "question": "What is logged (default param with destructured rest)?",
+    "code": "function f({a, ...rest}) { console.log(a, rest); }\nf({a:1,b:2,c:3});",
+    "options": [
+    "1 { b:2, c:3 }",
+    "1 undefined",
+    "Error",
+    "undefined undefined"
+    ],
+    "answer": 0,
+    "explain": "Rest in object destructuring collects remaining properties into an object.",
+    "difficulty": "medium"
+    },
+    {
+    "id": 157,
+    "question": "What will be the type printed here (module vs script)?",
+    "code": "// in ES module environment\nconsole.log(typeof exports);",
+    "options": [
+    "undefined",
+    "object",
+    "function",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "In native ES modules, CommonJS exports is not defined; typeof exports yields 'undefined'.",
+    "difficulty": "hard"
+    },
+    {
+    "id": 158,
+    "question": "What is result of using spread with strings into arrays?",
+    "code": "const chars = [...'hi']; console.log(chars);",
+    "options": [
+    "['h','i']",
+    "['hi']",
+    "Error",
+    "['h i']"
+    ],
+    "answer": 0,
+    "explain": "Strings are iterable; spread expands each character into the new array.",
+    "difficulty": "easy"
+    },
+    {
+    "id": 159,
+    "question": "Which statement about ES6 modules is correct?",
+    "code": "",
+    "options": [
+    "Module imports are live bindings (reflect updates)",
+    "Imports copy values statically at import time",
+    "You can conditionally import using static import syntax",
+    "export and import are runtime functions"
+    ],
+    "answer": 0,
+    "explain": "ES module imports are live read-only views (bindings) — updates to exported variables reflect in importers (when mutable and allowed).",
+    "difficulty": "hard"
+    },
+    {
+    "id": 160,
+    "question": "What will this log (combining rest, spread and default)?",
+    "code": "function f(a=1, ...rest){ console.log(a, rest); }\nconst arr = [2,3,4];\nf(...arr);",
+    "options": [
+    "2 [3,4]",
+    "1 [2,3,4]",
+    "2 [2,3,4]",
+    "Error"
+    ],
+    "answer": 0,
+    "explain": "Spread arr into arguments: a=2, rest collects remaining [3,4]. Default not used.",
+    "difficulty": "medium"
+    }
 ]

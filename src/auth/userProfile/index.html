@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Profile</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .profile-container {
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      background: #1e1e1e;
+    }
+
+    .sidebar {
+      background: #252525;
+      width: 300px;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px 30px;
+      background: #1e1e1e;
+    }
+
+    .avatar-container {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    .avatar {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #8e44ad; /* Purple accent */
+      box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+      background-color: #333;
+      background-image: url('https://avatar.iran.liara.run/public/2');
+      background-size: cover;
+      background-position: center;
+      display: inline-block;
+    }
+
+    .online-indicator {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-color: #2ecc71;
+      border-radius: 50%;
+      bottom: 10px;
+      right: 10px;
+      border: 3px solid #252525;
+    }
+
+    .user-name {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+
+    .user-email {
+      color: #bbb;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 40px;
+    }
+
+    .social-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #8e44ad;
+      color: white;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .social-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(142, 68, 173, 0.4);
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      background-color: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+      border: 1px solid #e74c3c;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+
+    .logout-btn:hover {
+      background-color: #e74c3c;
+      color: #fff;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      position: relative;
+      display: inline-block;
+      color: #fff;
+    }
+
+    .section-title:after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 30px;
+      height: 3px;
+      background: #8e44ad;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .detail-card {
+      background: #252525;
+      padding: 20px;
+      border-radius: 12px;
+      transition: transform 0.2s;
+    }
+
+    .detail-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .detail-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8e44ad;
+      margin-bottom: 8px;
+    }
+
+    .detail-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      word-break: break-word;
+    }
+
+    .profile-link {
+      color: #8e44ad;
+      text-decoration: none;
+      transition: color 0.2s;
+      word-break: break-word;
+    }
+
+    .profile-link:hover {
+      color: #9b59b6;
+      text-decoration: underline;
+    }
+
+    @media screen and (max-width: 768px) {
+      .profile-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 30px 20px;
+      }
+
+      .avatar {
+        width: 120px;
+        height: 120px;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <div class="sidebar">
+      <div class="avatar-container">
+        <div class="avatar" id="userAvatar"></div>
+        <div class="online-indicator"></div>
+      </div>
+      <h1 class="user-name" id="userName">User Name</h1>
+      <p class="user-email" id="userEmail">user@example.com</p>
+      
+      <div class="social-links">
+        <a href="#" class="social-link" id="linkedinLink" title="LinkedIn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+            <rect x="2" y="9" width="4" height="12"></rect>
+            <circle cx="4" cy="4" r="2"></circle>
+          </svg>
+        </a>
+        <a href="#" class="social-link" id="githubLink" title="GitHub">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+          </svg>
+        </a>
+      </div>
+      
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+    
+    <div class="main-content">
+      <h2 class="section-title">Personal Information</h2>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-label">ID</div>
+          <div class="detail-value" id="userId"></div>
+        </div>
+      
+        <div class="detail-card">
+          <div class="detail-label">Gender</div>
+          <div class="detail-value" id="userGender"></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Job Title</div>
+          <div class="detail-value" id="userJobTitle"></div>
+        </div>
+      </div>
+      
+      <h2 class="section-title">Professional Details</h2>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-label">Work Experience</div>
+          <div class="detail-value" id="userWorkExperience"></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Work Type</div>
+          <div class="detail-value" id="userWorkType"></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Technical Skill</div>
+          <div class="detail-value" id="userTechnicalSkill"></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Experience Years</div>
+          <div class="detail-value" id="userExperienceYears"></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Interview Role</div>
+          <div class="detail-value" id="userInterviewRole"></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-label">Languages</div>
+          <div class="detail-value" id="userLanguages"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user')) || null;
+
+    if (!user) {
+      alert('User not logged in. Redirecting...');
+      window.location.href = '/auth/login/index.html';
+    } else {
+      // Set user data
+      document.getElementById('userId').textContent = user.id || 'N/A';
+      document.getElementById('userName').textContent = user.name || 'User';
+      document.getElementById('userEmail').textContent = user.email || '';
+      document.getElementById('userGender').textContent = user.gender || 'N/A';
+      document.getElementById('userWorkExperience').textContent = user.workExperience || 'N/A';
+      document.getElementById('userWorkType').textContent = user.workType || 'N/A';
+      document.getElementById('userTechnicalSkill').textContent = user.technicalSkill || 'N/A';
+      document.getElementById('userExperienceYears').textContent = user.experienceYears || 'N/A';
+      document.getElementById('userInterviewRole').textContent = user.interviewRole || 'N/A';
+      document.getElementById('userLanguages').textContent = Array.isArray(user.languages) ? user.languages.join(', ') : 'N/A';
+      document.getElementById('userJobTitle').textContent = user.jobTitle || 'N/A';
+
+      // Set social links
+      const linkedinLink = document.getElementById('linkedinLink');
+      linkedinLink.href = user.linkedin || '#';
+      linkedinLink.title = user.linkedin || 'LinkedIn not provided';
+
+      const githubLink = document.getElementById('githubLink');
+      githubLink.href = user.github || '#';
+      githubLink.title = user.github || 'GitHub not provided';
+
+      // Set avatar
+      const avatarEl = document.getElementById('userAvatar');
+      if (user.avatar) {
+        avatarEl.style.backgroundImage = `url(${user.avatar})`;
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      alert('Logged out!');
+      window.location.href = '/auth/login/index.html';
+    }
+  </script>
+</body>
+</html>

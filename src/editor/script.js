@@ -49,32 +49,32 @@ function createSaveIndicator() {
 function getSocketUrl() {
     // const hostname = window.location.hostname;
     // const protocol = window.location.protocol;
-    
+
     // // Development environments
     // if (hostname === "localhost" || 
     //     hostname === "127.0.0.1" || 
     //     hostname.includes("local")) {
     //     return "http://localhost:4000";
     // }
-    
+
     // // Your Elastic Beanstalk environment (production)
     // if (hostname.includes("jseditor-env") || 
     //     hostname.includes("elasticbeanstalk")) {
     //     return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
     // }
-    
+
     // // Your production domain (adjust as needed)
     // if (hostname === "thejseditors.com" || 
     //     hostname === "www.thejseditors.com") {
     //     return "https://api.thejseditors.com"; // Or your production API endpoint
     // }
-    
+
     // // Fallback: Use same protocol and port as current page
     // // If your frontend is on port 3000 and backend on 4000, this won't work in production
     // // Better to have an environment variable or config
     // const port = window.location.port;
     // const baseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
-    
+
     // // Try to guess the API URL based on common patterns
     // if (port === "3000") {
     //     // React dev server typically on 3000, backend on 4000
@@ -86,44 +86,45 @@ function getSocketUrl() {
     //     // Production - use same domain with API prefix
     //     return `${protocol}//${hostname}/api`;
     // }
-    
+
     // Default fallback
     //return "http://localhost:4000";
-return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
+    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
 }
 const socketUrl = getSocketUrl();
 const isSecure = socketUrl.startsWith('https://');
 async function initializeSocket() {
 
- if (socket) return;
+    if (socket) return;
 
     try {
-       
+
         socket = await io(socketUrl, {
             // Conservative settings for maximum compatibility
-        transports: ['polling'], // Polling only - most reliable
-        upgrade: false, // Don't attempt to upgrade to WebSocket
-        forceNew: true, // Always create new connection
-        timeout: 10000, // 10 second timeout
-        pingTimeout: 30000,
-        pingInterval: 15000,
-        reconnection: false, // We'll handle reconnection manually
-        reconnectionAttempts: 0,
-        
-        // Query parameters
-        query: {
-            roomId: roomId,
-            client: 'editor',
-       
-            timestamp: Date.now()
-        },
-        
-        // Path (important!)
-        path: '/socket.io/',
-        
-        // Security
-        withCredentials: false,
-        rejectUnauthorized: false // Only for testi
+            secure: true,
+            transports: ['polling', 'websocket'],
+            upgrade: true, // Don't attempt to upgrade to WebSocket
+            forceNew: true, // Always create new connection
+            timeout: 10000, // 10 second timeout
+            pingTimeout: 30000,
+            pingInterval: 15000,
+            reconnection: true, // We'll handle reconnection manually
+            reconnectionAttempts: 0,
+
+            // Query parameters
+            // query: {
+            //     roomId: roomId,
+            //     client: 'editor',
+
+            //     timestamp: Date.now()
+            // },
+
+            // // Path (important!)
+            // path: '/socket.io/',
+
+            // Security
+            withCredentials: false,
+            rejectUnauthorized: false // Only for testi
         });
 
 
@@ -137,7 +138,7 @@ async function initializeSocket() {
         socket.on("connect_error", (error) => {
 
             updateConnectionStatus(false);
-            addLogEntry(`Connection error: ${error.message}`, 'error');
+            addLogEntry(`Connection error: ${error}`, 'error');
 
             console.error("❌ Connection error:", error);
         });
@@ -213,11 +214,11 @@ async function initializeSocket() {
 
         // Handle connection/disconnection
         socket.on("user-joined", (data) => {
-            console.log(`👤 User ${data.socketId} joined the room`);
+            addLogEntry(`👤 User ${data.socketId} joined the room`);
         });
 
         socket.on("user-left", (data) => {
-            console.log(`👤 User ${data.socketId} left the room`);
+            addLogEntry(`👤 User ${data.socketId} left the room`);
         });
 
         // Optional: Add typing indicator
@@ -240,10 +241,12 @@ async function initializeSocket() {
         socket.on("user-typing", (data) => {
             // Show typing indicator for other users
             if (data.socketId !== socket.id) {
-                console.log(`✍️ User ${data.socketId} is typing...`);
+                addLogEntry(`✍️ User ${data.socketId} is typing...`);
                 // Update UI to show typing indicator
             }
         });
+
+        return socket
 
     } catch (error) {
         console.error("Socket initialization error:", error);
@@ -514,35 +517,35 @@ require(["vs/editor/editor.main"], async function () {
         }
     }
 
-    function createAutoExecuteToggle() {
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'autoExecute';
-        toggleBtn.innerHTML = '🔄 Auto-Execute: ON';
-        toggleBtn.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
-        toggleBtn.style.color = 'white';
+    // function createAutoExecuteToggle() {
+    //     const controlsDiv = document.getElementById('controls').querySelector('div');
+    //     const toggleBtn = document.createElement('button');
+    //     toggleBtn.id = 'autoExecute';
+    //     toggleBtn.innerHTML = '🔄 Auto-Execute: ON';
+    //     toggleBtn.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
+    //     toggleBtn.style.color = 'white';
 
-        toggleBtn.addEventListener('click', function () {
-            autoExecuteEnabled = !autoExecuteEnabled;
-            if (autoExecuteEnabled) {
-                this.innerHTML = '🔄 Auto-Execute: ON';
-                this.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
-                addLogEntry('✅ Auto-execution enabled', 'info');
-                safeAutoExecute();
-            } else {
-                this.innerHTML = '⏸️ Auto-Execute: OFF';
-                this.style.background = 'linear-gradient(135deg, #ff7675, #d63031)';
-                if (autoExecuteTimer) {
-                    clearTimeout(autoExecuteTimer);
-                }
-                addLogEntry('⏸️ Auto-execution disabled', 'warn');
-            }
-        });
+    //     toggleBtn.addEventListener('click', function () {
+    //         autoExecuteEnabled = !autoExecuteEnabled;
+    //         if (autoExecuteEnabled) {
+    //             this.innerHTML = '🔄 Auto-Execute: ON';
+    //             this.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
+    //             addLogEntry('✅ Auto-execution enabled', 'info');
+    //             safeAutoExecute();
+    //         } else {
+    //             this.innerHTML = '⏸️ Auto-Execute: OFF';
+    //             this.style.background = 'linear-gradient(135deg, #ff7675, #d63031)';
+    //             if (autoExecuteTimer) {
+    //                 clearTimeout(autoExecuteTimer);
+    //             }
+    //             addLogEntry('⏸️ Auto-execution disabled', 'warn');
+    //         }
+    //     });
 
-        controlsDiv.appendChild(toggleBtn);
-    }
+    //     controlsDiv.appendChild(toggleBtn);
+    // }
 
-    createAutoExecuteToggle();
+    // createAutoExecuteToggle();
 
 
 
@@ -1041,6 +1044,8 @@ require(["vs/editor/editor.main"], async function () {
     document.getElementById("download").addEventListener("click", downloadCode);
     document.getElementById("format").addEventListener("click", formatCode);
 
+
+
     document.getElementById("addfile").addEventListener("click", function () {
         document.getElementById("fileInput").click();
     });
@@ -1062,6 +1067,13 @@ require(["vs/editor/editor.main"], async function () {
         }
     });
 
+    document.getElementById('languageList').addEventListener('change', function(e) {
+        const language = e.target.value;
+        if (window.editor) {
+            monaco.editor.setModelLanguage(window.editor.getModel(), language);
+        }
+    });
+
     document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
@@ -1070,6 +1082,27 @@ require(["vs/editor/editor.main"], async function () {
         if (e.altKey && e.shiftKey && e.key === 'F') {
             e.preventDefault();
             formatCode();
+        }
+    });
+
+    const toggle = document.getElementById("autoExecuteToggle");
+    const label = document.getElementById("autoExecuteLabel");
+
+    toggle.addEventListener("change", function () {
+        autoExecuteEnabled = this.checked;
+
+        if (autoExecuteEnabled) {
+            label.textContent = "Auto-Execute: ON";
+            addLogEntry("✅ Auto-execution enabled", "info");
+            safeAutoExecute();
+        } else {
+            label.textContent = "Auto-Execute: OFF";
+
+            if (autoExecuteTimer) {
+                clearTimeout(autoExecuteTimer);
+            }
+
+            addLogEntry("⏸️ Auto-execution disabled", "warn");
         }
     });
 
@@ -1148,7 +1181,7 @@ require(["vs/editor/editor.main"], async function () {
     // Add copy room URL button
     function addCopyRoomButton() {
         const copyBtn = document.createElement('button');
-        copyBtn.textContent = '📋 Copy Room URL';
+        copyBtn.textContent = 'Share Editor';
         copyBtn.style.marginLeft = '10px';
         copyBtn.style.padding = '8px 12px';
         copyBtn.style.background = 'linear-gradient(135deg, #fd79a8, #e84393)';
@@ -1159,6 +1192,7 @@ require(["vs/editor/editor.main"], async function () {
 
         copyBtn.addEventListener('click', () => {
             initializeSocket().then((response) => {
+               
                 if (response) {
                     const url = window.location.href;
                     navigator.clipboard.writeText(url).then(() => {

@@ -1,0 +1,113 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: var(--text-primary);
+  }
+  
+  :root {
+    --primary-color: #121212;
+    --secondary-color: #1e1e1e;
+    --js-color: #f0db4f;
+    --react-color: #61dafb;
+    --react-native-color: #00a8ff;
+    --interview-color: #9c27b0;
+    --practice-color: #4caf50;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --card-bg: #2d2d2d;
+    --highlight: #03dac6;
+    --button-hover: rgba(3, 218, 198, 0.2);
+  }
+  
+  .login-container {
+    background-color: var(--secondary-color);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    width: 350px;
+  }
+  
+  .login-header {
+    text-align: center;
+    margin-bottom: 25px;
+  }
+  
+  .login-header h2 {
+    color: var(--highlight);
+    margin: 0;
+    font-weight: 500;
+  }
+  
+  .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+  }
+  
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--highlight);
+    box-shadow: 0 0 0 2px rgba(3, 218, 198, 0.25);
+  }
+  
+  .login-button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--highlight);
+    color: var(--primary-color);
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .login-button:hover {
+    background-color: transparent;
+    color: var(--highlight);
+    border: 1px solid var(--highlight);
+    box-shadow: 0 0 8px rgba(3, 218, 198, 0.4);
+  }
+  
+  .forgot-password {
+    text-align: center;
+    margin-top: 15px;
+  }
+  
+  .forgot-password a {
+    color: var(--highlight);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  
+  .forgot-password a:hover {
+    text-decoration: underline;
+    color: var(--react-color);
+  }
+   .forgot-password a:hover {
+    text-decoration: underline;
+    color: var(--react-color);
+  }

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Authentication</title>
+    <style>
+        .auth-container {
+            display: flex;
+            justify-content: flex-end;
+            padding: 20px;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-signin {
+            background-color: #4a90e2;
+            color: white;
+            border: 1px solid #4a90e2;
+        }
+        
+        .btn-signin:hover {
+            background-color: #3a7bc8;
+        }
+        
+        .btn-signup {
+            background-color: white;
+            color: #4a90e2;
+            border: 1px solid #4a90e2;
+        }
+        
+        .btn-signup:hover {
+            background-color: #f5f9ff;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .user-name {
+            font-weight: 500;
+        }
+        
+        .btn-logout {
+            background-color: #ff4d4f;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-logout:hover {
+            background-color: #ff7875;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <!-- Login/Signup Buttons (shown when no token) -->
+        <div class="auth-buttons" id="authButtons">
+            <a class="btn btn-signin" href="src/auth/login/index.html">Log In</a>
+            <a class="btn btn-signup" href="src/auth/signup/index.html">Sign Up</a>
+        </div>
+        
+        <!-- User Info (shown when token exists) -->
+        <div class="user-info hidden" id="userInfo">
+            <div class="user-avatar">
+                <span id="userInitial">U</span>
+            </div>
+            <span class="user-name" id="userName">User</span>
+            <button class="btn-logout" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const authButtons = document.getElementById('authButtons');
+            const userInfo = document.getElementById('userInfo');
+            const userInitial = document.getElementById('userInitial');
+            const userName = document.getElementById('userName');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            // Check if user is authenticated
+            function checkAuthStatus() {
+                const token = localStorage.getItem('authToken');
+                const user = localStorage.getItem('user');
+                
+                if (token) {
+                    // User is logged in
+                    authButtons.classList.add('hidden');
+                    userInfo.classList.remove('hidden');
+                    
+                    // Display user info if available
+                    if (user) {
+                        try {
+                            const userData = JSON.parse(user);
+                            if (userData.name) {
+                                userName.textContent = userData.name;
+                                userInitial.textContent = userData.name.charAt(0).toUpperCase();
+                            }
+                            if (userData.avatar) {
+                                document.querySelector('.user-avatar').style.backgroundImage = `url(${userData.avatar})`;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing user data:', e);
+                        }
+                    }
+                } else {
+                    // User is not logged in
+                    authButtons.classList.remove('hidden');
+                    userInfo.classList.add('hidden');
+                }
+            }
+            
+            // Logout function
+            function logout() {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                checkAuthStatus();
+                // Redirect to home or login page if needed
+                // window.location.href = '/';
+            }
+            
+            // Event listeners
+            logoutBtn.addEventListener('click', logout);
+            
+            // Initial check
+            checkAuthStatus();
+            
+            // Optional: Listen for storage changes (in case of multiple tabs)
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'authToken') {
+                    checkAuthStatus();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

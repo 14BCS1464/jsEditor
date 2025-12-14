@@ -1,0 +1,266 @@
+:root {
+    --primary-color: #121212;
+    --secondary-color: #1e1e1e;
+    --js-color: #f0db4f;
+    --react-color: #61dafb;
+    --react-native-color: #00a8ff;
+    --interview-color: #9c27b0;
+    --practice-color: #4caf50;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --card-bg: #2d2d2d;
+    --highlight: #03dac6;
+    --button-hover: rgba(3, 218, 198, 0.2);
+    --success-color: #4caf50;
+    --error-color: #e74c3c;
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  body {
+    background-color: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text-primary);
+  }
+  
+  .signup-container {
+    background: var(--secondary-color);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+  }
+  
+  .signup-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .signup-header h1 {
+    color: var(--highlight);
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+  
+  .signup-header p {
+    color: var(--text-secondary);
+    font-size: 16px;
+  }
+  
+  .signup-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+    position: relative;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 17px 20px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-size: 16px;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    transition: all 0.3s;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--highlight);
+    box-shadow: 0 0 0 2px rgba(3, 218, 198, 0.2);
+  }
+  
+  .form-group input::placeholder {
+    color: var(--text-secondary);
+  }
+  
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+  }
+  
+  .checkbox-group input {
+    width: auto;
+    margin-right: 10px;
+    accent-color: var(--highlight);
+  }
+  
+  .checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+    color: var(--text-secondary);
+  }
+  
+  .checkbox-group a {
+    color: var(--highlight);
+    text-decoration: none;
+  }
+  
+  .checkbox-group a:hover {
+    text-decoration: underline;
+  }
+  
+  .signup-btn {
+    background-color: var(--highlight);
+    color: var(--primary-color);
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .signup-btn:hover {
+    background-color: transparent;
+    color: var(--highlight);
+    border: 1px solid var(--highlight);
+    box-shadow: 0 0 8px rgba(3, 218, 198, 0.4);
+  }
+  
+  .login-link {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--text-secondary);
+  }
+  
+  .login-link a {
+    color: var(--highlight);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  
+  .login-link a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Error message styling */
+  .error-message {
+    color: var(--error-color);
+    font-size: 13px;
+    margin-top: 5px;
+    display: none;
+  }
+  
+  /* Success message */
+  .success-message {
+    text-align: center;
+    color: var(--success-color);
+    margin-top: 20px;
+    font-weight: 600;
+    display: none;
+  }
+  .work-type-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  
+  .work-type-options label {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  
+  .work-type-options input[type="radio"] {
+    display: none;
+  }
+  
+  .work-type-options span {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #f0f0f0, #fafafa);
+    border: 2px solid transparent;
+    border-radius: 25px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    color: #333;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .work-type-options label:hover span {
+    background: #e8f0fe;
+    transform: scale(1.05);
+  }
+  
+  .work-type-options input[type="radio"]:checked + span {
+    background: linear-gradient(135deg, #007bff, #0056d2);
+    color: #fff;
+    border: 2px solid #0056d2;
+    box-shadow: 0 4px 10px rgba(0, 91, 187, 0.3);
+  }
+  
+
+  .option-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  
+  .option-buttons label {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  
+  .option-buttons input[type="radio"],
+  .option-buttons input[type="checkbox"] {
+    display: none;
+  }
+  
+  .option-buttons span {
+    display: inline-block;
+    padding: 10px 16px;
+    background: #f2f2f2;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #333;
+    transition: all 0.3s ease;
+  }
+  
+  .option-buttons label:hover span {
+    background: #e0e7ff;
+    transform: scale(1.04);
+  }
+  
+  .option-buttons input[type="radio"]:checked + span,
+  .option-buttons input[type="checkbox"]:checked + span {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  }
+  

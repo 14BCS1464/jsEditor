@@ -6,11 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced JavaScript Editor</title>
    
-  <!-- <script src="http://cdn.socket.io/4.7.2/socket.io.min.js"></script> -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
 
     <!-- <script src="http://localhost:4000/socket.io/socket.io.js"></script> -->
 
-    <script src="http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com/socket.io/socket.io.js"></script>
+    <!-- <script src="https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com/socket.io/socket.io.js"></script> -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
@@ -20,9 +20,7 @@
 
 <body>
     <div class="editor-heading">
-        <h1>
-            <span class="gradient-text">Advanced JavaScript Editor</span>
-        </h1>
+
         <div id="controls">
             <div style="display: flex; flex-wrap: wrap; gap: 5px;">
                 <button id="run">▶️ Run </button>
@@ -36,12 +34,38 @@
     </div>
 
     <div class="container">
+        <!-- Language selector UI for the editor -->
+        <div class="language-panel">
+            <div class="language-title">Languages</div>
+            <ul id="languageList">
+              <li data-lang="javascript" class="active">JavaScript</li>
+              <li data-lang="typescript">TypeScript</li>
+              <li data-lang="html">HTML</li>
+              <li data-lang="css">CSS</li>
+              <li data-lang="json">JSON</li>
+            </ul>
+          </div>
         <div id="editor"></div>
         <div class="output-container">
             <div class="output-section">
                 <div class="output-header">
-                    <h4>Advanced Console Output</h4>
+                
                     <button class="clear-btn" onclick="clearOutput()">Clear</button>
+                    <div class="setting">
+                        <span id="autoExecuteLabel">Auto-Execute: ON</span>
+                        <label class="switch">
+                          <input type="checkbox" id="autoExecuteToggle" checked>
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    
+                      <div class="setting">
+                        <span>Debug Socket:</span>
+                        <label class="switch">
+                          <input type="checkbox" checked>
+                          <span class="slider"></span>
+                        </label>
+                      </div>
                 </div>
                 <div id="output" class="output-content"></div>
             </div>
@@ -51,6 +75,7 @@
     <input type="file" id="fileInput" accept=".js" style="display: none;">
 
     <script src="script.js"></script>
+
 </body>
 
 </html>
