@@ -60,6 +60,8 @@ console.log(greet(user));
 console.log("Status:", Status.Active);
 
 // Try running the code with the Run button above!`,
+ target: monaco.languages.typescript.ScriptTarget.ES6,
+allowNonTsExtensions: true,
                 language: 'typescript',
                 theme: 'vs-dark',
                 fontSize: 14,

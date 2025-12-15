@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Code Editor - VS Code Style</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-code"></i>
+                <span>CodeEditor</span>
+            </div>
+        </div>
+        <div class="header-controls">
+            <button class="header-btn" id="saveBtn">
+                <i class="fas fa-save"></i>
+                <span>Save</span>
+            </button>
+            <button class="header-btn primary" id="runBtn">
+                <i class="fas fa-play"></i>
+                <span>Run</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-item" id="togglePreview">
+                <i class="fas fa-columns"></i>
+                <span>Toggle Preview</span>
+            </div>
+        </div>
+
+        <!-- Editor Area -->
+        <div class="editor-area">
+            <!-- Tabs -->
+            <div class="tabs-bar" id="tabsBar">
+                <div class="tab active" data-file="index.html">
+                    <i class="fas fa-file-code tab-icon"></i>
+                    <span>index.html</span>
+                    <span class="tab-close">&times;</span>
+                </div>
+                <div class="tab dirty" data-file="style.css">
+                    <i class="fab fa-css3-alt tab-icon"></i>
+                    <span>style.css</span>
+                    <span class="tab-close">&times;</span>
+                </div>
+                <div class="tab" data-file="script.js">
+                    <i class="fab fa-js tab-icon"></i>
+                    <span>script.js</span>
+                    <span class="tab-close">&times;</span>
+                </div>
+            </div>
+
+            <!-- Code Editors -->
+            <div class="editor-container">
+                <div class="code-editor active" id="index.html">
+                   
+                    <div class="editor-header">
+                        <span>index.html</span>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="formatCode('html')">
+                                <i class="fas fa-indent"></i> Format
+                            </button>
+                            
+                        </div>
+                    </div>
+                    <textarea class="code-area" id="htmlCode" spellcheck="false">
+                        
+                    </textarea>
+                </div>
+
+                <div class="code-editor" id="style.css">
+                    <div class="line-numbers" id="cssLineNumbers"></div>
+                    <div class="editor-header">
+                        <span>style.css</span>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="formatCode('css')">
+                                <i class="fas fa-indent"></i> Format
+                            </button>
+                            <button class="editor-btn" onclick="foldAll('css')">
+                                <i class="fas fa-caret-down"></i> Fold All
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="code-area" id="cssCode" spellcheck="false"></textarea>
+                </div>
+
+                <div class="code-editor" id="script.js">
+                    <div class="line-numbers" id="jsLineNumbers"></div>
+                    <div class="editor-header">
+                        <span>script.js</span>
+                        <div class="editor-actions">
+                            <button class="editor-btn" onclick="formatCode('js')">
+                                <i class="fas fa-indent"></i> Format
+                            </button>
+                            <button class="editor-btn" onclick="foldAll('js')">
+                                <i class="fas fa-caret-down"></i> Fold All
+                            </button>
+                        </div>
+                    </div>
+                    <textarea class="code-area" id="jsCode" spellcheck="false"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel" id="previewPanel">
+            <div class="resize-handle" id="resizeHandle"></div>
+            <div class="preview-header">
+                <div class="preview-title">
+                    <i class="fas fa-eye"></i>
+                    <span>Live Preview</span>
+                </div>
+                <div class="preview-controls">
+                    <button class="preview-btn" id="refreshPreview" title="Refresh">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button class="preview-btn" id="responsiveToggle" title="Responsive Mode">
+                        <i class="fas fa-mobile-alt"></i>
+                    </button>
+                    <button class="preview-btn active" id="togglePreviewPanel" title="Toggle Preview">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="preview-frame-container">
+                <div class="preview-loading" id="previewLoading">
+                    <div class="spinner"></div>
+                    <div>Loading Preview...</div>
+                </div>
+                <iframe class="preview-frame" id="previewFrame"
+                    sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Panel (Terminal/Output) -->
+    
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      
+    </div>
+
+    <!-- Welcome Screen -->
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>

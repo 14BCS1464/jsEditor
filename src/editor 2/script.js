@@ -10,7 +10,7 @@ let editor = null; // Global editor reference
 let logCount = 0;
 let changeTimer = null;
 let saveTimer = null;
-let language = 'Javascript'
+
 let lastSentCode = '';
 let debounceSendTimer = null;
 function getOrCreateRoomId() {
@@ -1073,75 +1073,11 @@ require(["vs/editor/editor.main"], async function () {
             formatCode();
         }
     });
-    languageList.addEventListener("click", (e) => {
-        const item = e.target.closest("li");
-        if (!item) return;
 
-        const langKey = item.dataset.lang; // "javascript", "typescript", etc.
-        if (!langKey) return;
-
-        console.log("Selected language:", langKey);
-        language = langKey
-
-        // UI: active state
-        document
-            .querySelectorAll("#languageList li")
-            .forEach(li => li.classList.remove("active"));
-
-        item.classList.add("active");
-
-        // // Switch Monaco language
-         switchLanguage(langKey);
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+        target: monaco.languages.typescript.ScriptTarget.ES6,
+        allowNonTsExtensions: true
     });
-
-    function switchLanguage(lang) {
-        console.log("Navigation called with lang:", lang);
-        console.log("Current location:", window.location.href);
-        // alert( window.location.href)
-        console.log("Current location:", window.location.href);
-
-        switch (lang) {
-            case "javascript":
-                window.location.href = "/src/editor/index.html";
-                break;
-        
-            case "typescript":
-                window.location.href = "/src/typescript/index.html"; // Leading slash!
-                break;
-        
-            case "html":
-                window.location.href = "/src/html/index.html";
-                break;
-        
-            case "json":
-                window.location.href = "/src/json/index.html";
-                break;
-        
-            default:
-                console.warn(`No runner defined for ${lang}`);
-        }
-    }
-    const toggle = document.getElementById("autoExecuteToggle");
-    const label = document.getElementById("autoExecuteLabel");
-
-    toggle.addEventListener("change", function () {
-        autoExecuteEnabled = this.checked;
-
-        if (autoExecuteEnabled) {
-            label.textContent = "Auto-Execute: ON";
-            addLogEntry("✅ Auto-execution enabled", "info");
-            safeAutoExecute();
-        } else {
-            label.textContent = "Auto-Execute: OFF";
-
-            if (autoExecuteTimer) {
-                clearTimeout(autoExecuteTimer);
-            }
-
-            addLogEntry("⏸️ Auto-execution disabled", "warn");
-        }
-    });
-  
     function addDebugButton() {
         const debugBtn = document.createElement('button');
         debugBtn.textContent = '🔧 Debug Socket';

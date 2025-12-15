@@ -1,171 +1,4 @@
-// languageConfig.js
-
-/**
- * Base Monaco Editor Configuration
- * These settings apply to all languages unless overridden
- */
-// export const BASE_EDITOR_CONFIG = {
-//   // Theme and Appearance
-//   theme: "vs-dark",
-//   automaticLayout: true,
-  
-//   // Font Settings
-//   fontFamily: "'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace",
-//   fontSize: 14,
-//   fontWeight: "400",
-//   lineHeight: 22,
-//   letterSpacing: 0.5,
-//   fontLigatures: true, // Enable ligatures for supported fonts
-  
-//   // Line Numbers and Gutter
-//   lineNumbers: "on",
-//   lineNumbersMinChars: 3,
-//   glyphMargin: true,
-//   folding: true,
-//   foldingStrategy: "indentation",
-//   showFoldingControls: "mouseover",
-  
-//   // Minimap
-//   minimap: {
-//       enabled: true,
-//       side: "right",
-//       showSlider: "mouseover",
-//       renderCharacters: true,
-//       maxColumn: 120,
-//       scale: 1
-//   },
-  
-//   // Scrolling
-//   scrollBeyondLastLine: true,
-//   scrollBeyondLastColumn: 5,
-//   smoothScrolling: true,
-//   mouseWheelZoom: true,
-//   fastScrollSensitivity: 5,
-//   scrollbar: {
-//       vertical: "visible",
-//       horizontal: "visible",
-//       verticalScrollbarSize: 12,
-//       horizontalScrollbarSize: 12,
-//       arrowSize: 11,
-//       useShadows: true,
-//       verticalHasArrows: false,
-//       horizontalHasArrows: false
-//   },
-  
-//   // Selection and Cursor
-//   roundedSelection: true,
-//   cursorStyle: "line",
-//   cursorBlinking: "smooth",
-//   cursorSmoothCaretAnimation: true,
-//   cursorWidth: 2,
-//   multiCursorModifier: "alt",
-//   selectionHighlight: true,
-//   occurrencesHighlight: true,
-  
-//   // Editing Behavior
-//   tabSize: 2,
-//   insertSpaces: true,
-//   detectIndentation: true,
-//   autoIndent: "advanced",
-//   formatOnPaste: true,
-//   formatOnType: true,
-//   autoClosingBrackets: "languageDefined",
-//   autoClosingQuotes: "languageDefined",
-//   autoSurround: "languageDefined",
-//   bracketPairColorization: {
-//       enabled: true
-//   },
-  
-//   // Word Operations
-//   wordWrap: "off",
-//   wordWrapColumn: 120,
-//   wrappingIndent: "indent",
-//   wordBasedSuggestions: true,
-  
-//   // Suggestions and IntelliSense
-//   quickSuggestions: {
-//       other: true,
-//       comments: false,
-//       strings: false
-//   },
-//   quickSuggestionsDelay: 10,
-//   suggestOnTriggerCharacters: true,
-//   acceptSuggestionOnCommitCharacter: true,
-//   acceptSuggestionOnEnter: "on",
-//   snippetSuggestions: "inline",
-//   tabCompletion: "on",
-//   suggest: {
-//       insertMode: "replace",
-//       filterGraceful: true,
-//       localityBonus: true,
-//       shareSuggestSelections: true,
-//       showIcons: true,
-//       showStatusBar: true,
-//       preview: true,
-//       previewMode: "subwordSmart"
-//   },
-  
-//   // Hover and Parameters
-//   hover: {
-//       enabled: true,
-//       delay: 300,
-//       sticky: true
-//   },
-//   parameterHints: {
-//       enabled: true,
-//       cycle: true
-//   },
-  
-//   // Code Actions and Lightbulb
-//   lightbulb: {
-//       enabled: true
-//   },
-//   codeActionsOnSave: {
-//       "source.fixAll": true
-//   },
-  
-//   // Find and Replace
-//   find: {
-//       seedSearchStringFromSelection: true,
-//       autoFindInSelection: "never",
-//       addExtraSpaceOnTop: true,
-//       loop: true
-//   },
-  
-//   // Rendering
-//   renderLineHighlight: "all",
-//   renderWhitespace: "selection",
-//   renderControlCharacters: true,
-//   renderIndentGuides: true,
-//   highlightActiveIndentGuide: true,
-//   renderFinalNewline: true,
-  
-//   // Performance
-//   stablePeek: true,
-//   maxTokenizationLineLength: 20000,
-  
-//   // Accessibility
-//   accessibilitySupport: "auto",
-  
-//   // Other
-//   dragAndDrop: true,
-//   links: true,
-//   colorDecorators: true,
-//   contextmenu: true,
-//   mouseWheelScrollSensitivity: 1,
-//   readOnly: false,
-//   rulers: [80, 120],
-//   guides: {
-//       bracketPairs: true,
-//       indentation: true,
-//       highlightActiveBracketPair: true
-//   }
-// };
-
-/**
-* Language-Specific Configurations
-* These settings override BASE_EDITOR_CONFIG for specific languages
-*/
+/
 export const EDITOR_CONFIGS = {
   javascript: {
       language: "javascript",
@@ -178,33 +11,33 @@ export const EDITOR_CONFIGS = {
           comments: false,
           strings: true
       },
-      // suggest: {
-      //     showMethods: true,
-      //     showFunctions: true,
-      //     showConstructors: true,
-      //     showFields: true,
-      //     showVariables: true,
-      //     showClasses: true,
-      //     showStructs: true,
-      //     showInterfaces: true,
-      //     showModules: true,
-      //     showProperties: true,
-      //     showEvents: true,
-      //     showOperators: true,
-      //     showUnits: true,
-      //     showValues: true,
-      //     showConstants: true,
-      //     showEnums: true,
-      //     showEnumMembers: true,
-      //     showKeywords: true,
-      //     showWords: true,
-      //     showColors: false,
-      //     showFiles: false,
-      //     showReferences: true,
-      //     showFolders: false,
-      //     showTypeParameters: true,
-      //     showSnippets: true
-      // },
+      suggest: {
+          showMethods: true,
+          showFunctions: true,
+          showConstructors: true,
+          showFields: true,
+          showVariables: true,
+          showClasses: true,
+          showStructs: true,
+          showInterfaces: true,
+          showModules: true,
+          showProperties: true,
+          showEvents: true,
+          showOperators: true,
+          showUnits: true,
+          showValues: true,
+          showConstants: true,
+          showEnums: true,
+          showEnumMembers: true,
+          showKeywords: true,
+          showWords: true,
+          showColors: false,
+          showFiles: false,
+          showReferences: true,
+          showFolders: false,
+          showTypeParameters: true,
+          showSnippets: true
+      },
 
     
        
