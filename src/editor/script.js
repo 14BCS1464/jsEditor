@@ -1,3 +1,5 @@
+import { EDITOR_CONFIGS } from "./languageConfig.js";
+
 require.config({
     paths: {
         vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
@@ -10,7 +12,7 @@ let editor = null; // Global editor reference
 let logCount = 0;
 let changeTimer = null;
 let saveTimer = null;
-
+let language = 'Javascript'
 let lastSentCode = '';
 let debounceSendTimer = null;
 function getOrCreateRoomId() {
@@ -274,7 +276,9 @@ function saveCodeToStorage() {
     const code = editor.getValue();
 
     try {
-        localStorage.setItem('jsEditorCode', code);
+        console.log(code)
+        localStorage.setItem(String(language), code);
+
         const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
         saveIndicator.style.opacity = '1';
         setTimeout(() => {
@@ -324,29 +328,13 @@ function generateRoomId(length = 6) {
 }
 
 
+
 require(["vs/editor/editor.main"], async function () {
-    const savedCode = localStorage.getItem('jsEditorCode');
+    const savedCode = await localStorage.getItem(String(language));
 
     const initialCode = savedCode || `console.log("Developed By sunil...")`;
 
-    editor = monaco.editor.create(document.getElementById("editor"), {
-        value: initialCode,
-        language: "javascript",
-        theme: "vs-dark",
-        automaticLayout: true,
-        minimap: {
-            enabled: true
-        },
-        scrollBeyondLastLine: true,
-        fontFamily: "'Fira Code', 'Consolas', monospace",
-        fontSize: 14,
-        lineNumbers: "on",
-        roundedSelection: true,
-        scrollbar: {
-            verticalScrollbarSize: 10,
-            horizontalScrollbarSize: 10
-        }
-    });
+    editor = monaco.editor.create(document.getElementById("editor"), getEditorConfig(language, initialCode));
 
     const outputElement = document.getElementById("output");
 
@@ -505,7 +493,32 @@ require(["vs/editor/editor.main"], async function () {
                 addLogEntry('🧹 Output cleared due to size limit', 'info');
             }
 
-            runCode();
+            const code = editor.getValue()
+            switch (language) {
+                case "javascript":
+
+                    runCode(code)
+                    break;
+
+                case "typescript":
+                    runTypeScript(code);
+                    break;
+
+                case "html":
+                    runHTML(code);
+                    break;
+
+                case "css":
+                    runCSS(code);
+                    break;
+
+                case "json":
+                    runJSON(code);
+                    break;
+
+                default:
+                    console.warn(`No runner defined for ${language}`);
+            }
 
         } finally {
             clearTimeout(executionTimer);
@@ -516,7 +529,460 @@ require(["vs/editor/editor.main"], async function () {
             }
         }
     }
-
+    function getEditorConfig(langKey, value = "") {
+        const lang = langKey.toLowerCase();
+    
+        const config = {
+            value: value,
+            ...(EDITOR_CONFIGS[lang])
+        };
+        console.log("--------    ", value)
+    
+        console.log("Editor config:", config); // ✅ correct debug
+        return config;
+    }
+    
+    function switchLanguage(langKey) {
+        const lang = langKey.toLowerCase();
+        const config = EDITOR_CONFIGS[lang];
+    
+        if (!config) return;
+        clearOutput()
+    
+        // editor.setModelLanguage(
+        //     editor.getModel(),
+        //     config.language
+        // );
+    
+        const savedCode = localStorage.getItem(String(lang));
+         editor.setValue(savedCode)
+        getEditorConfig(lang, savedCode)
+    }
+    
+    function stripTypeScript(code) {
+        let js = code;
+        
+        // 1. Save strings first to avoid removing content inside strings
+        const stringStore = [];
+        let stringIndex = 0;
+        js = js.replace(/(['"`])(?:\\.|(?!\1).)*\1/g, (match) => {
+            const placeholder = `__STRING_${stringIndex++}__`;
+            stringStore.push(match);
+            return placeholder;
+        });
+        
+        // 2. Save template literal expressions
+        const templateStore = [];
+        let templateIndex = 0;
+        js = js.replace(/\${([^}]+)}/g, (match, expr) => {
+            const placeholder = `__TEMPLATE_${templateIndex++}__`;
+            templateStore.push(expr);
+            return placeholder;
+        });
+        
+        // 3. Save ternary operators to avoid breaking them
+        const ternaryStore = [];
+        let ternaryIndex = 0;
+        js = js.replace(/\?[^:]*:[^;]+/g, (match) => {
+            const placeholder = `__TERNARY_${ternaryIndex++}__`;
+            ternaryStore.push(match);
+            return placeholder;
+        });
+        
+        // 4. Remove type-only imports
+        js = js.replace(/import\s+type\s*{[^}]*}\s*from\s*['"][^'"]+['"]\s*;?\s*/g, '');
+        js = js.replace(/import\s+type\s+[^;]+;/g, '');
+        js = js.replace(/export\s+type\s+[^;]+;/g, '');
+        
+        // 5. Remove interface declarations
+        js = js.replace(/interface\s+\w+(?:\s*<[^>]*>)?(?:\s+extends\s+[^{]*)?\s*\{[^}]*\}/g, '');
+        
+        // 6. Remove type aliases
+        js = js.replace(/type\s+\w+(?:\s*<[^>]*>)?\s*=\s*[^;]+;/g, '');
+        
+        // 7. Remove enum declarations (convert to objects later if needed)
+        js = js.replace(/enum\s+\w+\s*\{[^}]*\}/g, '');
+        
+        // 8. Remove namespace declarations
+        js = js.replace(/namespace\s+\w+\s*\{[^}]*\}/g, '');
+        
+        // 9. Remove declare statements
+        js = js.replace(/\bdeclare\s+.*?(?:;|\{)/g, '');
+        
+        // 10. Remove access modifiers
+        js = js.replace(/\b(public|private|protected|readonly|abstract)\s+/g, '');
+        
+        // 11. Remove 'implements' clauses
+        js = js.replace(/\s+implements\s+[^{]+(?=\{)/g, '');
+        
+        // 12. Remove type assertions - more careful approach
+        js = js.replace(/\s+as\s+(?:const\b|[\w$]+(?:\s*<[^>]*>)?)(?=\s*[;,\)\]\}\s]|\n|$)/g, '');
+        
+        // 13. Remove parameter types
+        js = js.replace(/([\(\,]\s*)([\w$]+)\s*\??\s*:\s*[^,\)]+/g, '$1$2');
+        
+        // 14. Remove variable type annotations (with assignment)
+        js = js.replace(/(const|let|var)\s+([\w$]+)\s*\??\s*:\s*[^=;]+(?=\s*=)/g, '$1 $2');
+        
+        // 15. Remove variable type annotations (without assignment)
+        js = js.replace(/(const|let|var)\s+([\w$]+)\s*\??\s*:\s*[^=;]+;/g, '$1 $2;');
+        
+        // 16. Remove return types from functions
+        js = js.replace(/\)\s*:\s*[^{=>]+(?=\s*\{)/g, ')');
+        js = js.replace(/\)\s*:\s*[^{=>]+(?=\s*=>)/g, ')');
+        
+        // 17. Remove property type annotations in classes
+        js = js.replace(/([\w$]+)\s*\??\s*:\s*[^;=]+(?=\s*[;=])/g, (match, p1) => {
+            return p1;
+        });
+        
+        // 18. Remove generics from function and class declarations
+        js = js.replace(/(function|class)\s+(\w+)\s*<[^>]*>/g, '$1 $2');
+        
+        // 19. Remove generic constraints
+        js = js.replace(/<\w+\s+extends\s+[^>]+>/g, '');
+        
+        // 20. Remove generic arguments from calls (carefully)
+        js = js.replace(/\.\s*<[^>]*>/g, '.');
+        js = js.replace(/(\w+)\s*<[^>]*>(\s*\()/g, '$1$2');
+        
+        // 21. Remove non-null assertions (!)
+        js = js.replace(/([\w$\)\]])(?<![!=])!\s*(?![=])/g, '$1');
+        
+        // 22. Remove optional parameter markers (?) while keeping the parameter
+        js = js.replace(/([\w$]+)\s*\?\s*:/g, '$1:');
+        
+        // 23. Remove index signatures
+        js = js.replace(/\[[\w$]+\s*:\s*(string|number)\]\s*:\s*[^;]+;/g, '');
+        
+        // 24. Clean up empty lines and extra spaces
+        js = js.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0 && !line.startsWith('//'))
+            .join('\n');
+        
+        // 25. Restore ternary operators FIRST
+        ternaryStore.forEach((ternary, index) => {
+            js = js.replace(`__TERNARY_${index}__`, ternary);
+        });
+        
+        // 26. Restore strings
+        stringStore.forEach((str, index) => {
+            js = js.replace(`__STRING_${index}__`, str);
+        });
+        
+        // 27. Restore template expressions
+        templateStore.forEach((expr, index) => {
+            js = js.replace(`__TEMPLATE_${index}__`, `\${${expr}}`);
+        });
+        
+        // 28. Clean up syntax
+        js = js.replace(/\s+/g, ' ');
+        js = js.replace(/\s*([{},;()])\s*/g, '$1');
+        js = js.replace(/;{2,}/g, ';');
+        js = js.replace(/\{\s*\}/g, '{}');
+        
+        // 29. Fix broken ternary operators
+        js = js.replace(/(\?[^:]*):\s*([^;]+)(?=;)/g, (match, condition, truePart) => {
+            // Check if it has a false part
+            if (!match.includes(':')) {
+                return `${condition} : ""`;
+            }
+            return match;
+        });
+        
+        return js.trim();
+    }
+    
+    // Alternative: Simpler but safer approach
+    function stripTypeScriptSimple(code) {
+        let js = code;
+        
+        // Preserve strings and template literals
+        const stringMap = new Map();
+        let stringId = 0;
+        
+        // Store all strings and template literals
+        js = js.replace(/(['"`])(?:\\.|(?!\1).)*\1/g, (match) => {
+            const id = `__STR_${stringId++}__`;
+            stringMap.set(id, match);
+            return id;
+        });
+        
+        js = js.replace(/\${[^}]+}/g, (match) => {
+            const id = `__TMPL_${stringId++}__`;
+            stringMap.set(id, match);
+            return id;
+        });
+        
+        // Store ternary operators
+        const ternaryMap = new Map();
+        js = js.replace(/\?[^:]*:[^;\)\}]+/g, (match) => {
+            const id = `__TERN_${stringId++}__`;
+            ternaryMap.set(id, match);
+            return id;
+        });
+        
+        // Multi-step removal with precise patterns
+        const patterns = [
+            // Remove interface declarations FIRST
+            [/interface\s+\w+\s*\{[^}]*\}/g, ''],
+            
+            // Remove type aliases
+            [/type\s+\w+\s*=\s*[^;]+;/g, ''],
+            
+            // Remove enums - but we need to handle them differently
+            [/enum\s+\w+\s*\{[^}]*\}/g, ''],
+            
+            // Remove namespaces
+            [/namespace\s+\w+\s*\{[^}]*\}/g, ''],
+            
+            // Remove type-only imports
+            [/import\s+type\s+[^;]+;/g, ''],
+            [/export\s+type\s+[^;]+;/g, ''],
+            
+            // Remove 'as' type assertions
+            [/\s+as\s+\w+(?:\s*<[^>]*>)?/g, ''],
+            
+            // Remove generic type parameters from declarations
+            [/(function|class)\s+\w+\s*<[^>]*>/g, (match, p1) => p1],
+            
+            // Remove return type annotations
+            [/\)\s*:\s*[^{]+(?=\{)/g, ')'],
+            [/\)\s*:\s*[^{]+(?=\s*=>)/g, ')'],
+            
+            // Remove parameter type annotations
+            [/([\(\,]\s*)(\w+)\s*\??\s*:\s*[^,\)]+/g, '$1$2'],
+            
+            // Remove variable type annotations (with assignment)
+            [/(const|let|var)\s+(\w+)\s*\??\s*:\s*[^=]+(?=\s*=)/g, '$1 $2'],
+            
+            // Remove variable type annotations (without assignment)
+            [/(const|let|var)\s+(\w+)\s*\??\s*:\s*[^;]+;/g, '$1 $2;'],
+            
+            // Remove property type annotations in classes and objects
+            [/(\w+)\s*\??\s*:\s*(?!(?:function|\{|\())[\w$<>\s\[\]\|&]+(?=\s*[;=,])/g, '$1'],
+            
+            // Remove access modifiers
+            [/\b(public|private|protected|readonly|abstract)\s+/g, ''],
+            
+            // Remove optional parameter '?'
+            [/(\w+)\s*\?\s*:/g, '$1:'],
+            
+            // Remove non-null assertions
+            [/(\w+)\s*!\s*(?![=])/g, '$1'],
+            
+            // Remove 'implements' clauses
+            [/\s+implements\s+[^{]+/g, ''],
+            
+            // Remove declare statements
+            [/\bdeclare\s+.*?(?:;|\{)/g, ''],
+        ];
+        
+        // Apply patterns in order
+        patterns.forEach(([pattern, replacement]) => {
+            js = js.replace(pattern, replacement);
+        });
+        
+        // Restore ternary operators FIRST
+        ternaryMap.forEach((value, key) => {
+            js = js.replace(key, value);
+        });
+        
+        // Restore strings
+        stringMap.forEach((value, key) => {
+            js = js.replace(key, value);
+        });
+        
+        // Clean up
+        js = js.replace(/\s+/g, ' ').trim();
+        js = js.replace(/;\s*;/g, ';');
+        js = js.replace(/\{\s*\}/g, '{}');
+        
+        // Fix common syntax issues
+        js = js.replace(/(\?[^:]*):\s*([^;]+);/g, (match, condition, truePart) => {
+            // If there's no second colon, add empty false part
+            const parts = match.split(':');
+            if (parts.length === 2) {
+                return match + ' : ""';
+            }
+            return match;
+        });
+        
+        return js;
+    }
+    
+    function runTypeScript(code) {
+        const outputElement = document.getElementById('output');
+        const tsCode = code;
+        const logs = [];
+        const originalLog = console.log;
+        
+        console.log = (...args) => {
+            logs.push(args.map(arg => String(arg)).join(' '));
+        };
+        
+        try {
+            // First try the simple transpiler
+            let jsCode = stripTypeScriptSimple(tsCode);
+            
+            // Post-process to fix common issues
+            jsCode = postProcessJavaScript(jsCode);
+            
+            // Validate the generated JavaScript
+            try {
+                new Function(jsCode);
+            } catch (error) {
+                console.warn('Simple transpiler failed, trying advanced...');
+                jsCode = stripTypeScript(tsCode);
+                jsCode = postProcessJavaScript(jsCode);
+            }
+            
+            // Final validation
+            try {
+                new Function(jsCode);
+            } catch (error) {
+                // Try to fix the specific error
+                if (error.message.includes("Unexpected token ';'")) {
+                    jsCode = fixTernaryOperators(jsCode);
+                    jsCode = fixMissingParentheses(jsCode);
+                }
+                
+                // Try one more time
+                try {
+                    new Function(jsCode);
+                } catch (finalError) {
+                    throw new Error(`Generated invalid JavaScript: ${finalError.message}\n\nGenerated code:\n${jsCode}`);
+                }
+            }
+            
+            console.log('Transpiled JavaScript:', jsCode);
+            
+            // Execute the code
+            runCode(jsCode);
+            
+        } catch (error) {
+            console.log = originalLog;
+            outputElement.style.color = "red";
+            outputElement.textContent = `❌ TypeScript Error:\n${error.message || error}`;
+            console.error('TypeScript transpilation error:', error);
+        } finally {
+            console.log = originalLog;
+        }
+    }
+    
+    // Helper function to post-process JavaScript
+    function postProcessJavaScript(jsCode) {
+        let result = jsCode;
+        
+        // Fix broken ternary operators
+        result = result.replace(/(console\.log\("[^"]*")\s*,\s*([^?]+\?[^:]+);/g, (match, logPart, ternaryPart) => {
+            // Check if ternary has both parts
+            if (!ternaryPart.includes(':')) {
+                return `${logPart}, ${ternaryPart} : "");`;
+            }
+            return match;
+        });
+        
+        // Fix missing closing parentheses
+        result = result.replace(/console\.log\([^)]+$/g, (match) => {
+            if (!match.endsWith(')')) {
+                return match + ')';
+            }
+            return match;
+        });
+        
+        // Fix semicolon issues
+        result = result.replace(/;\s*console/g, ';\nconsole');
+        result = result.replace(/\)\s*;/g, ');');
+        
+        return result;
+    }
+    
+    // Fix specific ternary operator issues
+    function fixTernaryOperators(jsCode) {
+        let result = jsCode;
+        
+        // Look for broken ternary patterns
+        const brokenTernaryPattern = /(\?[^:]*):\s*([^;]+);/g;
+        let match;
+        while ((match = brokenTernaryPattern.exec(result)) !== null) {
+            const fullMatch = match[0];
+            const beforeColon = match[1];
+            const afterColon = match[2];
+            
+            // Check if it's actually a complete ternary
+            const questionMarks = (beforeColon.match(/\?/g) || []).length;
+            const colons = (fullMatch.match(/:/g) || []).length;
+            
+            // If we have more question marks than colons, it's broken
+            if (questionMarks > colons) {
+                // Find where to add the missing colon
+                const parts = afterColon.split(' ');
+                let fixedAfter = '';
+                for (let i = 0; i < parts.length; i++) {
+                    if (parts[i].includes('?')) {
+                        // Found another ternary inside, need to close this one
+                        fixedAfter = parts.slice(0, i).join(' ') + ' : "" ' + parts.slice(i).join(' ');
+                        break;
+                    }
+                }
+                if (!fixedAfter) {
+                    fixedAfter = afterColon + ' : ""';
+                }
+                
+                result = result.replace(fullMatch, `?${beforeColon}: ${fixedAfter};`);
+            }
+        }
+        
+        return result;
+    }
+    
+    // Fix missing parentheses
+    function fixMissingParentheses(jsCode) {
+        let result = jsCode;
+        
+        // Count parentheses
+        let openParens = 0;
+        let closeParens = 0;
+        
+        for (let i = 0; i < result.length; i++) {
+            if (result[i] === '(') openParens++;
+            if (result[i] === ')') closeParens++;
+        }
+        
+        // Add missing closing parentheses
+        if (openParens > closeParens) {
+            const missing = openParens - closeParens;
+            result += ')'.repeat(missing);
+        }
+        
+        return result;
+    }
+    
+    // Test with your example
+    // const testCode = `// Interface
+    // interface User {
+    //   id: number;
+    //   name: string;
+    //   email?: string; // optional
+    // }
+    
+    // // Enum
+    // enum Status {
+    //   Active = 1,
+    //   Inactive = 2
+    // }
+    
+    // // Usage
+    // const user: User = { id: 1, name: "John" };
+    // console.log(user);
+    // console.log(Status.Active);`;
+    
+    // console.log('Testing TypeScript transpilation...');
+    // console.log('Input TypeScript:', testCode);
+    // console.log('Output JavaScript:', stripTypeScriptSimple(testCode));
+    
     // function createAutoExecuteToggle() {
     //     const controlsDiv = document.getElementById('controls').querySelector('div');
     //     const toggleBtn = document.createElement('button');
@@ -600,7 +1066,7 @@ require(["vs/editor/editor.main"], async function () {
     });
 
 
-    function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+    function createObjectInspector(obj, depth = 0, maxDepth = 4, seen = new WeakSet()) {
         if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
 
         if (obj === null) return '<span class="object-null">null</span>';
@@ -780,8 +1246,10 @@ require(["vs/editor/editor.main"], async function () {
 
 
 
-    function runCode() {
-        const code = editor.getValue();
+    function runCode(code) {
+
+
+
         if (!code) return;
 
         outputElement.innerHTML = "";
@@ -1029,6 +1497,7 @@ require(["vs/editor/editor.main"], async function () {
                 wrap_line_length: 80,
                 indent_with_tabs: false,
                 end_with_newline: true,
+
                 brace_style: "collapse,preserve-inline"
             });
 
@@ -1040,10 +1509,41 @@ require(["vs/editor/editor.main"], async function () {
         }
     }
 
-    document.getElementById("run").addEventListener("click", runCode);
+    document.getElementById("run").addEventListener("click", () => {
+        const code = editor.getValue()
+        switch (language) {
+            case "javascript":
+                // 
+                // alert(code)
+                runCode(code)
+                break;
+
+            case "typescript":
+
+                runTypeScript(code);
+                break;
+
+            case "html":
+                runHTML(code);
+                break;
+
+            case "css":
+                runCSS(code);
+                break;
+
+            case "json":
+                runJSON(code);
+                break;
+
+            default:
+                console.warn(`No runner defined for ${language}`);
+        }
+    });
     document.getElementById("download").addEventListener("click", downloadCode);
     document.getElementById("format").addEventListener("click", formatCode);
 
+    const languagePanel = document.querySelector(".language-panel");
+    const languageList = document.getElementById("languageList");
 
 
     document.getElementById("addfile").addEventListener("click", function () {
@@ -1067,23 +1567,27 @@ require(["vs/editor/editor.main"], async function () {
         }
     });
 
-    document.getElementById('languageList').addEventListener('change', function(e) {
-        const language = e.target.value;
-        if (window.editor) {
-            monaco.editor.setModelLanguage(window.editor.getModel(), language);
-        }
+    languageList.addEventListener("click", (e) => {
+        const item = e.target.closest("li");
+        if (!item) return;
+
+        const langKey = item.dataset.lang; // "javascript", "typescript", etc.
+        if (!langKey) return;
+
+        console.log("Selected language:", langKey);
+        language = langKey
+
+        // UI: active state
+        document
+            .querySelectorAll("#languageList li")
+            .forEach(li => li.classList.remove("active"));
+
+        item.classList.add("active");
+
+        // Switch Monaco language
+        switchLanguage(langKey);
     });
 
-    document.addEventListener('keydown', function (e) {
-        if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            runCode();
-        }
-        if (e.altKey && e.shiftKey && e.key === 'F') {
-            e.preventDefault();
-            formatCode();
-        }
-    });
 
     const toggle = document.getElementById("autoExecuteToggle");
     const label = document.getElementById("autoExecuteLabel");
@@ -1192,7 +1696,7 @@ require(["vs/editor/editor.main"], async function () {
 
         copyBtn.addEventListener('click', () => {
             initializeSocket().then((response) => {
-               
+
                 if (response) {
                     const url = window.location.href;
                     navigator.clipboard.writeText(url).then(() => {

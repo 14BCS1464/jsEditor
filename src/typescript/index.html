@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TypeScript Online Compiler</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 10px;
+            gap: 10px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: #252526;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo i {
+            color: #007acc;
+            font-size: 24px;
+        }
+        
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #005a9e;
+        }
+        
+        .btn-run {
+            background: #4CAF50;
+        }
+        
+        .btn-run:hover {
+            background: #45a049;
+        }
+        
+        .btn-clear {
+            background: #f44336;
+        }
+        
+        .btn-clear:hover {
+            background: #d32f2f;
+        }
+        
+        .btn-share {
+            background: #9c27b0;
+        }
+        
+        .btn-share:hover {
+            background: #7b1fa2;
+        }
+        
+        .btn-save {
+            background: #ff9800;
+        }
+        
+        .btn-save:hover {
+            background: #f57c00;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+            min-height: 0;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #3c3c3c;
+        }
+        
+        .editor-header {
+            padding: 10px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3c3c3c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .editor-header h3 {
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .editor-header i {
+            color: #007acc;
+        }
+        
+        .editor-wrapper {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        #editor {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .output-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #3c3c3c;
+        }
+        
+        .output-header {
+            padding: 10px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3c3c3c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .output-header h3 {
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .output-header i {
+            color: #4CAF50;
+        }
+        
+        .output-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            background: #333;
+        }
+        
+        .btn-small:hover {
+            background: #444;
+        }
+        
+        #output {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .status-bar {
+            padding: 8px 20px;
+            background: #007acc;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 4px;
+        }
+        
+        .tab-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab.active {
+            background: #1e1e1e;
+            border-bottom: 1px solid #1e1e1e;
+            margin-bottom: -1px;
+        }
+        
+        .tab i {
+            font-size: 12px;
+        }
+        
+        .snippets-panel {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background: #252526;
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .snippets-panel h4 {
+            margin-bottom: 15px;
+            color: #007acc;
+            font-size: 16px;
+        }
+        
+        .snippet-item {
+            padding: 10px;
+            background: #2d2d2d;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .snippet-item:hover {
+            background: #3c3c3c;
+        }
+        
+        .snippet-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #4CAF50;
+        }
+        
+        .snippet-desc {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .loader {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007acc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1002;
+        }
+        
+        .toast.error {
+            background: #f44336;
+        }
+        
+        .toast.warning {
+            background: #ff9800;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .editor-container, .output-container {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fab fa-js-square"></i>
+                <h1>TypeScript Online Compiler</h1>
+            </div>
+            <div class="controls">
+                <button class="btn btn-save" id="btn-save">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button class="btn btn-share" id="btn-share">
+                    <i class="fas fa-share-alt"></i> Share
+                </button>
+                <button class="btn btn-clear" id="btn-clear">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+                <button class="btn btn-run" id="btn-run">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="editor-container">
+                <div class="editor-header">
+                    <h3><i class="fas fa-code"></i> TypeScript Editor</h3>
+                    <div class="output-actions">
+                        <button class="btn btn-small" id="btn-snippets">
+                            <i class="fas fa-code"></i> Snippets
+                        </button>
+                        <button class="btn btn-small" id="btn-format">
+                            <i class="fas fa-align-left"></i> Format
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-wrapper">
+                    <div id="editor">
+                </div>
+            </div>
+            
+            <div class="output-container">
+                <div class="output-header">
+                    <h3><i class="fas fa-terminal"></i> Output</h3>
+                    <div class="output-actions">
+                        <button class="btn btn-small" id="btn-clear-output">
+                            <i class="fas fa-trash"></i> Clear Output
+                        </button>
+                        <button class="btn btn-small" id="btn-copy-output">
+                            <i class="fas fa-copy"></i> Copy Output
+                        </button>
+                    </div>
+                </div>
+                <div id="output">
+                    // Output will appear here after running your code
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="status">Ready</span>
+            <span id="line-info">Line: 1, Column: 1</span>
+        </div>
+    </div>
+    
+    <div class="snippets-panel" id="snippets-panel">
+        <h4><i class="fas fa-code"></i> Code Snippets</h4>
+        <div class="snippet-item" data-snippet="basic">
+            <div class="snippet-title">Basic TypeScript</div>
+            <div class="snippet-desc">Simple interface and function example</div>
+        </div>
+        <div class="snippet-item" data-snippet="class">
+            <div class="snippet-title">Class Example</div>
+            <div class="snippet-desc">TypeScript class with methods</div>
+        </div>
+        <div class="snippet-item" data-snippet="generic">
+            <div class="snippet-title">Generic Function</div>
+            <div class="snippet-desc">Generic type example</div>
+        </div>
+        <div class="snippet-item" data-snippet="async">
+            <div class="snippet-title">Async/Await</div>
+            <div class="snippet-desc">Asynchronous TypeScript code</div>
+        </div>
+        <div class="snippet-item" data-snippet="dom">
+            <div class="snippet-title">DOM Manipulation</div>
+            <div class="snippet-desc">TypeScript with HTML DOM</div>
+        </div>
+        <div class="snippet-item" data-snippet="react">
+            <div class="snippet-title">React Component</div>
+            <div class="snippet-desc">Simple React component in TSX</div>
+        </div>
+    </div>
+    
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+    </div>
+    
+    <div class="toast" id="toast">Message</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs/loader.min.js"></script>
+    <script src="compiler.js"></script>
+</body>
+</html>
