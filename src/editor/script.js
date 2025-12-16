@@ -1091,32 +1091,32 @@ require(["vs/editor/editor.main"], async function () {
         item.classList.add("active");
 
         // // Switch Monaco language
-         switchLanguage(langKey);
+        switchLanguage(langKey);
     });
 
     function switchLanguage(lang) {
-        console.log("Navigation called with lang:", lang);
-        console.log("Current location:", window.location.href);
-        // alert( window.location.href)
-        console.log("Current location:", window.location.href);
+
 
         switch (lang) {
             case "javascript":
                 window.location.href = "/src/editor/index.html";
                 break;
-        
+
             case "typescript":
                 window.location.href = "/src/typescript/index.html"; // Leading slash!
                 break;
-        
+
             case "html":
                 window.location.href = "/src/html/index.html";
                 break;
-        
+            case "react":
+                window.location.href = "/src/react/index.html";
+                break;
             case "json":
                 window.location.href = "/src/json/index.html";
                 break;
-        
+
+
             default:
                 console.warn(`No runner defined for ${lang}`);
         }
@@ -1141,7 +1141,7 @@ require(["vs/editor/editor.main"], async function () {
             addLogEntry("⏸️ Auto-execution disabled", "warn");
         }
     });
-  
+
     function addDebugButton() {
         const debugBtn = document.createElement('button');
         debugBtn.textContent = '🔧 Debug Socket';
