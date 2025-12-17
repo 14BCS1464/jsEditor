@@ -374,32 +374,32 @@ require(["vs/editor/editor.main"], async function () {
         ]
     };
 
-    const container = document.querySelector('.container');
-    const rowLayoutBtn = document.getElementById('rowLayout');
-    const columnLayoutBtn = document.getElementById('columnLayout');
+    // const container = document.querySelector('.container');
+    // const rowLayoutBtn = document.getElementById('rowLayout');
+    // const columnLayoutBtn = document.getElementById('columnLayout');
 
-    const savedLayout = localStorage.getItem('editorLayout') || 'row';
-    if (savedLayout === 'column') {
-        container.classList.add('column-layout');
-        rowLayoutBtn.classList.remove('active');
-        columnLayoutBtn.classList.add('active');
-    }
+    // const savedLayout = localStorage.getItem('editorLayout') || 'row';
+    // if (savedLayout === 'column') {
+    //     container.classList.add('column-layout');
+    //     rowLayoutBtn.classList.remove('active');
+    //     columnLayoutBtn.classList.add('active');
+// }
 
-    rowLayoutBtn.addEventListener('click', function () {
-        container.classList.remove('column-layout');
-        rowLayoutBtn.classList.add('active');
-        columnLayoutBtn.classList.remove('active');
-        localStorage.setItem('editorLayout', 'row');
-        setTimeout(() => editor.layout(), 100);
-    });
+    // rowLayoutBtn.addEventListener('click', function () {
+    //     container.classList.remove('column-layout');
+    //     rowLayoutBtn.classList.add('active');
+    //     columnLayoutBtn.classList.remove('active');
+    //     localStorage.setItem('editorLayout', 'row');
+    //     setTimeout(() => editor.layout(), 100);
+    // });
 
-    columnLayoutBtn.addEventListener('click', function () {
-        container.classList.add('column-layout');
-        rowLayoutBtn.classList.remove('active');
-        columnLayoutBtn.classList.add('active');
-        localStorage.setItem('editorLayout', 'column');
-        setTimeout(() => editor.layout(), 100);
-    });
+    // columnLayoutBtn.addEventListener('click', function () {
+    //     container.classList.add('column-layout');
+    //     rowLayoutBtn.classList.remove('active');
+    //     columnLayoutBtn.classList.add('active');
+    //     localStorage.setItem('editorLayout', 'column');
+    //     setTimeout(() => editor.layout(), 100);
+    // });
 
 
 
@@ -543,7 +543,7 @@ require(["vs/editor/editor.main"], async function () {
         controlsDiv.appendChild(toggleBtn);
     }
 
-    createAutoExecuteToggle();
+    //createAutoExecuteToggle();
 
 
 
