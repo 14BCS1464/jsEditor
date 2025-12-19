@@ -1,16 +1,12 @@
 let editor;
 let outputElement;
-let statusElement;
 let lineInfoElement;
-let loader;
 let toast;
-let logCount = 0;
+let autoSaveInterval;
 
 document.addEventListener("DOMContentLoaded", async () => {
     outputElement = document.getElementById("output");
-    statusElement = document.getElementById("status");
     lineInfoElement = document.getElementById("line-info");
-    loader = document.getElementById("loader");
     toast = document.getElementById("toast");
 
     await loadMonacoEditor();
@@ -18,237 +14,332 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadSavedCode();
     loadCodeFromURL();
 
-    showToast("TypeScript Online Compiler Ready", "success");
+    showToast("TypeScript Editor Ready");
 });
 
-async function loadMonacoEditor() {
-    return new Promise((resolve) => {
+/* ===============================
+   MONACO SETUP WITH ERROR DECORATIONS
+================================ */
+function loadMonacoEditor() {
+    return new Promise(resolve => {
+        const code = localStorage.getItem("typescript_code");
         require.config({
             paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs" }
         });
 
         require(["vs/editor/editor.main"], () => {
             editor = monaco.editor.create(document.getElementById("editor"), {
-                value: `interface User {
-    name: string;
-    age: number;
+                value: code || `interface User {
+  name: string;
+  age: number;
 }
 
 const user: User = { name: "Alice", age: 30 };
-console.log(user);`,
+console.log("User:", user);
+`,
                 language: "typescript",
                 theme: "vs-dark",
-                fontSize: 17,
+                fontSize: 18,
                 fontFamily: "monospace",
-                fontWeight: "normal",
-                lineHeight: 1.5,
-                addLineNumbers: true,
-                lineNumbersMinChars: 3,
-                roundedSelection: false,
-                readOnly: false,
-                suggestOnTriggerCharacters: true,
-
-                scrollBeyondLastLine: false,
-                minimap: {
-                    enabled: false
-                },
-                glyphMargin: true,
-                folding: true,
-
                 automaticLayout: true,
-                target: "es2020",
-                lib: ["es2020", "dom", "dom.iterable"],
-                module: "esnext",
-                moduleResolution: "node",
-                strict: true,
-                esModuleInterop: true,
-                skipLibCheck: true,
-                forceConsistentCasingInFileNames: true,
-                resolveJsonModule: true,
-                allowSyntheticDefaultImports: true,
-                allowJs: true,
-                checkJs: false,
-                jsx: "ts.JsxEmit.Preserve",
-                declaration: false,
-
-                // Editor specific settings
+                minimap: { enabled: false },
                 tabSize: 2,
+                quickSuggestions: { other: true, comments: false, strings: true },
+                suggestOnTriggerCharacters: true,
+                parameterHints: { enabled: true },
+                hover: { enabled: true },
                 formatOnType: true,
-                autoIndent: "full",
-                semanticHighlighting: {
-                    enabled: true
-                },
-                quickSuggestions: {
-                    other: true,
-                    comments: false,
-                    strings: true
-                },
-                parameterHints: {
-                    enabled: true
-                },
-                suggest: {
-                    includeCompletionsForModuleExports: true,
-                    includeAutomaticOptionalChainCompletions: true,
-                    includeCompletionsWithInsertText: true,
-                    snippetsPreventQuickSuggestions: false,
-                    localityBonus: true,
-                    shareSuggestSelections: true,
-                    showIcons: true,
-                    preview: true,
-                    previewMode: "subword"
-                },
-                inlayHints: {
-                    enabled: true,
-                    includeInlayEnumMemberValueHints: true,
-                    includeInlayFunctionLikeReturnTypeHints: true,
-                    includeInlayFunctionParameterTypeHints: true,
-                    includeInlayParameterNameHints: "all",
-                    includeInlayParameterNameHintsWhenArgumentMatchesName: true,
-                    includeInlayPropertyDeclarationTypeHints: true,
-                    includeInlayVariableTypeHints: true
-                },
-                diagnostics: {
-                    enable: true,
-                    strict: true
-                },
-                hover: {
-                    enabled: true,
-                    delay: 300,
-                    sticky: true
-                }
-
-            });
-
-            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                formatOnPaste: true,
+                noSemanticValidation: false,
                 target: monaco.languages.typescript.ScriptTarget.ES2020,
-                strict: true
+                module: monaco.languages.typescript.ModuleKind.ESNext,
+                strict: true,
+                lib: ["es2020", "dom"],
+                noEmit: true,
+                esModuleInterop: true,
+                skipLibCheck: true
             });
 
+
+
+            // Track cursor position
             editor.onDidChangeCursorPosition(e => {
                 lineInfoElement.textContent =
                     `Line: ${e.position.lineNumber}, Column: ${e.position.column}`;
             });
+
+            // AUTO-SAVE: Save to localStorage on every change
+            editor.onDidChangeModelContent(() => {
+                autoSaveCode();
+                highlightTypeScriptErrors();
+            });
+
+            // Initial error highlighting
+            highlightTypeScriptErrors();
 
             resolve();
         });
     });
 }
 
-languageList.addEventListener("click", (e) => {
-    const item = e.target.closest("li");
-    if (!item) return;
+highlightTypeScriptErrors()
 
-    const langKey = item.dataset.lang; // "javascript", "typescript", etc.
-    if (!langKey) return;
+/* ===============================
+   AUTO-SAVE TO LOCAL STORAGE
+================================ */
+function autoSaveCode() {
+    const code = editor.getValue();
 
-    console.log("Selected language:", langKey);
-    language = langKey
-
-    // UI: active state
-    document
-        .querySelectorAll("#languageList li")
-        .forEach(li => li.classList.remove("active"));
-
-    item.classList.add("active");
-
-    // // Switch Monaco language
-    switchLanguage(langKey);
-});
-
-function switchLanguage(lang) {
-
-
-    switch (lang) {
-        case "javascript":
-            window.location.href = "/src/editor/index.html";
-            break;
-
-        case "typescript":
-            window.location.href = "/src/typescript/index.html"; // Leading slash!
-            break;
-
-        case "html":
-            window.location.href = "/src/html/index.html";
-            break;
-        case "react":
-            window.location.href = "/src/react/index.html";
-            break;
-        case "json":
-            window.location.href = "/src/json/index.html";
-            break;
-
-
-        default:
-            console.warn(`No runner defined for ${lang}`);
-    }
+    localStorage.setItem(`typescript_code`, code);
+    // localStorage.setItem("last_language", currentLang);
 }
-const toggle = document.getElementById("autoExecuteToggle");
-const label = document.getElementById("autoExecuteLabel");
 
+/* ===============================
+   TYPESCRIPT ERROR HIGHLIGHTING
+================================ */
+function highlightTypeScriptErrors() {
+    monaco.languages.typescript.getTypeScriptWorker()
+        .then(worker => worker(editor.getModel().uri))
+        .then(client => {
+            return Promise.all([
+                client.getSyntacticDiagnostics(editor.getModel().uri.toString()),
+                client.getSemanticDiagnostics(editor.getModel().uri.toString())
+            ]);
+        })
+        .then(([syntactic, semantic]) => {
+            const allDiagnostics = [...syntactic, ...semantic];
+
+            // Create decorations for errors
+            const decorations = allDiagnostics.map(diagnostic => {
+                const startPos = editor.getModel().getPositionAt(diagnostic.start);
+                const endPos = editor.getModel().getPositionAt(diagnostic.start + diagnostic.length);
+
+                return {
+                    range: new monaco.Range(
+                        startPos.lineNumber,
+                        startPos.column,
+                        endPos.lineNumber,
+                        endPos.column
+                    ),
+                    options: {
+                        inlineClassName: 'typescript-error-inline',
+                        className: 'typescript-error-line',
+                        hoverMessage: { value: diagnostic.messageText },
+                        glyphMarginClassName: 'typescript-error-glyph'
+                    }
+                };
+            });
+
+            // Apply decorations with red underlines
+            editor.deltaDecorations([], decorations);
+
+            // Add custom CSS for red underlines if not already added
+            if (!document.getElementById('monaco-error-styles')) {
+                const style = document.createElement('style');
+                style.id = 'monaco-error-styles';
+                style.textContent = `
+                    .typescript-error-inline {
+                        text-decoration: wavy underline red;
+                        text-decoration-skip-ink: none;
+                    }
+                    .typescript-error-line {
+                        background-color: rgba(255, 0, 0, 0.1);
+                    }
+                    .typescript-error-glyph {
+                        background-color: #ef4444;
+                        width: 4px !important;
+                        margin-left: 3px;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        })
+        .catch(err => {
+            console.error('Error highlighting TypeScript errors:', err);
+        });
+}
+
+/* ===============================
+   EVENTS
+================================ */
 function setupEventListeners() {
     document.getElementById("btn-run").onclick = runCode;
-    document.getElementById("btn-clear").onclick = () => editor.setValue("");
-    document.getElementById("btn-clear-output").onclick = () => outputElement.innerHTML = "";
+    document.getElementById("btn-clear").onclick = () => {
+        editor.setValue("");
+        outputElement.innerHTML = "";
+        autoSaveCode();
+    };
     document.getElementById("btn-save").onclick = saveCode;
     document.getElementById("btn-share").onclick = shareCode;
+
+    document.getElementById("languageList").onclick = e => {
+        const li = e.target.closest("li");
+        if (!li) return;
+        document.querySelectorAll("#languageList li").forEach(x => x.classList.remove("active"));
+        li.classList.add("active");
+        switchLanguage(li.dataset.lang);
+    };
 }
 
+/* ===============================
+   RUN CODE
+================================ */
 function runCode() {
-    const tsCode = editor.getValue();
     outputElement.innerHTML = "";
-
     try {
-        const jsCode = ts.transpile(tsCode);
+        const jsCode = ts.transpile(editor.getValue());
         overrideConsole();
-        eval(jsCode);
+        new Function(jsCode)();
         restoreConsole();
+        showToast("Code executed successfully");
     } catch (e) {
-        addLog(e.message, "error");
+        restoreConsole();
+        renderLog([e.message], "error");
+        showToast("Execution error");
     }
 }
 
+/* ===============================
+   DECORATIVE CONSOLE
+================================ */
 function overrideConsole() {
     console._log = console.log;
-    console.log = (...args) => addLog(args.join(" "), "log");
+    console._error = console.error;
+    console._warn = console.warn;
+    console._info = console.info;
+
+    console.log = (...args) => renderLog(args, "log");
+    console.error = (...args) => renderLog(args, "error");
+    console.warn = (...args) => renderLog(args, "warn");
+    console.info = (...args) => renderLog(args, "info");
 }
 
 function restoreConsole() {
     console.log = console._log;
+    console.error = console._error;
+    console.warn = console._warn;
+    console.info = console._info;
 }
 
-function addLog(message, type) {
-    const div = document.createElement("div");
-    div.className = `log-entry ${type}`;
-    div.textContent = message;
-    outputElement.appendChild(div);
+function renderLog(args, type) {
+    const entry = document.createElement("div");
+    entry.className = `console-entry ${type}`;
+
+    const header = document.createElement("div");
+    header.className = "console-header";
+    header.innerHTML = `
+    <span class="badge ${type}">${type}</span>
+    <span class="time">${new Date().toLocaleTimeString()}</span>
+  `;
+
+    const body = document.createElement("div");
+    body.className = "console-body";
+
+    args.forEach(arg => body.appendChild(formatValue(arg)));
+
+    entry.appendChild(header);
+    entry.appendChild(body);
+    outputElement.appendChild(entry);
+    outputElement.scrollTop = outputElement.scrollHeight;
 }
 
-function showToast(msg, type) {
-    toast.textContent = msg;
-    toast.className = `toast ${type}`;
-    toast.style.display = "block";
-    setTimeout(() => toast.style.display = "none", 2500);
+function formatValue(value) {
+    const el = document.createElement("div");
+    el.className = "console-value";
+
+    if (typeof value === "object" && value !== null) {
+        const d = document.createElement("details");
+        const s = document.createElement("summary");
+        s.textContent = Array.isArray(value) ? `Array(${value.length})` : "Object";
+        const pre = document.createElement("pre");
+        pre.textContent = JSON.stringify(value, null, 2);
+        d.append(s, pre);
+        el.appendChild(d);
+    } else {
+        el.textContent = String(value);
+    }
+    return el;
 }
 
+/* ===============================
+   STORAGE / SHARE
+================================ */
 function saveCode() {
-    localStorage.setItem("ts_code", editor.getValue());
-    showToast("Code saved", "success");
+    autoSaveCode();
+    showToast("Code saved manually");
 }
 
 function loadSavedCode() {
-    const saved = localStorage.getItem("ts_code");
-    if (saved) editor.setValue(saved);
+    const currentLang = document.querySelector("#languageList li.active")?.dataset.lang || "typescript";
+    const code = localStorage.getItem(`code_${currentLang}`);
+    if (code) {
+        editor.setValue(code);
+        showToast("Previous code restored");
+    }
 }
 
 function shareCode() {
     const encoded = btoa(editor.getValue());
-    const url = `${location.origin}${location.pathname}?code=${encoded}`;
-    navigator.clipboard.writeText(url);
-    showToast("URL copied", "success");
+    const shareUrl = `${location.origin}${location.pathname}?code=${encoded}`;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            showToast("Share URL copied to clipboard");
+        }).catch(() => {
+            showToast("Failed to copy URL");
+        });
+    } else {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast("Share URL copied to clipboard");
+    }
 }
 
 function loadCodeFromURL() {
-    const params = new URLSearchParams(location.search);
-    const code = params.get("code");
-    if (code) editor.setValue(atob(code));
+    const code = new URLSearchParams(location.search).get("code");
+    if (code) {
+        try {
+            editor.setValue(atob(code));
+            showToast("Code loaded from URL");
+        } catch (e) {
+            showToast("Failed to load code from URL");
+        }
+    }
+}
+
+/* ===============================
+   LANGUAGE SWITCH
+================================ */
+function switchLanguage(lang) {
+    // Save current code before switching
+    autoSaveCode();
+
+    const routes = {
+        javascript: "/src/editor/index.html",
+        typescript: "/src/typescript/index.html",
+        html: "/src/html/index.html",
+        react: "/src/react/index.html",
+        json: "/src/json/index.html"
+    };
+    if (routes[lang]) window.location.href = routes[lang];
+}
+
+/* ===============================
+   UI
+================================ */
+function showToast(msg) {
+    toast.textContent = msg;
+    toast.style.display = "block";
+    toast.style.opacity = "1";
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => {
+            toast.style.display = "none";
+        }, 300);
+    }, 2000);
 }
