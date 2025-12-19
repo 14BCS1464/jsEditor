@@ -383,7 +383,7 @@ require(["vs/editor/editor.main"], async function () {
     //     container.classList.add('column-layout');
     //     rowLayoutBtn.classList.remove('active');
     //     columnLayoutBtn.classList.add('active');
-    // }
+// }
 
     // rowLayoutBtn.addEventListener('click', function () {
     //     container.classList.remove('column-layout');
@@ -1242,7 +1242,7 @@ require(["vs/editor/editor.main"], async function () {
         controlsDiv.appendChild(copyBtn);
     }
 
-    // addCopyRoomButton();
+    addCopyRoomButton();
 
     monaco.languages.registerCompletionItemProvider("javascript", {
         provideCompletionItems: () => {

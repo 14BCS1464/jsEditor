@@ -1,3 +1,20 @@
+:root {
+    --primary-color: #6c5ce7;
+    --secondary-color: #00cec9;
+    --dark-bg: #0f0f17;
+    --card-bg: #1a1a25;
+    --text-primary: #f1f1f1;
+    --text-secondary: #a0a0a0;
+    --success: #00b894;
+    --warning: #fdcb6e;
+    --danger: #ff7675;
+    --border-radius: 16px;
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,25 +23,37 @@
 
 html,
 body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: #e0e0e0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+
+    min-height: 100vh;
+
+    line-height: 1.6;
+    overflow-x: hidden;
+
+
 }
 
 .container {
     height: 100vh;
     display: flex;
     flex-direction: column;
+
+    background: var(--dark-bg);
+
 }
 
 header {
     padding: 15px 20px;
     background: rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 header h2 {
@@ -42,9 +71,11 @@ header h2 {
 .controls {
     background: rgba(255, 255, 255, 0.05);
     padding: 10px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
     justify-content: center;
-    align-items: :center;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
 }
 
 .button-group {
