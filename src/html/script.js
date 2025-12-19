@@ -23,6 +23,14 @@ let resizeHandle, bottomPanel, welcomeScreen, lineNumberElements;
 let resizeTimeout;
 let isResizing = false;
 
+// Storage keys
+const STORAGE_KEYS = {
+    FILES: 'codeEditor_files',
+    STATE: 'codeEditor_state',
+    LAYOUT: 'codeEditor_layout',
+    LAST_ACTIVE_FILE: 'codeEditor_lastActiveFile'
+};
+
 // Initialize the editor
 function init() {
     // Get DOM elements
@@ -34,17 +42,15 @@ function init() {
     resizeHandle = document.getElementById('resizeHandle');
     bottomPanel = document.getElementById('bottomPanel');
     welcomeScreen = document.getElementById('welcomeScreen');
-    
+
     lineNumberElements = {
         'html': document.getElementById('htmlLineNumbers'),
         'css': document.getElementById('cssLineNumbers'),
         'js': document.getElementById('jsLineNumbers')
     };
 
-    // Initialize state with textarea values
-    state.files['index.html'] = document.getElementById('htmlCode').value;
-    state.files['style.css'] = document.getElementById('cssCode').value;
-    state.files['script.js'] = document.getElementById('jsCode').value;
+    // Load saved state from localStorage
+    loadSavedState();
 
     // Set up event listeners
     setupEventListeners();
@@ -62,6 +68,178 @@ function init() {
 
     // Update status
     updateStatus();
+
+    // Auto-save state on page unload
+    window.addEventListener('beforeunload', saveState);
+}
+
+// Load saved state from localStorage
+function loadSavedState() {
+    try {
+        // Load files
+        const savedFiles = localStorage.getItem(STORAGE_KEYS.FILES);
+        if (savedFiles) {
+            const parsedFiles = JSON.parse(savedFiles);
+            Object.keys(parsedFiles).forEach(key => {
+                if (state.files.hasOwnProperty(key)) {
+                    state.files[key] = parsedFiles[key] || '';
+                }
+            });
+        }
+
+        // Load editor state
+        const savedState = localStorage.getItem(STORAGE_KEYS.STATE);
+        if (savedState) {
+            const parsedState = JSON.parse(savedState);
+            Object.keys(parsedState).forEach(key => {
+                if (state.hasOwnProperty(key) && key !== 'files' && key !== 'fileDirty') {
+                    state[key] = parsedState[key];
+                }
+            });
+        }
+
+        // Load layout preferences
+        const savedLayout = localStorage.getItem(STORAGE_KEYS.LAYOUT);
+        if (savedLayout) {
+            const layout = JSON.parse(savedLayout);
+
+            // Apply layout preferences
+            if (layout.previewWidth) {
+                previewPanel.style.width = `${layout.previewWidth}px`;
+            }
+
+            if (typeof layout.previewVisible === 'boolean') {
+                state.previewVisible = layout.previewVisible;
+                previewPanel.classList.toggle('collapsed', !state.previewVisible);
+            }
+
+            if (typeof layout.bottomPanelVisible === 'boolean') {
+                state.bottomPanelVisible = layout.bottomPanelVisible;
+                bottomPanel.classList.toggle('expanded', layout.bottomPanelVisible);
+            }
+
+            if (typeof layout.sidebarExpanded === 'boolean') {
+                state.sidebarExpanded = layout.sidebarExpanded;
+                sidebar.classList.toggle('expanded', layout.sidebarExpanded);
+            }
+        }
+
+        // Load last active file
+        const lastActiveFile = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVE_FILE);
+        if (lastActiveFile && state.files.hasOwnProperty(lastActiveFile)) {
+            state.activeFile = lastActiveFile;
+        }
+
+        // Update textareas with loaded content
+        document.getElementById('htmlCode').value = state.files['index.html'];
+        document.getElementById('cssCode').value = state.files['style.css'];
+        document.getElementById('jsCode').value = state.files['script.js'];
+
+        // Update tab states
+        updateTabStates();
+
+        // Update UI controls based on loaded state
+        updateUIFromState();
+
+        console.log('State loaded from localStorage');
+    } catch (error) {
+        console.error('Error loading saved state:', error);
+        // Keep default state if loading fails
+    }
+}
+
+// Update tab states based on loaded state
+function updateTabStates() {
+    document.querySelectorAll('.tab').forEach(tab => {
+        const file = tab.dataset.file;
+        tab.classList.toggle('active', file === state.activeFile);
+        tab.classList.toggle('dirty', state.fileDirty[file]);
+    });
+
+    document.querySelectorAll('.code-editor').forEach(editor => {
+        editor.classList.toggle('active', editor.id === state.activeFile);
+    });
+}
+
+// Update UI controls from loaded state
+function updateUIFromState() {
+    // Update auto-run status
+    const autoRunStatus = document.getElementById('autoRunStatus');
+    if (autoRunStatus) {
+        autoRunStatus.querySelector('span').textContent = `Auto-Run: ${state.autoRun ? 'ON' : 'OFF'}`;
+    }
+
+    const autoRunBtn = document.getElementById('autoRunBtn');
+    if (autoRunBtn) {
+        autoRunBtn.textContent = state.autoRun ? 'Auto-Run: ON' : 'Auto-Run: OFF';
+        autoRunBtn.classList.toggle('active', state.autoRun);
+    }
+
+    // Update preview toggle button
+    const togglePreviewBtn = document.getElementById('togglePreviewPanel');
+    if (togglePreviewBtn) {
+        togglePreviewBtn.innerHTML = state.previewVisible ?
+            '<i class="fas fa-times"></i>' :
+            '<i class="fas fa-columns"></i>';
+        togglePreviewBtn.title = state.previewVisible ? 'Hide Preview' : 'Show Preview';
+    }
+
+    // Update bottom panel toggle button
+    const bottomPanelToggle = document.getElementById('toggleBottomPanel');
+    if (bottomPanelToggle) {
+        const icon = bottomPanelToggle.querySelector('i');
+        if (icon) {
+            icon.className = state.bottomPanelVisible ?
+                'fas fa-chevron-down' : 'fas fa-chevron-up';
+        }
+    }
+
+    // Update language status
+    const ext = state.activeFile.split('.').pop();
+    const languageStatus = document.getElementById('languageStatus');
+    if (languageStatus) {
+        languageStatus.querySelector('span').textContent = ext.toUpperCase();
+    }
+}
+
+// Save all state to localStorage
+function saveState() {
+    try {
+        // Save files
+        localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(state.files));
+
+        // Save editor state (excluding files and fileDirty)
+        const stateToSave = {
+            autoRun: state.autoRun,
+            activeFile: state.activeFile,
+            previewVisible: state.previewVisible,
+            bottomPanelVisible: state.bottomPanelVisible,
+            sidebarExpanded: state.sidebarExpanded
+        };
+        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(stateToSave));
+
+        // Save layout preferences
+        const layoutToSave = {
+            previewWidth: parseInt(previewPanel.style.width) || 500,
+            previewVisible: state.previewVisible,
+            bottomPanelVisible: state.bottomPanelVisible,
+            sidebarExpanded: state.sidebarExpanded
+        };
+        localStorage.setItem(STORAGE_KEYS.LAYOUT, JSON.stringify(layoutToSave));
+
+        // Save last active file separately for quick access
+        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_FILE, state.activeFile);
+
+        console.log('State saved to localStorage');
+    } catch (error) {
+        console.error('Error saving state:', error);
+    }
+}
+
+// Debounced save function for frequent updates
+function debouncedSave() {
+    clearTimeout(debouncedSave.timeout);
+    debouncedSave.timeout = setTimeout(saveState, 1000);
 }
 
 // Set up all event listeners
@@ -97,7 +275,7 @@ function setupEventListeners() {
         });
     });
 
-    // Code editor input
+    // Code editor input - with auto-save
     document.querySelectorAll('.code-area').forEach(textarea => {
         textarea.addEventListener('input', (e) => {
             const file = e.target.parentElement.id;
@@ -120,6 +298,9 @@ function setupEventListeners() {
 
             // Update cursor position
             updateCursorPosition(e.target);
+
+            // Save to localStorage (debounced)
+            debouncedSave();
         });
 
         // Track cursor position
@@ -136,6 +317,7 @@ function setupEventListeners() {
     document.getElementById('autoRunStatus').addEventListener('click', toggleAutoRun);
     document.getElementById('toggleBottomPanel').addEventListener('click', toggleBottomPanel);
 
+    document.getElementById('languageList').addEventListener('click', chooseLanguage);
     // Resize handle
     resizeHandle.addEventListener('mousedown', startResizing);
 
@@ -186,6 +368,58 @@ function setupEventListeners() {
             togglePreview();
         }
     });
+
+    // Save state on resize end
+    resizeHandle.addEventListener('mouseup', () => {
+        debouncedSave();
+    });
+}
+
+function chooseLanguage(e) {
+    const item = e.target.closest("li");
+    if (!item) return;
+
+    const langKey = item.dataset.lang; // "javascript", "typescript", etc.
+    if (!langKey) return;
+
+    console.log("Selected language:", langKey);
+    language = langKey
+
+    // UI: active state
+    document
+        .querySelectorAll("#languageList li")
+        .forEach(li => li.classList.remove("active"));
+
+    item.classList.add("active");
+
+    // // Switch Monaco language
+    switchLanguage(langKey);
+
+}
+
+function switchLanguage(lang) {
+    switch (lang) {
+        case "javascript":
+            window.location.href = "/src/editor/index.html";
+            break;
+
+        case "typescript":
+            window.location.href = "/src/typescript/index.html"; // Leading slash!
+            break;
+
+        case "html":
+            window.location.href = "/src/html/index.html";
+            break;
+        case "react":
+            window.location.href = "/src/react/index.html";
+            break;
+        case "json":
+            window.location.href = "/src/json/index.html";
+            break;
+
+        default:
+            console.warn(`No runner defined for ${lang}`);
+    }
 }
 
 // Tab management
@@ -203,6 +437,9 @@ function switchTab(file) {
     // Update state
     state.activeFile = file;
 
+    // Save active file to localStorage
+    localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_FILE, file);
+
     // Update status bar language
     const ext = file.split('.').pop();
     document.getElementById('languageStatus').querySelector('span').textContent = ext.toUpperCase();
@@ -215,6 +452,9 @@ function switchTab(file) {
     if (activeEditor) {
         updateCursorPosition(activeEditor);
     }
+
+    // Save state
+    debouncedSave();
 }
 
 function closeTab(file) {
@@ -233,6 +473,9 @@ function closeTab(file) {
             }
         }
     }
+
+    // Save state after tab close
+    debouncedSave();
 }
 
 // Code execution
@@ -275,6 +518,9 @@ function runCode() {
         if (tab) tab.classList.remove('dirty');
     });
 
+    // Save state after run
+    saveState();
+
     showToast('Preview updated successfully', 'success');
 }
 
@@ -296,6 +542,9 @@ function toggleAutoRun() {
         autoRunBtn.classList.toggle('active', state.autoRun);
     }
 
+    // Save state
+    debouncedSave();
+
     showToast(`Auto-run ${state.autoRun ? 'enabled' : 'disabled'}`, 'info');
 }
 
@@ -307,6 +556,9 @@ function togglePreview() {
         '<i class="fas fa-times"></i>' :
         '<i class="fas fa-columns"></i>';
     toggleBtn.title = state.previewVisible ? 'Hide Preview' : 'Show Preview';
+
+    // Save state
+    debouncedSave();
 }
 
 function toggleBottomPanel() {
@@ -316,12 +568,18 @@ function toggleBottomPanel() {
     toggleBtn.querySelector('i').className = state.bottomPanelVisible ?
         'fas fa-chevron-down' : 'fas fa-chevron-up';
 
+    // Save state
+    debouncedSave();
+
     showToast(`${state.bottomPanelVisible ? 'Showing' : 'Hiding'} bottom panel`, 'info');
 }
 
 function toggleSidebar() {
     state.sidebarExpanded = !state.sidebarExpanded;
     sidebar.classList.toggle('expanded', state.sidebarExpanded);
+
+    // Save state
+    debouncedSave();
 }
 
 function toggleResponsiveMode() {
@@ -347,8 +605,8 @@ function setActiveSidebarItem(activeItem) {
 
 // File operations
 function saveAllFiles() {
-    // In a real app, this would save to a backend or localStorage
-    localStorage.setItem('codeEditor_files', JSON.stringify(state.files));
+    // Save to localStorage
+    saveState();
 
     // Mark all files as clean
     Object.keys(state.fileDirty).forEach(file => {
@@ -513,5 +771,23 @@ window.editor = {
     togglePreview,
     toggleAutoRun,
     saveAllFiles,
-    showToast
+    showToast,
+    // Export saveState for manual saving if needed
+    saveState: function () {
+        saveState();
+        showToast('Editor state saved', 'success');
+    },
+    // Export loadState for manual reloading if needed
+    loadState: function () {
+        loadSavedState();
+        showToast('Editor state loaded', 'info');
+    },
+    // Export clearStorage to reset everything
+    clearStorage: function () {
+        Object.values(STORAGE_KEYS).forEach(key => {
+            localStorage.removeItem(key);
+        });
+        showToast('All saved data cleared', 'warning');
+        location.reload();
+    }
 };

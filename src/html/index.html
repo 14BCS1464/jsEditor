@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Advanced Code Editor - VS Code Style</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+
+    <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
@@ -16,7 +16,7 @@
         <div class="header-left">
             <div class="logo">
                 <i class="fas fa-code"></i>
-                <span>CodeEditor</span>
+                <span>HTML CodeEditor</span>
             </div>
         </div>
         <div class="header-controls">
@@ -34,6 +34,17 @@
     <!-- Main Container -->
     <div class="main-container">
 
+        <div class="language-panel">
+            <div class="language-title">Languages</div>
+            <ul id="languageList">
+                <li data-lang="javascript" onclick="chooseLanguage(event)">JavaScript</li>
+                <li data-lang="typescript" onclick="chooseLanguage(event)">TypeScript</li>
+                <li data-lang="html" class="active" onclick="chooseLanguage(event)">HTML</li>
+                <li data-lang="react" onclick="chooseLanguage(event)">React</li>
+                <li data-lang="json" onclick="chooseLanguage(event)">JSON</li>
+
+            </ul>
+        </div>
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-item" id="togglePreview">
@@ -66,18 +77,18 @@
             <!-- Code Editors -->
             <div class="editor-container">
                 <div class="code-editor active" id="index.html">
-                   
+
                     <div class="editor-header">
                         <span>index.html</span>
                         <div class="editor-actions">
                             <button class="editor-btn" onclick="formatCode('html')">
                                 <i class="fas fa-indent"></i> Format
                             </button>
-                            
+
                         </div>
                     </div>
                     <textarea class="code-area" id="htmlCode" spellcheck="false">
-                        
+
                     </textarea>
                 </div>
 
@@ -147,11 +158,11 @@
     </div>
 
     <!-- Bottom Panel (Terminal/Output) -->
-    
+
 
     <!-- Status Bar -->
     <div class="status-bar">
-      
+
     </div>
 
     <!-- Welcome Screen -->

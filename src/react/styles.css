@@ -511,3 +511,40 @@ button.secondary:hover {
   width: 4px !important;
   margin-left: 3px !important;
 }
+.language-panel {
+    width: 100px;
+    background: #020617;
+    border-left: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .language-title {
+    padding: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #38bdf8;
+    border-bottom: 1px solid #1e293b;
+  }
+  
+  #languageList {
+    list-style: none;
+  }
+  
+  #languageList li {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #cbd5f5;
+  }
+  
+  #languageList li:hover {
+    background: #1e293b;
+  }
+  
+  #languageList li.active {
+    background: #1e293b;
+    color: #22d3ee;
+    font-weight: bold;
+  }
+  
