@@ -185,6 +185,8 @@ pre {
     width: 160px;
     background: #020617;
     border-left: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
 }
 
 .language-title {

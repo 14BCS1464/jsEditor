@@ -46,7 +46,7 @@ console.log("User:", user);
                 tabSize: 2,
                 quickSuggestions: { other: true, comments: false, strings: true },
                 suggestOnTriggerCharacters: true,
-                parameterHints: { enabled: true },
+                parameterHints: { enabled: false },
                 hover: { enabled: true },
                 formatOnType: true,
                 formatOnPaste: true,
@@ -82,7 +82,7 @@ console.log("User:", user);
     });
 }
 
-highlightTypeScriptErrors()
+//highlightTypeScriptErrors()
 
 /* ===============================
    AUTO-SAVE TO LOCAL STORAGE

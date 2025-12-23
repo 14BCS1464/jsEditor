@@ -16,9 +16,7 @@
   --scrollbar-hover: #4a4a4a;
 }
 
-* {
-  box-sizing: border-box;
-}
+
 
 body {
   margin: 0;
@@ -26,7 +24,7 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-dark);
+  background: linear-gradient(135deg, #0f0f17 0%, #1a1a25 100%);
   color: var(--text);
   overflow: hidden;
 }
@@ -431,7 +429,7 @@ body {
   top: 0;
   bottom: 0;
   width: 50px;
-  background: var(--bg-darker);
+  background: 'red';
   color: var(--text-muted);
   font-family: 'Cascadia Code', 'Consolas', monospace;
   font-size: 14px;
@@ -450,7 +448,7 @@ body {
 
 /* Preview Panel */
 .preview-panel {
-  width: 45%;
+  width: 50%;
   background: white;
   display: flex;
   flex-direction: column;
