@@ -142,6 +142,9 @@ console.log("Sum:", sum1);`;
             monaco.editor.onDidChangeMarkers(([resource]) => {
                 if (editor.getModel().uri.toString() === resource.toString()) {
                     updateErrorCountFromMarkers();
+
+                    // Trigger manual check after short delay
+                    checkTypeScriptErrors();
                 }
             });
 
@@ -552,15 +555,29 @@ function setupEventListeners() {
         showToast("Checking types...", "info");
     };
 
-    document.getElementById("languageList").onclick = e => {
-        const li = e.target.closest("li");
-        if (!li) return;
-        document.querySelectorAll("#languageList li").forEach(x => x.classList.remove("active"));
-        li.classList.add("active");
-        switchLanguage(li.dataset.lang);
-    };
-}
+    const languageList = document.getElementById("languageList");
 
+}
+languageList.addEventListener("click", (e) => {
+    const item = e.target.closest("li");
+    if (!item) return;
+
+    const langKey = item.dataset.lang; // "javascript", "typescript", etc.
+    if (!langKey) return;
+
+    console.log("Selected language:", langKey);
+    language = langKey
+
+    // UI: active state
+    document
+        .querySelectorAll("#languageList li")
+        .forEach(li => li.classList.remove("active"));
+
+    item.classList.add("active");
+
+    // // Switch Monaco language
+    switchLanguage(langKey);
+});
 /* ===============================
    AUTO-SAVE & STORAGE
 ================================ */
@@ -604,6 +621,7 @@ function shareCode() {
 }
 
 function switchLanguage(lang) {
+
     const routes = {
         javascript: "/src/editor/index.html",
         typescript: "/src/typescript/index.html",
@@ -727,39 +745,7 @@ setTimeout(() => {
     testButton.className = 'test-button';
     testButton.textContent = '🧪 Test Type Checking';
     testButton.onclick = () => {
-        const testCode = `// Test TypeScript Type Checking
-interface User {
-    id: number;
-    name: string;
-    active: boolean;
-}
-
-// ❌ ERROR: id should be number, not string
-const user1: User = {
-    id: "123",
-    name: "Alice",
-    active: true
-};
-
-// ✅ CORRECT: All types match
-const user2: User = {
-    id: 456,
-    name: "Bob",
-    active: false
-};
-
-// ❌ ERROR: Missing 'active' property
-const user3: User = {
-    id: 789,
-    name: "Charlie"
-};
-
-function greet(name: string): string {
-    return "Hello, " + name;
-}
-
-// ❌ ERROR: Passing number instead of string
-const result = greet(123);`;
+        const testCode = `console.log("Hello, TypeScript ");`;
 
         editor.setValue(testCode);
         setTimeout(() => {
