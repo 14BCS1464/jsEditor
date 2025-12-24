@@ -4,7 +4,6 @@ let lineInfoElement;
 let toast;
 let errorMarkers = [];
 let typeCheckTimeout;
-let isTypeScriptReady = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
     outputElement = document.getElementById("output");
@@ -69,7 +68,7 @@ console.log("Sum:", sum1);`;
         require(["vs/editor/editor.main"], () => {
             // CRITICAL: Configure TypeScript with STRICT settings
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-                target: monaco.languages.typescript.ScriptTarget.Latest,
+                target: monaco.languages.typescript.ScriptTarget.ES2020,
                 module: monaco.languages.typescript.ModuleKind.ESNext,
                 lib: ["es2020", "dom"],
                 strict: true,
@@ -80,27 +79,27 @@ console.log("Sum:", sum1);`;
                 strictPropertyInitialization: true,
                 noImplicitThis: true,
                 alwaysStrict: true,
-                noUnusedLocals: true,
-                noUnusedParameters: true,
-                noImplicitReturns: true,
+                noUnusedLocals: false,
+                noUnusedParameters: false,
+                noImplicitReturns: false,
                 noFallthroughCasesInSwitch: true,
                 esModuleInterop: true,
                 skipLibCheck: true,
                 forceConsistentCasingInFileNames: true,
-                noEmit: true,
-                allowJs: true,
-                checkJs: false,
-                experimentalDecorators: true,
-                emitDecoratorMetadata: true
+                allowJs: false,
+                checkJs: false
             });
 
-            // Enable ALL diagnostics
+            // Enable ALL diagnostics - CRITICAL for real-time checking
             monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-                noSemanticValidation: false,
-                noSyntaxValidation: false,
+                noSemanticValidation: false,  // MUST be false to check types
+                noSyntaxValidation: false,     // MUST be false to check syntax
                 noSuggestionDiagnostics: false,
                 diagnosticCodesToIgnore: []
             });
+
+            // Set eager model sync
+            monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
 
             editor = monaco.editor.create(document.getElementById("editor"), {
                 value: initialCode,
@@ -139,54 +138,33 @@ console.log("Sum:", sum1);`;
                 updateLineInfo(e.position);
             });
 
-            // REAL-TIME TYPE CHECKING: Trigger on every change with immediate + debounced check
-            editor.onDidChangeModelContent(() => {
-                // Immediate check for fast feedback
-                checkTypeScriptErrors();
+            // Listen to Monaco's built-in marker changes
+            monaco.editor.onDidChangeMarkers(([resource]) => {
+                if (editor.getModel().uri.toString() === resource.toString()) {
+                    updateErrorCountFromMarkers();
+                }
+            });
 
-                // Debounced check for final validation
+            // REAL-TIME TYPE CHECKING: Let Monaco handle it + manual trigger
+            editor.onDidChangeModelContent(() => {
                 clearTimeout(typeCheckTimeout);
+
+                // Trigger manual check after short delay
                 typeCheckTimeout = setTimeout(() => {
                     checkTypeScriptErrors();
-                }, 500);
+                }, 800);
 
                 autoSaveCode();
             });
 
-            // Wait for TypeScript to be ready, then do initial check
-            waitForTypeScriptReady().then(() => {
-                isTypeScriptReady = true;
-                checkTypeScriptErrors();
-                // Schedule additional checks to catch late-loading issues
-                setTimeout(() => checkTypeScriptErrors(), 1000);
-                setTimeout(() => checkTypeScriptErrors(), 2000);
-            });
+            // Initial checks
+            setTimeout(() => checkTypeScriptErrors(), 500);
+            setTimeout(() => checkTypeScriptErrors(), 1500);
+            setTimeout(() => checkTypeScriptErrors(), 3000);
 
             resolve();
         });
     });
-}
-
-// Wait for TypeScript worker to be ready
-async function waitForTypeScriptReady() {
-    const maxAttempts = 20;
-    for (let i = 0; i < maxAttempts; i++) {
-        try {
-            const model = editor.getModel();
-            const uri = model.uri;
-            const worker = await monaco.languages.typescript.getTypeScriptWorker();
-            const client = await worker(uri);
-
-            // Try to get diagnostics - if this works, TypeScript is ready
-            await client.getSyntacticDiagnostics(uri.toString());
-            console.log("TypeScript is ready!");
-            return;
-        } catch (e) {
-            console.log(`Waiting for TypeScript... attempt ${i + 1}`);
-            await new Promise(resolve => setTimeout(resolve, 200));
-        }
-    }
-    console.warn("TypeScript may not be fully ready");
 }
 
 /* ===============================
@@ -194,7 +172,6 @@ async function waitForTypeScriptReady() {
 ================================ */
 async function checkTypeScriptErrors() {
     if (!editor || !editor.getModel()) {
-        console.log("Editor not ready");
         return;
     }
 
@@ -206,69 +183,81 @@ async function checkTypeScriptErrors() {
         const worker = await monaco.languages.typescript.getTypeScriptWorker();
         const client = await worker(uri);
 
-        // Get ALL diagnostics with timeout protection
-        const diagnosticsPromise = Promise.all([
+        // Get ALL diagnostics
+        const [syntactic, semantic] = await Promise.all([
             client.getSyntacticDiagnostics(uri.toString()),
-            client.getSemanticDiagnostics(uri.toString()),
-            client.getSuggestionDiagnostics(uri.toString())
+            client.getSemanticDiagnostics(uri.toString())
         ]);
 
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout")), 5000)
-        );
+        // Combine diagnostics
+        const allDiagnostics = [...syntactic, ...semantic];
 
-        const [syntactic, semantic, suggestion] = await Promise.race([
-            diagnosticsPromise,
-            timeoutPromise
-        ]);
+        console.log(`Type check complete: ${allDiagnostics.length} issues found`);
 
-        // Combine all diagnostics
-        const allDiagnostics = [...syntactic, ...semantic, ...suggestion];
+        // Create markers
+        const markers = allDiagnostics
+            .filter(d => d.start !== undefined && d.length !== undefined)
+            .map(diagnostic => {
+                const startPos = model.getPositionAt(diagnostic.start);
+                const endPos = model.getPositionAt(diagnostic.start + diagnostic.length);
 
-        console.log(`Found ${allDiagnostics.length} diagnostics:`, allDiagnostics);
+                return {
+                    severity: getSeverity(diagnostic.category),
+                    startLineNumber: startPos.lineNumber,
+                    startColumn: startPos.column,
+                    endLineNumber: endPos.lineNumber,
+                    endColumn: endPos.column,
+                    message: getDiagnosticMessage(diagnostic),
+                    code: diagnostic.code ? String(diagnostic.code) : undefined,
+                    source: 'ts'
+                };
+            });
 
-        // Clear previous markers and decorations
-        clearAllErrors();
-
-        if (allDiagnostics.length === 0) {
-            updateErrorCount([]);
-            return;
-        }
-
-        // Create Monaco markers (this is what shows the squiggly lines!)
-        const markers = allDiagnostics.map(diagnostic => {
-            const startPos = model.getPositionAt(diagnostic.start);
-            const endPos = model.getPositionAt(diagnostic.start + diagnostic.length);
-
-            const marker = {
-                severity: getSeverity(diagnostic.category),
-                startLineNumber: startPos.lineNumber,
-                startColumn: startPos.column,
-                endLineNumber: endPos.lineNumber,
-                endColumn: endPos.column,
-                message: getDiagnosticMessage(diagnostic),
-                code: diagnostic.code ? `TS${diagnostic.code}` : undefined,
-                source: 'TypeScript'
-            };
-
-            console.log("Creating marker:", marker);
-            return marker;
-        });
-
-        // Set markers - THIS is what makes the errors appear!
+        // Apply markers - this makes the red squiggly lines appear
         monaco.editor.setModelMarkers(model, 'typescript', markers);
 
-        // Also add custom decorations for additional styling
+        // Add custom decorations
         applyCustomDecorations(allDiagnostics);
 
-        // Update UI with error count
-        updateErrorCount(allDiagnostics);
-
-        console.log(`Applied ${markers.length} markers to editor`);
+        // Update error count
+        updateErrorCountFromMarkers();
 
     } catch (error) {
-        if (error.message !== "Timeout") {
-            console.error("Type checking failed:", error);
+        console.error("Type checking error:", error);
+    }
+}
+
+function updateErrorCountFromMarkers() {
+    if (!editor || !editor.getModel()) return;
+
+    const model = editor.getModel();
+    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+
+    const errorCount = markers.filter(m => m.severity === monaco.MarkerSeverity.Error).length;
+    const warningCount = markers.filter(m => m.severity === monaco.MarkerSeverity.Warning).length;
+
+    const errorElement = document.getElementById('error-count');
+    if (errorElement) {
+        if (errorCount > 0) {
+            errorElement.innerHTML = `
+                <span class="error-count" style="color:#ff4444; font-weight: bold;">
+                    ❌ ${errorCount} error${errorCount !== 1 ? 's' : ''}
+                </span>
+                ${warningCount > 0 ? `<span style="color:#ffaa44; margin-left:10px">
+                    ⚠️ ${warningCount} warning${warningCount !== 1 ? 's' : ''}
+                </span>` : ''}
+            `;
+            errorElement.style.display = 'block';
+        } else if (warningCount > 0) {
+            errorElement.innerHTML = `
+                <span style="color:#ffaa44">
+                    ⚠️ ${warningCount} warning${warningCount !== 1 ? 's' : ''}
+                </span>
+            `;
+            errorElement.style.display = 'block';
+        } else {
+            errorElement.innerHTML = '<span style="color:#4CAF50; font-weight: bold;">✅ No errors</span>';
+            errorElement.style.display = 'block';
         }
     }
 }
@@ -326,24 +315,19 @@ function getDiagnosticMessage(diagnostic) {
         return diagnostic.messageText;
     }
 
-    if (Array.isArray(diagnostic.messageText)) {
-        return diagnostic.messageText.map(m =>
-            typeof m === 'string' ? m : m.messageText
-        ).join('\n');
-    }
-
     if (diagnostic.messageText && diagnostic.messageText.messageText) {
         let message = diagnostic.messageText.messageText;
         let current = diagnostic.messageText.next;
+
         while (current) {
             if (Array.isArray(current)) {
                 current.forEach(item => {
-                    if (item.messageText) {
+                    if (item && item.messageText) {
                         message += '\n' + item.messageText;
                     }
                 });
                 break;
-            } else if (current.messageText) {
+            } else if (current && current.messageText) {
                 message += '\n' + current.messageText;
                 current = current.next;
             } else {
@@ -353,50 +337,7 @@ function getDiagnosticMessage(diagnostic) {
         return message;
     }
 
-    return 'Unknown error';
-}
-
-function clearAllErrors() {
-    // Clear markers
-    const model = editor?.getModel();
-    if (model) {
-        monaco.editor.setModelMarkers(model, 'typescript', []);
-    }
-
-    // Clear decorations
-    if (editor && errorMarkers.length > 0) {
-        errorMarkers = editor.deltaDecorations(errorMarkers, []);
-    }
-}
-
-function updateErrorCount(diagnostics) {
-    const errorCount = diagnostics.filter(d => d.category === 1).length;
-    const warningCount = diagnostics.filter(d => d.category === 2).length;
-
-    const errorElement = document.getElementById('error-count');
-    if (errorElement) {
-        if (errorCount > 0) {
-            errorElement.innerHTML = `
-                <span class="error-count" style="color:#ff4444">
-                    ⚠️ ${errorCount} error${errorCount !== 1 ? 's' : ''}
-                </span>
-                ${warningCount > 0 ? `<span style="color:#ffaa44; margin-left:10px">
-                    ⚠️ ${warningCount} warning${warningCount !== 1 ? 's' : ''}
-                </span>` : ''}
-            `;
-            errorElement.style.display = 'block';
-        } else if (warningCount > 0) {
-            errorElement.innerHTML = `
-                <span style="color:#ffaa44">
-                    ⚠️ ${warningCount} warning${warningCount !== 1 ? 's' : ''}
-                </span>
-            `;
-            errorElement.style.display = 'block';
-        } else {
-            errorElement.innerHTML = '<span style="color:#4CAF50">✓ No errors</span>';
-            errorElement.style.display = 'block';
-        }
-    }
+    return 'Type error';
 }
 
 function updateLineInfo(position) {
@@ -411,16 +352,15 @@ function updateLineInfo(position) {
     let errorInfo = '';
 
     markers.forEach(marker => {
-        if (marker.startLineNumber <= lineNumber &&
-            marker.endLineNumber >= lineNumber &&
+        if (marker.startLineNumber === lineNumber &&
             marker.startColumn <= column &&
             marker.endColumn >= column) {
-            const shortMessage = marker.message.substring(0, 50);
-            errorInfo = ` | ${marker.severity === 8 ? 'Error' : 'Warning'}: ${shortMessage}...`;
+            const shortMessage = marker.message.substring(0, 60);
+            errorInfo = ` | ${marker.severity === 8 ? 'Error' : 'Warning'}: ${shortMessage}`;
         }
     });
 
-    lineInfoElement.textContent = `Line: ${lineNumber}, Column: ${column}${errorInfo}`;
+    lineInfoElement.textContent = `Ln ${lineNumber}, Col ${column}${errorInfo}`;
 }
 
 /* ===============================
@@ -429,30 +369,30 @@ function updateLineInfo(position) {
 function runCode() {
     outputElement.innerHTML = "";
 
-    // Force a type check before running
-    checkTypeScriptErrors();
+    const model = editor.getModel();
+    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+    const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
 
-    // Wait a moment for check to complete, then verify
-    setTimeout(() => {
-        const model = editor.getModel();
-        const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-        const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
+    if (errors.length > 0) {
+        const errorList = errors.slice(0, 3).map(e =>
+            `Line ${e.startLineNumber}: ${e.message.substring(0, 50)}...`
+        ).join('\n');
 
-        if (errors.length > 0) {
-            const runAnyway = confirm(`There are ${errors.length} TypeScript error(s). Run code anyway?`);
-            if (!runAnyway) {
-                showToast("Code has errors - not executing", "warning");
-                return;
-            }
+        const runAnyway = confirm(
+            `Found ${errors.length} TypeScript error(s):\n\n${errorList}\n\nRun anyway?`
+        );
+
+        if (!runAnyway) {
+            showToast("Code has errors - not executing", "warning", 3000);
+            return;
         }
+    }
 
-        executeCode();
-    }, 100);
+    executeCode();
 }
 
 function executeCode() {
     try {
-        // Transpile TypeScript to JavaScript
         const jsCode = ts.transpile(editor.getValue(), {
             target: ts.ScriptTarget.ES2020,
             module: ts.ModuleKind.ESNext,
@@ -462,7 +402,6 @@ function executeCode() {
 
         overrideConsole();
 
-        // Create safe execution context
         const context = createSafeContext();
         const functionArgs = Object.keys(context);
         const functionValues = Object.values(context);
@@ -471,9 +410,9 @@ function executeCode() {
             "use strict";
             try {
                 ${jsCode}
-                console.log("✅ Execution completed successfully");
+                console.log("✅ Code executed successfully");
             } catch (error) {
-                console.error("❌ Runtime error:", error);
+                console.error("❌ Runtime error:", error.message);
                 throw error;
             }
         `;
@@ -482,11 +421,11 @@ function executeCode() {
         execute(...functionValues);
 
         restoreConsole();
-        showToast("Code executed successfully", "success");
+        showToast("Execution completed", "success");
 
     } catch (error) {
         restoreConsole();
-        renderLog([`Execution Error: ${error.message}`], "error");
+        renderLog([`❌ Execution Error: ${error.message}`], "error");
         showToast("Execution failed", "error");
     }
 }
@@ -604,14 +543,13 @@ function setupEventListeners() {
         editor.setValue("");
         outputElement.innerHTML = "";
         autoSaveCode();
-        clearAllErrors();
         showToast("Editor cleared", "info");
     };
     document.getElementById("btn-save").onclick = saveCode;
     document.getElementById("btn-share").onclick = shareCode;
     document.getElementById("btn-check-types").onclick = () => {
         checkTypeScriptErrors();
-        showToast("Type checking...", "info");
+        showToast("Checking types...", "info");
     };
 
     document.getElementById("languageList").onclick = e => {
@@ -633,14 +571,11 @@ function autoSaveCode() {
 
 function saveCode() {
     autoSaveCode();
-    showToast("Code saved", "success");
+    showToast("Code saved to browser", "success");
 }
 
 function loadSavedCode() {
-    const code = localStorage.getItem("typescript_code");
-    if (code && !new URLSearchParams(location.search).get("code")) {
-        // Don't show this message on initial load
-    }
+    // Handled by initial value in loadMonacoEditor
 }
 
 function loadCodeFromURL() {
@@ -662,7 +597,7 @@ function shareCode() {
     const shareUrl = `${location.origin}${location.pathname}?code=${encoded}`;
 
     navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast("Share URL copied to clipboard", "success");
+        showToast("Share URL copied to clipboard!", "success");
     }).catch(() => {
         showToast("Failed to copy URL", "error");
     });
@@ -703,7 +638,6 @@ function addErrorStyles() {
     if (document.getElementById('typescript-error-styles')) return;
 
     const styles = `
-        /* Glyph Margin Icons */
         .type-error-glyph {
             background-color: #ff4444 !important;
             width: 3px !important;
@@ -720,23 +654,22 @@ function addErrorStyles() {
             cursor: pointer !important;
         }
         
-        /* Error Count Display */
         #error-count {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(30, 30, 30, 0.9);
-            padding: 8px 16px;
-            border-radius: 6px;
+            background: rgba(30, 30, 30, 0.95);
+            padding: 10px 16px;
+            border-radius: 8px;
             font-family: 'Segoe UI', sans-serif;
-            font-size: 13px;
+            font-size: 14px;
             z-index: 1000;
-            border: 1px solid #444;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid #555;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             display: none;
+            transition: all 0.2s;
         }
         
-        /* Test Button */
         .test-button {
             position: fixed;
             bottom: 20px;
@@ -744,19 +677,20 @@ function addErrorStyles() {
             background: #007acc;
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-family: 'Segoe UI', sans-serif;
             font-size: 13px;
             z-index: 1000;
+            font-weight: 500;
+            transition: background 0.2s;
         }
         
         .test-button:hover {
-            background: #0066b3;
+            background: #005a9e;
         }
         
-        /* Console Error Colors */
         .console-entry.error {
             border-left-color: #ff4444;
         }
@@ -785,42 +719,53 @@ function addErrorStyles() {
    ADD TEST BUTTON
 ================================ */
 setTimeout(() => {
-    // Add error count display
     const errorCount = document.createElement('div');
     errorCount.id = 'error-count';
     document.body.appendChild(errorCount);
 
-    // Add test button
     const testButton = document.createElement('button');
     testButton.className = 'test-button';
-    testButton.textContent = 'Test Type Checking';
+    testButton.textContent = '🧪 Test Type Checking';
     testButton.onclick = () => {
-        const testCode = `// Testing TypeScript Errors
-interface Test {
+        const testCode = `// Test TypeScript Type Checking
+interface User {
     id: number;
     name: string;
+    active: boolean;
 }
 
-// This should show an error
-const test1: Test = {
-    id: "123",  // ERROR: string instead of number
-    name: "Test"
+// ❌ ERROR: id should be number, not string
+const user1: User = {
+    id: "123",
+    name: "Alice",
+    active: true
 };
 
-// This should be correct
-const test2: Test = {
-    id: 123,    // CORRECT
-    name: "Test"
+// ✅ CORRECT: All types match
+const user2: User = {
+    id: 456,
+    name: "Bob",
+    active: false
 };
 
-console.log("Test 1 (should show error):", test1);
-console.log("Test 2 (correct):", test2);`;
+// ❌ ERROR: Missing 'active' property
+const user3: User = {
+    id: 789,
+    name: "Charlie"
+};
+
+function greet(name: string): string {
+    return "Hello, " + name;
+}
+
+// ❌ ERROR: Passing number instead of string
+const result = greet(123);`;
 
         editor.setValue(testCode);
         setTimeout(() => {
             checkTypeScriptErrors();
-            showToast("Test code loaded - errors should appear now", "info");
-        }, 500);
+            showToast("Test loaded - you should see 3 errors!", "info", 3000);
+        }, 300);
     };
     document.body.appendChild(testButton);
 }, 1000);
