@@ -61,10 +61,6 @@ function init() {
     // Run initial preview
     runCode();
 
-    // Hide welcome screen after a delay
-    setTimeout(() => {
-        welcomeScreen.classList.add('hidden');
-    }, 1500);
 
     // Update status
     updateStatus();
