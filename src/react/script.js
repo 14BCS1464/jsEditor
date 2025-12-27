@@ -10,86 +10,7 @@ function App() {
   return (
     <div style={{ padding: 20 }}>
       
-      <div style={{ 
-        backgroundColor: '#f7fafc', 
-        padding: 20, 
-        borderRadius: 12,
-        marginTop: 20 
-      }}>
-        <h2 style={{ color: '#2d3748' }}>Counter Demo</h2>
-        <p style={{ fontSize: 24, color: '#4a5568' }}>
-          Count: {count}
-        </p>
-        <button 
-          onClick={() => setCount(c => c + 1)}
-          style={{
-            backgroundColor: '#61dafb',
-            color: '#0a0e27',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: 8,
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            marginRight: 10
-          }}
-        >
-          Increment
-        </button>
-        <button 
-          onClick={() => setCount(0)}
-          style={{
-            backgroundColor: '#e2e8f0',
-            color: '#2d3748',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: 8,
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}
-        >
-          Reset
-        </button>
-      </div>
-
-      <div style={{ 
-        backgroundColor: '#f7fafc', 
-        padding: 20, 
-        borderRadius: 12,
-        marginTop: 20 
-      }}>
-        <h2 style={{ color: '#2d3748' }}>Input Demo</h2>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type something..."
-          style={{
-            width: '100%',
-            padding: '10px',
-            borderRadius: 8,
-            border: '2px solid #cbd5e0',
-            fontSize: 16,
-            boxSizing: 'border-box'
-          }}
-        />
-        {text && (
-          <p style={{ 
-            marginTop: 10, 
-            color: '#4a5568',
-            fontSize: 18 
-          }}>
-            You typed: <strong>{text}</strong>
-          </p>
-        )}
-      </div>
-
-      <p style={{ 
-        marginTop: 30, 
-        color: '#718096',
-        fontSize: 14 
-      }}>
-        Edit this code in the editor and click Run! ✨
-      </p>
+     <p>hello world</p>
     </div>
   );
 }`;
@@ -350,7 +271,7 @@ function switchLanguage(lang) {
       window.location.href = "/src/react/index.html";
       break;
     case "json":
-      window.location.href = "/src/json/index.html";
+      window.location.href = "/src/jsonformatter/index.html";
       break;
 
 

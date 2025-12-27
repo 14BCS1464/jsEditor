@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive JSON Editor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <header>
+    <h1><span class="gradient-text" id="editor-title">JSON Formatter</span></h1>
+    <div class="header-controls">
+      <input id="urlInput" placeholder="Paste JSON URL (https://dummyjson.com/products)" />
+      <div class="header-buttons">
+        <button id="loadBtn" tooltip="Load JSON from URL">
+          <i class="fas fa-download"></i> Load
+        </button>
+        <button id="beautifyBtn" tooltip="Format JSON">
+          <i class="fas fa-code"></i> Beautify
+        </button>
+        <button id="minifyBtn" tooltip="Minify JSON">
+          <i class="fas fa-compress-alt"></i> Minify
+        </button>
+        <button id="copyBtn" class="secondary" tooltip="Copy to clipboard">
+          <i class="far fa-copy"></i>
+        </button>
+        <button id="themeToggle" class="secondary" tooltip="Toggle theme">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="language-panel">
+      <div class="language-title">Languages</div>
+      <ul id="languageList">
+        <li data-lang="javascript"><i class="fab fa-js"></i> JavaScript</li>
+        <li data-lang="typescript"><i class="fas fa-code"></i> TypeScript</li>
+        <li data-lang="html"><i class="fab fa-html5"></i> HTML</li>
+        <li data-lang="react"><i class="fab fa-react"></i> React</li>
+        <li data-lang="json" class="active"><i class="fas fa-file-code"></i> JSON</li>
+      </ul>
+    </div>
+
+    <div class="panel" id="leftPanel">
+      <div class="panel-title">
+        Input JSON
+        <div class="panel-actions">
+          <button id="clearBtn" class="icon-btn secondary" tooltip="Clear input">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button id="exampleBtn" class="icon-btn secondary" tooltip="Load example">
+            <i class="fas fa-magic"></i>
+          </button>
+        </div>
+      </div>
+      <textarea id="input" placeholder="Paste your JSON here...">
+{
+  "name": "John Doe",
+  "age": 30,
+  "isActive": true,
+  "skills": ["JavaScript", "React", "Node.js"],
+  "address": {
+    "city": "New York",
+    "zip": 10001,
+    "coordinates": {
+      "lat": 40.7128,
+      "lng": -74.0060
+    }
+  },
+  "projects": [
+    {
+      "name": "E-commerce API",
+      "status": "completed"
+    },
+    {
+      "name": "Dashboard UI",
+      "status": "in-progress"
+    }
+  ]
+}</textarea>
+    </div>
+
+    <div id="resizer"></div>
+
+    <div class="panel">
+      <div class="panel-title">
+        Interactive Tree View
+        <div class="panel-actions">
+          <button id="expandAllBtn" class="icon-btn secondary" tooltip="Expand all nodes">
+            <i class="fas fa-expand-alt"></i>
+          </button>
+          <button id="collapseAllBtn" class="icon-btn secondary" tooltip="Collapse all nodes">
+            <i class="fas fa-compress-alt"></i>
+          </button>
+        </div>
+      </div>
+      <div class="tree-container" id="treeView"></div>
+    </div>
+  </div>
+
+  <div id="status" class="status">
+    <i class="fas fa-check-circle"></i>
+    <span>Ready - Valid JSON loaded</span>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

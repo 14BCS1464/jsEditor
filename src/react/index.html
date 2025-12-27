@@ -10,7 +10,7 @@
   <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Monaco Editor -->
   <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
@@ -20,15 +20,18 @@
 <body>
 
   <header>
-    <div class="logo">
-      <span>React Online Editor</span>
-    </div>
+
+    <h1> <span class="gradient-text" id="editor-title">React Online Editor</span></h1>
 
     <div class="controls">
-      <button onclick="run()">▶️ Run</button>
-      <button class="secondary" onclick="share()">🔗 Share</button>
-      <button class="secondary" onclick="resetCode()">🔄 Reset</button>
-      <button class="secondary" onclick="formatCode()">✨ Format</button>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; margin-bottom: 10px;">
+        <button id="run" onclick="run()">▶️ Run</button>
+
+        <button id="download" onclick="downloadCode()">🔄 Reset</button>
+        <button id="format" onclick="formatCode()">✨ Format</button>
+        <button id="download" onclick="downloadCode()">Downlaod</button>
+        <button id="download" onclick="downloadCode()">Add</button>
+      </div>
     </div>
   </header>
 
@@ -36,16 +39,21 @@
     <div class="language-panel">
       <div class="language-title">Languages</div>
       <ul id="languageList">
-        <li data-lang="javascript">JavaScript</li>
+        <!-- <li data-lang="javascript">JavaScript</li>
         <li data-lang="typescript">TypeScript</li>
         <li data-lang="html">HTML</li>
         <li data-lang="react" class="active">React</li>
-        <li data-lang="json">JSON</li>
+        <li data-lang="json">JSON</li> -->
+        <li data-lang="javascript"><i class="fab fa-js"></i> JavaScript</li>
+        <li data-lang="typescript"><i class="fas fa-code"></i> TypeScript</li>
+        <li data-lang="html"><i class="fab fa-html5"></i> HTML</li>
+        <li data-lang="react"><i class="fab fa-react"></i> React</li>
+        <li data-lang="json" class="active"><i class="fas fa-file-code"></i> JSON</li>
       </ul>
     </div>
 
     <div class="editor-panel">
-      <div class="panel-header">📝 Editor - App.tsx</div>
+      <!-- <div class="panel-header">📝 Editor - App.tsx</div> -->
       <div id="editor"></div>
     </div>
 

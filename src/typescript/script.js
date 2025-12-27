@@ -627,7 +627,7 @@ function switchLanguage(lang) {
         typescript: "/src/typescript/index.html",
         html: "/src/html/index.html",
         react: "/src/react/index.html",
-        json: "/src/json/index.html"
+        json: "/src/jsonformatter/index.html"
     };
     if (routes[lang]) window.location.href = routes[lang];
 }

@@ -410,7 +410,7 @@ function switchLanguage(lang) {
             window.location.href = "/src/react/index.html";
             break;
         case "json":
-            window.location.href = "/src/json/index.html";
+            window.location.href = "/src/jsonformatter/index.html";
             break;
 
         default:
