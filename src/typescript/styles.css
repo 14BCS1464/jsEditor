@@ -49,6 +49,20 @@ body {
     overflow: hidden;
 }
 
+.gradient-text {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    background: linear-gradient(135deg, #6c5ce7, #00cec9, #a29bfe);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    padding-bottom: 10px;
+    animation: gradientShift 5s ease infinite;
+    transition: transform 0.3s ease, filter 0.3s ease;
+
+}
+
 /* Animated Background */
 .container::before {
     content: '';
@@ -84,8 +98,11 @@ header {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
+    text-align: center;
+    align-items: center;
+
+
+
 }
 
 header::after {
@@ -127,7 +144,6 @@ header h2 {
     display: flex;
     justify-content: center;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
 }
 
