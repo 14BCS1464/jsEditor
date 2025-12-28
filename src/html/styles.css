@@ -1657,6 +1657,20 @@ button:focus-visible {
   font-weight: bold;
 }
 
+/* Ad container */
+.language-ad {
+  margin-top: auto;
+  padding: 10px 5px;
+  border-top: 1px solid #2b2b2b;
+}
+
+/* Hide ads on small screens */
+@media (max-width: 900px) {
+  .language-ad {
+    display: none;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
