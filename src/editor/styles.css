@@ -152,6 +152,7 @@ input:checked+.slider::before {
     padding-bottom: 10px;
     animation: gradientShift 5s ease infinite;
     transition: transform 0.3s ease, filter 0.3s ease;
+
 }
 
 @keyframes gradientShift {
