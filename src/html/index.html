@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5234145234173840"
         crossorigin="anonymous"></script>
 
@@ -45,15 +46,19 @@
         <div class="language-panel">
             <div class="language-title">Languages</div>
             <ul id="languageList">
-                <li data-lang="javascript" onclick="chooseLanguage(event)">JavaScript</li>
-                <li data-lang="typescript" onclick="chooseLanguage(event)">TypeScript</li>
-                <li data-lang="html" class="active" onclick="chooseLanguage(event)">HTML</li>
-                <li data-lang="react" onclick="chooseLanguage(event)">React</li>
-                <li data-lang="json" onclick="chooseLanguage(event)">JSON</li>
+
+
+                <li data-lang="javascript"><i class="fab fa-js" onclick="chooseLanguage(event)"></i> JavaScript</li>
+                <li data-lang="typescript"><i class="fas fa-code" onclick="chooseLanguage(event)"></i> TypeScript</li>
+                <li active="true" data-lang="html"><i class="fab fa-html5" onclick="chooseLanguage(event)"></i> HTML
+                </li>
+                <li data-lang="react"><i class="fab fa-react" onclick="chooseLanguage(event)"></i> React</li>
+                <li data-lang="json"><i class="fas fa-file-code" onclick="chooseLanguage(event)"></i>
+                    JSON</li>
 
             </ul>
             <div class="language-ad">
-                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5234145234173840"
                     data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
 
                 <script>
