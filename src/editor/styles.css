@@ -841,17 +841,15 @@ button:focus-visible {
     border-bottom: 1px solid #1e293b;
 }
 
-.language-panel {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
+
 
 /* Ad container */
 .language-ad {
     margin-top: auto;
     padding: 10px 5px;
+    flex: 1;
     border-top: 1px solid #2b2b2b;
+    background: #00b5a8;
 }
 
 /* Hide ads on small screens */
