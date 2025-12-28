@@ -848,6 +848,9 @@ button:focus-visible {
     margin-top: auto;
     padding: 10px 5px;
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-top: 1px solid #2b2b2b;
     background: #00b5a8;
 }
