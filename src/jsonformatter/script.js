@@ -335,26 +335,36 @@ class JSONEditor {
   }
 
   selectLanguage(event) {
+
     const li = event.target.closest('li');
+
     if (!li) return;
 
     const language = li.dataset.lang;
-    this.elements.languageList.querySelectorAll('li').forEach(item => {
-      item.classList.remove('active');
-    });
-    li.classList.add('active');
 
-    // Update editor title based on language
-    const titles = {
-      javascript: 'JavaScript Editor',
-      typescript: 'TypeScript Editor',
-      html: 'HTML Editor',
-      react: 'React Editor',
-      json: 'JSON Formatter'
-    };
+    switch (language) {
+      case "javascript":
+        window.location.href = "/src/editor/index.html";
+        break;
 
-    document.getElementById('editor-title').textContent = titles[language] || 'JSON Formatter';
-    this.updateStatus(`Language changed to ${language}`, 'success');
+      case "typescript":
+        window.location.href = "/src/typescript/index.html"; // Leading slash!
+        break;
+
+      case "html":
+        window.location.href = "/src/html/index.html";
+        break;
+      case "react":
+        window.location.href = "/src/react/index.html";
+        break;
+      case "json":
+        window.location.href = "/src/jsonformatter/index.html";
+        break;
+
+      default:
+        console.warn(`No runner defined for ${lang}`);
+    }
+
   }
 
   initResizer() {
