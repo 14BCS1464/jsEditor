@@ -11,11 +11,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
         rel="stylesheet">
@@ -1204,8 +1209,9 @@
             font-family: 'Syne', sans-serif;
             font-size: .82rem;
             line-height: 1.6;
-            min-height: 36px;
-            overflow: hidden;
+            height: 72px;
+            overflow-y: auto;
+            display: block;
         }
 
         .desc-ta::placeholder {
@@ -1687,6 +1693,34 @@
         ::-webkit-scrollbar-thumb {
             background: var(--border2);
             border-radius: 2px;
+        }
+
+        /* CodeMirror hint/autocomplete dropdown */
+        .CodeMirror-hints {
+            background: var(--card2) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 9px !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, .5) !important;
+            padding: 4px !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: .8rem !important;
+            z-index: 9999 !important;
+        }
+
+        .CodeMirror-hint {
+            color: var(--text) !important;
+            border-radius: 5px !important;
+            padding: 4px 10px !important;
+            line-height: 1.5 !important;
+        }
+
+        .CodeMirror-hint-active {
+            background: rgba(129, 140, 248, .25) !important;
+            color: var(--text) !important;
+        }
+
+        li.CodeMirror-hint:hover {
+            background: rgba(129, 140, 248, .15) !important;
         }
     </style>
 </head>
@@ -2476,23 +2510,52 @@
 
             document.getElementById('cells-container').appendChild(div);
 
-            // Auto-resize textarea
+            // Description textarea — fixed height, scrollable, just trigger save on change
             const ta = div.querySelector('.desc-ta');
-            const autoResize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
-            ta.addEventListener('input', () => { autoResize(); triggerAutoSave(); });
-            setTimeout(autoResize, 10);
+            ta.addEventListener('input', () => triggerAutoSave());
 
             // CodeMirror
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
                 value: code || getTemplate(lang),
                 mode: 'javascript', theme: 'dracula', lineNumbers: true,
                 matchBrackets: true, autoCloseBrackets: true,
+                hintOptions: {
+                    completeSingle: false,
+                    hint: CodeMirror.hint.javascript,
+                },
                 extraKeys: {
                     'Ctrl-Enter': () => runCell(id),
                     'Cmd-Enter': () => runCell(id),
                     'Ctrl-/': cm => cm.execCommand('toggleComment'),
+                    'Ctrl-Space': cm => cm.showHint({ completeSingle: false }),
+                    // Auto-trigger on every character
+                    "'.'": cm => { cm.replaceSelection('.'); cm.showHint({ completeSingle: false }); },
                 },
                 indentUnit: 2, tabSize: 2, indentWithTabs: false,
+            });
+
+            // Auto-show hints while typing (debounced)
+            let hintTimer = null;
+            editor.on('inputRead', (cm, change) => {
+                if (change.origin === '+input' && change.text[0] && /[\w.]/.test(change.text[0])) {
+                    clearTimeout(hintTimer);
+                    hintTimer = setTimeout(() => {
+                        if (!cm.state.completionActive) {
+                            cm.showHint({
+                                completeSingle: false,
+                                hint: (cm) => {
+                                    // Merge javascript hints + anyword hints
+                                    const jsHints = CodeMirror.hint.javascript(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+                                    const awHints = CodeMirror.hint.anyword(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+                                    // Deduplicate
+                                    const seen = new Set(jsHints.list.map(h => (typeof h === 'string' ? h : h.text)));
+                                    const extra = awHints.list.filter(h => !seen.has(typeof h === 'string' ? h : h.text));
+                                    return { list: [...jsHints.list, ...extra], from: jsHints.from, to: jsHints.to };
+                                }
+                            });
+                        }
+                    }, 150);
+                }
             });
             editor.on('focus', () => { div.classList.add('focused'); closeAllPickers(); });
             editor.on('blur', () => div.classList.remove('focused'));
