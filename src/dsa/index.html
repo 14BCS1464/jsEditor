@@ -1369,74 +1369,270 @@
             color: var(--muted) !important;
         }
 
-        /* Output */
+        /* ═══════════════════════════════════════════════
+   OUTPUT — Beautiful Terminal Design
+   ═══════════════════════════════════════════════ */
         .cell-output {
             border-top: 1px solid var(--border);
-            background: var(--surface);
+            background: transparent;
+            animation: outputReveal .3s cubic-bezier(.22, 1, .36, 1);
         }
 
+        @keyframes outputReveal {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header bar */
         .out-header {
-            font-size: .57rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--muted);
-            font-family: 'Space Mono', monospace;
-            padding: 6px 13px 4px;
-            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
+            padding: 7px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, .05);
+            background: rgba(13, 13, 22, .85);
+            backdrop-filter: blur(8px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Colored left edge stripe that reacts to success/error */
+        .out-header::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--out-stripe, var(--success));
+            border-radius: 0 2px 2px 0;
+            box-shadow: 0 0 8px var(--out-stripe, var(--success));
+            transition: background .4s, box-shadow .4s;
+        }
+
+        /* Faint glow sweep */
+        .out-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(52, 211, 153, .04) 0%, transparent 60%);
+            pointer-events: none;
+            transition: background .4s;
+        }
+
+        .out-header.is-error::before {
+            --out-stripe: var(--error);
+            box-shadow: 0 0 8px var(--error);
+        }
+
+        .out-header.is-error::after {
+            background: linear-gradient(90deg, rgba(248, 113, 113, .04) 0%, transparent 60%);
+        }
+
+        /* Status dot */
+        .out-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 5px var(--success);
+            flex-shrink: 0;
+            transition: background .4s, box-shadow .4s;
+            animation: dotBeat 2.5s ease-in-out infinite;
+        }
+
+        .out-dot.is-error {
+            background: var(--error);
+            box-shadow: 0 0 5px var(--error);
+        }
+
+        @keyframes dotBeat {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(.7);
+                opacity: .6;
+            }
+        }
+
+        /* "OUTPUT" label */
+        .out-label {
+            font-size: .58rem;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
         }
 
         .out-async-badge {
-            padding: 1px 5px;
-            border-radius: 3px;
+            padding: 1px 7px;
+            border-radius: 20px;
             font-size: .55rem;
-            background: rgba(56, 189, 248, .12);
+            font-weight: 700;
+            letter-spacing: .5px;
+            font-family: 'Space Mono', monospace;
+            background: rgba(56, 189, 248, .1);
             color: var(--accent2);
             border: 1px solid rgba(56, 189, 248, .2);
         }
 
         .out-time {
             margin-left: auto;
+            font-size: .6rem;
+            font-family: 'Space Mono', monospace;
             color: var(--accent3);
+            background: rgba(251, 191, 36, .07);
+            border: 1px solid rgba(251, 191, 36, .15);
+            padding: 1px 8px;
+            border-radius: 20px;
         }
 
+        /* Main output body */
         .out-content {
-            padding: 9px 13px;
+            padding: 14px 0 14px 0;
             font-family: 'JetBrains Mono', monospace;
-            font-size: .79rem;
-            line-height: 1.7;
+            font-size: .8rem;
+            line-height: 1.9;
             white-space: pre-wrap;
             word-break: break-all;
+            background:
+                linear-gradient(180deg,
+                    rgba(10, 10, 20, .96) 0%,
+                    rgba(14, 14, 26, .94) 100%);
+            position: relative;
+            max-height: 400px;
+            overflow-y: auto;
+            /* subtle dot-grid background */
+            background-image:
+                radial-gradient(circle, rgba(255, 255, 255, .025) 1px, transparent 1px),
+                linear-gradient(180deg, rgba(10, 10, 20, .96) 0%, rgba(14, 14, 26, .94) 100%);
+            background-size: 22px 22px, 100% 100%;
         }
 
-        .out-content.has-error {
-            border-left: 3px solid var(--error);
+        /* Line items */
+        .log-line,
+        .error-line,
+        .warn-line,
+        .info-line,
+        .return-line {
+            display: flex;
+            align-items: baseline;
+            gap: 0;
+            padding: 1px 16px 1px 0;
+            animation: lineSlide .15s ease both;
         }
 
-        .out-content.has-success {
-            border-left: 3px solid var(--success);
+        @keyframes lineSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
+        /* Gutter line number */
+        .out-lnum {
+            display: inline-block;
+            min-width: 42px;
+            padding: 0 10px 0 12px;
+            font-size: .6rem;
+            color: rgba(107, 122, 154, .35);
+            text-align: right;
+            user-select: none;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255, 255, 255, .04);
+            margin-right: 12px;
+        }
+
+        /* Line type icon */
+        .out-icon {
+            display: inline-block;
+            width: 16px;
+            flex-shrink: 0;
+            font-size: .7rem;
+            margin-right: 4px;
+            opacity: .7;
+        }
+
+        /* Text colors per type */
         .log-line {
-            color: var(--text);
-        }
-
-        .error-line {
-            color: var(--error);
-        }
-
-        .warn-line {
-            color: var(--accent3);
+            color: #c9d9ea;
         }
 
         .info-line {
             color: var(--accent2);
         }
 
+        .warn-line {
+            color: #fcd34d;
+            background: linear-gradient(90deg, rgba(251, 191, 36, .07) 0%, transparent 80%);
+            border-radius: 3px;
+            margin: 0 6px;
+            padding-left: 4px;
+        }
+
+        .warn-line .out-lnum {
+            border-right-color: rgba(251, 191, 36, .1);
+        }
+
+        .error-line {
+            color: #fca5a5;
+            background: linear-gradient(90deg, rgba(248, 113, 113, .1) 0%, transparent 80%);
+            border-radius: 3px;
+            margin: 1px 6px;
+            padding-left: 4px;
+        }
+
+        .error-line .out-lnum {
+            border-right-color: rgba(248, 113, 113, .15);
+        }
+
         .return-line {
-            color: #a78bfa;
+            color: #c4b5fd;
+            background: linear-gradient(90deg, rgba(167, 139, 250, .1) 0%, transparent 80%);
+            border-radius: 3px;
+            margin: 1px 6px;
+            padding-left: 4px;
+            font-weight: 500;
+        }
+
+        .return-line .out-lnum {
+            border-right-color: rgba(167, 139, 250, .15);
+        }
+
+        /* Custom scrollbar */
+        .out-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .out-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .out-content::-webkit-scrollbar-thumb {
+            background: rgba(129, 140, 248, .2);
+            border-radius: 2px;
+        }
+
+        .out-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(129, 140, 248, .4);
         }
 
         /* Add cell */
@@ -1990,7 +2186,7 @@
         let cellIdCounter = 0;
         let dsaFilter = 'all';
         let selDiff = 'medium';
-        let viewingQId = null; // currently open in view modal
+        let viewingQId = null;
 
         // ══════════════════════════════════════════════
         // PAGE SWITCHING
@@ -2010,7 +2206,7 @@
         }
 
         // ══════════════════════════════════════════════
-        // FIREBASE CONFIG — from file or manual
+        // FIREBASE CONFIG
         // ══════════════════════════════════════════════
         function loadFirebaseFromFile(input) {
             const file = input.files[0];
@@ -2019,7 +2215,6 @@
             reader.onload = (e) => {
                 try {
                     let text = e.target.result.trim();
-                    // Strip JS variable assignment if present: const firebaseConfig = {...};
                     text = text.replace(/^.*?=\s*/, '').replace(/;?\s*$/, '').trim();
                     const cfg = JSON.parse(text);
                     const keys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
@@ -2058,11 +2253,9 @@
             });
             if (!config.apiKey || !config.projectId) { showToast('API Key & Project ID required!', 'error'); return; }
             try {
-                // delete old app
                 try { await firebase.app().delete(); } catch (e) { }
                 firebase.initializeApp(config);
                 db = firebase.firestore();
-                // verify connection
                 await db.collection('notebooks').limit(1).get();
                 localStorage.setItem('fb_config', JSON.stringify(config));
                 setFirebaseStatus(true);
@@ -2082,7 +2275,7 @@
         }
 
         // ══════════════════════════════════════════════
-        // NOTEBOOKS LIST (sidebar)
+        // NOTEBOOKS LIST
         // ══════════════════════════════════════════════
         async function loadNotebooksList() {
             if (!db) return;
@@ -2124,7 +2317,6 @@
             document.getElementById('cells-container').innerHTML = '';
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
             updateCellCount();
-            // update sidebar active state
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id);
             if (el) el.classList.add('active-nb');
@@ -2145,7 +2337,6 @@
 
         async function deleteNotebook(id) {
             if (!confirm('Delete this notebook permanently? This cannot be undone.')) return;
-            // If it's currently open, reset
             if (id === currentNotebookId) {
                 currentNotebookId = null;
                 document.getElementById('nb-title').value = 'Untitled Notebook';
@@ -2161,7 +2352,6 @@
                     loadNotebooksList();
                 } catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
             } else {
-                // Remove from local storage list if it's there
                 const el = document.getElementById('nb-item-' + id);
                 if (el) el.remove();
                 showToast('Notebook deleted locally', 'success');
@@ -2178,12 +2368,9 @@
             const id = document.getElementById('rename-nb-id').value;
             const newTitle = document.getElementById('rename-nb-title').value.trim();
             if (!newTitle) { showToast('Title cannot be empty', 'error'); return; }
-
-            // If currently open, update title input
             if (id === currentNotebookId) {
                 document.getElementById('nb-title').value = newTitle;
             }
-
             if (db) {
                 try {
                     await db.collection('notebooks').doc(id).update({
@@ -2275,7 +2462,6 @@
             cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); });
         }
 
-        // View modal
         function openQuestionView(id) {
             const q = dsaQuestions.find(q => q.id === id);
             if (!q) return;
@@ -2283,27 +2469,22 @@
 
             document.getElementById('qv-title').textContent = q.title;
 
-            // badges
             let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
             if (q.category) badges += '<span style="font-size:.7rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category) + '</span>';
             if (q.solved) badges += '<span style="color:var(--success);font-size:.72rem;font-family:\'Space Mono\',monospace">✓ Solved</span>';
             document.getElementById('qv-badges').innerHTML = badges;
 
-            // description
             const descEl = document.getElementById('qv-desc');
             if (q.description) { descEl.textContent = q.description; descEl.style.display = 'block'; }
             else descEl.style.display = 'none';
 
-            // url
             const urlRow = document.getElementById('qv-url-row');
             if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; }
             else urlRow.style.display = 'none';
 
-            // solve button
             document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ Reopen' : '✓ Mark Solved';
             document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
 
-            // linked cells
             const linkedCells = cells.filter(c => c.linkedQuestionId === id);
             const cellsEl = document.getElementById('qv-cells');
             if (linkedCells.length === 0) {
@@ -2333,7 +2514,7 @@
         function toggleSolvedFromView() {
             if (!viewingQId) return;
             toggleSolved(viewingQId);
-            openQuestionView(viewingQId); // refresh view
+            openQuestionView(viewingQId);
         }
         function editFromView() {
             closeModal('qview-modal');
@@ -2344,7 +2525,6 @@
             deleteDSAQuestion(viewingQId);
         }
 
-        // Filter
         function setFilter(f) {
             dsaFilter = f;
             ['all', 'easy', 'medium', 'hard', 'unsolved'].forEach(x => {
@@ -2356,7 +2536,6 @@
             renderDSASidebar();
         }
 
-        // Render sidebar DSA list
         function renderDSASidebar() {
             const list = document.getElementById('sb-dsa-list');
             const search = (document.getElementById('sb-dsa-search').value || '').toLowerCase();
@@ -2392,7 +2571,6 @@
             }).join('');
         }
 
-        // Render DSA grid page
         function renderDSAGrid() {
             const grid = document.getElementById('dsa-grid');
             const meta = document.getElementById('dsa-pm');
@@ -2480,12 +2658,10 @@
 
             div.innerHTML =
                 buildBannerHTML(id, linkedQId) +
-                // Description
                 '<div class="cell-desc">' +
                 '<div class="desc-label"><span>📝</span>Solution Notes</div>' +
                 '<textarea class="desc-ta" id="desc-' + id + '" placeholder="Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
                 '</div>' +
-                // Toolbar
                 '<div class="cell-toolbar">' +
                 '<div class="tl-left">' +
                 '<span class="cell-num" id="cnum-' + id + '">[1]</span>' +
@@ -2500,21 +2676,22 @@
                 '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">✕</button>' +
                 '</div>' +
                 '</div>' +
-                // Editor
                 '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
-                // Output
                 '<div class="cell-output" id="output-' + id + '" style="display:none">' +
-                '<div class="out-header">Output<span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span><span class="out-time" id="otime-' + id + '"></span></div>' +
+                '<div class="out-header" id="outheader-' + id + '">' +
+                '<div class="out-dot" id="outdot-' + id + '"></div>' +
+                '<span class="out-label">Output</span>' +
+                '<span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span>' +
+                '<span class="out-time" id="otime-' + id + '"></span>' +
+                '</div>' +
                 '<div class="out-content" id="ocontent-' + id + '"></div>' +
                 '</div>';
 
             document.getElementById('cells-container').appendChild(div);
 
-            // Description textarea — fixed height, scrollable, just trigger save on change
             const ta = div.querySelector('.desc-ta');
             ta.addEventListener('input', () => triggerAutoSave());
 
-            // CodeMirror
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
                 value: code || getTemplate(lang),
                 mode: 'javascript', theme: 'dracula', lineNumbers: true,
@@ -2528,13 +2705,11 @@
                     'Cmd-Enter': () => runCell(id),
                     'Ctrl-/': cm => cm.execCommand('toggleComment'),
                     'Ctrl-Space': cm => cm.showHint({ completeSingle: false }),
-                    // Auto-trigger on every character
                     "'.'": cm => { cm.replaceSelection('.'); cm.showHint({ completeSingle: false }); },
                 },
                 indentUnit: 2, tabSize: 2, indentWithTabs: false,
             });
 
-            // Auto-show hints while typing (debounced)
             let hintTimer = null;
             editor.on('inputRead', (cm, change) => {
                 if (change.origin === '+input' && change.text[0] && /[\w.]/.test(change.text[0])) {
@@ -2544,10 +2719,8 @@
                             cm.showHint({
                                 completeSingle: false,
                                 hint: (cm) => {
-                                    // Merge javascript hints + anyword hints
                                     const jsHints = CodeMirror.hint.javascript(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
                                     const awHints = CodeMirror.hint.anyword(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
-                                    // Deduplicate
                                     const seen = new Set(jsHints.list.map(h => (typeof h === 'string' ? h : h.text)));
                                     const extra = awHints.list.filter(h => !seen.has(typeof h === 'string' ? h : h.text));
                                     return { list: [...jsHints.list, ...extra], from: jsHints.from, to: jsHints.to };
@@ -2777,24 +2950,67 @@
             triggerAutoSave();
         }
 
+        // ══════════════════════════════════════════════
+        // SHOW OUTPUT — Beautiful terminal rendering
+        // ══════════════════════════════════════════════
         function showOutput(id, logs, hasError, time, isAsync) {
             const el = document.getElementById('output-' + id);
             const content = document.getElementById('ocontent-' + id);
             const timeEl = document.getElementById('otime-' + id);
             const asyncBadge = document.getElementById('oasync-' + id);
+            const header = document.getElementById('outheader-' + id);
+            const dot = document.getElementById('outdot-' + id);
+
             el.style.display = 'block';
-            if (time) timeEl.textContent = time;
-            if (asyncBadge) asyncBadge.style.display = isAsync ? 'inline' : 'none';
-            content.className = 'out-content ' + (hasError ? 'has-error' : 'has-success');
-            content.innerHTML = logs.map(({ type, str }) => {
-                const cls = type === 'error' ? 'error-line' : type === 'warn' ? 'warn-line' : type === 'info' ? 'info-line' : type === 'return' ? 'return-line' : 'log-line';
-                const pfx = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : '';
-                return '<div class="' + cls + '">' + pfx + escH(str) + '</div>';
+
+            // Time badge
+            if (time) timeEl.textContent = '⏱ ' + time;
+
+            // Async badge
+            if (asyncBadge) asyncBadge.style.display = isAsync ? 'inline-flex' : 'none';
+
+            // Header state
+            if (hasError) {
+                header.classList.add('is-error');
+                dot.classList.add('is-error');
+            } else {
+                header.classList.remove('is-error');
+                dot.classList.remove('is-error');
+            }
+
+            // Type → icon map
+            const icons = {
+                log: '',
+                error: '✖',
+                warn: '⚠',
+                info: '›',
+                return: '⇐',
+            };
+
+            // Type → CSS class
+            const classMap = {
+                log: 'log-line',
+                error: 'error-line',
+                warn: 'warn-line',
+                info: 'info-line',
+                return: 'return-line',
+            };
+
+            // Render lines with line numbers + icons, staggered animation
+            content.innerHTML = logs.map(({ type, str }, idx) => {
+                const cls = classMap[type] || 'log-line';
+                const icon = icons[type] || '';
+                const delay = Math.min(idx * 30, 300);
+                return `<div class="${cls}" style="animation-delay:${delay}ms">` +
+                    `<span class="out-lnum">${idx + 1}</span>` +
+                    (icon ? `<span class="out-icon">${icon}</span>` : `<span class="out-icon"> </span>`) +
+                    `<span>${escH(str)}</span>` +
+                    `</div>`;
             }).join('');
         }
 
         // ══════════════════════════════════════════════
-        // SAVE / LOAD — fixed to include all fields
+        // SAVE / LOAD
         // ══════════════════════════════════════════════
         function triggerAutoSave() {
             document.getElementById('save-dot').classList.remove('saved');
@@ -2807,7 +3023,6 @@
         async function saveAll() {
             const title = document.getElementById('nb-title').value.trim() || 'Untitled Notebook';
 
-            // Collect cell data — including description from DOM
             const cellsData = cells.map(c => {
                 const editor = cellEditors[c.id];
                 const descEl = document.getElementById('desc-' + c.id);
@@ -2821,7 +3036,6 @@
                 };
             });
 
-            // Always save locally first
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() }));
             persistDSA();
 
@@ -2894,11 +3108,9 @@
         // INIT
         // ══════════════════════════════════════════════
         window.addEventListener('load', () => {
-            // Load DSA questions
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
             refreshAllDSAUI(); pickDiff('medium');
 
-            // Load notebook from local storage
             try {
                 const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
                 if (local && local.cells && local.cells.length) {
@@ -2907,7 +3119,6 @@
                 } else { addCell('javascript'); }
             } catch (e) { addCell('javascript'); }
 
-            // Auto-reconnect Firebase
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
             if (fc.apiKey && fc.projectId) {
                 ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
