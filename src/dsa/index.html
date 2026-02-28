@@ -66,7 +66,8 @@
             content: '';
             position: fixed;
             inset: 0;
-            background: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(129, 140, 248, .08) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 85% 90%, rgba(56, 189, 248, .06) 0%, transparent 55%);
+            background: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(129, 140, 248, .08) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 85% 90%, rgba(56, 189, 248, .06) 0%, transparent 55%);
             pointer-events: none;
             z-index: 0;
         }
@@ -300,7 +301,6 @@
             display: flex;
         }
 
-        /* Notebook list */
         .panel-top {
             padding: 9px 10px;
             border-bottom: 1px solid var(--border);
@@ -1341,32 +1341,53 @@
             color: var(--error);
         }
 
-        /* Editor */
+        /* ── EDITOR: scoped CodeMirror styles to prevent bleed ── */
+        .cell-editor-wrap {
+            position: relative;
+            overflow: hidden;
+            /* clip anything that tries to escape */
+        }
+
         .cell-editor-wrap .CodeMirror {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: .845rem;
-            line-height: 1.65;
-            height: auto;
-            min-height: 70px;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 13.5px !important;
+            line-height: 1.65 !important;
+            height: auto !important;
+            min-height: 80px !important;
             background: var(--card) !important;
-            padding: 9px 0;
+            color: var(--text) !important;
+            border: none !important;
+            border-radius: 0 !important;
         }
 
         .cell-editor-wrap .CodeMirror-scroll {
-            min-height: 70px;
+            min-height: 80px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
         }
 
-        .cell-editor-wrap .CodeMirror-lines {
-            padding: 0 13px;
-        }
-
+        /* Give the gutter a proper background so it doesn't show through */
         .cell-editor-wrap .CodeMirror-gutters {
-            background: var(--card) !important;
+            background: #252535 !important;
             border-right: 1px solid var(--border) !important;
+            min-height: 100% !important;
         }
 
         .cell-editor-wrap .CodeMirror-linenumber {
             color: var(--muted) !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 11px !important;
+            padding: 0 8px !important;
+            min-width: 26px !important;
+        }
+
+        /* keep code lines padded properly */
+        .cell-editor-wrap .CodeMirror-lines {
+            padding: 6px 0 !important;
+        }
+
+        .cell-editor-wrap .CodeMirror-line {
+            padding: 0 12px !important;
         }
 
         /* Output */
@@ -1407,8 +1428,7 @@
             font-family: 'JetBrains Mono', monospace;
             font-size: .79rem;
             line-height: 1.7;
-            white-space: pre-wrap;
-            word-break: break-all;
+            word-break: break-word;
         }
 
         .out-content.has-error {
@@ -1419,24 +1439,35 @@
             border-left: 3px solid var(--success);
         }
 
+        /* output line types — display:block ensures each is on its own line */
         .log-line {
             color: var(--text);
+            display: block;
+            white-space: pre-wrap;
         }
 
         .error-line {
             color: var(--error);
+            display: block;
+            white-space: pre-wrap;
         }
 
         .warn-line {
             color: var(--accent3);
+            display: block;
+            white-space: pre-wrap;
         }
 
         .info-line {
             color: var(--accent2);
+            display: block;
+            white-space: pre-wrap;
         }
 
         .return-line {
             color: #a78bfa;
+            display: block;
+            white-space: pre-wrap;
         }
 
         /* Add cell */
@@ -1695,7 +1726,7 @@
             border-radius: 2px;
         }
 
-        /* CodeMirror hint/autocomplete dropdown */
+        /* CodeMirror autocomplete */
         .CodeMirror-hints {
             background: var(--card2) !important;
             border: 1px solid var(--border2) !important;
@@ -1728,7 +1759,6 @@
 <body>
     <div class="toast" id="toast"></div>
 
-    <!-- HEADER -->
     <header>
         <div class="logo">
             <div class="logo-icon">⚡</div>CodeBook
@@ -1748,14 +1778,11 @@
     </header>
 
     <div class="app-layout">
-        <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="sidebar-tabs">
                 <button class="stab active" id="stab-nb" onclick="switchSidebarTab('nb')">Notebooks</button>
                 <button class="stab" id="stab-dsa" onclick="switchSidebarTab('dsa')">DSA List</button>
             </div>
-
-            <!-- Notebooks -->
             <div class="spanel active" id="spanel-nb">
                 <div class="panel-top">
                     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="newNotebook()">＋
@@ -1767,8 +1794,6 @@
                         Connect Firebase to sync</div>
                 </div>
             </div>
-
-            <!-- DSA sidebar -->
             <div class="spanel" id="spanel-dsa">
                 <div class="dsa-toolbar">
                     <input class="dsa-search" id="sb-dsa-search" placeholder="Search questions…"
@@ -1798,9 +1823,7 @@
             </div>
         </aside>
 
-        <!-- MAIN -->
         <div class="main-content">
-            <!-- NOTEBOOK PAGE -->
             <div class="page active" id="page-notebook">
                 <div class="nb-page">
                     <div class="nb-header">
@@ -1822,7 +1845,6 @@
                 </div>
             </div>
 
-            <!-- DSA PAGE -->
             <div class="page" id="page-dsa">
                 <div class="dsa-page">
                     <div class="dsa-ph">
@@ -1848,8 +1870,6 @@
         <div class="modal">
             <h2>🔥 Firebase Config</h2>
             <p class="modal-sub">Connect to Firestore for cloud sync across devices.</p>
-
-            <!-- Upload from file -->
             <div class="form-group">
                 <label>📂 Load Config from JSON File</label>
                 <div class="upload-area" id="fb-upload-area">
@@ -1862,7 +1882,6 @@
             </div>
             <div class="modal-divider"></div>
             <p class="modal-sub" style="margin-top:0;margin-bottom:12px">Or enter manually:</p>
-
             <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIzaSy…"></div>
             <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain"
                     placeholder="project.firebaseapp.com"></div>
@@ -1955,7 +1974,7 @@
         </div>
     </div>
 
-    <!-- RENAME NOTEBOOK MODAL -->
+    <!-- RENAME MODAL -->
     <div class="modal-overlay" id="rename-modal">
         <div class="modal" style="width:380px">
             <h2>✏ Rename Notebook</h2>
@@ -1970,7 +1989,6 @@
         </div>
     </div>
 
-    <!-- SAVE BAR -->
     <div class="save-bar" id="save-bar">
         <div class="save-dot" id="save-dot"></div>
         <span id="save-text">Saved</span>
@@ -1978,6 +1996,7 @@
 
     <script>
         'use strict';
+
         // ══════════════════════════════════════════════
         // STATE
         // ══════════════════════════════════════════════
@@ -1985,15 +2004,24 @@
         let cells = [];
         let cellEditors = {};
         let dsaQuestions = [];
-        let currentNotebookId = null;
+        let currentNotebookId = null; // FIX: persisted to localStorage
         let autoSaveTimer = null;
         let cellIdCounter = 0;
         let dsaFilter = 'all';
         let selDiff = 'medium';
-        let viewingQId = null; // currently open in view modal
+        let viewingQId = null;
+
+        // ── helpers to persist & restore notebook ID ──────────────────
+        function saveNotebookId(id) {
+            if (id) localStorage.setItem('current_notebook_id', id);
+            else localStorage.removeItem('current_notebook_id');
+        }
+        function loadNotebookId() {
+            return localStorage.getItem('current_notebook_id') || null;
+        }
 
         // ══════════════════════════════════════════════
-        // PAGE SWITCHING
+        // PAGE / SIDEBAR
         // ══════════════════════════════════════════════
         function switchPage(n) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2010,7 +2038,7 @@
         }
 
         // ══════════════════════════════════════════════
-        // FIREBASE CONFIG — from file or manual
+        // FIREBASE
         // ══════════════════════════════════════════════
         function loadFirebaseFromFile(input) {
             const file = input.files[0];
@@ -2019,24 +2047,16 @@
             reader.onload = (e) => {
                 try {
                     let text = e.target.result.trim();
-                    // Strip JS variable assignment if present: const firebaseConfig = {...};
                     text = text.replace(/^.*?=\s*/, '').replace(/;?\s*$/, '').trim();
                     const cfg = JSON.parse(text);
                     const keys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
                     let found = 0;
-                    keys.forEach(k => {
-                        if (cfg[k]) {
-                            const el = document.getElementById('fb-' + k);
-                            if (el) { el.value = cfg[k]; found++; }
-                        }
-                    });
-                    const statusEl = document.getElementById('fb-file-status');
-                    statusEl.style.display = 'block';
-                    statusEl.textContent = '✓ Loaded ' + found + ' fields from ' + file.name;
+                    keys.forEach(k => { if (cfg[k]) { const el = document.getElementById('fb-' + k); if (el) { el.value = cfg[k]; found++; } } });
+                    const st = document.getElementById('fb-file-status');
+                    st.style.display = 'block';
+                    st.textContent = '✓ Loaded ' + found + ' fields from ' + file.name;
                     showToast('Config loaded from file!', 'success');
-                } catch (err) {
-                    showToast('Could not parse file: ' + err.message, 'error');
-                }
+                } catch (err) { showToast('Could not parse file: ' + err.message, 'error'); }
             };
             reader.readAsText(file);
         }
@@ -2044,8 +2064,7 @@
         function openFirebaseModal() {
             const saved = JSON.parse(localStorage.getItem('fb_config') || '{}');
             ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
-                const el = document.getElementById('fb-' + k);
-                if (el && saved[k]) el.value = saved[k];
+                const el = document.getElementById('fb-' + k); if (el && saved[k]) el.value = saved[k];
             });
             document.getElementById('fb-file-status').style.display = 'none';
             openModal('firebase-modal');
@@ -2058,11 +2077,9 @@
             });
             if (!config.apiKey || !config.projectId) { showToast('API Key & Project ID required!', 'error'); return; }
             try {
-                // delete old app
                 try { await firebase.app().delete(); } catch (e) { }
                 firebase.initializeApp(config);
                 db = firebase.firestore();
-                // verify connection
                 await db.collection('notebooks').limit(1).get();
                 localStorage.setItem('fb_config', JSON.stringify(config));
                 setFirebaseStatus(true);
@@ -2070,10 +2087,7 @@
                 showToast('Firebase connected!', 'success');
                 loadNotebooksList();
                 loadDSAFromFirebase();
-            } catch (e) {
-                showToast('Failed: ' + e.message, 'error');
-                console.error(e);
-            }
+            } catch (e) { showToast('Failed: ' + e.message, 'error'); console.error(e); }
         }
 
         function setFirebaseStatus(on) {
@@ -2082,7 +2096,7 @@
         }
 
         // ══════════════════════════════════════════════
-        // NOTEBOOKS LIST (sidebar)
+        // NOTEBOOKS LIST
         // ══════════════════════════════════════════════
         async function loadNotebooksList() {
             if (!db) return;
@@ -2111,20 +2125,18 @@
                     div.addEventListener('click', () => loadNotebook(doc.id, d));
                     list.appendChild(div);
                 });
-            } catch (e) {
-                list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:.7rem">' + escH(e.message) + '</div>';
-            }
+            } catch (e) { list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:.7rem">' + escH(e.message) + '</div>'; }
         }
 
         function loadNotebook(id, data) {
             currentNotebookId = id;
+            saveNotebookId(id); // FIX: persist so refresh knows which doc to update
             document.getElementById('nb-title').value = data.title || 'Untitled';
             document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
             cells = []; cellEditors = {};
             document.getElementById('cells-container').innerHTML = '';
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
             updateCellCount();
-            // update sidebar active state
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id);
             if (el) el.classList.add('active-nb');
@@ -2134,6 +2146,7 @@
 
         function newNotebook() {
             currentNotebookId = null;
+            saveNotebookId(null); // FIX: clear persisted ID so next save creates a new doc
             document.getElementById('nb-title').value = 'Untitled Notebook';
             document.getElementById('nb-id').textContent = 'local';
             cells = []; cellEditors = {};
@@ -2145,9 +2158,9 @@
 
         async function deleteNotebook(id) {
             if (!confirm('Delete this notebook permanently? This cannot be undone.')) return;
-            // If it's currently open, reset
             if (id === currentNotebookId) {
                 currentNotebookId = null;
+                saveNotebookId(null);
                 document.getElementById('nb-title').value = 'Untitled Notebook';
                 document.getElementById('nb-id').textContent = 'local';
                 cells = []; cellEditors = {};
@@ -2155,15 +2168,10 @@
                 addCell('javascript');
             }
             if (db) {
-                try {
-                    await db.collection('notebooks').doc(id).delete();
-                    showToast('Notebook deleted', 'success');
-                    loadNotebooksList();
-                } catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
+                try { await db.collection('notebooks').doc(id).delete(); showToast('Notebook deleted', 'success'); loadNotebooksList(); }
+                catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
             } else {
-                // Remove from local storage list if it's there
-                const el = document.getElementById('nb-item-' + id);
-                if (el) el.remove();
+                const el = document.getElementById('nb-item-' + id); if (el) el.remove();
                 showToast('Notebook deleted locally', 'success');
             }
         }
@@ -2178,40 +2186,28 @@
             const id = document.getElementById('rename-nb-id').value;
             const newTitle = document.getElementById('rename-nb-title').value.trim();
             if (!newTitle) { showToast('Title cannot be empty', 'error'); return; }
-
-            // If currently open, update title input
-            if (id === currentNotebookId) {
-                document.getElementById('nb-title').value = newTitle;
-            }
-
+            if (id === currentNotebookId) document.getElementById('nb-title').value = newTitle;
             if (db) {
                 try {
-                    await db.collection('notebooks').doc(id).update({
-                        title: newTitle,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    showToast('Renamed!', 'success');
-                    loadNotebooksList();
+                    await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    showToast('Renamed!', 'success'); loadNotebooksList();
                 } catch (e) { showToast('Rename failed: ' + e.message, 'error'); }
             }
             closeModal('rename-modal');
         }
 
         // ══════════════════════════════════════════════
-        // DSA QUESTIONS
+        // DSA
         // ══════════════════════════════════════════════
         function pickDiff(d) {
             selDiff = d;
-            ['easy', 'medium', 'hard'].forEach(x => {
-                document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : '');
-            });
+            ['easy', 'medium', 'hard'].forEach(x => { document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : ''); });
         }
 
         function openDSAModal(editId) {
             document.getElementById('dsa-edit-id').value = editId || '';
             if (editId) {
-                const q = dsaQuestions.find(q => q.id === editId);
-                if (!q) return;
+                const q = dsaQuestions.find(q => q.id === editId); if (!q) return;
                 document.getElementById('dsa-modal-h').textContent = '✏ Edit Question';
                 document.getElementById('dq-title').value = q.title;
                 document.getElementById('dq-cat').value = q.category || 'Array';
@@ -2235,23 +2231,15 @@
             const existing = editId ? dsaQuestions.find(q => q.id === editId) : null;
             const q = {
                 id: editId || ('dsa_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
-                title,
-                category: document.getElementById('dq-cat').value,
-                difficulty: selDiff,
+                title, category: document.getElementById('dq-cat').value, difficulty: selDiff,
                 description: document.getElementById('dq-desc').value.trim(),
                 url: document.getElementById('dq-url').value.trim(),
                 solved: existing ? existing.solved : false,
                 createdAt: existing ? existing.createdAt : Date.now(),
             };
-            if (editId) {
-                const idx = dsaQuestions.findIndex(x => x.id === editId);
-                if (idx !== -1) dsaQuestions[idx] = q;
-            } else {
-                dsaQuestions.push(q);
-            }
-            closeModal('dsa-modal');
-            persistDSA();
-            refreshAllDSAUI();
+            if (editId) { const idx = dsaQuestions.findIndex(x => x.id === editId); if (idx !== -1) dsaQuestions[idx] = q; }
+            else dsaQuestions.push(q);
+            closeModal('dsa-modal'); persistDSA(); refreshAllDSAUI();
             cells.forEach(c => { if (c.linkedQuestionId === q.id) refreshBanner(c.id); });
             showToast(editId ? 'Updated!' : 'Question added!', 'success');
         }
@@ -2260,56 +2248,35 @@
             if (!confirm('Delete this question?')) return;
             cells.forEach(c => { if (c.linkedQuestionId === id) { c.linkedQuestionId = null; refreshBanner(c.id); } });
             dsaQuestions = dsaQuestions.filter(q => q.id !== id);
-            persistDSA();
-            refreshAllDSAUI();
-            triggerAutoSave();
-            showToast('Deleted', 'success');
+            persistDSA(); refreshAllDSAUI(); triggerAutoSave(); showToast('Deleted', 'success');
         }
 
         function toggleSolved(id) {
-            const q = dsaQuestions.find(q => q.id === id);
-            if (!q) return;
-            q.solved = !q.solved;
-            persistDSA();
-            refreshAllDSAUI();
+            const q = dsaQuestions.find(q => q.id === id); if (!q) return;
+            q.solved = !q.solved; persistDSA(); refreshAllDSAUI();
             cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); });
         }
 
-        // View modal
         function openQuestionView(id) {
-            const q = dsaQuestions.find(q => q.id === id);
-            if (!q) return;
+            const q = dsaQuestions.find(q => q.id === id); if (!q) return;
             viewingQId = id;
-
             document.getElementById('qv-title').textContent = q.title;
-
-            // badges
             let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
             if (q.category) badges += '<span style="font-size:.7rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category) + '</span>';
             if (q.solved) badges += '<span style="color:var(--success);font-size:.72rem;font-family:\'Space Mono\',monospace">✓ Solved</span>';
             document.getElementById('qv-badges').innerHTML = badges;
-
-            // description
             const descEl = document.getElementById('qv-desc');
-            if (q.description) { descEl.textContent = q.description; descEl.style.display = 'block'; }
-            else descEl.style.display = 'none';
-
-            // url
+            if (q.description) { descEl.textContent = q.description; descEl.style.display = 'block'; } else descEl.style.display = 'none';
             const urlRow = document.getElementById('qv-url-row');
-            if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; }
-            else urlRow.style.display = 'none';
-
-            // solve button
+            if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; } else urlRow.style.display = 'none';
             document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ Reopen' : '✓ Mark Solved';
             document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
-
-            // linked cells
             const linkedCells = cells.filter(c => c.linkedQuestionId === id);
             const cellsEl = document.getElementById('qv-cells');
             if (linkedCells.length === 0) {
                 cellsEl.innerHTML = '<div class="qview-empty">No cells linked to this question yet.<br>Open a notebook cell and click "Link Question" to connect it.</div>';
             } else {
-                cellsEl.innerHTML = linkedCells.map((c, i) => {
+                cellsEl.innerHTML = linkedCells.map((c) => {
                     const editor = cellEditors[c.id];
                     const code = editor ? editor.getValue() : c.code || '';
                     const wrap = document.getElementById('cell-' + c.id);
@@ -2326,37 +2293,23 @@
                         '</div>';
                 }).join('');
             }
-
             openModal('qview-modal');
         }
 
-        function toggleSolvedFromView() {
-            if (!viewingQId) return;
-            toggleSolved(viewingQId);
-            openQuestionView(viewingQId); // refresh view
-        }
-        function editFromView() {
-            closeModal('qview-modal');
-            openDSAModal(viewingQId);
-        }
-        function deleteFromView() {
-            closeModal('qview-modal');
-            deleteDSAQuestion(viewingQId);
-        }
+        function toggleSolvedFromView() { if (!viewingQId) return; toggleSolved(viewingQId); openQuestionView(viewingQId); }
+        function editFromView() { closeModal('qview-modal'); openDSAModal(viewingQId); }
+        function deleteFromView() { closeModal('qview-modal'); deleteDSAQuestion(viewingQId); }
 
-        // Filter
         function setFilter(f) {
             dsaFilter = f;
             ['all', 'easy', 'medium', 'hard', 'unsolved'].forEach(x => {
-                const el = document.getElementById('fc-' + x);
-                if (!el) return;
+                const el = document.getElementById('fc-' + x); if (!el) return;
                 const map = { all: 'fa', easy: 'fe', medium: 'fm', hard: 'fh', unsolved: 'fa' };
                 el.className = 'fchip' + (x === f ? ' ' + map[x] : '');
             });
             renderDSASidebar();
         }
 
-        // Render sidebar DSA list
         function renderDSASidebar() {
             const list = document.getElementById('sb-dsa-list');
             const search = (document.getElementById('sb-dsa-search').value || '').toLowerCase();
@@ -2368,11 +2321,7 @@
                 if (search && !q.title.toLowerCase().includes(search) && !(q.category || '').toLowerCase().includes(search)) return false;
                 return true;
             });
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No questions found</div>';
-                return;
-            }
+            if (filtered.length === 0) { list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No questions found</div>'; return; }
             list.innerHTML = filtered.map(q => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
                 return '<div class="dsa-sb-item">' +
@@ -2381,34 +2330,24 @@
                     '<div class="dsa-sb-btns">' +
                     '<button class="dsa-sb-btn view-btn" title="View" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' +
                     '<button class="dsa-sb-btn del-btn" title="Delete" onclick="deleteDSAQuestion(\'' + q.id + '\')">✕</button>' +
-                    '</div>' +
-                    '</div>' +
+                    '</div></div>' +
                     '<div class="dsa-sb-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
                     '<span class="dsa-cat-tag">' + escH(q.category || '') + '</span>' +
                     (lc ? '<span class="dsa-lc">⚡' + lc + '</span>' : '') +
-                    '</div>' +
-                    '</div>';
+                    '</div></div>';
             }).join('');
         }
 
-        // Render DSA grid page
         function renderDSAGrid() {
             const grid = document.getElementById('dsa-grid');
             const meta = document.getElementById('dsa-pm');
             meta.textContent = dsaQuestions.length + ' question' + (dsaQuestions.length !== 1 ? 's' : '') + ' · ' + dsaQuestions.filter(q => q.solved).length + ' solved';
-            if (dsaQuestions.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Add your first DSA question!</p></div>';
-                return;
-            }
+            if (dsaQuestions.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Add your first DSA question!</p></div>'; return; }
             grid.innerHTML = dsaQuestions.map((q, i) => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
                 return '<div class="dsa-card' + (q.solved ? ' solved-card' : '') + '">' +
-                    '<div class="dc-header">' +
-                    '<span class="dc-num">#' + (i + 1) + '</span>' +
-                    '<span class="dc-title">' + escH(q.title) + '</span>' +
-                    (q.solved ? '<span class="dc-check">✓</span>' : '') +
-                    '</div>' +
+                    '<div class="dc-header"><span class="dc-num">#' + (i + 1) + '</span><span class="dc-title">' + escH(q.title) + '</span>' + (q.solved ? '<span class="dc-check">✓</span>' : '') + '</div>' +
                     (q.description ? '<div class="dc-desc">' + escH(q.description) + '</div>' : '') +
                     '<div class="dc-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
@@ -2421,8 +2360,7 @@
                     (q.url ? '<button class="btn btn-ghost btn-xs" onclick="window.open(\'' + escH(q.url) + '\',\'_blank\')">🔗</button>' : '') +
                     '<button class="btn btn-ghost btn-xs" onclick="openDSAModal(\'' + q.id + '\')">✏</button>' +
                     '<button class="btn btn-danger btn-xs" onclick="deleteDSAQuestion(\'' + q.id + '\')">🗑</button>' +
-                    '</div>' +
-                    '</div>';
+                    '</div></div>';
             }).join('');
         }
 
@@ -2433,20 +2371,11 @@
             document.getElementById('stat-solved').textContent = dsaQuestions.filter(q => q.solved).length;
         }
 
-        function refreshAllDSAUI() {
-            renderDSASidebar();
-            renderDSAGrid();
-            updateDSAStats();
-        }
+        function refreshAllDSAUI() { renderDSASidebar(); renderDSAGrid(); updateDSAStats(); }
 
         function persistDSA() {
             localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
-            if (db) {
-                db.collection('dsa').doc('questions').set({
-                    questions: dsaQuestions,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(e => console.warn('DSA save err', e));
-            }
+            if (db) { db.collection('dsa').doc('questions').set({ questions: dsaQuestions, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(e => console.warn('DSA save err', e)); }
         }
 
         async function loadDSAFromFirebase() {
@@ -2480,12 +2409,10 @@
 
             div.innerHTML =
                 buildBannerHTML(id, linkedQId) +
-                // Description
                 '<div class="cell-desc">' +
                 '<div class="desc-label"><span>📝</span>Solution Notes</div>' +
                 '<textarea class="desc-ta" id="desc-' + id + '" placeholder="Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
                 '</div>' +
-                // Toolbar
                 '<div class="cell-toolbar">' +
                 '<div class="tl-left">' +
                 '<span class="cell-num" id="cnum-' + id + '">[1]</span>' +
@@ -2498,43 +2425,34 @@
                 '<div class="tl-right">' +
                 '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ Run</button>' +
                 '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">✕</button>' +
-                '</div>' +
-                '</div>' +
-                // Editor
+                '</div></div>' +
                 '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
-                // Output
                 '<div class="cell-output" id="output-' + id + '" style="display:none">' +
                 '<div class="out-header">Output<span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span><span class="out-time" id="otime-' + id + '"></span></div>' +
                 '<div class="out-content" id="ocontent-' + id + '"></div>' +
                 '</div>';
 
             document.getElementById('cells-container').appendChild(div);
+            div.querySelector('.desc-ta').addEventListener('input', () => triggerAutoSave());
 
-            // Description textarea — fixed height, scrollable, just trigger save on change
-            const ta = div.querySelector('.desc-ta');
-            ta.addEventListener('input', () => triggerAutoSave());
-
-            // CodeMirror
+            // ── CodeMirror — only use properties that CM5 supports ──
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
                 value: code || getTemplate(lang),
-                mode: 'javascript', theme: 'dracula', lineNumbers: true,
-                matchBrackets: true, autoCloseBrackets: true,
-                hintOptions: {
-                    completeSingle: false,
-                    hint: CodeMirror.hint.javascript,
-                },
+                mode: 'javascript',
+                theme: 'dracula',
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                hintOptions: { completeSingle: false, hint: CodeMirror.hint.javascript },
                 extraKeys: {
                     'Ctrl-Enter': () => runCell(id),
                     'Cmd-Enter': () => runCell(id),
                     'Ctrl-/': cm => cm.execCommand('toggleComment'),
                     'Ctrl-Space': cm => cm.showHint({ completeSingle: false }),
-                    // Auto-trigger on every character
-                    "'.'": cm => { cm.replaceSelection('.'); cm.showHint({ completeSingle: false }); },
                 },
                 indentUnit: 2, tabSize: 2, indentWithTabs: false,
             });
 
-            // Auto-show hints while typing (debounced)
             let hintTimer = null;
             editor.on('inputRead', (cm, change) => {
                 if (change.origin === '+input' && change.text[0] && /[\w.]/.test(change.text[0])) {
@@ -2544,13 +2462,11 @@
                             cm.showHint({
                                 completeSingle: false,
                                 hint: (cm) => {
-                                    // Merge javascript hints + anyword hints
-                                    const jsHints = CodeMirror.hint.javascript(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
-                                    const awHints = CodeMirror.hint.anyword(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
-                                    // Deduplicate
-                                    const seen = new Set(jsHints.list.map(h => (typeof h === 'string' ? h : h.text)));
-                                    const extra = awHints.list.filter(h => !seen.has(typeof h === 'string' ? h : h.text));
-                                    return { list: [...jsHints.list, ...extra], from: jsHints.from, to: jsHints.to };
+                                    const jsH = CodeMirror.hint.javascript(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+                                    const awH = CodeMirror.hint.anyword(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+                                    const seen = new Set(jsH.list.map(h => typeof h === 'string' ? h : h.text));
+                                    const extra = awH.list.filter(h => !seen.has(typeof h === 'string' ? h : h.text));
+                                    return { list: [...jsH.list, ...extra], from: jsH.from, to: jsH.to };
                                 }
                             });
                         }
@@ -2574,8 +2490,7 @@
         }
 
         function setLang(id, lang) {
-            const cell = cells.find(c => c.id === id);
-            if (!cell) return;
+            const cell = cells.find(c => c.id === id); if (!cell) return;
             cell.lang = lang;
             document.querySelectorAll('#cell-' + id + ' .lang-btn').forEach(btn => {
                 btn.classList.toggle('active', (lang === 'javascript' && btn.textContent === 'JS') || (lang === 'typescript' && btn.textContent === 'TS'));
@@ -2593,19 +2508,19 @@
             cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (i + 1) + ']'; });
         }
 
-        // ── Question Banner ──────────────────────────
+        // ── Banner ──
         function buildBannerHTML(cellId, linkedQId) {
             const q = linkedQId ? dsaQuestions.find(x => x.id === linkedQId) : null;
             return '<div class="cell-qbanner' + (q ? ' linked' : '') + '" id="qbanner-' + cellId + '">' +
                 '<span class="qb-icon">' + (q ? '🎯' : '❓') + '</span>' +
                 '<div class="qb-info">' +
                 '<div class="qb-sublabel">Linked DSA Question</div>' +
-                (q
-                    ? '<div class="qb-title">' + escH(q.title) + '</div>' +
-                    '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span><span class="dsa-cat-tag" style="font-size:.58rem">' + escH(q.category || '') + '</span>' +
-                    (q.solved ? '<span style="color:var(--success);font-size:.6rem;font-family:\'Space Mono\',monospace">✓</span>' : '') + '</div>'
-                    : '<div class="qb-empty">No question linked</div>'
-                ) +
+                (q ? '<div class="qb-title">' + escH(q.title) + '</div>' +
+                    '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
+                    '<span class="dsa-cat-tag" style="font-size:.58rem">' + escH(q.category || '') + '</span>' +
+                    (q.solved ? '<span style="color:var(--success);font-size:.6rem;font-family:\'Space Mono\',monospace">✓</span>' : '') +
+                    '</div>'
+                    : '<div class="qb-empty">No question linked</div>') +
                 '</div>' +
                 '<div class="qb-right">' +
                 (q ? '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' : '') +
@@ -2614,18 +2529,14 @@
                 '<div class="qb-picker" id="qbpicker-' + cellId + '" style="display:none">' +
                 '<div class="qb-psearch"><input type="text" placeholder="Search…" oninput="buildPickerList(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
                 '<div class="qb-plist" id="qbplist-' + cellId + '"></div>' +
-                '</div>' +
-                '</div>' +
+                '</div></div>' +
                 (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') +
-                '</div>' +
-                '</div>';
+                '</div></div>';
         }
 
         function refreshBanner(cellId) {
-            const cell = cells.find(c => c.id === cellId);
-            if (!cell) return;
-            const old = document.getElementById('qbanner-' + cellId);
-            if (!old) return;
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+            const old = document.getElementById('qbanner-' + cellId); if (!old) return;
             const tmp = document.createElement('div');
             tmp.innerHTML = buildBannerHTML(cellId, cell.linkedQuestionId);
             old.parentNode.replaceChild(tmp.firstChild, old);
@@ -2641,15 +2552,11 @@
                 setTimeout(() => { const s = document.getElementById('qbsearch-' + cellId); if (s) s.focus(); }, 50);
             }
         }
-
-        function closeAllPickers() {
-            document.querySelectorAll('[id^="qbpicker-"]').forEach(el => el.style.display = 'none');
-        }
+        function closeAllPickers() { document.querySelectorAll('[id^="qbpicker-"]').forEach(el => el.style.display = 'none'); }
 
         function buildPickerList(cellId, search) {
             search = (search || '').toLowerCase();
-            const list = document.getElementById('qbplist-' + cellId);
-            if (!list) return;
+            const list = document.getElementById('qbplist-' + cellId); if (!list) return;
             const cell = cells.find(c => c.id === cellId);
             const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search));
             if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">No questions</div>'; return; }
@@ -2663,22 +2570,12 @@
         }
 
         function linkQ(cellId, qId) {
-            const cell = cells.find(c => c.id === cellId);
-            if (!cell) return;
-            cell.linkedQuestionId = qId;
-            closeAllPickers();
-            refreshBanner(cellId);
-            refreshAllDSAUI();
-            triggerAutoSave();
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+            cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave();
         }
-
         function unlinkQ(cellId) {
-            const cell = cells.find(c => c.id === cellId);
-            if (!cell) return;
-            cell.linkedQuestionId = null;
-            refreshBanner(cellId);
-            refreshAllDSAUI();
-            triggerAutoSave();
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+            cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave();
         }
 
         document.addEventListener('click', e => {
@@ -2686,7 +2583,7 @@
         });
 
         // ══════════════════════════════════════════════
-        // ASYNC CODE EXECUTION
+        // CODE EXECUTION
         // ══════════════════════════════════════════════
         async function runCell(id) {
             const cell = cells.find(c => c.id === id);
@@ -2704,25 +2601,32 @@
             const t0 = performance.now();
             let hasError = false, isAsync = false;
 
-            const saved = {};
-            ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => saved[m] = console[m]);
-            const capture = type => (...args) => {
+            // save + patch console
+            const savedConsole = {};
+            ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => savedConsole[m] = console[m]);
+
+            const capture = (type) => (...args) => {
                 let str;
                 try {
                     str = args.map(a => {
                         if (a === null) return 'null';
                         if (a === undefined) return 'undefined';
-                        if (a instanceof Error) return a.toString();
+                        if (a instanceof Error) return a.name + ': ' + a.message + (a.stack ? '\n' + a.stack.split('\n').slice(1, 3).join('\n') : '');
                         if (a instanceof Promise) return '[Promise]';
-                        if (Array.isArray(a) || typeof a === 'object') try { return JSON.stringify(a, null, 2); } catch { return String(a); }
+                        if (Array.isArray(a) || (a !== null && typeof a === 'object')) {
+                            try { return JSON.stringify(a, null, 2); } catch { return String(a); }
+                        }
                         return String(a);
                     }).join(' ');
-                } catch { str = '[unprintable]'; }
+                } catch (e) { str = '[unprintable]'; }
                 logs.push({ type, str });
-                saved[type](...args);
+                savedConsole[type](...args);
             };
-            console.log = capture('log'); console.error = capture('error');
-            console.warn = capture('warn'); console.info = capture('info');
+
+            console.log = capture('log');
+            console.error = capture('error');
+            console.warn = capture('warn');
+            console.info = capture('info');
             console.table = (...a) => { try { capture('log')(JSON.stringify(a[0], null, 2)); } catch { capture('log')(...a); } };
             console.dir = capture('log');
 
@@ -2742,7 +2646,7 @@
                         }
                         jsCode = result.outputText;
                     } catch (err) {
-                        logs.push({ type: 'error', str: '[TypeScript] ' + err.message });
+                        logs.push({ type: 'error', str: '[TypeScript compile error] ' + err.message });
                         hasError = true;
                     }
                 }
@@ -2756,45 +2660,65 @@
                         try {
                             const s = ret instanceof Promise ? '[Promise]' : typeof ret === 'object' ? JSON.stringify(ret, null, 2) : String(ret);
                             logs.push({ type: 'return', str: '→ ' + s });
-                        } catch { }
+                        } catch (e) { /* skip */ }
                     }
                 }
             } catch (err) {
-                if (err instanceof Error) {
-                    logs.push({ type: 'error', str: err.toString() });
-                    if (err.stack) err.stack.split('\n').slice(1, 4).forEach(l => { const cl = l.trim(); if (cl) logs.push({ type: 'error', str: '  ' + cl }); });
-                } else logs.push({ type: 'error', str: String(err) });
+                // ── FIX: always capture runtime errors visibly ──
                 hasError = true;
+                if (err instanceof Error) {
+                    logs.push({ type: 'error', str: err.name + ': ' + err.message });
+                    if (err.stack) {
+                        // show up to 4 stack frames
+                        const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4);
+                        frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() }));
+                    }
+                } else {
+                    logs.push({ type: 'error', str: 'Thrown value: ' + String(err) });
+                }
             } finally {
-                ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = saved[m]);
+                ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = savedConsole[m]);
             }
 
             const elapsed = (performance.now() - t0).toFixed(1);
             if (logs.length === 0) logs.push({ type: 'info', str: '(no output)' });
+
             showOutput(id, logs, hasError, elapsed + 'ms', isAsync);
-            runBtn.classList.remove('running'); runBtn.innerHTML = '▶ Run';
+            runBtn.classList.remove('running');
+            runBtn.innerHTML = '▶ Run';
             cell.lastOutput = { lines: logs, hasError, time: elapsed + 'ms', isAsync };
             triggerAutoSave();
         }
 
+        // ── FIX: build output via DOM nodes, not innerHTML, so colours always apply ──
         function showOutput(id, logs, hasError, time, isAsync) {
             const el = document.getElementById('output-' + id);
             const content = document.getElementById('ocontent-' + id);
             const timeEl = document.getElementById('otime-' + id);
             const asyncBadge = document.getElementById('oasync-' + id);
+
             el.style.display = 'block';
             if (time) timeEl.textContent = time;
             if (asyncBadge) asyncBadge.style.display = isAsync ? 'inline' : 'none';
             content.className = 'out-content ' + (hasError ? 'has-error' : 'has-success');
-            content.innerHTML = logs.map(({ type, str }) => {
-                const cls = type === 'error' ? 'error-line' : type === 'warn' ? 'warn-line' : type === 'info' ? 'info-line' : type === 'return' ? 'return-line' : 'log-line';
-                const pfx = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : '';
-                return '<div class="' + cls + '">' + pfx + escH(str) + '</div>';
-            }).join('');
+            content.innerHTML = '';
+
+            (logs || []).forEach(({ type, str }) => {
+                const div = document.createElement('div');
+                div.className =
+                    type === 'error' ? 'error-line' :
+                        type === 'warn' ? 'warn-line' :
+                            type === 'info' ? 'info-line' :
+                                type === 'return' ? 'return-line' :
+                                    'log-line';
+                const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : '';
+                div.textContent = prefix + (str || '');
+                content.appendChild(div);
+            });
         }
 
         // ══════════════════════════════════════════════
-        // SAVE / LOAD — fixed to include all fields
+        // SAVE / LOAD
         // ══════════════════════════════════════════════
         function triggerAutoSave() {
             document.getElementById('save-dot').classList.remove('saved');
@@ -2807,21 +2731,19 @@
         async function saveAll() {
             const title = document.getElementById('nb-title').value.trim() || 'Untitled Notebook';
 
-            // Collect cell data — including description from DOM
             const cellsData = cells.map(c => {
                 const editor = cellEditors[c.id];
                 const descEl = document.getElementById('desc-' + c.id);
-                const desc = descEl ? descEl.value : c.description || '';
                 return {
                     lang: c.lang,
                     code: editor ? editor.getValue() : '',
-                    description: desc,
+                    description: descEl ? descEl.value : c.description || '',
                     output: c.lastOutput || null,
                     linkedQuestionId: c.linkedQuestionId || null,
                 };
             });
 
-            // Always save locally first
+            // always persist locally
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() }));
             persistDSA();
 
@@ -2837,22 +2759,21 @@
             }
 
             try {
-                const payload = {
-                    title,
-                    cells: cellsData,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                };
+                const payload = { title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+
                 if (currentNotebookId) {
+                    // ── FIX: always use set(merge) on the known doc — never create a new one ──
                     await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
                 } else {
                     const ref = await db.collection('notebooks').add(payload);
                     currentNotebookId = ref.id;
+                    saveNotebookId(ref.id); // FIX: persist the new ID immediately
                     document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
                 }
+
                 dot.classList.add('saved');
                 txt.textContent = 'Saved to Firebase ✓';
-                const now = new Date().toLocaleTimeString();
-                document.getElementById('last-saved').textContent = 'saved ' + now;
+                document.getElementById('last-saved').textContent = 'saved ' + new Date().toLocaleTimeString();
                 loadNotebooksList();
                 setTimeout(() => bar.classList.remove('visible'), 2500);
             } catch (e) {
@@ -2863,7 +2784,7 @@
         }
 
         // ══════════════════════════════════════════════
-        // MODAL HELPERS
+        // MODALS
         // ══════════════════════════════════════════════
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -2871,8 +2792,9 @@
         // ══════════════════════════════════════════════
         // UTILITIES
         // ══════════════════════════════════════════════
-        function escH(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-
+        function escH(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
         function showToast(msg, type) {
             const t = document.getElementById('toast');
             t.textContent = msg; t.className = 'toast show ' + (type || '');
@@ -2894,26 +2816,54 @@
         // INIT
         // ══════════════════════════════════════════════
         window.addEventListener('load', () => {
-            // Load DSA questions
+            // DSA
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
-            refreshAllDSAUI(); pickDiff('medium');
+            refreshAllDSAUI();
+            pickDiff('medium');
 
-            // Load notebook from local storage
+            // ── FIX: restore notebook ID saved on last session ──
+            currentNotebookId = loadNotebookId();
+
+            // Notebook from localStorage
+            let loadedFromLocal = false;
             try {
                 const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
-                if (local && local.cells && local.cells.length) {
+                if (local && local.cells && local.cells.length > 0) {
                     document.getElementById('nb-title').value = local.title || 'Untitled Notebook';
                     local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
-                } else { addCell('javascript'); }
-            } catch (e) { addCell('javascript'); }
+                    if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…';
+                    loadedFromLocal = true;
+                }
+            } catch (e) { /* ignore */ }
 
-            // Auto-reconnect Firebase
+            if (!loadedFromLocal) addCell('javascript');
+
+            // Firebase silent reconnect — does NOT touch cells
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
             if (fc.apiKey && fc.projectId) {
                 ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
                     const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || '';
                 });
-                initFirebase().catch(e => console.warn('Firebase auto-connect failed:', e));
+                (async () => {
+                    try {
+                        try { await firebase.app().delete(); } catch (e) { }
+                        firebase.initializeApp(fc);
+                        db = firebase.firestore();
+                        await db.collection('notebooks').limit(1).get();
+                        setFirebaseStatus(true);
+                        loadNotebooksList(); // sidebar only — no cell loading
+                        // DSA: prefer Firebase if it has >= local entries
+                        try {
+                            const doc = await db.collection('dsa').doc('questions').get();
+                            if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
+                                dsaQuestions = doc.data().questions;
+                                localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
+                                refreshAllDSAUI();
+                                cells.forEach(c => refreshBanner(c.id));
+                            }
+                        } catch (e) { console.warn('DSA sync err', e); }
+                    } catch (e) { console.warn('Firebase auto-connect failed:', e); }
+                })();
             }
         });
     </script>
