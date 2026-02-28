@@ -390,6 +390,11 @@
             color: var(--accent);
         }
 
+        .nb-act-btn.duplicate:hover {
+            background: rgba(52, 211, 153, .2);
+            color: var(--success);
+        }
+
         /* DSA sidebar */
         .dsa-toolbar {
             padding: 9px 10px;
@@ -2004,7 +2009,7 @@
         let cells = [];
         let cellEditors = {};
         let dsaQuestions = [];
-        let currentNotebookId = null; // FIX: persisted to localStorage
+        let currentNotebookId = null;
         let autoSaveTimer = null;
         let cellIdCounter = 0;
         let dsaFilter = 'all';
@@ -2119,6 +2124,7 @@
                         '<div class="nb-item-title">' + escH(d.title || 'Untitled') + '</div>' +
                         '<div class="nb-item-meta">' + (d.cells || []).length + ' cells · ' + date + '</div>' +
                         '<div class="nb-item-actions">' +
+                        '<button class="nb-act-btn duplicate" title="Duplicate" onclick="event.stopPropagation();duplicateNotebook(\'' + doc.id + '\',\'' + escH(d.title || 'Untitled') + '\')">📋</button>' +
                         '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '\',`' + escH(d.title || 'Untitled') + '`)">✏</button>' +
                         '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">🗑</button>' +
                         '</div>';
@@ -2130,13 +2136,19 @@
 
         function loadNotebook(id, data) {
             currentNotebookId = id;
-            saveNotebookId(id); // FIX: persist so refresh knows which doc to update
+            saveNotebookId(id);
             document.getElementById('nb-title').value = data.title || 'Untitled';
             document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
-            cells = []; cellEditors = {};
+
+            // Clear existing cells
+            cells = [];
+            cellEditors = {};
             document.getElementById('cells-container').innerHTML = '';
+
+            // Load new cells
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
             updateCellCount();
+
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id);
             if (el) el.classList.add('active-nb');
@@ -2146,7 +2158,7 @@
 
         function newNotebook() {
             currentNotebookId = null;
-            saveNotebookId(null); // FIX: clear persisted ID so next save creates a new doc
+            saveNotebookId(null);
             document.getElementById('nb-title').value = 'Untitled Notebook';
             document.getElementById('nb-id').textContent = 'local';
             cells = []; cellEditors = {};
@@ -2154,6 +2166,53 @@
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             addCell('javascript');
             showToast('New notebook!', 'success');
+        }
+
+        async function duplicateNotebook(id, title) {
+            try {
+                let notebookData;
+
+                if (db) {
+                    // Load from Firebase
+                    const doc = await db.collection('notebooks').doc(id).get();
+                    if (!doc.exists) {
+                        showToast('Notebook not found!', 'error');
+                        return;
+                    }
+                    notebookData = doc.data();
+                } else {
+                    // Load from localStorage
+                    const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
+                    if (!local) {
+                        showToast('No notebook to duplicate!', 'error');
+                        return;
+                    }
+                    notebookData = local;
+                }
+
+                // Create duplicate with new ID
+                currentNotebookId = null;
+                saveNotebookId(null);
+
+                document.getElementById('nb-title').value = title + ' (Copy)';
+                document.getElementById('nb-id').textContent = 'local';
+
+                // Clear existing cells
+                cells = [];
+                cellEditors = {};
+                document.getElementById('cells-container').innerHTML = '';
+
+                // Add duplicated cells
+                (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
+
+                updateCellCount();
+                document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
+                switchPage('notebook');
+                triggerAutoSave();
+                showToast('Notebook duplicated!', 'success');
+            } catch (e) {
+                showToast('Failed to duplicate: ' + e.message, 'error');
+            }
         }
 
         async function deleteNotebook(id) {
@@ -2485,8 +2544,23 @@
         }
 
         function getTemplate(lang) {
-            if (lang === 'typescript') return '// TypeScript — async/await supported\nasync function solve<T>(input: T[]): Promise<T[]> {\n  return input.map(x => x); // your solution\n}\n\n(async () => {\n  console.log(await solve([1, 2, 3]));\n})();';
-            return '// JavaScript — async/await supported\nasync function solve(nums) {\n  return nums.map(n => n * 2); // your solution\n}\n\n(async () => {\n  console.log(await solve([1, 2, 3]));\n})();';
+            if (lang === 'typescript') {
+                return `// TypeScript — synchronous version
+function solve<T>(input: T[]): T[] {
+  return input.map(x => x); // your solution
+}
+
+const result = solve([1, 2, 3]);
+console.log(result);`;
+            }
+
+            return `// JavaScript — synchronous version
+function solve(nums) {
+  return nums.map(n => n * 2); // your solution
+}
+
+const result = solve([1, 2, 3]);
+console.log(result);`;
         }
 
         function setLang(id, lang) {
@@ -2664,12 +2738,10 @@
                     }
                 }
             } catch (err) {
-                // ── FIX: always capture runtime errors visibly ──
                 hasError = true;
                 if (err instanceof Error) {
                     logs.push({ type: 'error', str: err.name + ': ' + err.message });
                     if (err.stack) {
-                        // show up to 4 stack frames
                         const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4);
                         frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() }));
                     }
@@ -2690,7 +2762,6 @@
             triggerAutoSave();
         }
 
-        // ── FIX: build output via DOM nodes, not innerHTML, so colours always apply ──
         function showOutput(id, logs, hasError, time, isAsync) {
             const el = document.getElementById('output-' + id);
             const content = document.getElementById('ocontent-' + id);
@@ -2762,12 +2833,11 @@
                 const payload = { title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
 
                 if (currentNotebookId) {
-                    // ── FIX: always use set(merge) on the known doc — never create a new one ──
                     await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
                 } else {
                     const ref = await db.collection('notebooks').add(payload);
                     currentNotebookId = ref.id;
-                    saveNotebookId(ref.id); // FIX: persist the new ID immediately
+                    saveNotebookId(ref.id);
                     document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
                 }
 
@@ -2821,7 +2891,6 @@
             refreshAllDSAUI();
             pickDiff('medium');
 
-            // ── FIX: restore notebook ID saved on last session ──
             currentNotebookId = loadNotebookId();
 
             // Notebook from localStorage
@@ -2838,7 +2907,7 @@
 
             if (!loadedFromLocal) addCell('javascript');
 
-            // Firebase silent reconnect — does NOT touch cells
+            // Firebase silent reconnect
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
             if (fc.apiKey && fc.projectId) {
                 ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
@@ -2851,8 +2920,7 @@
                         db = firebase.firestore();
                         await db.collection('notebooks').limit(1).get();
                         setFirebaseStatus(true);
-                        loadNotebooksList(); // sidebar only — no cell loading
-                        // DSA: prefer Firebase if it has >= local entries
+                        loadNotebooksList();
                         try {
                             const doc = await db.collection('dsa').doc('questions').get();
                             if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
