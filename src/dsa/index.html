@@ -8,9 +8,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -18,9 +16,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
-
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
         rel="stylesheet">
 
     <style>
@@ -64,14 +61,12 @@
             content: '';
             position: fixed;
             inset: 0;
-            background:
-                radial-gradient(ellipse 70% 50% at 15% 0%, rgba(129, 140, 248, 0.08) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 40% at 85% 90%, rgba(56, 189, 248, 0.06) 0%, transparent 55%);
+            background: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(129, 140, 248, .08) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 85% 90%, rgba(56, 189, 248, .06) 0%, transparent 55%);
             pointer-events: none;
             z-index: 0;
         }
 
-        /* ── HEADER ─────────────────────────────── */
+        /* HEADER */
         header {
             position: sticky;
             top: 0;
@@ -79,9 +74,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
-            height: 56px;
-            background: rgba(30, 30, 46, 0.97);
+            padding: 0 20px;
+            height: 54px;
+            background: rgba(30, 30, 46, .97);
             backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--border);
         }
@@ -89,21 +84,21 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 9px;
-            font-size: 1.15rem;
+            gap: 8px;
+            font-size: 1.1rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
+            letter-spacing: -.5px;
         }
 
         .logo-icon {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 7px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .header-center {
@@ -116,32 +111,33 @@
             padding: 5px 13px;
             border-radius: 7px;
             font-family: 'Syne', sans-serif;
-            font-size: 0.77rem;
+            font-size: .77rem;
             font-weight: 600;
             cursor: pointer;
             border: 1px solid transparent;
             color: var(--text2);
             background: transparent;
-            transition: all 0.15s;
+            transition: all .15s;
         }
 
         .tab-btn:hover {
             color: var(--text);
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, .05);
         }
 
         .tab-btn.active {
-            background: rgba(129, 140, 248, 0.2);
-            border-color: rgba(129, 140, 248, 0.4);
+            background: rgba(129, 140, 248, .2);
+            border-color: rgba(129, 140, 248, .4);
             color: var(--text);
         }
 
-        .header-actions {
+        .header-right {
             display: flex;
             align-items: center;
             gap: 7px;
         }
 
+        /* BUTTONS */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -149,11 +145,11 @@
             padding: 6px 12px;
             border-radius: 7px;
             font-family: 'Syne', sans-serif;
-            font-size: 0.77rem;
+            font-size: .77rem;
             font-weight: 600;
             cursor: pointer;
             border: 1px solid transparent;
-            transition: all 0.15s;
+            transition: all .15s;
         }
 
         .btn-ghost {
@@ -165,77 +161,93 @@
         .btn-ghost:hover {
             border-color: var(--accent);
             color: var(--text);
-            background: rgba(129, 140, 248, 0.1);
+            background: rgba(129, 140, 248, .1);
         }
 
         .btn-primary {
             background: var(--accent);
-            color: white;
+            color: #fff;
             border-color: var(--accent);
         }
 
         .btn-primary:hover {
             background: #6366f1;
             transform: translateY(-1px);
-            box-shadow: 0 4px 18px rgba(129, 140, 248, 0.4);
-        }
-
-        .btn-sm {
-            padding: 3px 9px;
-            font-size: 0.7rem;
+            box-shadow: 0 4px 18px rgba(129, 140, 248, .4);
         }
 
         .btn-danger {
             background: transparent;
-            border-color: rgba(239, 68, 68, 0.3);
+            border-color: rgba(248, 113, 113, .35);
             color: var(--error);
         }
 
         .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(248, 113, 113, .1);
             border-color: var(--error);
+        }
+
+        .btn-success {
+            background: transparent;
+            border-color: rgba(52, 211, 153, .35);
+            color: var(--success);
+        }
+
+        .btn-success:hover {
+            background: rgba(52, 211, 153, .1);
+            border-color: var(--success);
+        }
+
+        .btn-sm {
+            padding: 3px 9px;
+            font-size: .7rem;
+        }
+
+        .btn-xs {
+            padding: 2px 7px;
+            font-size: .65rem;
         }
 
         .firebase-status {
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 0.7rem;
+            font-size: .7rem;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
         }
 
-        .firebase-dot {
+        .fb-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
             background: var(--muted);
-            transition: background 0.3s;
+            transition: background .3s;
         }
 
-        .firebase-dot.connected {
+        .fb-dot.on {
             background: var(--success);
             box-shadow: 0 0 6px var(--success);
         }
 
-        /* ── LAYOUT ──────────────────────────────── */
+        /* LAYOUT */
         .app-layout {
             display: grid;
-            grid-template-columns: 255px 1fr;
-            min-height: calc(100vh - 56px);
+            grid-template-columns: 258px 1fr;
+            min-height: calc(100vh - 54px);
             position: relative;
             z-index: 1;
         }
 
-        /* ── SIDEBAR ─────────────────────────────── */
+        /* SIDEBAR */
         .sidebar {
             border-right: 1px solid var(--border);
-            background: rgba(37, 37, 53, 0.9);
+            background: rgba(37, 37, 53, .92);
             display: flex;
             flex-direction: column;
             position: sticky;
-            top: 56px;
-            height: calc(100vh - 56px);
+            top: 54px;
+            height: calc(100vh - 54px);
             overflow: hidden;
         }
 
@@ -244,13 +256,13 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .sidebar-tab {
+        .stab {
             flex: 1;
-            padding: 9px 6px;
+            padding: 9px 4px;
             text-align: center;
-            font-size: 0.67rem;
+            font-size: .63rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: .5px;
             text-transform: uppercase;
             cursor: pointer;
             color: var(--muted);
@@ -260,34 +272,35 @@
             border-left: none;
             border-right: none;
             font-family: 'Space Mono', monospace;
-            transition: all 0.15s;
+            transition: all .15s;
         }
 
-        .sidebar-tab:hover {
+        .stab:hover {
             color: var(--text2);
         }
 
-        .sidebar-tab.active {
+        .stab.active {
             color: var(--accent2);
             border-bottom-color: var(--accent2);
         }
 
-        .sidebar-panel {
+        .spanel {
             flex: 1;
             overflow-y: auto;
             display: none;
             flex-direction: column;
         }
 
-        .sidebar-panel.active {
+        .spanel.active {
             display: flex;
         }
 
-        .panel-toolbar {
-            padding: 10px 11px;
+        /* Notebook list */
+        .panel-top {
+            padding: 9px 10px;
             border-bottom: 1px solid var(--border);
             display: flex;
-            gap: 5px;
+            gap: 6px;
         }
 
         .nb-list {
@@ -300,43 +313,85 @@
             padding: 8px 10px;
             border-radius: 7px;
             cursor: pointer;
-            transition: background 0.12s;
             border: 1px solid transparent;
             margin-bottom: 2px;
+            transition: all .12s;
+            position: relative;
         }
 
         .nb-item:hover {
-            background: rgba(129, 140, 248, 0.08);
+            background: rgba(129, 140, 248, .08);
             border-color: var(--border2);
         }
 
-        .nb-item.active {
-            background: rgba(129, 140, 248, 0.16);
-            border-color: rgba(129, 140, 248, 0.4);
+        .nb-item.active-nb {
+            background: rgba(129, 140, 248, .16);
+            border-color: rgba(129, 140, 248, .4);
         }
 
         .nb-item-title {
-            font-size: 0.78rem;
+            font-size: .76rem;
             font-weight: 600;
             margin-bottom: 2px;
-            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 40px;
         }
 
         .nb-item-meta {
-            font-size: 0.64rem;
+            font-size: .62rem;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
         }
 
+        .nb-item-actions {
+            position: absolute;
+            right: 7px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 3px;
+            opacity: 0;
+            transition: opacity .12s;
+        }
+
+        .nb-item:hover .nb-item-actions {
+            opacity: 1;
+        }
+
+        .nb-act-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: none;
+            background: rgba(255, 255, 255, .07);
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .1s;
+        }
+
+        .nb-act-btn:hover {
+            background: rgba(248, 113, 113, .2);
+            color: var(--error);
+        }
+
+        .nb-act-btn.rename:hover {
+            background: rgba(129, 140, 248, .2);
+            color: var(--accent);
+        }
+
         /* DSA sidebar */
         .dsa-toolbar {
-            padding: 10px 11px;
+            padding: 9px 10px;
             border-bottom: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 7px;
+            gap: 6px;
         }
 
         .dsa-search {
@@ -346,7 +401,7 @@
             padding: 6px 9px;
             color: var(--text);
             font-family: 'Space Mono', monospace;
-            font-size: 0.7rem;
+            font-size: .7rem;
             outline: none;
             width: 100%;
         }
@@ -361,55 +416,49 @@
             flex-wrap: wrap;
         }
 
-        .filter-chip {
+        .fchip {
             padding: 2px 7px;
             border-radius: 20px;
-            font-size: 0.62rem;
+            font-size: .6rem;
             font-weight: 700;
             cursor: pointer;
             border: 1px solid var(--border2);
             background: transparent;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
-            transition: all 0.12s;
+            transition: all .12s;
         }
 
-        .filter-chip.f-all {
+        .fchip.fa {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(129, 140, 248, 0.12);
+            background: rgba(129, 140, 248, .12);
         }
 
-        .filter-chip.f-easy {
+        .fchip.fe {
             border-color: var(--success);
             color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(52, 211, 153, .1);
         }
 
-        .filter-chip.f-medium {
+        .fchip.fm {
             border-color: var(--accent3);
             color: var(--accent3);
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(251, 191, 36, .1);
         }
 
-        .filter-chip.f-hard {
+        .fchip.fh {
             border-color: var(--error);
             color: var(--error);
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(248, 113, 113, .1);
         }
 
         .dsa-stats {
             display: flex;
             gap: 8px;
-            font-size: 0.63rem;
+            font-size: .6rem;
             font-family: 'Space Mono', monospace;
             color: var(--muted);
-        }
-
-        .dsa-stats span {
-            display: flex;
-            align-items: center;
-            gap: 3px;
         }
 
         .stat-dot {
@@ -424,78 +473,81 @@
             padding: 5px;
         }
 
-        .dsa-item {
+        .dsa-sb-item {
             padding: 9px 10px;
             border-radius: 8px;
-            cursor: pointer;
             border: 1px solid transparent;
             margin-bottom: 3px;
-            transition: all 0.12s;
+            transition: all .12s;
             background: var(--card);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
-        .dsa-item:hover {
+        .dsa-sb-item:hover {
             border-color: var(--border2);
             background: var(--card2);
         }
 
-        .dsa-item.solved {
-            opacity: 0.6;
-        }
-
-        .dsa-item-header {
+        .dsa-sb-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 6px;
-            margin-bottom: 4px;
         }
 
-        .dsa-item-title {
-            font-size: 0.76rem;
+        .dsa-sb-title {
+            font-size: .75rem;
             font-weight: 600;
             flex: 1;
             line-height: 1.3;
         }
 
-        .dsa-item-actions {
+        .dsa-sb-btns {
             display: flex;
             gap: 3px;
             opacity: 0;
-            transition: opacity 0.12s;
+            transition: opacity .12s;
         }
 
-        .dsa-item:hover .dsa-item-actions {
+        .dsa-sb-item:hover .dsa-sb-btns {
             opacity: 1;
         }
 
-        .dsa-action-btn {
-            width: 19px;
-            height: 19px;
+        .dsa-sb-btn {
+            width: 20px;
+            height: 20px;
             border-radius: 4px;
             border: none;
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, .06);
             color: var(--text2);
             cursor: pointer;
             font-size: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all .1s;
         }
 
-        .dsa-action-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
+        .dsa-sb-btn.view-btn:hover {
+            background: rgba(56, 189, 248, .2);
+            color: var(--accent2);
+        }
+
+        .dsa-sb-btn.del-btn:hover {
+            background: rgba(248, 113, 113, .2);
             color: var(--error);
         }
 
-        .dsa-item-footer {
+        .dsa-sb-footer {
             display: flex;
             align-items: center;
             gap: 5px;
         }
 
         .diff-badge {
-            font-size: 0.58rem;
+            font-size: .57rem;
             padding: 1px 5px;
             border-radius: 3px;
             font-family: 'Space Mono', monospace;
@@ -504,43 +556,48 @@
         }
 
         .diff-easy {
-            background: rgba(16, 185, 129, 0.12);
+            background: rgba(52, 211, 153, .12);
             color: var(--success);
         }
 
         .diff-medium {
-            background: rgba(245, 158, 11, 0.12);
+            background: rgba(251, 191, 36, .12);
             color: var(--accent3);
         }
 
         .diff-hard {
-            background: rgba(239, 68, 68, 0.12);
+            background: rgba(248, 113, 113, .12);
             color: var(--error);
         }
 
-        .dsa-category {
-            font-size: 0.62rem;
+        .dsa-cat-tag {
+            font-size: .6rem;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
         }
 
-        .dsa-linked-count {
-            font-size: 0.6rem;
+        .dsa-lc {
+            font-size: .58rem;
             color: var(--accent2);
             font-family: 'Space Mono', monospace;
             margin-left: auto;
         }
 
+        .dsa-solved-mark {
+            color: var(--success);
+            font-size: .65rem;
+        }
+
         .dsa-bottom {
-            padding: 10px 11px;
+            padding: 9px 10px;
             border-top: 1px solid var(--border);
         }
 
-        /* ── MODALS ──────────────────────────────── */
+        /* MODALS */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, .78);
             backdrop-filter: blur(6px);
             z-index: 1000;
             display: flex;
@@ -548,7 +605,7 @@
             justify-content: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s;
+            transition: opacity .2s;
         }
 
         .modal-overlay.open {
@@ -561,10 +618,10 @@
             border: 1px solid var(--border2);
             border-radius: 16px;
             padding: 26px;
-            width: 490px;
+            width: 500px;
             max-width: 95vw;
             transform: translateY(14px);
-            transition: transform 0.2s;
+            transition: transform .2s;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -573,14 +630,18 @@
             transform: translateY(0);
         }
 
+        .modal-wide {
+            width: 720px;
+        }
+
         .modal h2 {
             font-size: 1.1rem;
             font-weight: 800;
             margin-bottom: 5px;
         }
 
-        .modal>p {
-            font-size: 0.8rem;
+        .modal>.modal-sub {
+            font-size: .8rem;
             color: var(--muted);
             margin-bottom: 16px;
         }
@@ -591,12 +652,12 @@
 
         .form-group label {
             display: block;
-            font-size: 0.68rem;
+            font-size: .68rem;
             color: var(--muted);
             margin-bottom: 4px;
             font-family: 'Space Mono', monospace;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: .5px;
         }
 
         .form-group input,
@@ -609,9 +670,9 @@
             padding: 8px 10px;
             color: var(--text);
             font-family: 'Syne', sans-serif;
-            font-size: 0.8rem;
+            font-size: .8rem;
             outline: none;
-            transition: border-color 0.15s;
+            transition: border-color .15s;
         }
 
         .form-group input:focus,
@@ -631,9 +692,9 @@
 
         .form-group textarea {
             resize: vertical;
-            min-height: 60px;
+            min-height: 70px;
             font-family: 'Space Mono', monospace;
-            font-size: 0.76rem;
+            font-size: .76rem;
         }
 
         .radio-group {
@@ -641,7 +702,7 @@
             gap: 7px;
         }
 
-        .radio-option {
+        .radio-opt {
             flex: 1;
             padding: 7px;
             border-radius: 7px;
@@ -650,29 +711,29 @@
             color: var(--text2);
             cursor: pointer;
             font-family: 'Space Mono', monospace;
-            font-size: 0.68rem;
+            font-size: .67rem;
             font-weight: 700;
             text-transform: uppercase;
             text-align: center;
-            transition: all 0.12s;
+            transition: all .12s;
         }
 
-        .radio-option.sel-easy {
+        .radio-opt.sel-easy {
             border-color: var(--success);
             color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(52, 211, 153, .1);
         }
 
-        .radio-option.sel-medium {
+        .radio-opt.sel-medium {
             border-color: var(--accent3);
             color: var(--accent3);
-            background: rgba(245, 158, 11, 0.1);
+            background: rgba(251, 191, 36, .1);
         }
 
-        .radio-option.sel-hard {
+        .radio-opt.sel-hard {
             border-color: var(--error);
             color: var(--error);
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(248, 113, 113, .1);
         }
 
         .modal-actions {
@@ -682,9 +743,145 @@
             margin-top: 16px;
         }
 
-        /* ── MAIN CONTENT ────────────────────────── */
+        .modal-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 14px 0;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border2);
+            border-radius: 9px;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .15s;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(129, 140, 248, .05);
+        }
+
+        .upload-area input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-area-text {
+            font-size: .78rem;
+            color: var(--muted);
+        }
+
+        .upload-area-text span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .fb-file-status {
+            font-size: .72rem;
+            font-family: 'Space Mono', monospace;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(52, 211, 153, .08);
+            border: 1px solid rgba(52, 211, 153, .2);
+            color: var(--success);
+            display: none;
+            margin-top: 8px;
+        }
+
+        /* Question View Modal */
+        .qview-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .qview-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .qview-badges {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .qview-desc {
+            font-size: .85rem;
+            color: var(--text2);
+            line-height: 1.7;
+            white-space: pre-wrap;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .qview-cells {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .qview-cell {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .qview-cell-header {
+            padding: 8px 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .7rem;
+            font-family: 'Space Mono', monospace;
+            color: var(--muted);
+        }
+
+        .qview-cell-desc {
+            padding: 8px 12px;
+            font-size: .78rem;
+            color: var(--text2);
+            border-bottom: 1px solid var(--border);
+            background: rgba(56, 189, 248, .04);
+        }
+
+        .qview-cell-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .78rem;
+            padding: 10px 12px;
+            line-height: 1.6;
+            color: var(--text);
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .qview-empty {
+            text-align: center;
+            padding: 24px;
+            color: var(--muted);
+            font-size: .8rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* MAIN */
         .main-content {
-            min-height: calc(100vh - 56px);
+            min-height: calc(100vh - 54px);
             display: flex;
             flex-direction: column;
         }
@@ -700,48 +897,56 @@
         }
 
         /* Notebook page */
-        .notebook-page {
+        .nb-page {
             width: 100%;
-            padding: 26px 32px;
+            padding: 24px 28px;
         }
 
-        .notebook-header {
-            margin-bottom: 24px;
+        .nb-header {
+            margin-bottom: 22px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
         }
 
-        .notebook-title-input {
+        .nb-title-wrap {
+            flex: 1;
+        }
+
+        .nb-title-input {
             background: transparent;
             border: none;
             outline: none;
             font-family: 'Syne', sans-serif;
-            font-size: 1.9rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--text);
             width: 100%;
             padding: 3px 0;
             border-bottom: 2px solid transparent;
-            transition: border-color 0.2s;
+            transition: border-color .2s;
         }
 
-        .notebook-title-input:focus {
+        .nb-title-input:focus {
             border-bottom-color: var(--accent);
         }
 
-        .notebook-title-input::placeholder {
+        .nb-title-input::placeholder {
             color: var(--muted);
         }
 
-        .notebook-meta {
+        .nb-meta {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             margin-top: 6px;
-            font-size: 0.7rem;
+            font-size: .68rem;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
         }
 
-        /* ── CELL ────────────────────────────────── */
+        /* CELLS */
         #cells-container {
             display: flex;
             flex-direction: column;
@@ -753,19 +958,19 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            animation: cellIn 0.25s ease;
+            transition: border-color .2s, box-shadow .2s;
+            animation: cellIn .25s ease;
         }
 
         @keyframes cellIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(8px)
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0)
             }
         }
 
@@ -775,24 +980,24 @@
 
         .cell.focused {
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
+            box-shadow: 0 0 0 2px rgba(129, 140, 248, .18);
         }
 
-        /* ── Question Banner (top of cell) ──────── */
+        /* Question banner */
         .cell-qbanner {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 9px 14px;
-            min-height: 40px;
-            background: rgba(48, 48, 74, 0.7);
+            padding: 8px 14px;
+            min-height: 38px;
+            background: rgba(48, 48, 74, .6);
             border-bottom: 1px solid var(--border);
-            transition: background 0.2s;
+            transition: background .2s;
         }
 
         .cell-qbanner.linked {
-            background: linear-gradient(90deg, rgba(129, 140, 248, 0.1), rgba(56, 189, 248, 0.06));
-            border-bottom-color: rgba(129, 140, 248, 0.3);
+            background: linear-gradient(90deg, rgba(129, 140, 248, .1), rgba(56, 189, 248, .06));
+            border-bottom-color: rgba(129, 140, 248, .25);
         }
 
         .qb-icon {
@@ -806,16 +1011,15 @@
         }
 
         .qb-sublabel {
-            font-size: 0.58rem;
+            font-size: .56rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
-            margin-bottom: 1px;
         }
 
         .qb-title {
-            font-size: 0.77rem;
+            font-size: .76rem;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -830,26 +1034,32 @@
         }
 
         .qb-empty {
-            font-size: 0.74rem;
+            font-size: .73rem;
             color: var(--muted);
         }
 
-        .qb-dropdown-wrap {
-            position: relative;
+        .qb-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             flex-shrink: 0;
         }
 
+        .qb-drop-wrap {
+            position: relative;
+        }
+
         .qb-link-btn {
-            padding: 3px 9px;
+            padding: 3px 8px;
             border-radius: 5px;
-            font-size: 0.65rem;
+            font-size: .63rem;
             font-weight: 700;
             cursor: pointer;
             border: 1px dashed var(--border2);
             background: transparent;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
-            transition: all 0.12s;
+            transition: all .12s;
             white-space: nowrap;
         }
 
@@ -859,9 +1069,9 @@
             border-style: solid;
         }
 
-        .qb-link-btn.is-linked {
+        .qb-link-btn.linked {
             border-style: solid;
-            border-color: rgba(129, 140, 248, 0.5);
+            border-color: rgba(129, 140, 248, .5);
             color: var(--accent);
         }
 
@@ -874,9 +1084,9 @@
             border-radius: 9px;
             z-index: 200;
             overflow: hidden;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-            width: 290px;
-            animation: dropIn 0.14s ease;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+            width: 285px;
+            animation: dropIn .14s ease;
         }
 
         @keyframes dropIn {
@@ -892,7 +1102,7 @@
         }
 
         .qb-psearch {
-            padding: 8px 10px;
+            padding: 7px 9px;
             border-bottom: 1px solid var(--border);
         }
 
@@ -904,7 +1114,7 @@
             padding: 5px 8px;
             color: var(--text);
             font-family: 'Space Mono', monospace;
-            font-size: 0.7rem;
+            font-size: .7rem;
             outline: none;
         }
 
@@ -913,7 +1123,7 @@
         }
 
         .qb-plist {
-            max-height: 190px;
+            max-height: 180px;
             overflow-y: auto;
         }
 
@@ -923,19 +1133,19 @@
             display: flex;
             align-items: center;
             gap: 7px;
-            transition: background 0.1s;
-            font-size: 0.76rem;
+            transition: background .1s;
+            font-size: .75rem;
         }
 
         .qb-pitem:hover {
-            background: rgba(129, 140, 248, 0.1);
+            background: rgba(129, 140, 248, .1);
         }
 
         .qb-pitem.selected {
-            background: rgba(129, 140, 248, 0.18);
+            background: rgba(129, 140, 248, .18);
         }
 
-        .qb-pitem-name {
+        .qb-pname {
             flex: 1;
             font-weight: 600;
         }
@@ -944,35 +1154,36 @@
             padding: 12px;
             text-align: center;
             color: var(--muted);
-            font-size: 0.72rem;
+            font-size: .72rem;
             font-family: 'Space Mono', monospace;
         }
 
         .qb-unlink {
-            padding: 2px 7px;
+            padding: 2px 6px;
             border-radius: 4px;
-            font-size: 0.6rem;
+            font-size: .58rem;
             cursor: pointer;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(248, 113, 113, .3);
             background: transparent;
             color: var(--error);
             font-family: 'Space Mono', monospace;
             flex-shrink: 0;
+            transition: all .1s;
         }
 
         .qb-unlink:hover {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(248, 113, 113, .1);
         }
 
-        /* ── Description ─────────────────────────── */
+        /* Description */
         .cell-desc {
-            padding: 11px 14px;
-            background: rgba(56, 189, 248, 0.05);
+            padding: 10px 14px;
+            background: rgba(56, 189, 248, .04);
             border-bottom: 1px solid var(--border);
         }
 
         .desc-label {
-            font-size: 0.58rem;
+            font-size: .56rem;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--accent2);
@@ -980,7 +1191,7 @@
             margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
 
         .desc-ta {
@@ -991,16 +1202,17 @@
             resize: none;
             color: var(--text);
             font-family: 'Syne', sans-serif;
-            font-size: 0.83rem;
+            font-size: .82rem;
             line-height: 1.6;
-            min-height: 34px;
+            min-height: 36px;
+            overflow: hidden;
         }
 
         .desc-ta::placeholder {
             color: var(--muted);
         }
 
-        /* ── Toolbar ─────────────────────────────── */
+        /* Cell toolbar */
         .cell-toolbar {
             display: flex;
             align-items: center;
@@ -1010,13 +1222,13 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .toolbar-left {
+        .tl-left {
             display: flex;
             align-items: center;
             gap: 7px;
         }
 
-        .toolbar-right {
+        .tl-right {
             display: flex;
             align-items: center;
             gap: 5px;
@@ -1024,7 +1236,7 @@
 
         .cell-num {
             font-family: 'Space Mono', monospace;
-            font-size: 0.63rem;
+            font-size: .62rem;
             color: var(--muted);
             background: var(--bg);
             padding: 2px 7px;
@@ -1043,23 +1255,23 @@
 
         .lang-btn {
             padding: 2px 9px;
-            font-size: 0.66rem;
+            font-size: .65rem;
             font-family: 'Space Mono', monospace;
             font-weight: 700;
             cursor: pointer;
             border: none;
             background: transparent;
             color: var(--muted);
-            transition: all 0.12s;
+            transition: all .12s;
         }
 
         .lang-btn.active {
             background: var(--accent);
-            color: white;
+            color: #fff;
         }
 
-        .hint-text {
-            font-size: 0.62rem;
+        .hint {
+            font-size: .6rem;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
         }
@@ -1070,14 +1282,14 @@
             gap: 4px;
             padding: 4px 12px;
             background: var(--accent);
-            color: white;
+            color: #fff;
             border: none;
             border-radius: 6px;
             font-family: 'Syne', sans-serif;
-            font-size: 0.73rem;
+            font-size: .72rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all .15s;
         }
 
         .run-btn:hover {
@@ -1115,7 +1327,7 @@
             justify-content: center;
             cursor: pointer;
             font-size: 11px;
-            transition: all 0.12s;
+            transition: all .12s;
         }
 
         .icon-btn:hover {
@@ -1123,19 +1335,19 @@
             color: var(--error);
         }
 
-        /* ── Editor ──────────────────────────────── */
+        /* Editor */
         .cell-editor-wrap .CodeMirror {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.845rem;
+            font-size: .845rem;
             line-height: 1.65;
             height: auto;
-            min-height: 72px;
+            min-height: 70px;
             background: var(--card) !important;
             padding: 9px 0;
         }
 
         .cell-editor-wrap .CodeMirror-scroll {
-            min-height: 72px;
+            min-height: 70px;
         }
 
         .cell-editor-wrap .CodeMirror-lines {
@@ -1151,14 +1363,14 @@
             color: var(--muted) !important;
         }
 
-        /* ── Output ──────────────────────────────── */
+        /* Output */
         .cell-output {
             border-top: 1px solid var(--border);
             background: var(--surface);
         }
 
         .out-header {
-            font-size: 0.58rem;
+            font-size: .57rem;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--muted);
@@ -1173,10 +1385,10 @@
         .out-async-badge {
             padding: 1px 5px;
             border-radius: 3px;
-            font-size: 0.56rem;
-            background: rgba(6, 182, 212, 0.12);
+            font-size: .55rem;
+            background: rgba(56, 189, 248, .12);
             color: var(--accent2);
-            border: 1px solid rgba(6, 182, 212, 0.2);
+            border: 1px solid rgba(56, 189, 248, .2);
         }
 
         .out-time {
@@ -1187,7 +1399,7 @@
         .out-content {
             padding: 9px 13px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.79rem;
+            font-size: .79rem;
             line-height: 1.7;
             white-space: pre-wrap;
             word-break: break-all;
@@ -1221,7 +1433,7 @@
             color: #a78bfa;
         }
 
-        /* ── Add cell ─────────────────────────────── */
+        /* Add cell */
         .add-cell-row {
             display: flex;
             gap: 9px;
@@ -1237,10 +1449,10 @@
             padding: 10px;
             color: var(--muted);
             font-family: 'Syne', sans-serif;
-            font-size: 0.76rem;
+            font-size: .75rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.18s;
+            transition: all .18s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1250,39 +1462,39 @@
         .add-cell-btn:hover {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(129, 140, 248, 0.07);
+            background: rgba(129, 140, 248, .06);
         }
 
         .add-cell-btn.ts:hover {
             border-color: var(--accent2);
             color: var(--accent2);
-            background: rgba(6, 182, 212, 0.05);
+            background: rgba(56, 189, 248, .05);
         }
 
-        /* ── DSA PAGE ─────────────────────────────── */
+        /* DSA page */
         .dsa-page {
-            padding: 26px 32px;
             width: 100%;
+            padding: 24px 28px;
         }
 
-        .dsa-page-header {
+        .dsa-ph {
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
         }
 
-        .dsa-page-title {
+        .dsa-pt {
             font-size: 1.5rem;
             font-weight: 800;
         }
 
-        .dsa-page-title span {
+        .dsa-pt span {
             color: var(--accent2);
         }
 
-        .dsa-page-meta {
-            font-size: 0.72rem;
+        .dsa-pm {
+            font-size: .7rem;
             color: var(--muted);
             font-family: 'Space Mono', monospace;
             margin-top: 3px;
@@ -1290,7 +1502,7 @@
 
         .dsa-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
             gap: 13px;
         }
 
@@ -1299,22 +1511,21 @@
             border: 1px solid var(--border);
             border-radius: 11px;
             padding: 15px;
-            cursor: default;
-            transition: all 0.18s;
-            animation: cellIn 0.22s ease;
+            transition: all .18s;
+            animation: cellIn .22s ease;
         }
 
         .dsa-card:hover {
             border-color: var(--border2);
             transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
         }
 
         .dsa-card.solved-card {
-            opacity: 0.68;
+            opacity: .68;
         }
 
-        .dsa-card-header {
+        .dc-header {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
@@ -1322,29 +1533,29 @@
             margin-bottom: 7px;
         }
 
-        .dsa-card-num {
-            font-size: 0.62rem;
+        .dc-num {
+            font-size: .6rem;
             font-family: 'Space Mono', monospace;
             color: var(--muted);
             flex-shrink: 0;
             margin-top: 2px;
         }
 
-        .dsa-card-title {
-            font-size: 0.88rem;
+        .dc-title {
+            font-size: .88rem;
             font-weight: 700;
             flex: 1;
             line-height: 1.3;
         }
 
-        .dsa-card-check {
+        .dc-check {
             color: var(--success);
             font-size: 13px;
             flex-shrink: 0;
         }
 
-        .dsa-card-desc {
-            font-size: 0.73rem;
+        .dc-desc {
+            font-size: .73rem;
             color: var(--text2);
             line-height: 1.5;
             margin-bottom: 9px;
@@ -1354,27 +1565,28 @@
             overflow: hidden;
         }
 
-        .dsa-card-footer {
+        .dc-footer {
             display: flex;
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
         }
 
-        .dsa-card-linked {
+        .dc-lc {
             margin-left: auto;
-            font-size: 0.62rem;
+            font-size: .6rem;
             color: var(--accent2);
             font-family: 'Space Mono', monospace;
-            background: rgba(6, 182, 212, 0.08);
+            background: rgba(56, 189, 248, .08);
             padding: 2px 6px;
             border-radius: 4px;
         }
 
-        .dsa-card-actions {
+        .dc-actions {
             display: flex;
             gap: 5px;
             margin-top: 9px;
+            flex-wrap: wrap;
         }
 
         .empty-state {
@@ -1387,14 +1599,14 @@
         .empty-icon {
             font-size: 2.8rem;
             margin-bottom: 10px;
-            opacity: 0.35;
+            opacity: .35;
         }
 
         .empty-state p {
-            font-size: 0.82rem;
+            font-size: .82rem;
         }
 
-        /* ── SAVE BAR ─────────────────────────────── */
+        /* Save bar */
         .save-bar {
             position: fixed;
             bottom: 18px;
@@ -1406,12 +1618,12 @@
             border: 1px solid var(--border2);
             border-radius: 9px;
             padding: 9px 14px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            font-size: 0.72rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+            font-size: .7rem;
             z-index: 50;
             transform: translateY(20px);
             opacity: 0;
-            transition: all 0.25s;
+            transition: all .25s;
             font-family: 'Space Mono', monospace;
         }
 
@@ -1431,20 +1643,20 @@
             background: var(--success);
         }
 
-        /* ── TOAST ───────────────────────────────── */
+        /* Toast */
         .toast {
             position: fixed;
-            top: 68px;
+            top: 66px;
             right: 18px;
             background: var(--card2);
             border: 1px solid var(--border2);
             border-radius: 8px;
             padding: 8px 13px;
-            font-size: 0.74rem;
+            font-size: .73rem;
             z-index: 500;
             opacity: 0;
             transform: translateX(14px);
-            transition: all 0.22s;
+            transition: all .22s;
             pointer-events: none;
             font-family: 'Space Mono', monospace;
         }
@@ -1480,22 +1692,20 @@
 </head>
 
 <body>
-
     <div class="toast" id="toast"></div>
 
     <!-- HEADER -->
     <header>
         <div class="logo">
-            <div class="logo-icon">⚡</div>
-            CodeBook
+            <div class="logo-icon">⚡</div>CodeBook
         </div>
         <div class="header-center">
             <button class="tab-btn active" id="tab-notebook" onclick="switchPage('notebook')">📓 Notebook</button>
             <button class="tab-btn" id="tab-dsa" onclick="switchPage('dsa')">🎯 DSA Questions</button>
         </div>
-        <div class="header-actions">
+        <div class="header-right">
             <div class="firebase-status">
-                <div class="firebase-dot" id="fb-dot"></div>
+                <div class="fb-dot" id="fb-dot"></div>
                 <span id="fb-status">offline</span>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="openFirebaseModal()">⚙ Firebase</button>
@@ -1504,38 +1714,37 @@
     </header>
 
     <div class="app-layout">
-
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="sidebar-tabs">
-                <button class="sidebar-tab active" id="stab-nb" onclick="switchSidebarTab('nb')">Notebooks</button>
-                <button class="sidebar-tab" id="stab-dsa" onclick="switchSidebarTab('dsa')">DSA List</button>
+                <button class="stab active" id="stab-nb" onclick="switchSidebarTab('nb')">Notebooks</button>
+                <button class="stab" id="stab-dsa" onclick="switchSidebarTab('dsa')">DSA List</button>
             </div>
 
-            <!-- Notebooks panel -->
-            <div class="sidebar-panel active" id="spanel-nb">
-                <div class="panel-toolbar">
+            <!-- Notebooks -->
+            <div class="spanel active" id="spanel-nb">
+                <div class="panel-top">
                     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="newNotebook()">＋
                         New Notebook</button>
                 </div>
                 <div class="nb-list" id="nb-list">
                     <div
-                        style="padding:14px;color:var(--muted);font-size:0.72rem;text-align:center;font-family:'Space Mono',monospace">
+                        style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:'Space Mono',monospace">
                         Connect Firebase to sync</div>
                 </div>
             </div>
 
-            <!-- DSA sidebar panel -->
-            <div class="sidebar-panel" id="spanel-dsa">
+            <!-- DSA sidebar -->
+            <div class="spanel" id="spanel-dsa">
                 <div class="dsa-toolbar">
-                    <input class="dsa-search" id="sb-dsa-search" placeholder="Search questions..."
+                    <input class="dsa-search" id="sb-dsa-search" placeholder="Search questions…"
                         oninput="renderDSASidebar()">
                     <div class="dsa-filters">
-                        <button class="filter-chip f-all" id="fc-all" onclick="setFilter('all')">All</button>
-                        <button class="filter-chip" id="fc-easy" onclick="setFilter('easy')">Easy</button>
-                        <button class="filter-chip" id="fc-medium" onclick="setFilter('medium')">Med</button>
-                        <button class="filter-chip" id="fc-hard" onclick="setFilter('hard')">Hard</button>
-                        <button class="filter-chip" id="fc-unsolved" onclick="setFilter('unsolved')">Todo</button>
+                        <button class="fchip fa" id="fc-all" onclick="setFilter('all')">All</button>
+                        <button class="fchip" id="fc-easy" onclick="setFilter('easy')">Easy</button>
+                        <button class="fchip" id="fc-medium" onclick="setFilter('medium')">Med</button>
+                        <button class="fchip" id="fc-hard" onclick="setFilter('hard')">Hard</button>
+                        <button class="fchip" id="fc-unsolved" onclick="setFilter('unsolved')">Todo</button>
                     </div>
                     <div class="dsa-stats">
                         <span><span class="stat-dot" style="background:var(--success)"></span><span
@@ -1544,7 +1753,7 @@
                                 id="stat-med">0</span></span>
                         <span><span class="stat-dot" style="background:var(--error)"></span><span
                                 id="stat-hard">0</span></span>
-                        <span>solved: <span id="stat-solved">0</span></span>
+                        <span>✓ <span id="stat-solved">0</span></span>
                     </div>
                 </div>
                 <div class="dsa-list" id="sb-dsa-list"></div>
@@ -1555,21 +1764,20 @@
             </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
+        <!-- MAIN -->
         <div class="main-content">
-
             <!-- NOTEBOOK PAGE -->
             <div class="page active" id="page-notebook">
-                <div class="notebook-page">
-                    <div class="notebook-header">
-                        <input class="notebook-title-input" id="nb-title" type="text" placeholder="Untitled Notebook"
-                            value="Untitled Notebook">
-                        <div class="notebook-meta">
-                            <span id="nb-id">local</span>
-                            <span>·</span>
-                            <span id="cell-count">0 cells</span>
-                            <span>·</span>
-                            <span id="last-saved">unsaved</span>
+                <div class="nb-page">
+                    <div class="nb-header">
+                        <div class="nb-title-wrap">
+                            <input class="nb-title-input" id="nb-title" type="text" placeholder="Untitled Notebook"
+                                value="Untitled Notebook" onchange="triggerAutoSave()">
+                            <div class="nb-meta">
+                                <span id="nb-id">local</span><span>·</span>
+                                <span id="cell-count">0 cells</span><span>·</span>
+                                <span id="last-saved">unsaved</span>
+                            </div>
                         </div>
                     </div>
                     <div id="cells-container"></div>
@@ -1583,10 +1791,10 @@
             <!-- DSA PAGE -->
             <div class="page" id="page-dsa">
                 <div class="dsa-page">
-                    <div class="dsa-page-header">
+                    <div class="dsa-ph">
                         <div>
-                            <div class="dsa-page-title">DSA <span>Questions</span></div>
-                            <div class="dsa-page-meta" id="dsa-page-meta">0 questions</div>
+                            <div class="dsa-pt">DSA <span>Questions</span></div>
+                            <div class="dsa-pm" id="dsa-pm">0 questions</div>
                         </div>
                         <button class="btn btn-primary" onclick="openDSAModal()">＋ Add Question</button>
                     </div>
@@ -1598,7 +1806,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -1606,9 +1813,23 @@
     <div class="modal-overlay" id="firebase-modal">
         <div class="modal">
             <h2>🔥 Firebase Config</h2>
-            <p>Enter your Firebase project credentials to enable cloud sync.</p>
-            <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIzaSy...">
+            <p class="modal-sub">Connect to Firestore for cloud sync across devices.</p>
+
+            <!-- Upload from file -->
+            <div class="form-group">
+                <label>📂 Load Config from JSON File</label>
+                <div class="upload-area" id="fb-upload-area">
+                    <input type="file" accept=".json,.txt" id="fb-file-input" onchange="loadFirebaseFromFile(this)">
+                    <div class="upload-area-text">Drop a <span>.json</span> file here or click to browse<br><small
+                            style="font-size:.65rem;color:var(--muted);margin-top:4px;display:block">File should contain
+                            Firebase config object</small></div>
+                </div>
+                <div class="fb-file-status" id="fb-file-status"></div>
             </div>
+            <div class="modal-divider"></div>
+            <p class="modal-sub" style="margin-top:0;margin-bottom:12px">Or enter manually:</p>
+
+            <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIzaSy…"></div>
             <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain"
                     placeholder="project.firebaseapp.com"></div>
             <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId"
@@ -1617,7 +1838,7 @@
                     placeholder="my-project.appspot.com"></div>
             <div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fb-messagingSenderId"
                     placeholder="123456789"></div>
-            <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123..."></div>
+            <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123…"></div>
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeModal('firebase-modal')">Cancel</button>
                 <button class="btn btn-primary" onclick="initFirebase()">Connect</button>
@@ -1625,11 +1846,11 @@
         </div>
     </div>
 
-    <!-- DSA QUESTION MODAL -->
+    <!-- ADD/EDIT DSA MODAL -->
     <div class="modal-overlay" id="dsa-modal">
         <div class="modal">
-            <h2 id="dsa-modal-h">＋ Add DSA Question</h2>
-            <p>Track a question in your practice list.</p>
+            <h2 id="dsa-modal-h">＋ Add Question</h2>
+            <p class="modal-sub">Track a question in your DSA practice list.</p>
             <input type="hidden" id="dsa-edit-id">
             <div class="form-group"><label>Title *</label><input type="text" id="dq-title" placeholder="e.g. Two Sum">
             </div>
@@ -1657,18 +1878,60 @@
             <div class="form-group">
                 <label>Difficulty</label>
                 <div class="radio-group">
-                    <button class="radio-option" id="rd-easy" onclick="pickDiff('easy')">Easy</button>
-                    <button class="radio-option" id="rd-medium" onclick="pickDiff('medium')">Medium</button>
-                    <button class="radio-option" id="rd-hard" onclick="pickDiff('hard')">Hard</button>
+                    <button class="radio-opt" id="rd-easy" onclick="pickDiff('easy')">Easy</button>
+                    <button class="radio-opt" id="rd-medium" onclick="pickDiff('medium')">Medium</button>
+                    <button class="radio-opt" id="rd-hard" onclick="pickDiff('hard')">Hard</button>
                 </div>
             </div>
             <div class="form-group"><label>Problem Description</label><textarea id="dq-desc"
-                    placeholder="Briefly describe the problem..." rows="3"></textarea></div>
-            <div class="form-group"><label>Source URL (LeetCode, etc.)</label><input type="text" id="dq-url"
-                    placeholder="https://leetcode.com/problems/..."></div>
+                    placeholder="Describe the problem, constraints, examples…" rows="4"></textarea></div>
+            <div class="form-group"><label>Source URL (LeetCode etc.)</label><input type="text" id="dq-url"
+                    placeholder="https://leetcode.com/problems/…"></div>
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeModal('dsa-modal')">Cancel</button>
                 <button class="btn btn-primary" onclick="saveDSAQuestion()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DSA VIEW MODAL -->
+    <div class="modal-overlay" id="qview-modal">
+        <div class="modal modal-wide">
+            <div class="qview-header">
+                <div class="qview-title" id="qv-title">—</div>
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('qview-modal')">✕ Close</button>
+            </div>
+            <div class="qview-badges" id="qv-badges"></div>
+            <div class="qview-desc" id="qv-desc" style="display:none"></div>
+            <div id="qv-url-row" style="margin-bottom:12px;display:none">
+                <a id="qv-url" href="#" target="_blank"
+                    style="color:var(--accent2);font-size:.78rem;font-family:'Space Mono',monospace;">🔗 Open
+                    problem</a>
+            </div>
+            <div
+                style="font-size:.68rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
+                Linked Solution Cells</div>
+            <div class="qview-cells" id="qv-cells"></div>
+            <div class="modal-actions" style="margin-top:16px">
+                <button class="btn btn-success btn-sm" id="qv-solve-btn" onclick="toggleSolvedFromView()">✓ Mark
+                    Solved</button>
+                <button class="btn btn-ghost btn-sm" onclick="editFromView()">✏ Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteFromView()">🗑 Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RENAME NOTEBOOK MODAL -->
+    <div class="modal-overlay" id="rename-modal">
+        <div class="modal" style="width:380px">
+            <h2>✏ Rename Notebook</h2>
+            <p class="modal-sub">Enter a new name for this notebook.</p>
+            <input type="hidden" id="rename-nb-id">
+            <div class="form-group"><label>New Name</label><input type="text" id="rename-nb-title"
+                    placeholder="Notebook name…"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('rename-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="doRenameNotebook()">Rename</button>
             </div>
         </div>
     </div>
@@ -1680,9 +1943,10 @@
     </div>
 
     <script>
-        // ═══════════════════════════════════════════
+        'use strict';
+        // ══════════════════════════════════════════════
         // STATE
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         let db = null;
         let cells = [];
         let cellEditors = {};
@@ -1692,94 +1956,144 @@
         let cellIdCounter = 0;
         let dsaFilter = 'all';
         let selDiff = 'medium';
+        let viewingQId = null; // currently open in view modal
 
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         // PAGE SWITCHING
-        // ═══════════════════════════════════════════
-        function switchPage(name) {
+        // ══════════════════════════════════════════════
+        function switchPage(n) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('page-' + name).classList.add('active');
-            document.getElementById('tab-' + name).classList.add('active');
-            if (name === 'dsa') renderDSAGrid();
+            document.getElementById('page-' + n).classList.add('active');
+            document.getElementById('tab-' + n).classList.add('active');
+            if (n === 'dsa') renderDSAGrid();
+        }
+        function switchSidebarTab(n) {
+            document.querySelectorAll('.spanel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+            document.getElementById('spanel-' + n).classList.add('active');
+            document.getElementById('stab-' + n).classList.add('active');
         }
 
-        function switchSidebarTab(name) {
-            document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.sidebar-tab').forEach(b => b.classList.remove('active'));
-            document.getElementById('spanel-' + name).classList.add('active');
-            document.getElementById('stab-' + name).classList.add('active');
+        // ══════════════════════════════════════════════
+        // FIREBASE CONFIG — from file or manual
+        // ══════════════════════════════════════════════
+        function loadFirebaseFromFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    let text = e.target.result.trim();
+                    // Strip JS variable assignment if present: const firebaseConfig = {...};
+                    text = text.replace(/^.*?=\s*/, '').replace(/;?\s*$/, '').trim();
+                    const cfg = JSON.parse(text);
+                    const keys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+                    let found = 0;
+                    keys.forEach(k => {
+                        if (cfg[k]) {
+                            const el = document.getElementById('fb-' + k);
+                            if (el) { el.value = cfg[k]; found++; }
+                        }
+                    });
+                    const statusEl = document.getElementById('fb-file-status');
+                    statusEl.style.display = 'block';
+                    statusEl.textContent = '✓ Loaded ' + found + ' fields from ' + file.name;
+                    showToast('Config loaded from file!', 'success');
+                } catch (err) {
+                    showToast('Could not parse file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
         }
 
-        // ═══════════════════════════════════════════
-        // FIREBASE
-        // ═══════════════════════════════════════════
         function openFirebaseModal() {
             const saved = JSON.parse(localStorage.getItem('fb_config') || '{}');
             ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
                 const el = document.getElementById('fb-' + k);
                 if (el && saved[k]) el.value = saved[k];
             });
-            document.getElementById('firebase-modal').classList.add('open');
+            document.getElementById('fb-file-status').style.display = 'none';
+            openModal('firebase-modal');
         }
-
-        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
         async function initFirebase() {
             const config = {};
             ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
-                config[k] = document.getElementById('fb-' + k).value.trim();
+                config[k] = (document.getElementById('fb-' + k).value || '').trim();
             });
             if (!config.apiKey || !config.projectId) { showToast('API Key & Project ID required!', 'error'); return; }
             try {
+                // delete old app
                 try { await firebase.app().delete(); } catch (e) { }
                 firebase.initializeApp(config);
                 db = firebase.firestore();
+                // verify connection
                 await db.collection('notebooks').limit(1).get();
                 localStorage.setItem('fb_config', JSON.stringify(config));
-                document.getElementById('fb-dot').classList.add('connected');
-                document.getElementById('fb-status').textContent = 'synced';
+                setFirebaseStatus(true);
                 closeModal('firebase-modal');
                 showToast('Firebase connected!', 'success');
                 loadNotebooksList();
                 loadDSAFromFirebase();
-            } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+                console.error(e);
+            }
         }
 
-        // ═══════════════════════════════════════════
-        // NOTEBOOKS LIST
-        // ═══════════════════════════════════════════
+        function setFirebaseStatus(on) {
+            document.getElementById('fb-dot').className = 'fb-dot' + (on ? ' on' : '');
+            document.getElementById('fb-status').textContent = on ? 'synced' : 'offline';
+        }
+
+        // ══════════════════════════════════════════════
+        // NOTEBOOKS LIST (sidebar)
+        // ══════════════════════════════════════════════
         async function loadNotebooksList() {
             if (!db) return;
             const list = document.getElementById('nb-list');
-            list.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:0.7rem;font-family:\'Space Mono\',monospace">Loading...</div>';
+            list.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:.7rem;font-family:\'Space Mono\',monospace">Loading…</div>';
             try {
-                const snap = await db.collection('notebooks').orderBy('updatedAt', 'desc').limit(40).get();
+                const snap = await db.collection('notebooks').orderBy('updatedAt', 'desc').limit(50).get();
                 list.innerHTML = '';
+                if (snap.empty) {
+                    list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No notebooks yet</div>';
+                    return;
+                }
                 snap.forEach(doc => {
                     const d = doc.data();
                     const div = document.createElement('div');
-                    div.className = 'nb-item' + (doc.id === currentNotebookId ? ' active' : '');
+                    div.className = 'nb-item' + (doc.id === currentNotebookId ? ' active-nb' : '');
+                    div.id = 'nb-item-' + doc.id;
                     const date = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate().toLocaleDateString() : '';
-                    div.innerHTML = '<div class="nb-item-title">' + (d.title || 'Untitled') + '</div>' +
-                        '<div class="nb-item-meta">' + (d.cells || []).length + ' cells · ' + date + '</div>';
-                    div.onclick = () => loadNotebook(doc.id, d);
+                    div.innerHTML =
+                        '<div class="nb-item-title">' + escH(d.title || 'Untitled') + '</div>' +
+                        '<div class="nb-item-meta">' + (d.cells || []).length + ' cells · ' + date + '</div>' +
+                        '<div class="nb-item-actions">' +
+                        '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '\',`' + escH(d.title || 'Untitled') + '`)">✏</button>' +
+                        '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">🗑</button>' +
+                        '</div>';
+                    div.addEventListener('click', () => loadNotebook(doc.id, d));
                     list.appendChild(div);
                 });
-                if (snap.empty) list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:0.7rem;text-align:center;font-family:\'Space Mono\',monospace">No notebooks yet</div>';
             } catch (e) {
-                list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:0.7rem">' + e.message + '</div>';
+                list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:.7rem">' + escH(e.message) + '</div>';
             }
         }
 
         function loadNotebook(id, data) {
             currentNotebookId = id;
             document.getElementById('nb-title').value = data.title || 'Untitled';
-            document.getElementById('nb-id').textContent = id.slice(0, 8) + '...';
+            document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
             cells = []; cellEditors = {};
             document.getElementById('cells-container').innerHTML = '';
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
             updateCellCount();
+            // update sidebar active state
+            document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
+            const el = document.getElementById('nb-item-' + id);
+            if (el) el.classList.add('active-nb');
             switchPage('notebook');
             showToast('Notebook loaded!', 'success');
         }
@@ -1790,18 +2104,72 @@
             document.getElementById('nb-id').textContent = 'local';
             cells = []; cellEditors = {};
             document.getElementById('cells-container').innerHTML = '';
+            document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             addCell('javascript');
-            showToast('New notebook created', 'success');
+            showToast('New notebook!', 'success');
         }
 
-        // ═══════════════════════════════════════════
+        async function deleteNotebook(id) {
+            if (!confirm('Delete this notebook permanently? This cannot be undone.')) return;
+            // If it's currently open, reset
+            if (id === currentNotebookId) {
+                currentNotebookId = null;
+                document.getElementById('nb-title').value = 'Untitled Notebook';
+                document.getElementById('nb-id').textContent = 'local';
+                cells = []; cellEditors = {};
+                document.getElementById('cells-container').innerHTML = '';
+                addCell('javascript');
+            }
+            if (db) {
+                try {
+                    await db.collection('notebooks').doc(id).delete();
+                    showToast('Notebook deleted', 'success');
+                    loadNotebooksList();
+                } catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
+            } else {
+                // Remove from local storage list if it's there
+                const el = document.getElementById('nb-item-' + id);
+                if (el) el.remove();
+                showToast('Notebook deleted locally', 'success');
+            }
+        }
+
+        function openRenameModal(id, currentTitle) {
+            document.getElementById('rename-nb-id').value = id;
+            document.getElementById('rename-nb-title').value = currentTitle;
+            openModal('rename-modal');
+        }
+
+        async function doRenameNotebook() {
+            const id = document.getElementById('rename-nb-id').value;
+            const newTitle = document.getElementById('rename-nb-title').value.trim();
+            if (!newTitle) { showToast('Title cannot be empty', 'error'); return; }
+
+            // If currently open, update title input
+            if (id === currentNotebookId) {
+                document.getElementById('nb-title').value = newTitle;
+            }
+
+            if (db) {
+                try {
+                    await db.collection('notebooks').doc(id).update({
+                        title: newTitle,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    showToast('Renamed!', 'success');
+                    loadNotebooksList();
+                } catch (e) { showToast('Rename failed: ' + e.message, 'error'); }
+            }
+            closeModal('rename-modal');
+        }
+
+        // ══════════════════════════════════════════════
         // DSA QUESTIONS
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         function pickDiff(d) {
             selDiff = d;
             ['easy', 'medium', 'hard'].forEach(x => {
-                const btn = document.getElementById('rd-' + x);
-                btn.className = 'radio-option' + (x === d ? ' sel-' + x : '');
+                document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : '');
             });
         }
 
@@ -1817,13 +2185,13 @@
                 document.getElementById('dq-url').value = q.url || '';
                 pickDiff(q.difficulty || 'medium');
             } else {
-                document.getElementById('dsa-modal-h').textContent = '＋ Add DSA Question';
+                document.getElementById('dsa-modal-h').textContent = '＋ Add Question';
                 document.getElementById('dq-title').value = '';
                 document.getElementById('dq-desc').value = '';
                 document.getElementById('dq-url').value = '';
                 pickDiff('medium');
             }
-            document.getElementById('dsa-modal').classList.add('open');
+            openModal('dsa-modal');
         }
 
         function saveDSAQuestion() {
@@ -1849,10 +2217,7 @@
             }
             closeModal('dsa-modal');
             persistDSA();
-            renderDSASidebar();
-            renderDSAGrid();
-            updateDSAStats();
-            // refresh banners of linked cells
+            refreshAllDSAUI();
             cells.forEach(c => { if (c.linkedQuestionId === q.id) refreshBanner(c.id); });
             showToast(editId ? 'Updated!' : 'Question added!', 'success');
         }
@@ -1862,28 +2227,102 @@
             cells.forEach(c => { if (c.linkedQuestionId === id) { c.linkedQuestionId = null; refreshBanner(c.id); } });
             dsaQuestions = dsaQuestions.filter(q => q.id !== id);
             persistDSA();
-            renderDSASidebar();
-            renderDSAGrid();
-            updateDSAStats();
+            refreshAllDSAUI();
             triggerAutoSave();
+            showToast('Deleted', 'success');
         }
 
         function toggleSolved(id) {
             const q = dsaQuestions.find(q => q.id === id);
-            if (q) { q.solved = !q.solved; persistDSA(); renderDSASidebar(); renderDSAGrid(); updateDSAStats(); cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); }); }
+            if (!q) return;
+            q.solved = !q.solved;
+            persistDSA();
+            refreshAllDSAUI();
+            cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); });
         }
 
+        // View modal
+        function openQuestionView(id) {
+            const q = dsaQuestions.find(q => q.id === id);
+            if (!q) return;
+            viewingQId = id;
+
+            document.getElementById('qv-title').textContent = q.title;
+
+            // badges
+            let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
+            if (q.category) badges += '<span style="font-size:.7rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category) + '</span>';
+            if (q.solved) badges += '<span style="color:var(--success);font-size:.72rem;font-family:\'Space Mono\',monospace">✓ Solved</span>';
+            document.getElementById('qv-badges').innerHTML = badges;
+
+            // description
+            const descEl = document.getElementById('qv-desc');
+            if (q.description) { descEl.textContent = q.description; descEl.style.display = 'block'; }
+            else descEl.style.display = 'none';
+
+            // url
+            const urlRow = document.getElementById('qv-url-row');
+            if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; }
+            else urlRow.style.display = 'none';
+
+            // solve button
+            document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ Reopen' : '✓ Mark Solved';
+            document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
+
+            // linked cells
+            const linkedCells = cells.filter(c => c.linkedQuestionId === id);
+            const cellsEl = document.getElementById('qv-cells');
+            if (linkedCells.length === 0) {
+                cellsEl.innerHTML = '<div class="qview-empty">No cells linked to this question yet.<br>Open a notebook cell and click "Link Question" to connect it.</div>';
+            } else {
+                cellsEl.innerHTML = linkedCells.map((c, i) => {
+                    const editor = cellEditors[c.id];
+                    const code = editor ? editor.getValue() : c.code || '';
+                    const wrap = document.getElementById('cell-' + c.id);
+                    const desc = wrap ? wrap.querySelector('.desc-ta').value : c.description || '';
+                    const cellIdx = cells.findIndex(x => x.id === c.id);
+                    return '<div class="qview-cell">' +
+                        '<div class="qview-cell-header">' +
+                        '<span>[' + (cellIdx + 1) + ']</span>' +
+                        '<span class="diff-badge diff-' + (c.lang === 'typescript' ? 'medium' : 'easy') + '">' + c.lang.toUpperCase().slice(0, 2) + '</span>' +
+                        '<span>' + escH(document.getElementById('nb-title').value || 'Current Notebook') + '</span>' +
+                        '</div>' +
+                        (desc ? '<div class="qview-cell-desc">📝 ' + escH(desc) + '</div>' : '') +
+                        '<div class="qview-cell-code">' + escH(code.slice(0, 600)) + (code.length > 600 ? '\n…' : '') + '</div>' +
+                        '</div>';
+                }).join('');
+            }
+
+            openModal('qview-modal');
+        }
+
+        function toggleSolvedFromView() {
+            if (!viewingQId) return;
+            toggleSolved(viewingQId);
+            openQuestionView(viewingQId); // refresh view
+        }
+        function editFromView() {
+            closeModal('qview-modal');
+            openDSAModal(viewingQId);
+        }
+        function deleteFromView() {
+            closeModal('qview-modal');
+            deleteDSAQuestion(viewingQId);
+        }
+
+        // Filter
         function setFilter(f) {
             dsaFilter = f;
             ['all', 'easy', 'medium', 'hard', 'unsolved'].forEach(x => {
                 const el = document.getElementById('fc-' + x);
                 if (!el) return;
-                const activeClass = x === 'easy' ? 'f-easy' : x === 'medium' ? 'f-medium' : x === 'hard' ? 'f-hard' : 'f-all';
-                el.className = 'filter-chip' + (x === f ? ' ' + activeClass : '');
+                const map = { all: 'fa', easy: 'fe', medium: 'fm', hard: 'fh', unsolved: 'fa' };
+                el.className = 'fchip' + (x === f ? ' ' + map[x] : '');
             });
             renderDSASidebar();
         }
 
+        // Render sidebar DSA list
         function renderDSASidebar() {
             const list = document.getElementById('sb-dsa-list');
             const search = (document.getElementById('sb-dsa-search').value || '').toLowerCase();
@@ -1895,48 +2334,61 @@
                 if (search && !q.title.toLowerCase().includes(search) && !(q.category || '').toLowerCase().includes(search)) return false;
                 return true;
             });
+
             if (filtered.length === 0) {
-                list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:0.7rem;text-align:center;font-family:\'Space Mono\',monospace">No questions found</div>';
+                list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No questions found</div>';
                 return;
             }
             list.innerHTML = filtered.map(q => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
-                return '<div class="dsa-item' + (q.solved ? ' solved' : '') + '" onclick="openDSAModal(\'' + q.id + '\')">' +
-                    '<div class="dsa-item-header"><div class="dsa-item-title">' + escH(q.title) + '</div>' +
-                    '<div class="dsa-item-actions"><button class="dsa-action-btn" onclick="event.stopPropagation();deleteDSAQuestion(\'' + q.id + '\')">✕</button></div></div>' +
-                    '<div class="dsa-item-footer">' +
+                return '<div class="dsa-sb-item">' +
+                    '<div class="dsa-sb-header">' +
+                    '<div class="dsa-sb-title">' + (q.solved ? '<span class="dsa-solved-mark">✓ </span>' : '') + escH(q.title) + '</div>' +
+                    '<div class="dsa-sb-btns">' +
+                    '<button class="dsa-sb-btn view-btn" title="View" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' +
+                    '<button class="dsa-sb-btn del-btn" title="Delete" onclick="deleteDSAQuestion(\'' + q.id + '\')">✕</button>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="dsa-sb-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
-                    '<span class="dsa-category">' + escH(q.category || '') + '</span>' +
-                    (lc ? '<span class="dsa-linked-count">⚡' + lc + '</span>' : '') +
-                    '</div></div>';
+                    '<span class="dsa-cat-tag">' + escH(q.category || '') + '</span>' +
+                    (lc ? '<span class="dsa-lc">⚡' + lc + '</span>' : '') +
+                    '</div>' +
+                    '</div>';
             }).join('');
         }
 
+        // Render DSA grid page
         function renderDSAGrid() {
             const grid = document.getElementById('dsa-grid');
-            const meta = document.getElementById('dsa-page-meta');
+            const meta = document.getElementById('dsa-pm');
             meta.textContent = dsaQuestions.length + ' question' + (dsaQuestions.length !== 1 ? 's' : '') + ' · ' + dsaQuestions.filter(q => q.solved).length + ' solved';
             if (dsaQuestions.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>No questions yet. Add your first DSA question!</p></div>';
+                grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Add your first DSA question!</p></div>';
                 return;
             }
             grid.innerHTML = dsaQuestions.map((q, i) => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
                 return '<div class="dsa-card' + (q.solved ? ' solved-card' : '') + '">' +
-                    '<div class="dsa-card-header"><span class="dsa-card-num">#' + (i + 1) + '</span>' +
-                    '<span class="dsa-card-title">' + escH(q.title) + '</span>' +
-                    (q.solved ? '<span class="dsa-card-check">✓</span>' : '') + '</div>' +
-                    (q.description ? '<div class="dsa-card-desc">' + escH(q.description) + '</div>' : '') +
-                    '<div class="dsa-card-footer">' +
+                    '<div class="dc-header">' +
+                    '<span class="dc-num">#' + (i + 1) + '</span>' +
+                    '<span class="dc-title">' + escH(q.title) + '</span>' +
+                    (q.solved ? '<span class="dc-check">✓</span>' : '') +
+                    '</div>' +
+                    (q.description ? '<div class="dc-desc">' + escH(q.description) + '</div>' : '') +
+                    '<div class="dc-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
-                    '<span style="font-size:0.65rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
-                    (lc ? '<span class="dsa-card-linked">⚡ ' + lc + ' cell' + (lc > 1 ? 's' : '') + '</span>' : '') + '</div>' +
-                    '<div class="dsa-card-actions">' +
-                    '<button class="btn btn-ghost btn-sm" onclick="toggleSolved(\'' + q.id + '\')">' + (q.solved ? '↩ Reopen' : '✓ Solved') + '</button>' +
-                    (q.url ? '<button class="btn btn-ghost btn-sm" onclick="window.open(\'' + q.url + '\',\'_blank\')">🔗</button>' : '') +
-                    '<button class="btn btn-ghost btn-sm" onclick="openDSAModal(\'' + q.id + '\')">✏</button>' +
-                    '<button class="btn btn-danger btn-sm" onclick="deleteDSAQuestion(\'' + q.id + '\')">✕</button>' +
-                    '</div></div>';
+                    '<span style="font-size:.63rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
+                    (lc ? '<span class="dc-lc">⚡ ' + lc + ' cell' + (lc > 1 ? 's' : '') + '</span>' : '') +
+                    '</div>' +
+                    '<div class="dc-actions">' +
+                    '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁 View</button>' +
+                    '<button class="btn btn-' + (q.solved ? 'ghost' : 'success') + ' btn-xs" onclick="toggleSolved(\'' + q.id + '\')">' + (q.solved ? '↩ Reopen' : '✓ Solved') + '</button>' +
+                    (q.url ? '<button class="btn btn-ghost btn-xs" onclick="window.open(\'' + escH(q.url) + '\',\'_blank\')">🔗</button>' : '') +
+                    '<button class="btn btn-ghost btn-xs" onclick="openDSAModal(\'' + q.id + '\')">✏</button>' +
+                    '<button class="btn btn-danger btn-xs" onclick="deleteDSAQuestion(\'' + q.id + '\')">🗑</button>' +
+                    '</div>' +
+                    '</div>';
             }).join('');
         }
 
@@ -1947,10 +2399,19 @@
             document.getElementById('stat-solved').textContent = dsaQuestions.filter(q => q.solved).length;
         }
 
+        function refreshAllDSAUI() {
+            renderDSASidebar();
+            renderDSAGrid();
+            updateDSAStats();
+        }
+
         function persistDSA() {
             localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
             if (db) {
-                db.collection('dsa').doc('questions').set({ questions: dsaQuestions, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => { });
+                db.collection('dsa').doc('questions').set({
+                    questions: dsaQuestions,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => console.warn('DSA save err', e));
             }
         }
 
@@ -1961,55 +2422,65 @@
                 if (doc.exists && doc.data().questions) {
                     dsaQuestions = doc.data().questions;
                     localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
-                    renderDSASidebar(); renderDSAGrid(); updateDSAStats();
+                    refreshAllDSAUI();
                     cells.forEach(c => refreshBanner(c.id));
                 }
-            } catch (e) { }
+            } catch (e) { console.warn('DSA load err', e); }
         }
 
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         // CELLS
-        // ═══════════════════════════════════════════
-        function addCell(lang, code, description, savedOutput, linkedQuestionId) {
+        // ══════════════════════════════════════════════
+        function addCell(lang, code, description, savedOutput, linkedQId) {
             lang = lang || 'javascript';
             code = code || '';
             description = description || '';
-            linkedQuestionId = linkedQuestionId || null;
-
+            linkedQId = linkedQId || null;
             const id = ++cellIdCounter;
-            const cell = { id, lang, description, linkedQuestionId, lastOutput: savedOutput || null };
+            const cell = { id, lang, description, linkedQuestionId: linkedQId, lastOutput: savedOutput || null };
             cells.push(cell);
 
             const div = document.createElement('div');
             div.className = 'cell';
             div.id = 'cell-' + id;
 
-            div.innerHTML = buildBannerHTML(id, linkedQuestionId) +
+            div.innerHTML =
+                buildBannerHTML(id, linkedQId) +
+                // Description
                 '<div class="cell-desc">' +
-                '<div class="desc-label"><span>📝</span> Solution Notes</div>' +
-                '<textarea class="desc-ta" placeholder="Describe your approach, time/space complexity, edge cases..." rows="2">' + escH(description) + '</textarea>' +
+                '<div class="desc-label"><span>📝</span>Solution Notes</div>' +
+                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
                 '</div>' +
+                // Toolbar
                 '<div class="cell-toolbar">' +
-                '<div class="toolbar-left">' +
+                '<div class="tl-left">' +
                 '<span class="cell-num" id="cnum-' + id + '">[1]</span>' +
                 '<div class="lang-toggle">' +
                 '<button class="lang-btn ' + (lang === 'javascript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'javascript\')">JS</button>' +
                 '<button class="lang-btn ' + (lang === 'typescript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'typescript\')">TS</button>' +
                 '</div>' +
-                '<span class="hint-text">Ctrl+Enter run</span>' +
+                '<span class="hint">Ctrl+Enter run · Ctrl+/ comment</span>' +
                 '</div>' +
-                '<div class="toolbar-right">' +
+                '<div class="tl-right">' +
                 '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ Run</button>' +
-                '<button class="icon-btn" onclick="deleteCell(' + id + ')">✕</button>' +
+                '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">✕</button>' +
                 '</div>' +
                 '</div>' +
+                // Editor
                 '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
+                // Output
                 '<div class="cell-output" id="output-' + id + '" style="display:none">' +
-                '<div class="out-header">Output <span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span><span class="out-time" id="otime-' + id + '"></span></div>' +
+                '<div class="out-header">Output<span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span><span class="out-time" id="otime-' + id + '"></span></div>' +
                 '<div class="out-content" id="ocontent-' + id + '"></div>' +
                 '</div>';
 
             document.getElementById('cells-container').appendChild(div);
+
+            // Auto-resize textarea
+            const ta = div.querySelector('.desc-ta');
+            const autoResize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+            ta.addEventListener('input', () => { autoResize(); triggerAutoSave(); });
+            setTimeout(autoResize, 10);
 
             // CodeMirror
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
@@ -2028,60 +2499,15 @@
             editor.on('change', () => triggerAutoSave());
             cellEditors[id] = editor;
 
-            div.querySelector('.desc-ta').addEventListener('input', triggerAutoSave);
-
             if (savedOutput && savedOutput.lines) showOutput(id, savedOutput.lines, savedOutput.hasError, savedOutput.time, savedOutput.isAsync);
 
             updateCellCount();
             return id;
         }
 
-        function buildBannerHTML(cellId, linkedQuestionId) {
-            const q = linkedQuestionId ? dsaQuestions.find(x => x.id === linkedQuestionId) : null;
-            return '<div class="cell-qbanner ' + (q ? 'linked' : '') + '" id="qbanner-' + cellId + '">' +
-                '<span class="qb-icon">' + (q ? '🎯' : '❓') + '</span>' +
-                '<div class="qb-info">' +
-                '<div class="qb-sublabel">DSA Question</div>' +
-                (q
-                    ? '<div class="qb-title">' + escH(q.title) + '</div>' +
-                    '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
-                    '<span style="font-size:0.6rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
-                    (q.solved ? '<span style="color:var(--success);font-size:0.6rem;font-family:\'Space Mono\',monospace">✓ solved</span>' : '') + '</div>'
-                    : '<div class="qb-empty">No question linked — click to add</div>'
-                ) +
-                '</div>' +
-                '<div class="qb-dropdown-wrap" id="qbdrop-' + cellId + '">' +
-                '<button class="qb-link-btn ' + (q ? 'is-linked' : '') + '" onclick="togglePicker(' + cellId + ')">' +
-                (q ? '✎ Change' : '+ Link Question') +
-                '</button>' +
-                '<div class="qb-picker" id="qbpicker-' + cellId + '" style="display:none">' +
-                '<div class="qb-psearch"><input type="text" placeholder="Search..." oninput="filterPicker(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
-                '<div class="qb-plist" id="qbplist-' + cellId + '"></div>' +
-                '</div>' +
-                '</div>' +
-                (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') +
-                '</div>';
-        }
-
-        function refreshBanner(cellId) {
-            const cell = cells.find(c => c.id === cellId);
-            if (!cell) return;
-            const banner = document.getElementById('qbanner-' + cellId);
-            if (!banner) return;
-            // Replace the whole banner element's outer content
-            const wrap = banner.parentElement;
-            const next = banner.nextSibling;
-            banner.remove();
-            const tmp = document.createElement('div');
-            tmp.innerHTML = buildBannerHTML(cellId, cell.linkedQuestionId);
-            wrap.insertBefore(tmp.firstChild, next);
-        }
-
         function getTemplate(lang) {
-            if (lang === 'typescript') {
-                return '// TypeScript — async/await fully supported\nasync function twoSum(nums: number[], target: number): Promise<number[]> {\n  const map = new Map<number, number>();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement)!, i];\n    map.set(nums[i], i);\n  }\n  return [];\n}\n\n(async () => {\n  const result = await twoSum([2, 7, 11, 15], 9);\n  console.log(result); // [0, 1]\n})();';
-            }
-            return '// JavaScript — async/await fully supported\nasync function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) return [map.get(complement), i];\n    map.set(nums[i], i);\n  }\n  return [];\n}\n\n(async () => {\n  const result = await twoSum([2, 7, 11, 15], 9);\n  console.log(result); // [0, 1]\n})();';
+            if (lang === 'typescript') return '// TypeScript — async/await supported\nasync function solve<T>(input: T[]): Promise<T[]> {\n  return input.map(x => x); // your solution\n}\n\n(async () => {\n  console.log(await solve([1, 2, 3]));\n})();';
+            return '// JavaScript — async/await supported\nasync function solve(nums) {\n  return nums.map(n => n * 2); // your solution\n}\n\n(async () => {\n  console.log(await solve([1, 2, 3]));\n})();';
         }
 
         function setLang(id, lang) {
@@ -2104,7 +2530,44 @@
             cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (i + 1) + ']'; });
         }
 
-        // ── Question Picker ───────────────────────
+        // ── Question Banner ──────────────────────────
+        function buildBannerHTML(cellId, linkedQId) {
+            const q = linkedQId ? dsaQuestions.find(x => x.id === linkedQId) : null;
+            return '<div class="cell-qbanner' + (q ? ' linked' : '') + '" id="qbanner-' + cellId + '">' +
+                '<span class="qb-icon">' + (q ? '🎯' : '❓') + '</span>' +
+                '<div class="qb-info">' +
+                '<div class="qb-sublabel">Linked DSA Question</div>' +
+                (q
+                    ? '<div class="qb-title">' + escH(q.title) + '</div>' +
+                    '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span><span class="dsa-cat-tag" style="font-size:.58rem">' + escH(q.category || '') + '</span>' +
+                    (q.solved ? '<span style="color:var(--success);font-size:.6rem;font-family:\'Space Mono\',monospace">✓</span>' : '') + '</div>'
+                    : '<div class="qb-empty">No question linked</div>'
+                ) +
+                '</div>' +
+                '<div class="qb-right">' +
+                (q ? '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' : '') +
+                '<div class="qb-drop-wrap" id="qbdrop-' + cellId + '">' +
+                '<button class="qb-link-btn' + (q ? ' linked' : '') + '" onclick="togglePicker(' + cellId + ')">' + (q ? '✎ Change' : '+ Link') + '</button>' +
+                '<div class="qb-picker" id="qbpicker-' + cellId + '" style="display:none">' +
+                '<div class="qb-psearch"><input type="text" placeholder="Search…" oninput="buildPickerList(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
+                '<div class="qb-plist" id="qbplist-' + cellId + '"></div>' +
+                '</div>' +
+                '</div>' +
+                (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') +
+                '</div>' +
+                '</div>';
+        }
+
+        function refreshBanner(cellId) {
+            const cell = cells.find(c => c.id === cellId);
+            if (!cell) return;
+            const old = document.getElementById('qbanner-' + cellId);
+            if (!old) return;
+            const tmp = document.createElement('div');
+            tmp.innerHTML = buildBannerHTML(cellId, cell.linkedQuestionId);
+            old.parentNode.replaceChild(tmp.firstChild, old);
+        }
+
         function togglePicker(cellId) {
             const picker = document.getElementById('qbpicker-' + cellId);
             const isOpen = picker.style.display !== 'none';
@@ -2120,19 +2583,18 @@
             document.querySelectorAll('[id^="qbpicker-"]').forEach(el => el.style.display = 'none');
         }
 
-        function filterPicker(cellId, val) { buildPickerList(cellId, val.toLowerCase()); }
-
         function buildPickerList(cellId, search) {
+            search = (search || '').toLowerCase();
             const list = document.getElementById('qbplist-' + cellId);
             if (!list) return;
             const cell = cells.find(c => c.id === cellId);
             const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search));
-            if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">No questions found</div>'; return; }
+            if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">No questions</div>'; return; }
             list.innerHTML = filtered.map(q =>
-                '<div class="qb-pitem ' + (cell && cell.linkedQuestionId === q.id ? 'selected' : '') + '" onclick="linkQ(' + cellId + ',\'' + q.id + '\')">' +
+                '<div class="qb-pitem' + (cell && cell.linkedQuestionId === q.id ? ' selected' : '') + '" onclick="linkQ(' + cellId + ',\'' + q.id + '\')">' +
                 '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty[0].toUpperCase() + '</span>' +
-                '<span class="qb-pitem-name">' + escH(q.title) + '</span>' +
-                '<span style="font-size:0.6rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
+                '<span class="qb-pname">' + escH(q.title) + '</span>' +
+                '<span style="font-size:.58rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
                 '</div>'
             ).join('');
         }
@@ -2143,7 +2605,7 @@
             cell.linkedQuestionId = qId;
             closeAllPickers();
             refreshBanner(cellId);
-            renderDSASidebar(); renderDSAGrid();
+            refreshAllDSAUI();
             triggerAutoSave();
         }
 
@@ -2152,18 +2614,17 @@
             if (!cell) return;
             cell.linkedQuestionId = null;
             refreshBanner(cellId);
-            renderDSASidebar(); renderDSAGrid();
+            refreshAllDSAUI();
             triggerAutoSave();
         }
 
-        // close pickers on outside click
         document.addEventListener('click', e => {
             if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
         });
 
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         // ASYNC CODE EXECUTION
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         async function runCell(id) {
             const cell = cells.find(c => c.id === id);
             const editor = cellEditors[id];
@@ -2173,18 +2634,15 @@
             const lang = cell.lang;
             const runBtn = document.getElementById('runbtn-' + id);
             runBtn.classList.add('running');
-            runBtn.textContent = '⏳ Running...';
+            runBtn.textContent = '⏳ Running…';
             document.getElementById('output-' + id).style.display = 'none';
 
             const logs = [];
-            const startTime = performance.now();
-            let hasError = false;
-            let isAsync = false;
+            const t0 = performance.now();
+            let hasError = false, isAsync = false;
 
-            // Capture console methods
             const saved = {};
             ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => saved[m] = console[m]);
-
             const capture = type => (...args) => {
                 let str;
                 try {
@@ -2193,26 +2651,20 @@
                         if (a === undefined) return 'undefined';
                         if (a instanceof Error) return a.toString();
                         if (a instanceof Promise) return '[Promise]';
-                        if (Array.isArray(a)) return JSON.stringify(a, null, 2);
-                        if (typeof a === 'object') { try { return JSON.stringify(a, null, 2); } catch { return String(a); } }
+                        if (Array.isArray(a) || typeof a === 'object') try { return JSON.stringify(a, null, 2); } catch { return String(a); }
                         return String(a);
                     }).join(' ');
                 } catch { str = '[unprintable]'; }
                 logs.push({ type, str });
                 saved[type](...args);
             };
-
-            console.log = capture('log');
-            console.error = capture('error');
-            console.warn = capture('warn');
-            console.info = capture('info');
-            console.table = (...args) => { try { capture('log')(JSON.stringify(args[0], null, 2)); } catch { capture('log')(...args); } };
+            console.log = capture('log'); console.error = capture('error');
+            console.warn = capture('warn'); console.info = capture('info');
+            console.table = (...a) => { try { capture('log')(JSON.stringify(a[0], null, 2)); } catch { capture('log')(...a); } };
             console.dir = capture('log');
 
             try {
                 let jsCode = code;
-
-                // TypeScript compile
                 if (lang === 'typescript') {
                     try {
                         const result = ts.transpileModule(code, {
@@ -2233,55 +2685,31 @@
                 }
 
                 if (!hasError) {
-                    // Detect async usage
                     isAsync = /\bawait\b|\bPromise\b|async\s+(function|\()/.test(jsCode);
-
-                    // Use AsyncFunction so ALL await expressions (even top-level) work correctly
-                    // We wrap the entire code in an async function body
-                    const AsyncFunction = (async function () { }).constructor;
-
-                    // Build async wrapper
-                    const wrappedCode = `
-        "use strict";
-        ${jsCode}
-      `;
-
-                    const fn = new AsyncFunction(wrappedCode);
-                    const retVal = await fn();
-
-                    if (retVal !== undefined && retVal !== null) {
+                    const AsyncFn = (async function () { }).constructor;
+                    const fn = new AsyncFn('"use strict";\n' + jsCode);
+                    const ret = await fn();
+                    if (ret !== undefined && ret !== null) {
                         try {
-                            const display = retVal instanceof Promise ? '[Promise]'
-                                : typeof retVal === 'object' ? JSON.stringify(retVal, null, 2)
-                                    : String(retVal);
-                            logs.push({ type: 'return', str: '→ ' + display });
+                            const s = ret instanceof Promise ? '[Promise]' : typeof ret === 'object' ? JSON.stringify(ret, null, 2) : String(ret);
+                            logs.push({ type: 'return', str: '→ ' + s });
                         } catch { }
                     }
                 }
-
             } catch (err) {
                 if (err instanceof Error) {
                     logs.push({ type: 'error', str: err.toString() });
-                    if (err.stack) {
-                        err.stack.split('\n').slice(1, 4).forEach(l => {
-                            const clean = l.trim().replace(/^\s*at\s+/, 'at ');
-                            if (clean) logs.push({ type: 'error', str: '  ' + clean });
-                        });
-                    }
-                } else {
-                    logs.push({ type: 'error', str: String(err) });
-                }
+                    if (err.stack) err.stack.split('\n').slice(1, 4).forEach(l => { const cl = l.trim(); if (cl) logs.push({ type: 'error', str: '  ' + cl }); });
+                } else logs.push({ type: 'error', str: String(err) });
                 hasError = true;
             } finally {
                 ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = saved[m]);
             }
 
-            const elapsed = (performance.now() - startTime).toFixed(1);
+            const elapsed = (performance.now() - t0).toFixed(1);
             if (logs.length === 0) logs.push({ type: 'info', str: '(no output)' });
-
             showOutput(id, logs, hasError, elapsed + 'ms', isAsync);
-            runBtn.classList.remove('running');
-            runBtn.innerHTML = '▶ Run';
+            runBtn.classList.remove('running'); runBtn.innerHTML = '▶ Run';
             cell.lastOutput = { lines: logs, hasError, time: elapsed + 'ms', isAsync };
             triggerAutoSave();
         }
@@ -2297,31 +2725,40 @@
             content.className = 'out-content ' + (hasError ? 'has-error' : 'has-success');
             content.innerHTML = logs.map(({ type, str }) => {
                 const cls = type === 'error' ? 'error-line' : type === 'warn' ? 'warn-line' : type === 'info' ? 'info-line' : type === 'return' ? 'return-line' : 'log-line';
-                const pfx = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : type === 'return' ? '' : '';
+                const pfx = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : '';
                 return '<div class="' + cls + '">' + pfx + escH(str) + '</div>';
             }).join('');
         }
 
-        // ═══════════════════════════════════════════
-        // SAVE / LOAD
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
+        // SAVE / LOAD — fixed to include all fields
+        // ══════════════════════════════════════════════
         function triggerAutoSave() {
             document.getElementById('save-dot').classList.remove('saved');
-            document.getElementById('save-text').textContent = 'Unsaved...';
+            document.getElementById('save-text').textContent = 'Unsaved…';
             document.getElementById('save-bar').classList.add('visible');
             clearTimeout(autoSaveTimer);
-            autoSaveTimer = setTimeout(saveAll, 2200);
+            autoSaveTimer = setTimeout(saveAll, 2500);
         }
 
         async function saveAll() {
             const title = document.getElementById('nb-title').value.trim() || 'Untitled Notebook';
+
+            // Collect cell data — including description from DOM
             const cellsData = cells.map(c => {
                 const editor = cellEditors[c.id];
-                const wrap = document.getElementById('cell-' + c.id);
-                const desc = wrap ? wrap.querySelector('.desc-ta').value : c.description || '';
-                return { lang: c.lang, code: editor ? editor.getValue() : '', description: desc, output: c.lastOutput || null, linkedQuestionId: c.linkedQuestionId || null };
+                const descEl = document.getElementById('desc-' + c.id);
+                const desc = descEl ? descEl.value : c.description || '';
+                return {
+                    lang: c.lang,
+                    code: editor ? editor.getValue() : '',
+                    description: desc,
+                    output: c.lastOutput || null,
+                    linkedQuestionId: c.linkedQuestionId || null,
+                };
             });
 
+            // Always save locally first
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() }));
             persistDSA();
 
@@ -2331,40 +2768,57 @@
 
             if (!db) {
                 dot.classList.add('saved'); txt.textContent = 'Saved locally';
-                setTimeout(() => bar.classList.remove('visible'), 2200); return;
+                document.getElementById('last-saved').textContent = 'saved locally';
+                setTimeout(() => bar.classList.remove('visible'), 2500);
+                return;
             }
+
             try {
-                const payload = { title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+                const payload = {
+                    title,
+                    cells: cellsData,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
                 if (currentNotebookId) {
-                    await db.collection('notebooks').doc(currentNotebookId).set(payload);
+                    await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
                 } else {
                     const ref = await db.collection('notebooks').add(payload);
                     currentNotebookId = ref.id;
-                    document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '...';
+                    document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
                 }
-                dot.classList.add('saved'); txt.textContent = 'Saved to Firebase ✓';
+                dot.classList.add('saved');
+                txt.textContent = 'Saved to Firebase ✓';
+                const now = new Date().toLocaleTimeString();
+                document.getElementById('last-saved').textContent = 'saved ' + now;
                 loadNotebooksList();
-                setTimeout(() => bar.classList.remove('visible'), 2200);
+                setTimeout(() => bar.classList.remove('visible'), 2500);
             } catch (e) {
                 txt.textContent = 'Save failed: ' + e.message;
-                setTimeout(() => bar.classList.remove('visible'), 3000);
+                setTimeout(() => bar.classList.remove('visible'), 3500);
+                console.error('Save error:', e);
             }
         }
 
-        // ═══════════════════════════════════════════
-        // HELPERS
-        // ═══════════════════════════════════════════
-        function escH(str) { return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        // ══════════════════════════════════════════════
+        // MODAL HELPERS
+        // ══════════════════════════════════════════════
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        // ══════════════════════════════════════════════
+        // UTILITIES
+        // ══════════════════════════════════════════════
+        function escH(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
         function showToast(msg, type) {
             const t = document.getElementById('toast');
             t.textContent = msg; t.className = 'toast show ' + (type || '');
-            setTimeout(() => t.className = 'toast', 2700);
+            setTimeout(() => t.className = 'toast', 2800);
         }
 
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         // KEYBOARD
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
             if (e.key === 'Escape') {
@@ -2373,32 +2827,30 @@
             }
         });
 
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         // INIT
-        // ═══════════════════════════════════════════
+        // ══════════════════════════════════════════════
         window.addEventListener('load', () => {
-            // Load DSA
+            // Load DSA questions
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
-            renderDSASidebar(); updateDSAStats(); pickDiff('medium');
+            refreshAllDSAUI(); pickDiff('medium');
 
-            // Load notebook
+            // Load notebook from local storage
             try {
                 const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
-                if (local) {
+                if (local && local.cells && local.cells.length) {
                     document.getElementById('nb-title').value = local.title || 'Untitled Notebook';
-                    if (local.cells && local.cells.length) {
-                        local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
-                    } else { addCell('javascript'); }
+                    local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
                 } else { addCell('javascript'); }
             } catch (e) { addCell('javascript'); }
 
             // Auto-reconnect Firebase
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
-            if (fc.apiKey) {
+            if (fc.apiKey && fc.projectId) {
                 ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
                     const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || '';
                 });
-                initFirebase().catch(() => { });
+                initFirebase().catch(e => console.warn('Firebase auto-connect failed:', e));
             }
         });
     </script>
