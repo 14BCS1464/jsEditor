@@ -1,1261 +1,3016 @@
-require.config({
-    paths: {
-        vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
-    }
-});
-const roomId = getOrCreateRoomId();
-let socket = null;
-let isRemoteChange = false; // Flag to prevent infinite loops
-let editor = null; // Global editor reference
-let logCount = 0;
-let changeTimer = null;
-let saveTimer = null;
-let language = 'Javascript'
-let lastSentCode = '';
-let debounceSendTimer = null;
-function getOrCreateRoomId() {
-    const params = new URLSearchParams(window.location.search);
-    let roomId = params.get("room");
+< !DOCTYPE html >
+    <html lang="en">
 
-    if (!roomId) {
-        roomId = generateRoomId();
-        params.set("room", roomId);
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-    }
+        <head>
+            <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>CodeBook — JS/TS DSA Notebook</title>
 
-    return roomId;
-}
+                    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+                    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js"></script>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+                        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+                            <link rel="stylesheet"
+                                href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
+                                <link
+                                    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+                                    rel="stylesheet">
 
-// Initialize Socket.IO connection
-function createSaveIndicator() {
-    const indicator = document.createElement('div');
-    indicator.id = 'saveIndicator';
-    indicator.textContent = '💾 Saved';
-    indicator.style.position = 'absolute';
-    indicator.style.bottom = '10px';
-    indicator.style.right = '10px';
-    indicator.style.background = 'rgba(0, 184, 148, 0.8)';
-    indicator.style.color = 'white';
-    indicator.style.padding = '5px 10px';
-    indicator.style.borderRadius = '4px';
-    indicator.style.fontSize = '12px';
-    indicator.style.transition = 'opacity 0.3s ease';
-    indicator.style.opacity = '0';
-    indicator.style.zIndex = '1000';
-    document.getElementById('editor').appendChild(indicator);
-    return indicator;
-}
-function getSocketUrl() {
-    // const hostname = window.location.hostname;
-    // const protocol = window.location.protocol;
+                                    <style>
+                                        :root {
+                                            --bg: #1e1e2e;
+                                        --surface: #252535;
+                                        --card: #2a2a3d;
+                                        --card2: #30304a;
+                                        --border: #3a3a55;
+                                        --border2: #46466a;
+                                        --accent: #818cf8;
+                                        --accent2: #38bdf8;
+                                        --accent3: #fbbf24;
+                                        --accent4: #f472b6;
+                                        --success: #34d399;
+                                        --error: #f87171;
+                                        --text: #e2e8f0;
+                                        --text2: #a5b4c8;
+                                        --muted: #6b7a9a;
+        }
 
-    // // Development environments
-    // if (hostname === "localhost" || 
-    //     hostname === "127.0.0.1" || 
-    //     hostname.includes("local")) {
-    //     return "http://localhost:4000";
-    // }
+                                        * {
+                                            margin: 0;
+                                        padding: 0;
+                                        box-sizing: border-box;
+        }
 
-    // // Your Elastic Beanstalk environment (production)
-    // if (hostname.includes("jseditor-env") || 
-    //     hostname.includes("elasticbeanstalk")) {
-    //     return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
-    // }
+                                        html {
+                                            scroll - behavior: smooth;
+        }
 
-    // // Your production domain (adjust as needed)
-    // if (hostname === "thejseditors.com" || 
-    //     hostname === "www.thejseditors.com") {
-    //     return "https://api.thejseditors.com"; // Or your production API endpoint
-    // }
+                                        body {
+                                            background: var(--bg);
+                                        color: var(--text);
+                                        font-family: 'Syne', sans-serif;
+                                        min-height: 100vh;
+                                        overflow-x: hidden;
+        }
 
-    // // Fallback: Use same protocol and port as current page
-    // // If your frontend is on port 3000 and backend on 4000, this won't work in production
-    // // Better to have an environment variable or config
-    // const port = window.location.port;
-    // const baseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
+                                        body::before {
+                                            content: '';
+                                        position: fixed;
+                                        inset: 0;
+                                        background: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(129, 140, 248, .08) 0%, transparent 55%),
+                                        radial-gradient(ellipse 50% 40% at 85% 90%, rgba(56, 189, 248, .06) 0%, transparent 55%);
+                                        pointer-events: none;
+                                        z-index: 0;
+        }
 
-    // // Try to guess the API URL based on common patterns
-    // if (port === "3000") {
-    //     // React dev server typically on 3000, backend on 4000
-    //     return "http://localhost:4000";
-    // } else if (port === "5173") {
-    //     // Vite dev server typically on 5173, backend on 4000
-    //     return "http://localhost:4000";
-    // } else if (!port || port === "80" || port === "443") {
-    //     // Production - use same domain with API prefix
-    //     return `${protocol}//${hostname}/api`;
-    // }
+                                        /* HEADER */
+                                        header {
+                                            position: sticky;
+                                        top: 0;
+                                        z-index: 100;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: space-between;
+                                        padding: 0 20px;
+                                        height: 54px;
+                                        background: rgba(30, 30, 46, .97);
+                                        backdrop-filter: blur(24px);
+                                        border-bottom: 1px solid var(--border);
+        }
 
-    // Default fallback
-    //return "http://localhost:4000";
-    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
-}
-const socketUrl = getSocketUrl();
-const isSecure = socketUrl.startsWith('https://');
-async function initializeSocket() {
+                                        .logo {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                        font-size: 1.1rem;
+                                        font-weight: 800;
+                                        letter-spacing: -.5px;
+        }
 
-    if (socket) return;
+                                        .logo-icon {
+                                            width: 26px;
+                                        height: 26px;
+                                        background: linear-gradient(135deg, var(--accent), var(--accent2));
+                                        border-radius: 6px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 12px;
+        }
 
-    try {
+                                        .header-center {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 3px;
+        }
 
-        socket = await io(socketUrl, {
-            // Conservative settings for maximum compatibility
-            secure: true,
-            transports: ['polling', 'websocket'],
-            upgrade: true, // Don't attempt to upgrade to WebSocket
-            forceNew: true, // Always create new connection
-            timeout: 10000, // 10 second timeout
-            pingTimeout: 30000,
-            pingInterval: 15000,
-            reconnection: true, // We'll handle reconnection manually
-            reconnectionAttempts: 0,
+                                        .tab-btn {
+                                            padding: 5px 13px;
+                                        border-radius: 7px;
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: .77rem;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        border: 1px solid transparent;
+                                        color: var(--text2);
+                                        background: transparent;
+                                        transition: all .15s;
+        }
 
-            // Query parameters
-            // query: {
-            //     roomId: roomId,
-            //     client: 'editor',
+                                        .tab-btn:hover {
+                                            color: var(--text);
+                                        background: rgba(255, 255, 255, .05);
+        }
 
-            //     timestamp: Date.now()
-            // },
+                                        .tab-btn.active {
+                                            background: rgba(129, 140, 248, .2);
+                                        border-color: rgba(129, 140, 248, .4);
+                                        color: var(--text);
+        }
 
-            // // Path (important!)
-            // path: '/socket.io/',
+                                        .header-right {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 7px;
+        }
 
-            // Security
-            withCredentials: false,
-            rejectUnauthorized: false // Only for testi
-        });
+                                        /* BUTTONS */
+                                        .btn {
+                                            display: inline-flex;
+                                        align-items: center;
+                                        gap: 5px;
+                                        padding: 6px 12px;
+                                        border-radius: 7px;
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: .77rem;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        border: 1px solid transparent;
+                                        transition: all .15s;
+        }
 
+                                        .btn-ghost {
+                                            background: transparent;
+                                        border-color: var(--border2);
+                                        color: var(--text2);
+        }
 
-        socket.on("connect", () => {
-            console.log("✅ Connected to server. Socket ID:", socket.id);
-            socket.emit("join-room", { roomId });
-            updateConnectionStatus(true);
-            console.log("✅ Connected to the server. Collaborative editing is enabled!");
-        });
+                                        .btn-ghost:hover {
+                                            border - color: var(--accent);
+                                        color: var(--text);
+                                        background: rgba(129, 140, 248, .1);
+        }
 
-        socket.on("connect_error", (error) => {
+                                        .btn-primary {
+                                            background: var(--accent);
+                                        color: #fff;
+                                        border-color: var(--accent);
+        }
 
-            updateConnectionStatus(false);
-            addLogEntry(`Connection error: ${error}`, 'error');
+                                        .btn-primary:hover {
+                                            background: #6366f1;
+                                        transform: translateY(-1px);
+                                        box-shadow: 0 4px 18px rgba(129, 140, 248, .4);
+        }
 
-            console.error("❌ Connection error:", error);
-        });
+                                        .btn-danger {
+                                            background: transparent;
+                                        border-color: rgba(248, 113, 113, .35);
+                                        color: var(--error);
+        }
 
-        socket.on("disconnect", (reason) => {
-            console.log("⚠️ Disconnected:", reason);
-            updateConnectionStatus(false);
-            addLogEntry(`Disconnected: ${reason}`, 'warn');
-            console.log(`Disconnected from server: ${reason}`);
-        });
+                                        .btn-danger:hover {
+                                            background: rgba(248, 113, 113, .1);
+                                        border-color: var(--error);
+        }
 
-        socket.on("reconnect", (attemptNumber) => {
-            console.log("🔄 Reconnected after", attemptNumber, "attempts");
-            socket.emit("join-room", { roomId });
-            updateConnectionStatus(true);
-            console.log(`🔄 Reconnected to the server after ${attemptNumber} attempt(s).`);
-        });
+                                        .btn-success {
+                                            background: transparent;
+                                        border-color: rgba(52, 211, 153, .35);
+                                        color: var(--success);
+        }
 
-        // Initialize with existing code
-        socket.on("init-code", (code) => {
-            console.log("📥 Received init-code:", code ? "Code received" : "Empty");
-            if (editor && typeof editor.setValue === "function") {
-                const current = editor.getValue();
+                                        .btn-success:hover {
+                                            background: rgba(52, 211, 153, .1);
+                                        border-color: var(--success);
+        }
 
-                isRemoteChange = true;
-                const pos = editor.getPosition();
-                editor.setValue(code.code || '');
-                if (pos) editor.setPosition(pos);
-                setTimeout(() => { isRemoteChange = false; }, 100);
-                console.log("Received the initial code from server.");
+                                        .btn-sm {
+                                            padding: 3px 9px;
+                                        font-size: .7rem;
+        }
 
+                                        .btn-xs {
+                                            padding: 2px 7px;
+                                        font-size: .65rem;
+        }
+
+                                        .firebase-status {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 5px;
+                                        font-size: .7rem;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .fb-dot {
+                                            width: 6px;
+                                        height: 6px;
+                                        border-radius: 50%;
+                                        background: var(--muted);
+                                        transition: background .3s;
+        }
+
+                                        .fb-dot.on {
+                                            background: var(--success);
+                                        box-shadow: 0 0 6px var(--success);
+        }
+
+                                        /* LAYOUT */
+                                        .app-layout {
+                                            display: grid;
+                                        grid-template-columns: 258px 1fr;
+                                        min-height: calc(100vh - 54px);
+                                        position: relative;
+                                        z-index: 1;
+        }
+
+                                        /* SIDEBAR */
+                                        .sidebar {
+                                            border - right: 1px solid var(--border);
+                                        background: rgba(37, 37, 53, .92);
+                                        display: flex;
+                                        flex-direction: column;
+                                        position: sticky;
+                                        top: 54px;
+                                        height: calc(100vh - 54px);
+                                        overflow: hidden;
+        }
+
+                                        .sidebar-tabs {
+                                            display: flex;
+                                        border-bottom: 1px solid var(--border);
+        }
+
+                                        .stab {
+                                            flex: 1;
+                                        padding: 9px 4px;
+                                        text-align: center;
+                                        font-size: .63rem;
+                                        font-weight: 700;
+                                        letter-spacing: .5px;
+                                        text-transform: uppercase;
+                                        cursor: pointer;
+                                        color: var(--muted);
+                                        border-bottom: 2px solid transparent;
+                                        background: transparent;
+                                        border-top: none;
+                                        border-left: none;
+                                        border-right: none;
+                                        font-family: 'Space Mono', monospace;
+                                        transition: all .15s;
+        }
+
+                                        .stab:hover {
+                                            color: var(--text2);
+        }
+
+                                        .stab.active {
+                                            color: var(--accent2);
+                                        border-bottom-color: var(--accent2);
+        }
+
+                                        .spanel {
+                                            flex: 1;
+                                        overflow-y: auto;
+                                        display: none;
+                                        flex-direction: column;
+        }
+
+                                        .spanel.active {
+                                            display: flex;
+        }
+
+                                        .panel-top {
+                                            padding: 9px 10px;
+                                        border-bottom: 1px solid var(--border);
+                                        display: flex;
+                                        gap: 6px;
+        }
+
+                                        .nb-list {
+                                            flex: 1;
+                                        overflow-y: auto;
+                                        padding: 5px;
+        }
+
+                                        .nb-item {
+                                            padding: 8px 10px;
+                                        border-radius: 7px;
+                                        cursor: pointer;
+                                        border: 1px solid transparent;
+                                        margin-bottom: 2px;
+                                        transition: all .12s;
+                                        position: relative;
+        }
+
+                                        .nb-item:hover {
+                                            background: rgba(129, 140, 248, .08);
+                                        border-color: var(--border2);
+        }
+
+                                        .nb-item.active-nb {
+                                            background: rgba(129, 140, 248, .16);
+                                        border-color: rgba(129, 140, 248, .4);
+        }
+
+                                        .nb-item-title {
+                                            font - size: .76rem;
+                                        font-weight: 600;
+                                        margin-bottom: 2px;
+                                        overflow: hidden;
+                                        text-overflow: ellipsis;
+                                        white-space: nowrap;
+                                        padding-right: 40px;
+        }
+
+                                        .nb-item-meta {
+                                            font - size: .62rem;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .nb-item-actions {
+                                            position: absolute;
+                                        right: 7px;
+                                        top: 50%;
+                                        transform: translateY(-50%);
+                                        display: flex;
+                                        gap: 3px;
+                                        opacity: 0;
+                                        transition: opacity .12s;
+        }
+
+                                        .nb-item:hover .nb-item-actions {
+                                            opacity: 1;
+        }
+
+                                        .nb-act-btn {
+                                            width: 20px;
+                                        height: 20px;
+                                        border-radius: 4px;
+                                        border: none;
+                                        background: rgba(255, 255, 255, .07);
+                                        color: var(--text2);
+                                        cursor: pointer;
+                                        font-size: 10px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        transition: all .1s;
+        }
+
+                                        .nb-act-btn:hover {
+                                            background: rgba(248, 113, 113, .2);
+                                        color: var(--error);
+        }
+
+                                        .nb-act-btn.rename:hover {
+                                            background: rgba(129, 140, 248, .2);
+                                        color: var(--accent);
+        }
+
+                                        .nb-act-btn.duplicate:hover {
+                                            background: rgba(52, 211, 153, .2);
+                                        color: var(--success);
+        }
+
+                                        /* DSA sidebar */
+                                        .dsa-toolbar {
+                                            padding: 9px 10px;
+                                        border-bottom: 1px solid var(--border);
+                                        display: flex;
+                                        flex-direction: column;
+                                        gap: 6px;
+        }
+
+                                        .dsa-search {
+                                            background: var(--bg);
+                                        border: 1px solid var(--border);
+                                        border-radius: 6px;
+                                        padding: 6px 9px;
+                                        color: var(--text);
+                                        font-family: 'Space Mono', monospace;
+                                        font-size: .7rem;
+                                        outline: none;
+                                        width: 100%;
+        }
+
+                                        .dsa-search:focus {
+                                            border - color: var(--accent2);
+        }
+
+                                        .dsa-filters {
+                                            display: flex;
+                                        gap: 4px;
+                                        flex-wrap: wrap;
+        }
+
+                                        .fchip {
+                                            padding: 2px 7px;
+                                        border-radius: 20px;
+                                        font-size: .6rem;
+                                        font-weight: 700;
+                                        cursor: pointer;
+                                        border: 1px solid var(--border2);
+                                        background: transparent;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+                                        transition: all .12s;
+        }
+
+                                        .fchip.fa {
+                                            border - color: var(--accent);
+                                        color: var(--accent);
+                                        background: rgba(129, 140, 248, .12);
+        }
+
+                                        .fchip.fe {
+                                            border - color: var(--success);
+                                        color: var(--success);
+                                        background: rgba(52, 211, 153, .1);
+        }
+
+                                        .fchip.fm {
+                                            border - color: var(--accent3);
+                                        color: var(--accent3);
+                                        background: rgba(251, 191, 36, .1);
+        }
+
+                                        .fchip.fh {
+                                            border - color: var(--error);
+                                        color: var(--error);
+                                        background: rgba(248, 113, 113, .1);
+        }
+
+                                        .dsa-stats {
+                                            display: flex;
+                                        gap: 8px;
+                                        font-size: .6rem;
+                                        font-family: 'Space Mono', monospace;
+                                        color: var(--muted);
+        }
+
+                                        .stat-dot {
+                                            width: 5px;
+                                        height: 5px;
+                                        border-radius: 50%;
+        }
+
+                                        .dsa-list {
+                                            flex: 1;
+                                        overflow-y: auto;
+                                        padding: 5px;
+        }
+
+                                        .dsa-sb-item {
+                                            padding: 9px 10px;
+                                        border-radius: 8px;
+                                        border: 1px solid transparent;
+                                        margin-bottom: 3px;
+                                        transition: all .12s;
+                                        background: var(--card);
+                                        display: flex;
+                                        flex-direction: column;
+                                        gap: 4px;
+        }
+
+                                        .dsa-sb-item:hover {
+                                            border - color: var(--border2);
+                                        background: var(--card2);
+        }
+
+                                        .dsa-sb-header {
+                                            display: flex;
+                                        align-items: center;
+                                        justify-content: space-between;
+                                        gap: 6px;
+        }
+
+                                        .dsa-sb-title {
+                                            font - size: .75rem;
+                                        font-weight: 600;
+                                        flex: 1;
+                                        line-height: 1.3;
+        }
+
+                                        .dsa-sb-btns {
+                                            display: flex;
+                                        gap: 3px;
+                                        opacity: 0;
+                                        transition: opacity .12s;
+        }
+
+                                        .dsa-sb-item:hover .dsa-sb-btns {
+                                            opacity: 1;
+        }
+
+                                        .dsa-sb-btn {
+                                            width: 20px;
+                                        height: 20px;
+                                        border-radius: 4px;
+                                        border: none;
+                                        background: rgba(255, 255, 255, .06);
+                                        color: var(--text2);
+                                        cursor: pointer;
+                                        font-size: 10px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        transition: all .1s;
+        }
+
+                                        .dsa-sb-btn.view-btn:hover {
+                                            background: rgba(56, 189, 248, .2);
+                                        color: var(--accent2);
+        }
+
+                                        .dsa-sb-btn.del-btn:hover {
+                                            background: rgba(248, 113, 113, .2);
+                                        color: var(--error);
+        }
+
+                                        .dsa-sb-footer {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 5px;
+        }
+
+                                        .diff-badge {
+                                            font - size: .57rem;
+                                        padding: 1px 5px;
+                                        border-radius: 3px;
+                                        font-family: 'Space Mono', monospace;
+                                        font-weight: 700;
+                                        text-transform: uppercase;
+        }
+
+                                        .diff-easy {
+                                            background: rgba(52, 211, 153, .12);
+                                        color: var(--success);
+        }
+
+                                        .diff-medium {
+                                            background: rgba(251, 191, 36, .12);
+                                        color: var(--accent3);
+        }
+
+                                        .diff-hard {
+                                            background: rgba(248, 113, 113, .12);
+                                        color: var(--error);
+        }
+
+                                        .dsa-cat-tag {
+                                            font - size: .6rem;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .dsa-lc {
+                                            font - size: .58rem;
+                                        color: var(--accent2);
+                                        font-family: 'Space Mono', monospace;
+                                        margin-left: auto;
+        }
+
+                                        .dsa-solved-mark {
+                                            color: var(--success);
+                                        font-size: .65rem;
+        }
+
+                                        .dsa-bottom {
+                                            padding: 9px 10px;
+                                        border-top: 1px solid var(--border);
+        }
+
+                                        /* MODALS */
+                                        .modal-overlay {
+                                            position: fixed;
+                                        inset: 0;
+                                        background: rgba(0, 0, 0, .78);
+                                        backdrop-filter: blur(6px);
+                                        z-index: 1000;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        opacity: 0;
+                                        pointer-events: none;
+                                        transition: opacity .2s;
+        }
+
+                                        .modal-overlay.open {
+                                            opacity: 1;
+                                        pointer-events: all;
+        }
+
+                                        .modal {
+                                            background: var(--card2);
+                                        border: 1px solid var(--border2);
+                                        border-radius: 16px;
+                                        padding: 26px;
+                                        width: 500px;
+                                        max-width: 95vw;
+                                        transform: translateY(14px);
+                                        transition: transform .2s;
+                                        max-height: 90vh;
+                                        overflow-y: auto;
+        }
+
+                                        .modal-overlay.open .modal {
+                                            transform: translateY(0);
+        }
+
+                                        .modal-wide {
+                                            width: 720px;
+        }
+
+                                        .modal h2 {
+                                            font - size: 1.1rem;
+                                        font-weight: 800;
+                                        margin-bottom: 5px;
+        }
+
+        .modal>.modal-sub {
+                                            font - size: .8rem;
+                                        color: var(--muted);
+                                        margin-bottom: 16px;
+        }
+
+                                        .form-group {
+                                            margin - bottom: 12px;
+        }
+
+                                        .form-group label {
+                                            display: block;
+                                        font-size: .68rem;
+                                        color: var(--muted);
+                                        margin-bottom: 4px;
+                                        font-family: 'Space Mono', monospace;
+                                        text-transform: uppercase;
+                                        letter-spacing: .5px;
+        }
+
+                                        .form-group input,
+                                        .form-group select,
+                                        .form-group textarea {
+                                            width: 100%;
+                                        background: var(--bg);
+                                        border: 1px solid var(--border);
+                                        border-radius: 7px;
+                                        padding: 8px 10px;
+                                        color: var(--text);
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: .8rem;
+                                        outline: none;
+                                        transition: border-color .15s;
+        }
+
+                                        .form-group input:focus,
+                                        .form-group select:focus,
+                                        .form-group textarea:focus {
+                                            border - color: var(--accent);
+        }
+
+                                        .form-group input::placeholder,
+                                        .form-group textarea::placeholder {
+                                            color: var(--muted);
+        }
+
+                                        .form-group select option {
+                                            background: var(--card2);
+        }
+
+                                        .form-group textarea {
+                                            resize: vertical;
+                                        min-height: 70px;
+                                        font-family: 'Space Mono', monospace;
+                                        font-size: .76rem;
+        }
+
+                                        .radio-group {
+                                            display: flex;
+                                        gap: 7px;
+        }
+
+                                        .radio-opt {
+                                            flex: 1;
+                                        padding: 7px;
+                                        border-radius: 7px;
+                                        border: 1px solid var(--border2);
+                                        background: transparent;
+                                        color: var(--text2);
+                                        cursor: pointer;
+                                        font-family: 'Space Mono', monospace;
+                                        font-size: .67rem;
+                                        font-weight: 700;
+                                        text-transform: uppercase;
+                                        text-align: center;
+                                        transition: all .12s;
+        }
+
+                                        .radio-opt.sel-easy {
+                                            border - color: var(--success);
+                                        color: var(--success);
+                                        background: rgba(52, 211, 153, .1);
+        }
+
+                                        .radio-opt.sel-medium {
+                                            border - color: var(--accent3);
+                                        color: var(--accent3);
+                                        background: rgba(251, 191, 36, .1);
+        }
+
+                                        .radio-opt.sel-hard {
+                                            border - color: var(--error);
+                                        color: var(--error);
+                                        background: rgba(248, 113, 113, .1);
+        }
+
+                                        .modal-actions {
+                                            display: flex;
+                                        justify-content: flex-end;
+                                        gap: 7px;
+                                        margin-top: 16px;
+        }
+
+                                        .modal-divider {
+                                            height: 1px;
+                                        background: var(--border);
+                                        margin: 14px 0;
+        }
+
+                                        .upload-area {
+                                            border: 2px dashed var(--border2);
+                                        border-radius: 9px;
+                                        padding: 18px;
+                                        text-align: center;
+                                        cursor: pointer;
+                                        transition: all .15s;
+                                        position: relative;
+        }
+
+                                        .upload-area:hover {
+                                            border - color: var(--accent);
+                                        background: rgba(129, 140, 248, .05);
+        }
+
+                                        .upload-area input[type=file] {
+                                            position: absolute;
+                                        inset: 0;
+                                        opacity: 0;
+                                        cursor: pointer;
+        }
+
+                                        .upload-area-text {
+                                            font - size: .78rem;
+                                        color: var(--muted);
+        }
+
+                                        .upload-area-text span {
+                                            color: var(--accent);
+                                        font-weight: 600;
+        }
+
+                                        .fb-file-status {
+                                            font - size: .72rem;
+                                        font-family: 'Space Mono', monospace;
+                                        padding: 6px 10px;
+                                        border-radius: 6px;
+                                        background: rgba(52, 211, 153, .08);
+                                        border: 1px solid rgba(52, 211, 153, .2);
+                                        color: var(--success);
+                                        display: none;
+                                        margin-top: 8px;
+        }
+
+                                        /* Question View Modal */
+                                        .qview-header {
+                                            display: flex;
+                                        align-items: flex-start;
+                                        gap: 12px;
+                                        margin-bottom: 16px;
+        }
+
+                                        .qview-title {
+                                            font - size: 1.3rem;
+                                        font-weight: 800;
+                                        flex: 1;
+                                        line-height: 1.3;
+        }
+
+                                        .qview-badges {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 7px;
+                                        flex-wrap: wrap;
+                                        margin-bottom: 12px;
+        }
+
+                                        .qview-desc {
+                                            font - size: .85rem;
+                                        color: var(--text2);
+                                        line-height: 1.7;
+                                        white-space: pre-wrap;
+                                        background: var(--bg);
+                                        border-radius: 8px;
+                                        padding: 12px 14px;
+                                        margin-bottom: 14px;
+                                        border: 1px solid var(--border);
+        }
+
+                                        .qview-cells {
+                                            display: flex;
+                                        flex-direction: column;
+                                        gap: 10px;
+        }
+
+                                        .qview-cell {
+                                            background: var(--bg);
+                                        border: 1px solid var(--border);
+                                        border-radius: 8px;
+                                        overflow: hidden;
+        }
+
+                                        .qview-cell-header {
+                                            padding: 8px 12px;
+                                        background: var(--surface);
+                                        border-bottom: 1px solid var(--border);
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                        font-size: .7rem;
+                                        font-family: 'Space Mono', monospace;
+                                        color: var(--muted);
+        }
+
+                                        .qview-cell-desc {
+                                            padding: 8px 12px;
+                                        font-size: .78rem;
+                                        color: var(--text2);
+                                        border-bottom: 1px solid var(--border);
+                                        background: rgba(56, 189, 248, .04);
+        }
+
+                                        .qview-cell-code {
+                                            font - family: 'JetBrains Mono', monospace;
+                                        font-size: .78rem;
+                                        padding: 10px 12px;
+                                        line-height: 1.6;
+                                        color: var(--text);
+                                        white-space: pre-wrap;
+                                        overflow-x: auto;
+        }
+
+                                        .qview-empty {
+                                            text - align: center;
+                                        padding: 24px;
+                                        color: var(--muted);
+                                        font-size: .8rem;
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        /* MAIN */
+                                        .main-content {
+                                            min - height: calc(100vh - 54px);
+                                        display: flex;
+                                        flex-direction: column;
+        }
+
+                                        .page {
+                                            display: none;
+                                        flex: 1;
+                                        flex-direction: column;
+        }
+
+                                        .page.active {
+                                            display: flex;
+        }
+
+                                        /* Notebook page */
+                                        .nb-page {
+                                            width: 100%;
+                                        padding: 24px 28px;
+        }
+
+                                        .nb-header {
+                                            margin - bottom: 22px;
+                                        display: flex;
+                                        align-items: flex-start;
+                                        justify-content: space-between;
+                                        gap: 12px;
+        }
+
+                                        .nb-title-wrap {
+                                            flex: 1;
+        }
+
+                                        .nb-title-input {
+                                            background: transparent;
+                                        border: none;
+                                        outline: none;
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: 1.8rem;
+                                        font-weight: 800;
+                                        color: var(--text);
+                                        width: 100%;
+                                        padding: 3px 0;
+                                        border-bottom: 2px solid transparent;
+                                        transition: border-color .2s;
+        }
+
+                                        .nb-title-input:focus {
+                                            border - bottom - color: var(--accent);
+        }
+
+                                        .nb-title-input::placeholder {
+                                            color: var(--muted);
+        }
+
+                                        .nb-meta {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 10px;
+                                        margin-top: 6px;
+                                        font-size: .68rem;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        /* CELLS */
+                                        #cells-container {
+                                            display: flex;
+                                        flex-direction: column;
+                                        gap: 16px;
+        }
+
+                                        .cell {
+                                            background: var(--card);
+                                        border: 1px solid var(--border);
+                                        border-radius: 12px;
+                                        overflow: hidden;
+                                        transition: border-color .2s, box-shadow .2s;
+                                        animation: cellIn .25s ease;
+        }
+
+                                        @keyframes cellIn {
+                                            from {
+                                            opacity: 0;
+                                        transform: translateY(8px)
             }
-        });
 
-        // Handle code updates from other users
-        socket.on("code-update", (data) => {
-            const { code, updatedBy } = data;
-
-            // Critical: Skip updates from ourselves
-            if (updatedBy === socket.id) {
-                console.log('🔄 Ignoring self-update');
-                return;
-            }
-
-            console.log(`📥 Update from ${updatedBy}, length: ${code.length}`);
-
-            const currentCode = editor.getValue();
-
-            // Only update if different
-            if (currentCode !== code) {
-                // Save current state
-                const cursorState = editor.saveViewState();
-
-                // Apply update
-                isRemoteChange = true;
-                editor.setValue(code);
-                isRemoteChange = false;
-
-                // Restore cursor if possible
-                if (cursorState) {
-                    setTimeout(() => {
-                        editor.restoreViewState(cursorState);
-                    }, 10);
-                }
-
-                // Update tracking
-                lastSentCode = code;
-
-                // Auto-save this remote update
-                saveCodeToStorage();
-            }
-        });
-
-        // Handle connection/disconnection
-        socket.on("user-joined", (data) => {
-            console.log(`👤 User ${data.socketId} joined the room`);
-        });
-
-        socket.on("user-left", (data) => {
-            console.log(`👤 User ${data.socketId} left the room`);
-        });
-
-        // Optional: Add typing indicator
-        let typingTimer = null;
-        editor.onDidChangeModelContent(() => {
-            if (isRemoteChange) return;
-
-            // Send typing start
-            socket.emit("typing-start", { roomId });
-
-            // Clear previous timer
-            if (typingTimer) clearTimeout(typingTimer);
-
-            // Send typing end after 1 second of inactivity
-            typingTimer = setTimeout(() => {
-                socket.emit("typing-end", { roomId });
-            }, 1000);
-        });
-
-        socket.on("user-typing", (data) => {
-            // Show typing indicator for other users
-            if (data.socketId !== socket.id) {
-                console.log(`✍️ User ${data.socketId} is typing...`);
-                // Update UI to show typing indicator
-            }
-        });
-
-    } catch (error) {
-        console.error("Socket initialization error:", error);
-        addLogEntry(`Socket error: ${error.message}`, 'error');
-        //alert(`Socket error: ${error.message}`);
-    }
-}
-
-function addLogEntry(content, type = 'log') {
-    const outputElement = document.getElementById("output");
-    logCount++;
-    const timestamp = new Date().toLocaleTimeString();
-
-    const logEntry = document.createElement('div');
-    logEntry.className = `log-entry ${type}`;
-    logEntry.innerHTML = `
-        <div class="log-timestamp">[${timestamp}] #${logCount}</div>
-        <div>${content}</div>
-    `;
-
-    outputElement.appendChild(logEntry);
-    outputElement.scrollTop = outputElement.scrollHeight;
-}
-function saveCodeToStorage() {
-    const code = editor.getValue();
-
-    try {
-        localStorage.setItem('jsEditorCode', code);
-        const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
-        saveIndicator.style.opacity = '1';
-        setTimeout(() => {
-            saveIndicator.style.opacity = '0';
-        }, 1000);
-    } catch (e) {
-        console.error('Failed to save code to localStorage:', e);
-    }
-}
-
-function updateConnectionStatus(isConnected) {
-    let statusElement = document.getElementById('connectionStatus');
-    if (!statusElement) {
-        statusElement = document.createElement('div');
-        statusElement.id = 'connectionStatus';
-        statusElement.style.position = 'fixed';
-        statusElement.style.bottom = '10px';
-        statusElement.style.left = '10px';
-        statusElement.style.padding = '5px 10px';
-        statusElement.style.borderRadius = '4px';
-        statusElement.style.fontSize = '12px';
-        statusElement.style.zIndex = '1000';
-        statusElement.style.fontFamily = 'monospace';
-        document.body.appendChild(statusElement);
-    }
-
-    if (isConnected) {
-        statusElement.textContent = `🟢 Connected (Room: ${roomId})`;
-        statusElement.style.background = 'rgba(0, 184, 148, 0.9)';
-        statusElement.style.color = 'white';
-        statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    } else {
-        statusElement.textContent = '🔴 Disconnected';
-        statusElement.style.background = 'rgba(214, 48, 49, 0.9)';
-        statusElement.style.color = 'white';
-        statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    }
-}
-// Simple random ID generator
-function generateRoomId(length = 6) {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let id = "";
-    for (let i = 0; i < length; i++) {
-        id += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return id;
-}
-
-
-require(["vs/editor/editor.main"], async function () {
-    const savedCode = localStorage.getItem('jsEditorCode');
-
-    const initialCode = savedCode || `console.log("Developed By sunil...")`;
-
-    editor = monaco.editor.create(document.getElementById("editor"), {
-        value: initialCode,
-        language: "javascript",
-        theme: "vs-dark",
-        automaticLayout: true,
-        minimap: {
-            enabled: true
-        },
-        scrollBeyondLastLine: true,
-        fontFamily: "'Fira Code', 'Consolas', monospace",
-        fontSize: 14,
-        lineNumbers: "on",
-        roundedSelection: true,
-        scrollbar: {
-            verticalScrollbarSize: 10,
-            horizontalScrollbarSize: 10
-        }
-    });
-
-    const outputElement = document.getElementById("output");
-
-    let autoExecuteEnabled = true;
-    let autoExecuteTimer = null;
-    let executionCount = 0;
-    let lastExecutionTime = 0;
-    const MAX_EXECUTIONS_PER_MINUTE = 20;
-    const EXECUTION_DELAY = 300;
-
-    const SAFETY_LIMITS = {
-        maxCodeLength: 10000,
-        maxOutputLines: 1000,
-        maxExecutionTime: 5000,
-        dangerousPatterns: [
-            /while\s*\(\s*true\s*\)/gi,
-            /for\s*\(\s*;\s*;\s*\)/gi,
-            /setInterval/gi,
-            /alert\s*\(/gi,
-            /confirm\s*\(/gi,
-            /prompt\s*\(/gi,
-            /document\.write/gi,
-            /eval\s*\(/gi,
-            /Function\s*\(/gi,
-            /setTimeout.*setTimeout/gi,
-            /\.innerHTML\s*=/gi
-        ]
-    };
-
-    // const container = document.querySelector('.container');
-    // const rowLayoutBtn = document.getElementById('rowLayout');
-    // const columnLayoutBtn = document.getElementById('columnLayout');
-
-    // const savedLayout = localStorage.getItem('editorLayout') || 'row';
-    // if (savedLayout === 'column') {
-    //     container.classList.add('column-layout');
-    //     rowLayoutBtn.classList.remove('active');
-    //     columnLayoutBtn.classList.add('active');
-    // }
-
-    // rowLayoutBtn.addEventListener('click', function () {
-    //     container.classList.remove('column-layout');
-    //     rowLayoutBtn.classList.add('active');
-    //     columnLayoutBtn.classList.remove('active');
-    //     localStorage.setItem('editorLayout', 'row');
-    //     setTimeout(() => editor.layout(), 100);
-    // });
-
-    // columnLayoutBtn.addEventListener('click', function () {
-    //     container.classList.add('column-layout');
-    //     rowLayoutBtn.classList.remove('active');
-    //     columnLayoutBtn.classList.add('active');
-    //     localStorage.setItem('editorLayout', 'column');
-    //     setTimeout(() => editor.layout(), 100);
-    // });
-
-
-
-    function createSaveIndicator() {
-        const indicator = document.createElement('div');
-        indicator.id = 'saveIndicator';
-        indicator.textContent = '💾 Saved';
-        indicator.style.position = 'absolute';
-        indicator.style.bottom = '10px';
-        indicator.style.right = '10px';
-        indicator.style.background = 'rgba(0, 184, 148, 0.8)';
-        indicator.style.color = 'white';
-        indicator.style.padding = '5px 10px';
-        indicator.style.borderRadius = '4px';
-        indicator.style.fontSize = '12px';
-        indicator.style.transition = 'opacity 0.3s ease';
-        indicator.style.opacity = '0';
-        indicator.style.zIndex = '1000';
-        document.getElementById('editor').appendChild(indicator);
-        return indicator;
-    }
-
-    function isRateLimited() {
-        const now = Date.now();
-        if (now - lastExecutionTime < 60000) {
-            executionCount++;
-        } else {
-            executionCount = 1;
-            lastExecutionTime = now;
-        }
-
-        if (executionCount > MAX_EXECUTIONS_PER_MINUTE) {
-            return true;
-        }
-        return false;
-    }
-
-    function isSafeCode(code) {
-        if (!code || code.length > SAFETY_LIMITS.maxCodeLength) {
-            return { safe: false, reason: 'Code too long or empty' };
-        }
-
-        for (const pattern of SAFETY_LIMITS.dangerousPatterns) {
-            if (pattern.test(code)) {
-                return {
-                    safe: false,
-                    reason: `Potentially dangerous pattern detected: ${pattern.source}`
-                };
+                                        to {
+                                            opacity: 1;
+                                        transform: translateY(0)
             }
         }
 
-        const loopCount = (code.match(/for\s*\(|while\s*\(|do\s*{/gi) || []).length;
-        if (loopCount > 5) {
-            return { safe: false, reason: 'Too many loops detected' };
+                                        .cell:hover {
+                                            border - color: var(--border2);
         }
 
-        const functionCallCount = (code.match(/\w+\s*\(/gi) || []).length;
-        if (functionCallCount > 50) {
-            return { safe: false, reason: 'Too many function calls detected' };
+                                        .cell.focused {
+                                            border - color: var(--accent);
+                                        box-shadow: 0 0 0 2px rgba(129, 140, 248, .18);
         }
 
-        return { safe: true };
-    }
-
-    function safeAutoExecute() {
-        if (!autoExecuteEnabled || isRateLimited()) return;
-
-        const code = editor.getValue();
-        const safetyCheck = isSafeCode(code);
-
-        if (!safetyCheck.safe) {
-            runCodeSafely();
-            return;
+                                        /* Question banner */
+                                        .cell-qbanner {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 10px;
+                                        padding: 8px 14px;
+                                        min-height: 38px;
+                                        background: rgba(48, 48, 74, .6);
+                                        border-bottom: 1px solid var(--border);
+                                        transition: background .2s;
         }
 
-        if (autoExecuteTimer) {
-            clearTimeout(autoExecuteTimer);
+                                        .cell-qbanner.linked {
+                                            background: linear-gradient(90deg, rgba(129, 140, 248, .1), rgba(56, 189, 248, .06));
+                                        border-bottom-color: rgba(129, 140, 248, .25);
         }
 
-        autoExecuteTimer = setTimeout(() => {
-            try {
-                runCodeSafely(code);
-            } catch (error) {
-                addLogEntry(`Auto-execution error: ${error.message}`, 'error');
+                                        .qb-icon {
+                                            font - size: 12px;
+                                        flex-shrink: 0;
+        }
+
+                                        .qb-info {
+                                            flex: 1;
+                                        min-width: 0;
+        }
+
+                                        .qb-sublabel {
+                                            font - size: .56rem;
+                                        text-transform: uppercase;
+                                        letter-spacing: 1px;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .qb-title {
+                                            font - size: .76rem;
+                                        font-weight: 600;
+                                        white-space: nowrap;
+                                        overflow: hidden;
+                                        text-overflow: ellipsis;
+        }
+
+                                        .qb-meta {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 5px;
+                                        margin-top: 2px;
+        }
+
+                                        .qb-empty {
+                                            font - size: .73rem;
+                                        color: var(--muted);
+        }
+
+                                        .qb-right {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 6px;
+                                        flex-shrink: 0;
+        }
+
+                                        .qb-drop-wrap {
+                                            position: relative;
+        }
+
+                                        .qb-link-btn {
+                                            padding: 3px 8px;
+                                        border-radius: 5px;
+                                        font-size: .63rem;
+                                        font-weight: 700;
+                                        cursor: pointer;
+                                        border: 1px dashed var(--border2);
+                                        background: transparent;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+                                        transition: all .12s;
+                                        white-space: nowrap;
+        }
+
+                                        .qb-link-btn:hover {
+                                            border - color: var(--accent3);
+                                        color: var(--accent3);
+                                        border-style: solid;
+        }
+
+                                        .qb-link-btn.linked {
+                                            border - style: solid;
+                                        border-color: rgba(129, 140, 248, .5);
+                                        color: var(--accent);
+        }
+
+                                        .qb-picker {
+                                            position: absolute;
+                                        top: calc(100% + 5px);
+                                        right: 0;
+                                        background: var(--card2);
+                                        border: 1px solid var(--border2);
+                                        border-radius: 9px;
+                                        z-index: 200;
+                                        overflow: hidden;
+                                        box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+                                        width: 285px;
+                                        animation: dropIn .14s ease;
+        }
+
+                                        @keyframes dropIn {
+                                            from {
+                                            opacity: 0;
+                                        transform: translateY(-5px)
             }
-        }, EXECUTION_DELAY);
-    }
 
-    function runCodeSafely(code) {
-        const startTime = Date.now();
-        let executionTimer = null;
-
-        executionTimer = setTimeout(() => {
-            addLogEntry('⏱️ Execution timeout - code took too long to run', 'error');
-            throw new Error('Execution timeout');
-        }, SAFETY_LIMITS.maxExecutionTime);
-
-        try {
-            if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
-                clearOutput();
-                addLogEntry('🧹 Output cleared due to size limit', 'info');
-            }
-
-            runCode();
-
-        } finally {
-            clearTimeout(executionTimer);
-            const executionTime = Date.now() - startTime;
-
-            if (executionTime > 1000) {
-                addLogEntry(`⏱️ Execution time: ${executionTime}ms`, 'info');
+                                        to {
+                                            opacity: 1;
+                                        transform: translateY(0)
             }
         }
-    }
 
-    function createAutoExecuteToggle() {
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'autoExecute';
-        toggleBtn.innerHTML = '🔄 Auto-Execute: ON';
-        toggleBtn.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
-        toggleBtn.style.color = 'white';
-
-        toggleBtn.addEventListener('click', function () {
-            autoExecuteEnabled = !autoExecuteEnabled;
-            if (autoExecuteEnabled) {
-                this.innerHTML = '🔄 Auto-Execute: ON';
-                this.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
-                addLogEntry('✅ Auto-execution enabled', 'info');
-                safeAutoExecute();
-            } else {
-                this.innerHTML = '⏸️ Auto-Execute: OFF';
-                this.style.background = 'linear-gradient(135deg, #ff7675, #d63031)';
-                if (autoExecuteTimer) {
-                    clearTimeout(autoExecuteTimer);
-                }
-                addLogEntry('⏸️ Auto-execution disabled', 'warn');
-            }
-        });
-
-        controlsDiv.appendChild(toggleBtn);
-    }
-
-    //createAutoExecuteToggle();
-
-
-
-    editor.onDidChangeModelContent((event) => {
-        // Skip if this is a remote change
-        if (isRemoteChange) return;
-
-        const code = editor.getValue();
-
-        // Debounce the socket emission to prevent flooding
-        if (debounceSendTimer) {
-            clearTimeout(debounceSendTimer);
+                                        .qb-psearch {
+                                            padding: 7px 9px;
+                                        border-bottom: 1px solid var(--border);
         }
 
-        debounceSendTimer = setTimeout(() => {
-            // Only send if code actually changed
-            if (code !== lastSentCode) {
+                                        .qb-psearch input {
+                                            width: 100%;
+                                        background: var(--bg);
+                                        border: 1px solid var(--border);
+                                        border-radius: 5px;
+                                        padding: 5px 8px;
+                                        color: var(--text);
+                                        font-family: 'Space Mono', monospace;
+                                        font-size: .7rem;
+                                        outline: none;
+        }
+
+                                        .qb-psearch input:focus {
+                                            border - color: var(--accent);
+        }
+
+                                        .qb-plist {
+                                            max - height: 180px;
+                                        overflow-y: auto;
+        }
+
+                                        .qb-pitem {
+                                            padding: 7px 10px;
+                                        cursor: pointer;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 7px;
+                                        transition: background .1s;
+                                        font-size: .75rem;
+        }
+
+                                        .qb-pitem:hover {
+                                            background: rgba(129, 140, 248, .1);
+        }
+
+                                        .qb-pitem.selected {
+                                            background: rgba(129, 140, 248, .18);
+        }
+
+                                        .qb-pname {
+                                            flex: 1;
+                                        font-weight: 600;
+        }
+
+                                        .qb-pempty {
+                                            padding: 12px;
+                                        text-align: center;
+                                        color: var(--muted);
+                                        font-size: .72rem;
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .qb-unlink {
+                                            padding: 2px 6px;
+                                        border-radius: 4px;
+                                        font-size: .58rem;
+                                        cursor: pointer;
+                                        border: 1px solid rgba(248, 113, 113, .3);
+                                        background: transparent;
+                                        color: var(--error);
+                                        font-family: 'Space Mono', monospace;
+                                        flex-shrink: 0;
+                                        transition: all .1s;
+        }
+
+                                        .qb-unlink:hover {
+                                            background: rgba(248, 113, 113, .1);
+        }
+
+                                        /* Description — FIX: bigger height */
+                                        .cell-desc {
+                                            padding: 10px 14px;
+                                        background: rgba(56, 189, 248, .04);
+                                        border-bottom: 1px solid var(--border);
+        }
+
+                                        .desc-label {
+                                            font - size: .56rem;
+                                        text-transform: uppercase;
+                                        letter-spacing: 1.5px;
+                                        color: var(--accent2);
+                                        font-family: 'Space Mono', monospace;
+                                        margin-bottom: 4px;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+        }
+
+                                        .desc-ta {
+                                            width: 100%;
+                                        background: transparent;
+                                        border: none;
+                                        outline: none;
+                                        resize: vertical;
+                                        color: var(--text);
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: .82rem;
+                                        line-height: 1.6;
+                                        /* FIX: increased from 72px to 140px */
+                                        height: 140px;
+                                        min-height: 80px;
+                                        overflow-y: auto;
+                                        display: block;
+        }
+
+                                        .desc-ta::placeholder {
+                                            color: var(--muted);
+        }
+
+                                        /* Cell toolbar */
+                                        .cell-toolbar {
+                                            display: flex;
+                                        align-items: center;
+                                        justify-content: space-between;
+                                        padding: 6px 12px;
+                                        background: var(--surface);
+                                        border-bottom: 1px solid var(--border);
+        }
+
+                                        .tl-left {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 7px;
+        }
+
+                                        .tl-right {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 5px;
+        }
+
+                                        .cell-num {
+                                            font - family: 'Space Mono', monospace;
+                                        font-size: .62rem;
+                                        color: var(--muted);
+                                        background: var(--bg);
+                                        padding: 2px 7px;
+                                        border-radius: 4px;
+                                        min-width: 28px;
+                                        text-align: center;
+        }
+
+                                        .lang-toggle {
+                                            display: flex;
+                                        background: var(--bg);
+                                        border-radius: 5px;
+                                        overflow: hidden;
+                                        border: 1px solid var(--border);
+        }
+
+                                        .lang-btn {
+                                            padding: 2px 9px;
+                                        font-size: .65rem;
+                                        font-family: 'Space Mono', monospace;
+                                        font-weight: 700;
+                                        cursor: pointer;
+                                        border: none;
+                                        background: transparent;
+                                        color: var(--muted);
+                                        transition: all .12s;
+        }
+
+                                        .lang-btn.active {
+                                            background: var(--accent);
+                                        color: #fff;
+        }
+
+                                        .hint {
+                                            font - size: .6rem;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .run-btn {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 4px;
+                                        padding: 4px 12px;
+                                        background: var(--accent);
+                                        color: #fff;
+                                        border: none;
+                                        border-radius: 6px;
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: .72rem;
+                                        font-weight: 700;
+                                        cursor: pointer;
+                                        transition: all .15s;
+        }
+
+                                        .run-btn:hover {
+                                            background: #6366f1;
+                                        transform: translateY(-1px);
+        }
+
+                                        .run-btn.running {
+                                            background: var(--muted);
+                                        cursor: not-allowed;
+                                        animation: pulse 1s infinite;
+        }
+
+                                        @keyframes pulse {
+
+                                            0 %,
+                                            100 % {
+                                                opacity: 1
+                                            }
+
+            50% {
+                                            opacity: .5
+            }
+        }
+
+                                        .icon-btn {
+                                            background: transparent;
+                                        border: 1px solid var(--border2);
+                                        color: var(--muted);
+                                        width: 25px;
+                                        height: 25px;
+                                        border-radius: 5px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        cursor: pointer;
+                                        font-size: 11px;
+                                        transition: all .12s;
+        }
+
+                                        .icon-btn:hover {
+                                            border - color: var(--error);
+                                        color: var(--error);
+        }
+
+                                        /* ── EDITOR: scoped CodeMirror styles ── */
+                                        .cell-editor-wrap {
+                                            position: relative;
+                                        overflow: hidden;
+        }
+
+                                        .cell-editor-wrap .CodeMirror {
+                                            font - family: 'JetBrains Mono', monospace !important;
+                                        font-size: 13.5px !important;
+                                        line-height: 1.65 !important;
+                                        height: auto !important;
+                                        min-height: 80px !important;
+                                        background: var(--card) !important;
+                                        color: var(--text) !important;
+                                        border: none !important;
+                                        border-radius: 0 !important;
+        }
+
+                                        .cell-editor-wrap .CodeMirror-scroll {
+                                            min - height: 80px !important;
+                                        overflow-x: auto !important;
+                                        overflow-y: hidden !important;
+        }
+
+                                        .cell-editor-wrap .CodeMirror-gutters {
+                                            background: #252535 !important;
+                                        border-right: 1px solid var(--border) !important;
+                                        min-height: 100% !important;
+        }
+
+                                        .cell-editor-wrap .CodeMirror-linenumber {
+                                            color: var(--muted) !important;
+                                        font-family: 'JetBrains Mono', monospace !important;
+                                        font-size: 11px !important;
+                                        padding: 0 8px !important;
+                                        min-width: 26px !important;
+        }
+
+                                        .cell-editor-wrap .CodeMirror-lines {
+                                            padding: 6px 0 !important;
+        }
+
+                                        .cell-editor-wrap .CodeMirror-line {
+                                            padding: 0 12px !important;
+        }
+
+                                        /* Output — FIX: improved styles */
+                                        .cell-output {
+                                            border - top: 1px solid var(--border);
+                                        background: var(--surface);
+        }
+
+                                        .out-header {
+                                            font - size: .57rem;
+                                        text-transform: uppercase;
+                                        letter-spacing: 1.5px;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+                                        padding: 6px 13px 4px;
+                                        border-bottom: 1px solid var(--border);
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 7px;
+        }
+
+                                        .out-async-badge {
+                                            padding: 1px 5px;
+                                        border-radius: 3px;
+                                        font-size: .55rem;
+                                        background: rgba(56, 189, 248, .12);
+                                        color: var(--accent2);
+                                        border: 1px solid rgba(56, 189, 248, .2);
+        }
+
+                                        .out-time {
+                                            margin - left: auto;
+                                        color: var(--accent3);
+        }
+
+                                        .out-content {
+                                            padding: 9px 13px;
+                                        font-family: 'JetBrains Mono', monospace;
+                                        font-size: .79rem;
+                                        line-height: 1.7;
+                                        word-break: break-word;
+                                        /* FIX: max height with scroll for long outputs */
+                                        max-height: 320px;
+                                        overflow-y: auto;
+        }
+
+                                        .out-content.has-error {
+                                            border - left: 3px solid var(--error);
+                                        background: rgba(248, 113, 113, .03);
+        }
+
+                                        .out-content.has-success {
+                                            border - left: 3px solid var(--success);
+        }
+
+                                        /* output line types */
+                                        .log-line {
+                                            color: var(--text);
+                                        display: block;
+                                        white-space: pre-wrap;
+        }
+
+                                        .error-line {
+                                            color: var(--error);
+                                        display: block;
+                                        white-space: pre-wrap;
+                                        font-weight: 500;
+        }
+
+                                        .warn-line {
+                                            color: var(--accent3);
+                                        display: block;
+                                        white-space: pre-wrap;
+        }
+
+                                        .info-line {
+                                            color: var(--accent2);
+                                        display: block;
+                                        white-space: pre-wrap;
+        }
+
+                                        .return-line {
+                                            color: #a78bfa;
+                                        display: block;
+                                        white-space: pre-wrap;
+        }
+
+                                        /* FIX: error summary banner */
+                                        .out-error-banner {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 6px;
+                                        padding: 6px 10px;
+                                        background: rgba(248, 113, 113, .08);
+                                        border: 1px solid rgba(248, 113, 113, .2);
+                                        border-radius: 6px;
+                                        margin-bottom: 8px;
+                                        font-size: .72rem;
+                                        color: var(--error);
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        /* Add cell */
+                                        .add-cell-row {
+                                            display: flex;
+                                        gap: 9px;
+                                        margin-top: 4px;
+                                        padding: 12px 0;
+        }
+
+                                        .add-cell-btn {
+                                            flex: 1;
+                                        background: transparent;
+                                        border: 1px dashed var(--border2);
+                                        border-radius: 9px;
+                                        padding: 10px;
+                                        color: var(--muted);
+                                        font-family: 'Syne', sans-serif;
+                                        font-size: .75rem;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        transition: all .18s;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        gap: 6px;
+        }
+
+                                        .add-cell-btn:hover {
+                                            border - color: var(--accent);
+                                        color: var(--accent);
+                                        background: rgba(129, 140, 248, .06);
+        }
+
+                                        .add-cell-btn.ts:hover {
+                                            border - color: var(--accent2);
+                                        color: var(--accent2);
+                                        background: rgba(56, 189, 248, .05);
+        }
+
+                                        /* DSA page */
+                                        .dsa-page {
+                                            width: 100%;
+                                        padding: 24px 28px;
+        }
+
+                                        .dsa-ph {
+                                            display: flex;
+                                        align-items: flex-end;
+                                        justify-content: space-between;
+                                        margin-bottom: 20px;
+        }
+
+                                        .dsa-pt {
+                                            font - size: 1.5rem;
+                                        font-weight: 800;
+        }
+
+                                        .dsa-pt span {
+                                            color: var(--accent2);
+        }
+
+                                        .dsa-pm {
+                                            font - size: .7rem;
+                                        color: var(--muted);
+                                        font-family: 'Space Mono', monospace;
+                                        margin-top: 3px;
+        }
+
+                                        .dsa-grid {
+                                            display: grid;
+                                        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+                                        gap: 13px;
+        }
+
+                                        .dsa-card {
+                                            background: var(--card);
+                                        border: 1px solid var(--border);
+                                        border-radius: 11px;
+                                        padding: 15px;
+                                        transition: all .18s;
+                                        animation: cellIn .22s ease;
+        }
+
+                                        .dsa-card:hover {
+                                            border - color: var(--border2);
+                                        transform: translateY(-2px);
+                                        box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+        }
+
+                                        .dsa-card.solved-card {
+                                            opacity: .68;
+        }
+
+                                        .dc-header {
+                                            display: flex;
+                                        align-items: flex-start;
+                                        justify-content: space-between;
+                                        gap: 7px;
+                                        margin-bottom: 7px;
+        }
+
+                                        .dc-num {
+                                            font - size: .6rem;
+                                        font-family: 'Space Mono', monospace;
+                                        color: var(--muted);
+                                        flex-shrink: 0;
+                                        margin-top: 2px;
+        }
+
+                                        .dc-title {
+                                            font - size: .88rem;
+                                        font-weight: 700;
+                                        flex: 1;
+                                        line-height: 1.3;
+        }
+
+                                        .dc-check {
+                                            color: var(--success);
+                                        font-size: 13px;
+                                        flex-shrink: 0;
+        }
+
+                                        .dc-desc {
+                                            font - size: .73rem;
+                                        color: var(--text2);
+                                        line-height: 1.5;
+                                        margin-bottom: 9px;
+                                        display: -webkit-box;
+                                        -webkit-line-clamp: 2;
+                                        -webkit-box-orient: vertical;
+                                        overflow: hidden;
+        }
+
+                                        .dc-footer {
+                                            display: flex;
+                                        align-items: center;
+                                        gap: 6px;
+                                        flex-wrap: wrap;
+        }
+
+                                        .dc-lc {
+                                            margin - left: auto;
+                                        font-size: .6rem;
+                                        color: var(--accent2);
+                                        font-family: 'Space Mono', monospace;
+                                        background: rgba(56, 189, 248, .08);
+                                        padding: 2px 6px;
+                                        border-radius: 4px;
+        }
+
+                                        .dc-actions {
+                                            display: flex;
+                                        gap: 5px;
+                                        margin-top: 9px;
+                                        flex-wrap: wrap;
+        }
+
+                                        .empty-state {
+                                            grid - column: 1/-1;
+                                        text-align: center;
+                                        padding: 56px 20px;
+                                        color: var(--muted);
+        }
+
+                                        .empty-icon {
+                                            font - size: 2.8rem;
+                                        margin-bottom: 10px;
+                                        opacity: .35;
+        }
+
+                                        .empty-state p {
+                                            font - size: .82rem;
+        }
+
+                                        /* Save bar */
+                                        .save-bar {
+                                            position: fixed;
+                                        bottom: 18px;
+                                        right: 18px;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 7px;
+                                        background: var(--card2);
+                                        border: 1px solid var(--border2);
+                                        border-radius: 9px;
+                                        padding: 9px 14px;
+                                        box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+                                        font-size: .7rem;
+                                        z-index: 50;
+                                        transform: translateY(20px);
+                                        opacity: 0;
+                                        transition: all .25s;
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .save-bar.visible {
+                                            transform: translateY(0);
+                                        opacity: 1;
+        }
+
+                                        .save-dot {
+                                            width: 6px;
+                                        height: 6px;
+                                        border-radius: 50%;
+                                        background: var(--accent3);
+        }
+
+                                        .save-dot.saved {
+                                            background: var(--success);
+        }
+
+                                        /* Toast */
+                                        .toast {
+                                            position: fixed;
+                                        top: 66px;
+                                        right: 18px;
+                                        background: var(--card2);
+                                        border: 1px solid var(--border2);
+                                        border-radius: 8px;
+                                        padding: 8px 13px;
+                                        font-size: .73rem;
+                                        z-index: 500;
+                                        opacity: 0;
+                                        transform: translateX(14px);
+                                        transition: all .22s;
+                                        pointer-events: none;
+                                        font-family: 'Space Mono', monospace;
+        }
+
+                                        .toast.show {
+                                            opacity: 1;
+                                        transform: translateX(0);
+        }
+
+                                        .toast.success {
+                                            border - color: var(--success);
+                                        color: var(--success);
+        }
+
+                                        .toast.error {
+                                            border - color: var(--error);
+                                        color: var(--error);
+        }
+
+                                        ::-webkit-scrollbar {
+                                            width: 3px;
+        }
+
+                                        ::-webkit-scrollbar-track {
+                                            background: transparent;
+        }
+
+                                        ::-webkit-scrollbar-thumb {
+                                            background: var(--border2);
+                                        border-radius: 2px;
+        }
+
+                                        /* CodeMirror autocomplete */
+                                        .CodeMirror-hints {
+                                            background: var(--card2) !important;
+                                        border: 1px solid var(--border2) !important;
+                                        border-radius: 9px !important;
+                                        box-shadow: 0 12px 32px rgba(0, 0, 0, .5) !important;
+                                        padding: 4px !important;
+                                        font-family: 'JetBrains Mono', monospace !important;
+                                        font-size: .8rem !important;
+                                        z-index: 9999 !important;
+        }
+
+                                        .CodeMirror-hint {
+                                            color: var(--text) !important;
+                                        border-radius: 5px !important;
+                                        padding: 4px 10px !important;
+                                        line-height: 1.5 !important;
+        }
+
+                                        .CodeMirror-hint-active {
+                                            background: rgba(129, 140, 248, .25) !important;
+                                        color: var(--text) !important;
+        }
+
+                                        li.CodeMirror-hint:hover {
+                                            background: rgba(129, 140, 248, .15) !important;
+        }
+                                    </style>
+                                </head>
+
+                                <body>
+                                    <div class="toast" id="toast"></div>
+
+                                    <header>
+                                        <div class="logo">
+                                            <div class="logo-icon">⚡</div>CodeBook
+                                        </div>
+                                        <div class="header-center">
+                                            <button class="tab-btn active" id="tab-notebook" onclick="switchPage('notebook')">📓 Notebook</button>
+                                            <button class="tab-btn" id="tab-dsa" onclick="switchPage('dsa')">🎯 DSA Questions</button>
+                                        </div>
+                                        <div class="header-right">
+                                            <div class="firebase-status">
+                                                <div class="fb-dot" id="fb-dot"></div>
+                                                <span id="fb-status">offline</span>
+                                            </div>
+                                            <button class="btn btn-ghost btn-sm" onclick="openFirebaseModal()">⚙ Firebase</button>
+                                            <button class="btn btn-primary btn-sm" onclick="saveAll()">💾 Save</button>
+                                        </div>
+                                    </header>
+
+                                    <div class="app-layout">
+                                        <aside class="sidebar">
+                                            <div class="sidebar-tabs">
+                                                <button class="stab active" id="stab-nb" onclick="switchSidebarTab('nb')">Notebooks</button>
+                                                <button class="stab" id="stab-dsa" onclick="switchSidebarTab('dsa')">DSA List</button>
+                                            </div>
+                                            <div class="spanel active" id="spanel-nb">
+                                                <div class="panel-top">
+                                                    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="newNotebook()">＋
+                                                        New Notebook</button>
+                                                </div>
+                                                <div class="nb-list" id="nb-list">
+                                                    <div
+                                                        style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:'Space Mono',monospace">
+                                                        Connect Firebase to sync</div>
+                                                </div>
+                                            </div>
+                                            <div class="spanel" id="spanel-dsa">
+                                                <div class="dsa-toolbar">
+                                                    <input class="dsa-search" id="sb-dsa-search" placeholder="Search questions…"
+                                                        oninput="renderDSASidebar()">
+                                                        <div class="dsa-filters">
+                                                            <button class="fchip fa" id="fc-all" onclick="setFilter('all')">All</button>
+                                                            <button class="fchip" id="fc-easy" onclick="setFilter('easy')">Easy</button>
+                                                            <button class="fchip" id="fc-medium" onclick="setFilter('medium')">Med</button>
+                                                            <button class="fchip" id="fc-hard" onclick="setFilter('hard')">Hard</button>
+                                                            <button class="fchip" id="fc-unsolved" onclick="setFilter('unsolved')">Todo</button>
+                                                        </div>
+                                                        <div class="dsa-stats">
+                                                            <span><span class="stat-dot" style="background:var(--success)"></span><span
+                                                                id="stat-easy">0</span></span>
+                                                            <span><span class="stat-dot" style="background:var(--accent3)"></span><span
+                                                                id="stat-med">0</span></span>
+                                                            <span><span class="stat-dot" style="background:var(--error)"></span><span
+                                                                id="stat-hard">0</span></span>
+                                                            <span>✓ <span id="stat-solved">0</span></span>
+                                                        </div>
+                                                </div>
+                                                <div class="dsa-list" id="sb-dsa-list"></div>
+                                                <div class="dsa-bottom">
+                                                    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openDSAModal()">＋
+                                                        Add Question</button>
+                                                </div>
+                                            </div>
+                                        </aside>
+
+                                        <div class="main-content">
+                                            <div class="page active" id="page-notebook">
+                                                <div class="nb-page">
+                                                    <div class="nb-header">
+                                                        <div class="nb-title-wrap">
+                                                            <input class="nb-title-input" id="nb-title" type="text" placeholder="Untitled Notebook"
+                                                                value="Untitled Notebook" onchange="triggerAutoSave()">
+                                                                <div class="nb-meta">
+                                                                    <span id="nb-id">local</span><span>·</span>
+                                                                    <span id="cell-count">0 cells</span><span>·</span>
+                                                                    <span id="last-saved">unsaved</span>
+                                                                </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="cells-container"></div>
+                                                    <div class="add-cell-row">
+                                                        <button class="add-cell-btn" onclick="addCell('javascript')">＋ JS Cell</button>
+                                                        <button class="add-cell-btn ts" onclick="addCell('typescript')">＋ TS Cell</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="page" id="page-dsa">
+                                                <div class="dsa-page">
+                                                    <div class="dsa-ph">
+                                                        <div>
+                                                            <div class="dsa-pt">DSA <span>Questions</span></div>
+                                                            <div class="dsa-pm" id="dsa-pm">0 questions</div>
+                                                        </div>
+                                                        <button class="btn btn-primary" onclick="openDSAModal()">＋ Add Question</button>
+                                                    </div>
+                                                    <div class="dsa-grid" id="dsa-grid">
+                                                        <div class="empty-state">
+                                                            <div class="empty-icon">🎯</div>
+                                                            <p>Add your first DSA question!</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- FIREBASE MODAL -->
+                                    <div class="modal-overlay" id="firebase-modal">
+                                        <div class="modal">
+                                            <h2>🔥 Firebase Config</h2>
+                                            <p class="modal-sub">Connect to Firestore for cloud sync across devices.</p>
+                                            <div class="form-group">
+                                                <label>📂 Load Config from JSON File</label>
+                                                <div class="upload-area" id="fb-upload-area">
+                                                    <input type="file" accept=".json,.txt" id="fb-file-input" onchange="loadFirebaseFromFile(this)">
+                                                        <div class="upload-area-text">Drop a <span>.json</span> file here or click to browse<br><small
+                                                            style="font-size:.65rem;color:var(--muted);margin-top:4px;display:block">File should contain
+                                                            Firebase config object</small></div>
+                                                </div>
+                                                <div class="fb-file-status" id="fb-file-status"></div>
+                                            </div>
+                                            <div class="modal-divider"></div>
+                                            <p class="modal-sub" style="margin-top:0;margin-bottom:12px">Or enter manually:</p>
+                                            <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIzaSy…"></div>
+                                            <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain"
+                                                placeholder="project.firebaseapp.com"></div>
+                                            <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId"
+                                                placeholder="my-project"></div>
+                                            <div class="form-group"><label>Storage Bucket</label><input type="text" id="fb-storageBucket"
+                                                placeholder="my-project.appspot.com"></div>
+                                            <div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fb-messagingSenderId"
+                                                placeholder="123456789"></div>
+                                            <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123…"></div>
+                                            <div class="modal-actions">
+                                                <button class="btn btn-ghost" onclick="closeModal('firebase-modal')">Cancel</button>
+                                                <button class="btn btn-primary" onclick="initFirebase()">Connect</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ADD/EDIT DSA MODAL -->
+                                    <div class="modal-overlay" id="dsa-modal">
+                                        <div class="modal">
+                                            <h2 id="dsa-modal-h">＋ Add Question</h2>
+                                            <p class="modal-sub">Track a question in your DSA practice list.</p>
+                                            <input type="hidden" id="dsa-edit-id">
+                                                <div class="form-group"><label>Title *</label><input type="text" id="dq-title" placeholder="e.g. Two Sum">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Category</label>
+                                                    <select id="dq-cat">
+                                                        <option>Array</option>
+                                                        <option>String</option>
+                                                        <option>Linked List</option>
+                                                        <option>Tree</option>
+                                                        <option>Graph</option>
+                                                        <option>Dynamic Programming</option>
+                                                        <option>Backtracking</option>
+                                                        <option>Binary Search</option>
+                                                        <option>Stack / Queue</option>
+                                                        <option>Heap</option>
+                                                        <option>Sliding Window</option>
+                                                        <option>Two Pointers</option>
+                                                        <option>Recursion</option>
+                                                        <option>Math</option>
+                                                        <option>Bit Manipulation</option>
+                                                        <option>Other</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Difficulty</label>
+                                                    <div class="radio-group">
+                                                        <button class="radio-opt" id="rd-easy" onclick="pickDiff('easy')">Easy</button>
+                                                        <button class="radio-opt" id="rd-medium" onclick="pickDiff('medium')">Medium</button>
+                                                        <button class="radio-opt" id="rd-hard" onclick="pickDiff('hard')">Hard</button>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group"><label>Problem Description</label><textarea id="dq-desc"
+                                                    placeholder="Describe the problem, constraints, examples…" rows="4"></textarea></div>
+                                                <div class="form-group"><label>Source URL (LeetCode etc.)</label><input type="text" id="dq-url"
+                                                    placeholder="https://leetcode.com/problems/…"></div>
+                                                <div class="modal-actions">
+                                                    <button class="btn btn-ghost" onclick="closeModal('dsa-modal')">Cancel</button>
+                                                    <button class="btn btn-primary" onclick="saveDSAQuestion()">Save</button>
+                                                </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DSA VIEW MODAL -->
+                                    <div class="modal-overlay" id="qview-modal">
+                                        <div class="modal modal-wide">
+                                            <div class="qview-header">
+                                                <div class="qview-title" id="qv-title">—</div>
+                                                <button class="btn btn-ghost btn-sm" onclick="closeModal('qview-modal')">✕ Close</button>
+                                            </div>
+                                            <div class="qview-badges" id="qv-badges"></div>
+                                            <div class="qview-desc" id="qv-desc" style="display:none"></div>
+                                            <div id="qv-url-row" style="margin-bottom:12px;display:none">
+                                                <a id="qv-url" href="#" target="_blank"
+                                                    style="color:var(--accent2);font-size:.78rem;font-family:'Space Mono',monospace;">🔗 Open
+                                                    problem</a>
+                                            </div>
+                                            <div
+                                                style="font-size:.68rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
+                                                Linked Solution Cells</div>
+                                            <div class="qview-cells" id="qv-cells"></div>
+                                            <div class="modal-actions" style="margin-top:16px">
+                                                <button class="btn btn-success btn-sm" id="qv-solve-btn" onclick="toggleSolvedFromView()">✓ Mark
+                                                    Solved</button>
+                                                <button class="btn btn-ghost btn-sm" onclick="editFromView()">✏ Edit</button>
+                                                <button class="btn btn-danger btn-sm" onclick="deleteFromView()">🗑 Delete</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RENAME MODAL -->
+                                    <div class="modal-overlay" id="rename-modal">
+                                        <div class="modal" style="width:380px">
+                                            <h2>✏ Rename Notebook</h2>
+                                            <p class="modal-sub">Enter a new name for this notebook.</p>
+                                            <input type="hidden" id="rename-nb-id">
+                                                <div class="form-group"><label>New Name</label><input type="text" id="rename-nb-title"
+                                                    placeholder="Notebook name…"></div>
+                                                <div class="modal-actions">
+                                                    <button class="btn btn-ghost" onclick="closeModal('rename-modal')">Cancel</button>
+                                                    <button class="btn btn-primary" onclick="doRenameNotebook()">Rename</button>
+                                                </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="save-bar" id="save-bar">
+                                        <div class="save-dot" id="save-dot"></div>
+                                        <span id="save-text">Saved</span>
+                                    </div>
+
+                                    <script>
+                                        'use strict';
+
+                                        // ══════════════════════════════════════════════
+                                        // STATE
+                                        // ══════════════════════════════════════════════
+                                        let db = null;
+                                        let cells = [];
+                                        let cellEditors = { };
+                                        let dsaQuestions = [];
+                                        let currentNotebookId = null;
+                                        let autoSaveTimer = null;
+                                        let cellIdCounter = 0;
+                                        let dsaFilter = 'all';
+                                        let selDiff = 'medium';
+                                        let viewingQId = null;
+
+                                        function saveNotebookId(id) {
+            if (id) localStorage.setItem('current_notebook_id', id);
+                                        else localStorage.removeItem('current_notebook_id');
+        }
+                                        function loadNotebookId() {
+            return localStorage.getItem('current_notebook_id') || null;
+        }
+
+                                        // ══════════════════════════════════════════════
+                                        // PAGE / SIDEBAR
+                                        // ══════════════════════════════════════════════
+                                        function switchPage(n) {
+                                            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                                        document.getElementById('page-' + n).classList.add('active');
+                                        document.getElementById('tab-' + n).classList.add('active');
+                                        if (n === 'dsa') renderDSAGrid();
+        }
+                                        function switchSidebarTab(n) {
+                                            document.querySelectorAll('.spanel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+                                        document.getElementById('spanel-' + n).classList.add('active');
+                                        document.getElementById('stab-' + n).classList.add('active');
+        }
+
+                                        // ══════════════════════════════════════════════
+                                        // FIREBASE
+                                        // ══════════════════════════════════════════════
+                                        function loadFirebaseFromFile(input) {
+            const file = input.files[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+            reader.onload = (e) => {
                 try {
-                    socket.emit("code-change", {
-                        roomId,
-                        code,
-                        timestamp: Date.now(),
-                        senderId: socket.id // Include sender ID for filtering
-                    });
-                    lastSentCode = code;
-                    console.log('📤 Sent code update');
-                } catch (e) {
-                    console.error("Error emitting code-change:", e);
+                                            let text = e.target.result.trim();
+                                        text = text.replace(/^.*?=\s*/, '').replace(/;?\s*$/, '').trim();
+                                        const cfg = JSON.parse(text);
+                                        const keys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+                                        let found = 0;
+                    keys.forEach(k => { if (cfg[k]) { const el = document.getElementById('fb-' + k); if (el) {el.value = cfg[k]; found++; } } });
+                                        const st = document.getElementById('fb-file-status');
+                                        st.style.display = 'block';
+                                        st.textContent = '✓ Loaded ' + found + ' fields from ' + file.name;
+                                        showToast('Config loaded from file!', 'success');
+                } catch (err) {showToast('Could not parse file: ' + err.message, 'error'); }
+            };
+                                        reader.readAsText(file);
+        }
+
+                                        function openFirebaseModal() {
+            const saved = JSON.parse(localStorage.getItem('fb_config') || '{ }');
+            ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
+                const el = document.getElementById('fb-' + k); if (el && saved[k]) el.value = saved[k];
+            });
+                                        document.getElementById('fb-file-status').style.display = 'none';
+                                        openModal('firebase-modal');
+        }
+
+                                        async function initFirebase() {
+            const config = { };
+            ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
+                                            config[k] = (document.getElementById('fb-' + k).value || '').trim();
+            });
+                                        if (!config.apiKey || !config.projectId) {showToast('API Key & Project ID required!', 'error'); return; }
+                                        try {
+                try {await firebase.app().delete(); } catch (e) { }
+                                        firebase.initializeApp(config);
+                                        db = firebase.firestore();
+                                        await db.collection('notebooks').limit(1).get();
+                                        localStorage.setItem('fb_config', JSON.stringify(config));
+                                        setFirebaseStatus(true);
+                                        closeModal('firebase-modal');
+                                        showToast('Firebase connected!', 'success');
+                                        loadNotebooksList();
+                                        loadDSAFromFirebase();
+            } catch (e) {showToast('Failed: ' + e.message, 'error'); console.error(e); }
+        }
+
+                                        function setFirebaseStatus(on) {
+                                            document.getElementById('fb-dot').className = 'fb-dot' + (on ? ' on' : '');
+                                        document.getElementById('fb-status').textContent = on ? 'synced' : 'offline';
+        }
+
+                                        // ══════════════════════════════════════════════
+                                        // NOTEBOOKS LIST
+                                        // ══════════════════════════════════════════════
+                                        async function loadNotebooksList() {
+            if (!db) return;
+                                        const list = document.getElementById('nb-list');
+                                        list.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:.7rem;font-family:\'Space Mono\',monospace">Loading…</div>';
+                                        try {
+                const snap = await db.collection('notebooks').orderBy('updatedAt', 'desc').limit(50).get();
+                                        list.innerHTML = '';
+                                        if (snap.empty) {
+                                            list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No notebooks yet</div>';
+                                        return;
+                }
+                snap.forEach(doc => {
+                    const d = doc.data();
+                                        const div = document.createElement('div');
+                                        div.className = 'nb-item' + (doc.id === currentNotebookId ? ' active-nb' : '');
+                                        div.id = 'nb-item-' + doc.id;
+                                        const date = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate().toLocaleDateString() : '';
+                                        div.innerHTML =
+                                        '<div class="nb-item-title">' + escH(d.title || 'Untitled') + '</div>' +
+                                        '<div class="nb-item-meta">' + (d.cells || []).length + ' cells · ' + date + '</div>' +
+                                        '<div class="nb-item-actions">' +
+                                            '<button class="nb-act-btn duplicate" title="Duplicate" onclick="event.stopPropagation();duplicateNotebook(\'' + doc.id + '\',\'' + escH(d.title || 'Untitled') + '\')">📋</button>' +
+                                            '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '\',`' + escH(d.title || 'Untitled') + '`)">✏</button>' +
+                                            '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">🗑</button>' +
+                                            '</div>';
+                    div.addEventListener('click', () => loadNotebook(doc.id, d));
+                                        list.appendChild(div);
+                });
+            } catch (e) {list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:.7rem">' + escH(e.message) + '</div>'; }
+        }
+
+                                        function loadNotebook(id, data) {
+                                            currentNotebookId = id;
+                                        saveNotebookId(id);
+                                        document.getElementById('nb-title').value = data.title || 'Untitled';
+                                        document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
+                                        cells = [];
+                                        cellEditors = { };
+                                        document.getElementById('cells-container').innerHTML = '';
+            (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
+                                        updateCellCount();
+            document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
+                                        const el = document.getElementById('nb-item-' + id);
+                                        if (el) el.classList.add('active-nb');
+                                        switchPage('notebook');
+                                        showToast('Notebook loaded!', 'success');
+        }
+
+                                        function newNotebook() {
+                                            currentNotebookId = null;
+                                        saveNotebookId(null);
+                                        document.getElementById('nb-title').value = 'Untitled Notebook';
+                                        document.getElementById('nb-id').textContent = 'local';
+                                        cells = []; cellEditors = { };
+                                        document.getElementById('cells-container').innerHTML = '';
+            document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
+                                        addCell('javascript');
+                                        showToast('New notebook!', 'success');
+        }
+
+                                        async function duplicateNotebook(id, title) {
+            try {
+                                            let notebookData;
+                                        if (db) {
+                    const doc = await db.collection('notebooks').doc(id).get();
+                                        if (!doc.exists) {showToast('Notebook not found!', 'error'); return; }
+                                        notebookData = doc.data();
+                } else {
+                    const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
+                                        if (!local) {showToast('No notebook to duplicate!', 'error'); return; }
+                                        notebookData = local;
+                }
+                                        currentNotebookId = null;
+                                        saveNotebookId(null);
+                                        document.getElementById('nb-title').value = title + ' (Copy)';
+                                        document.getElementById('nb-id').textContent = 'local';
+                                        cells = []; cellEditors = { };
+                                        document.getElementById('cells-container').innerHTML = '';
+                (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
+                                        updateCellCount();
+                document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
+                                        switchPage('notebook');
+                                        triggerAutoSave();
+                                        showToast('Notebook duplicated!', 'success');
+            } catch (e) {showToast('Failed to duplicate: ' + e.message, 'error'); }
+        }
+
+                                        async function deleteNotebook(id) {
+            if (!confirm('Delete this notebook permanently? This cannot be undone.')) return;
+                                        if (id === currentNotebookId) {
+                                            currentNotebookId = null; saveNotebookId(null);
+                                        document.getElementById('nb-title').value = 'Untitled Notebook';
+                                        document.getElementById('nb-id').textContent = 'local';
+                                        cells = []; cellEditors = { };
+                                        document.getElementById('cells-container').innerHTML = '';
+                                        addCell('javascript');
+            }
+                                        if (db) {
+                try {await db.collection('notebooks').doc(id).delete(); showToast('Notebook deleted', 'success'); loadNotebooksList(); }
+                                        catch (e) {showToast('Delete failed: ' + e.message, 'error'); }
+            } else {
+                const el = document.getElementById('nb-item-' + id); if (el) el.remove();
+                                        showToast('Notebook deleted locally', 'success');
+            }
+        }
+
+                                        function openRenameModal(id, currentTitle) {
+                                            document.getElementById('rename-nb-id').value = id;
+                                        document.getElementById('rename-nb-title').value = currentTitle;
+                                        openModal('rename-modal');
+        }
+
+                                        async function doRenameNotebook() {
+            const id = document.getElementById('rename-nb-id').value;
+                                        const newTitle = document.getElementById('rename-nb-title').value.trim();
+                                        if (!newTitle) {showToast('Title cannot be empty', 'error'); return; }
+                                        if (id === currentNotebookId) document.getElementById('nb-title').value = newTitle;
+                                        if (db) {
+                try {
+                                            await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                                        showToast('Renamed!', 'success'); loadNotebooksList();
+                } catch (e) {showToast('Rename failed: ' + e.message, 'error'); }
+            }
+                                        closeModal('rename-modal');
+        }
+
+                                        // ══════════════════════════════════════════════
+                                        // DSA
+                                        // ══════════════════════════════════════════════
+                                        function pickDiff(d) {
+                                            selDiff = d;
+            ['easy', 'medium', 'hard'].forEach(x => {document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : ''); });
+        }
+
+                                        function openDSAModal(editId) {
+                                            document.getElementById('dsa-edit-id').value = editId || '';
+                                        if (editId) {
+                const q = dsaQuestions.find(q => q.id === editId); if (!q) return;
+                                        document.getElementById('dsa-modal-h').textContent = '✏ Edit Question';
+                                        document.getElementById('dq-title').value = q.title;
+                                        document.getElementById('dq-cat').value = q.category || 'Array';
+                                        document.getElementById('dq-desc').value = q.description || '';
+                                        document.getElementById('dq-url').value = q.url || '';
+                                        pickDiff(q.difficulty || 'medium');
+            } else {
+                                            document.getElementById('dsa-modal-h').textContent = '＋ Add Question';
+                                        document.getElementById('dq-title').value = '';
+                                        document.getElementById('dq-desc').value = '';
+                                        document.getElementById('dq-url').value = '';
+                                        pickDiff('medium');
+            }
+                                        openModal('dsa-modal');
+        }
+
+                                        function saveDSAQuestion() {
+            const title = document.getElementById('dq-title').value.trim();
+                                        if (!title) {showToast('Title is required!', 'error'); return; }
+                                        const editId = document.getElementById('dsa-edit-id').value;
+            const existing = editId ? dsaQuestions.find(q => q.id === editId) : null;
+                                        const q = {
+                                            id: editId || ('dsa_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+                                        title, category: document.getElementById('dq-cat').value, difficulty: selDiff,
+                                        description: document.getElementById('dq-desc').value.trim(),
+                                        url: document.getElementById('dq-url').value.trim(),
+                                        solved: existing ? existing.solved : false,
+                                        createdAt: existing ? existing.createdAt : Date.now(),
+            };
+                                        if (editId) { const idx = dsaQuestions.findIndex(x => x.id === editId); if (idx !== -1) dsaQuestions[idx] = q; }
+                                        else dsaQuestions.push(q);
+                                        closeModal('dsa-modal'); persistDSA(); refreshAllDSAUI();
+            cells.forEach(c => { if (c.linkedQuestionId === q.id) refreshBanner(c.id); });
+                                        showToast(editId ? 'Updated!' : 'Question added!', 'success');
+        }
+
+                                        function deleteDSAQuestion(id) {
+            if (!confirm('Delete this question?')) return;
+            cells.forEach(c => { if (c.linkedQuestionId === id) {c.linkedQuestionId = null; refreshBanner(c.id); } });
+            dsaQuestions = dsaQuestions.filter(q => q.id !== id);
+                                        persistDSA(); refreshAllDSAUI(); triggerAutoSave(); showToast('Deleted', 'success');
+        }
+
+                                        function toggleSolved(id) {
+            const q = dsaQuestions.find(q => q.id === id); if (!q) return;
+                                        q.solved = !q.solved; persistDSA(); refreshAllDSAUI();
+            cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); });
+        }
+
+                                        function openQuestionView(id) {
+            const q = dsaQuestions.find(q => q.id === id); if (!q) return;
+                                        viewingQId = id;
+                                        document.getElementById('qv-title').textContent = q.title;
+                                        let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
+                                        if (q.category) badges += '<span style="font-size:.7rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category) + '</span>';
+                                        if (q.solved) badges += '<span style="color:var(--success);font-size:.72rem;font-family:\'Space Mono\',monospace">✓ Solved</span>';
+                                        document.getElementById('qv-badges').innerHTML = badges;
+                                        const descEl = document.getElementById('qv-desc');
+                                        if (q.description) {descEl.textContent = q.description; descEl.style.display = 'block'; } else descEl.style.display = 'none';
+                                        const urlRow = document.getElementById('qv-url-row');
+                                        if (q.url) {document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; } else urlRow.style.display = 'none';
+                                        document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ Reopen' : '✓ Mark Solved';
+                                        document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
+            const linkedCells = cells.filter(c => c.linkedQuestionId === id);
+                                        const cellsEl = document.getElementById('qv-cells');
+                                        if (linkedCells.length === 0) {
+                                            cellsEl.innerHTML = '<div class="qview-empty">No cells linked to this question yet.<br>Open a notebook cell and click "Link Question" to connect it.</div>';
+            } else {
+                                            cellsEl.innerHTML = linkedCells.map((c) => {
+                                                const editor = cellEditors[c.id];
+                                                const code = editor ? editor.getValue() : c.code || '';
+                                                const wrap = document.getElementById('cell-' + c.id);
+                                                const desc = wrap ? wrap.querySelector('.desc-ta').value : c.description || '';
+                                                const cellIdx = cells.findIndex(x => x.id === c.id);
+                                                return '<div class="qview-cell">' +
+                                                    '<div class="qview-cell-header">' +
+                                                    '<span>[' + (cellIdx + 1) + ']</span>' +
+                                                    '<span class="diff-badge diff-' + (c.lang === 'typescript' ? 'medium' : 'easy') + '">' + c.lang.toUpperCase().slice(0, 2) + '</span>' +
+                                                    '<span>' + escH(document.getElementById('nb-title').value || 'Current Notebook') + '</span>' +
+                                                    '</div>' +
+                                                    (desc ? '<div class="qview-cell-desc">📝 ' + escH(desc) + '</div>' : '') +
+                                                    '<div class="qview-cell-code">' + escH(code.slice(0, 600)) + (code.length > 600 ? '\n…' : '') + '</div>' +
+                                                    '</div>';
+                                            }).join('');
+            }
+                                        openModal('qview-modal');
+        }
+
+                                        function toggleSolvedFromView() { if (!viewingQId) return; toggleSolved(viewingQId); openQuestionView(viewingQId); }
+                                        function editFromView() {closeModal('qview-modal'); openDSAModal(viewingQId); }
+                                        function deleteFromView() {closeModal('qview-modal'); deleteDSAQuestion(viewingQId); }
+
+                                        function setFilter(f) {
+                                            dsaFilter = f;
+            ['all', 'easy', 'medium', 'hard', 'unsolved'].forEach(x => {
+                const el = document.getElementById('fc-' + x); if (!el) return;
+                                        const map = {all: 'fa', easy: 'fe', medium: 'fm', hard: 'fh', unsolved: 'fa' };
+                                        el.className = 'fchip' + (x === f ? ' ' + map[x] : '');
+            });
+                                        renderDSASidebar();
+        }
+
+                                        function renderDSASidebar() {
+            const list = document.getElementById('sb-dsa-list');
+                                        const search = (document.getElementById('sb-dsa-search').value || '').toLowerCase();
+            const filtered = dsaQuestions.filter(q => {
+                if (dsaFilter === 'easy' && q.difficulty !== 'easy') return false;
+                                        if (dsaFilter === 'medium' && q.difficulty !== 'medium') return false;
+                                        if (dsaFilter === 'hard' && q.difficulty !== 'hard') return false;
+                                        if (dsaFilter === 'unsolved' && q.solved) return false;
+                                        if (search && !q.title.toLowerCase().includes(search) && !(q.category || '').toLowerCase().includes(search)) return false;
+                                        return true;
+            });
+                                        if (filtered.length === 0) {list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No questions found</div>'; return; }
+            list.innerHTML = filtered.map(q => {
+                const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
+                                        return '<div class="dsa-sb-item">' +
+                                            '<div class="dsa-sb-header">' +
+                                                '<div class="dsa-sb-title">' + (q.solved ? '<span class="dsa-solved-mark">✓ </span>' : '') + escH(q.title) + '</div>' +
+                                                '<div class="dsa-sb-btns">' +
+                                                    '<button class="dsa-sb-btn view-btn" title="View" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' +
+                                                    '<button class="dsa-sb-btn del-btn" title="Delete" onclick="deleteDSAQuestion(\'' + q.id + '\')">✕</button>' +
+                                                    '</div></div>' +
+                                            '<div class="dsa-sb-footer">' +
+                                                '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
+                                                '<span class="dsa-cat-tag">' + escH(q.category || '') + '</span>' +
+                                                (lc ? '<span class="dsa-lc">⚡' + lc + '</span>' : '') +
+                                                '</div></div>';
+            }).join('');
+        }
+
+                                        function renderDSAGrid() {
+            const grid = document.getElementById('dsa-grid');
+                                        const meta = document.getElementById('dsa-pm');
+            meta.textContent = dsaQuestions.length + ' question' + (dsaQuestions.length !== 1 ? 's' : '') + ' · ' + dsaQuestions.filter(q => q.solved).length + ' solved';
+                                        if (dsaQuestions.length === 0) {grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Add your first DSA question!</p></div>'; return; }
+            grid.innerHTML = dsaQuestions.map((q, i) => {
+                const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
+                                        return '<div class="dsa-card' + (q.solved ? ' solved-card' : '') + '">' +
+                                            '<div class="dc-header"><span class="dc-num">#' + (i + 1) + '</span><span class="dc-title">' + escH(q.title) + '</span>' + (q.solved ? '<span class="dc-check">✓</span>' : '') + '</div>' +
+                                            (q.description ? '<div class="dc-desc">' + escH(q.description) + '</div>' : '') +
+                                            '<div class="dc-footer">' +
+                                                '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
+                                                '<span style="font-size:.63rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
+                                                (lc ? '<span class="dc-lc">⚡ ' + lc + ' cell' + (lc > 1 ? 's' : '') + '</span>' : '') +
+                                                '</div>' +
+                                            '<div class="dc-actions">' +
+                                                '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁 View</button>' +
+                                                '<button class="btn btn-' + (q.solved ? 'ghost' : 'success') + ' btn-xs" onclick="toggleSolved(\'' + q.id + '\')">' + (q.solved ? '↩ Reopen' : '✓ Solved') + '</button>' +
+                                                (q.url ? '<button class="btn btn-ghost btn-xs" onclick="window.open(\'' + escH(q.url) + '\',\'_blank\')">🔗</button>' : '') +
+                                                '<button class="btn btn-ghost btn-xs" onclick="openDSAModal(\'' + q.id + '\')">✏</button>' +
+                                                '<button class="btn btn-danger btn-xs" onclick="deleteDSAQuestion(\'' + q.id + '\')">🗑</button>' +
+                                                '</div></div>';
+            }).join('');
+        }
+
+                                        function updateDSAStats() {
+                                            document.getElementById('stat-easy').textContent = dsaQuestions.filter(q => q.difficulty === 'easy').length;
+            document.getElementById('stat-med').textContent = dsaQuestions.filter(q => q.difficulty === 'medium').length;
+            document.getElementById('stat-hard').textContent = dsaQuestions.filter(q => q.difficulty === 'hard').length;
+            document.getElementById('stat-solved').textContent = dsaQuestions.filter(q => q.solved).length;
+        }
+
+                                        function refreshAllDSAUI() {renderDSASidebar(); renderDSAGrid(); updateDSAStats(); }
+
+                                        function persistDSA() {
+                                            localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
+                                        if (db) {db.collection('dsa').doc('questions').set({ questions: dsaQuestions, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(e => console.warn('DSA save err', e)); }
+        }
+
+                                        async function loadDSAFromFirebase() {
+            if (!db) return;
+                                        try {
+                const doc = await db.collection('dsa').doc('questions').get();
+                                        if (doc.exists && doc.data().questions) {
+                                            dsaQuestions = doc.data().questions;
+                                        localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
+                                        refreshAllDSAUI();
+                    cells.forEach(c => refreshBanner(c.id));
+                }
+            } catch (e) {console.warn('DSA load err', e); }
+        }
+
+                                        // ══════════════════════════════════════════════
+                                        // CELLS
+                                        // ══════════════════════════════════════════════
+                                        function addCell(lang, code, description, savedOutput, linkedQId) {
+                                            lang = lang || 'javascript';
+                                        code = code || '';
+                                        description = description || '';
+                                        linkedQId = linkedQId || null;
+                                        const id = ++cellIdCounter;
+                                        const cell = {id, lang, description, linkedQuestionId: linkedQId, lastOutput: savedOutput || null };
+                                        cells.push(cell);
+
+                                        const div = document.createElement('div');
+                                        div.className = 'cell';
+                                        div.id = 'cell-' + id;
+
+                                        div.innerHTML =
+                                        buildBannerHTML(id, linkedQId) +
+                                        '<div class="cell-desc">' +
+                                            '<div class="desc-label"><span>📝</span>Solution Notes</div>' +
+                                            '<textarea class="desc-ta" id="desc-' + id + '" placeholder="Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
+                                            '</div>' +
+                                        '<div class="cell-toolbar">' +
+                                            '<div class="tl-left">' +
+                                                '<span class="cell-num" id="cnum-' + id + '">[1]</span>' +
+                                                '<div class="lang-toggle">' +
+                                                    '<button class="lang-btn ' + (lang === 'javascript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'javascript\')">JS</button>' +
+                                                    '<button class="lang-btn ' + (lang === 'typescript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'typescript\')">TS</button>' +
+                                                    '</div>' +
+                                                '<span class="hint">Ctrl+Enter run · Ctrl+/ comment</span>' +
+                                                '</div>' +
+                                            '<div class="tl-right">' +
+                                                '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ Run</button>' +
+                                                '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">✕</button>' +
+                                                '</div></div>' +
+                                        '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
+                                        '<div class="cell-output" id="output-' + id + '" style="display:none">' +
+                                            '<div class="out-header">Output<span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span><span class="out-time" id="otime-' + id + '"></span></div>' +
+                                            '<div class="out-content" id="ocontent-' + id + '"></div>' +
+                                            '</div>';
+
+                                        document.getElementById('cells-container').appendChild(div);
+            div.querySelector('.desc-ta').addEventListener('input', () => triggerAutoSave());
+
+                                        const editor = CodeMirror(document.getElementById('edwrap-' + id), {
+                                            value: code || getTemplate(lang),
+                                        mode: 'javascript',
+                                        theme: 'dracula',
+                                        lineNumbers: true,
+                                        matchBrackets: true,
+                                        autoCloseBrackets: true,
+                                        hintOptions: {completeSingle: false, hint: CodeMirror.hint.javascript },
+                                        extraKeys: {
+                                            'Ctrl-Enter': () => runCell(id),
+                    'Cmd-Enter': () => runCell(id),
+                    'Ctrl-/': cm => cm.execCommand('toggleComment'),
+                    'Ctrl-Space': cm => cm.showHint({completeSingle: false }),
+                },
+                                        indentUnit: 2, tabSize: 2, indentWithTabs: false,
+            });
+
+                                        let hintTimer = null;
+            editor.on('inputRead', (cm, change) => {
+                if (change.origin === '+input' && change.text[0] && /[\w.]/.test(change.text[0])) {
+                                            clearTimeout(hintTimer);
+                    hintTimer = setTimeout(() => {
+                        if (!cm.state.completionActive) {
+                                            cm.showHint({
+                                                completeSingle: false,
+                                                hint: (cm) => {
+                                                    const jsH = CodeMirror.hint.javascript(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+                                                    const awH = CodeMirror.hint.anyword(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+                                                    const seen = new Set(jsH.list.map(h => typeof h === 'string' ? h : h.text));
+                                                    const extra = awH.list.filter(h => !seen.has(typeof h === 'string' ? h : h.text));
+                                                    return { list: [...jsH.list, ...extra], from: jsH.from, to: jsH.to };
+                                                }
+                                            });
+                        }
+                    }, 150);
+                }
+            });
+            editor.on('focus', () => {div.classList.add('focused'); closeAllPickers(); });
+            editor.on('blur', () => div.classList.remove('focused'));
+            editor.on('change', () => triggerAutoSave());
+                                        cellEditors[id] = editor;
+
+                                        if (savedOutput && savedOutput.lines) showOutput(id, savedOutput.lines, savedOutput.hasError, savedOutput.time, savedOutput.isAsync);
+
+                                        updateCellCount();
+                                        return id;
+        }
+
+                                        function getTemplate(lang) {
+            if (lang === 'typescript') return '// TypeScript — async/await supported\nasync function solve<T>(input: T[]): Promise<T[]> {\n  return input.map(x => x); // your solution\n}\n\n(async () => {\n  console.log(await solve([1, 2, 3]));\n})();';
+                                            return '// JavaScript — async/await supported\nasync function solve(nums) {\n  return nums.map(n => n * 2); // your solution\n}\n\n(async () => {\n  console.log(await solve([1, 2, 3]));\n})();';
+        }
+
+                                            function setLang(id, lang) {
+            const cell = cells.find(c => c.id === id); if (!cell) return;
+                                            cell.lang = lang;
+            document.querySelectorAll('#cell-' + id + ' .lang-btn').forEach(btn => {
+                                                btn.classList.toggle('active', (lang === 'javascript' && btn.textContent === 'JS') || (lang === 'typescript' && btn.textContent === 'TS'));
+            });
+                                            triggerAutoSave();
+        }
+
+                                            function deleteCell(id) {
+            const idx = cells.findIndex(c => c.id === id);
+                                            if (idx !== -1) {cells.splice(idx, 1); delete cellEditors[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
+        }
+
+                                            function updateCellCount() {
+                                                document.getElementById('cell-count').textContent = cells.length + ' cell' + (cells.length !== 1 ? 's' : '');
+            cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (i + 1) + ']'; });
+        }
+
+                                            // ── Banner ──
+                                            function buildBannerHTML(cellId, linkedQId) {
+            const q = linkedQId ? dsaQuestions.find(x => x.id === linkedQId) : null;
+                                            return '<div class="cell-qbanner' + (q ? ' linked' : '') + '" id="qbanner-' + cellId + '">' +
+                                                '<span class="qb-icon">' + (q ? '🎯' : '❓') + '</span>' +
+                                                '<div class="qb-info">' +
+                                                    '<div class="qb-sublabel">Linked DSA Question</div>' +
+                                                    (q ? '<div class="qb-title">' + escH(q.title) + '</div>' +
+                                                    '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
+                                                        '<span class="dsa-cat-tag" style="font-size:.58rem">' + escH(q.category || '') + '</span>' +
+                                                        (q.solved ? '<span style="color:var(--success);font-size:.6rem;font-family:\'Space Mono\',monospace">✓</span>' : '') +
+                                                        '</div>'
+                                                    : '<div class="qb-empty">No question linked</div>') +
+                                                    '</div>' +
+                                                '<div class="qb-right">' +
+                                                    (q ? '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' : '') +
+                                                    '<div class="qb-drop-wrap" id="qbdrop-' + cellId + '">' +
+                                                        '<button class="qb-link-btn' + (q ? ' linked' : '') + '" onclick="togglePicker(' + cellId + ')">' + (q ? '✎ Change' : '+ Link') + '</button>' +
+                                                        '<div class="qb-picker" id="qbpicker-' + cellId + '" style="display:none">' +
+                                                            '<div class="qb-psearch"><input type="text" placeholder="Search…" oninput="buildPickerList(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
+                                                            '<div class="qb-plist" id="qbplist-' + cellId + '"></div>' +
+                                                            '</div></div>' +
+                                                    (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') +
+                                                    '</div></div>';
+        }
+
+                                            function refreshBanner(cellId) {
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+                                            const old = document.getElementById('qbanner-' + cellId); if (!old) return;
+                                            const tmp = document.createElement('div');
+                                            tmp.innerHTML = buildBannerHTML(cellId, cell.linkedQuestionId);
+                                            old.parentNode.replaceChild(tmp.firstChild, old);
+        }
+
+                                            function togglePicker(cellId) {
+            const picker = document.getElementById('qbpicker-' + cellId);
+                                            const isOpen = picker.style.display !== 'none';
+                                            closeAllPickers();
+                                            if (!isOpen) {
+                                                picker.style.display = 'block';
+                                            buildPickerList(cellId, '');
+                setTimeout(() => { const s = document.getElementById('qbsearch-' + cellId); if (s) s.focus(); }, 50);
+            }
+        }
+                                            function closeAllPickers() {document.querySelectorAll('[id^="qbpicker-"]').forEach(el => el.style.display = 'none'); }
+
+                                            function buildPickerList(cellId, search) {
+                                                search = (search || '').toLowerCase();
+                                            const list = document.getElementById('qbplist-' + cellId); if (!list) return;
+            const cell = cells.find(c => c.id === cellId);
+            const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search));
+                                            if (filtered.length === 0) {list.innerHTML = '<div class="qb-pempty">No questions</div>'; return; }
+            list.innerHTML = filtered.map(q =>
+                                            '<div class="qb-pitem' + (cell && cell.linkedQuestionId === q.id ? ' selected' : '') + '" onclick="linkQ(' + cellId + ',\'' + q.id + '\')">' +
+                                                '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty[0].toUpperCase() + '</span>' +
+                                                '<span class="qb-pname">' + escH(q.title) + '</span>' +
+                                                '<span style="font-size:.58rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
+                                                '</div>'
+                                            ).join('');
+        }
+
+                                            function linkQ(cellId, qId) {
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+                                            cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave();
+        }
+                                            function unlinkQ(cellId) {
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+                                            cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave();
+        }
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
+        });
+
+                                            // ══════════════════════════════════════════════
+                                            // CODE EXECUTION — FIXED
+                                            // ══════════════════════════════════════════════
+                                            async function runCell(id) {
+            const cell = cells.find(c => c.id === id);
+                                            const editor = cellEditors[id];
+                                            if (!cell || !editor) return;
+
+                                            const code = editor.getValue();
+                                            const lang = cell.lang;
+                                            const runBtn = document.getElementById('runbtn-' + id);
+                                            runBtn.classList.add('running');
+                                            runBtn.textContent = '⏳ Running…';
+                                            document.getElementById('output-' + id).style.display = 'none';
+
+                                            const logs = [];
+                                            const t0 = performance.now();
+                                            let hasError = false, isAsync = false;
+
+                                            // ── Save original console methods ──
+                                            const savedConsole = { };
+            ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => savedConsole[m] = console[m]);
+
+            // ── Capture helper — rich formatting like the reference JS editor ──
+            const capture = (type) => (...args) => {
+                                                let str;
+                                            try {
+                                                str = args.map(a => {
+                                                    if (a === null) return '<span style="color:#6b7a9a">null</span>';
+                                                    if (a === undefined) return '<span style="color:#6b7a9a">undefined</span>';
+                                                    if (a instanceof Error) return '<strong>' + escH(a.name + ': ' + a.message) + '</strong>' +
+                                                        (a.stack ? '<br><small style="opacity:.7">' + escH(a.stack.split('\n').slice(1, 4).join('\n')) + '</small>' : '');
+                                                    if (typeof a === 'string') return '<span style="color:#a3e635">"' + escH(a) + '"</span>';
+                                                    if (typeof a === 'number') return '<span style="color:#38bdf8">' + a + '</span>';
+                                                    if (typeof a === 'boolean') return '<span style="color:#f472b6">' + a + '</span>';
+                                                    if (typeof a === 'function') return '<span style="color:#818cf8">ƒ ' + escH(a.name || 'anonymous') + '()</span>';
+                                                    if (Array.isArray(a)) {
+                                                        try {
+                                                            return '<span style="color:#fbbf24">Array(' + a.length + ')</span> ' +
+                                                                '<span style="color:#e2e8f0">' + escH(JSON.stringify(a, null, 2)) + '</span>';
+                                                        } catch { return escH(String(a)); }
+                                                    }
+                                                    if (typeof a === 'object') {
+                                                        try {
+                                                            const name = a.constructor ? a.constructor.name : 'Object';
+                                                            return '<span style="color:#fbbf24">' + escH(name) + '</span> ' +
+                                                                '<span style="color:#e2e8f0">' + escH(JSON.stringify(a, null, 2)) + '</span>';
+                                                        } catch { return escH(String(a)); }
+                                                    }
+                                                    return escH(String(a));
+                                                }).join(' ');
+                } catch (e) {str = '[unprintable]'; }
+                                            logs.push({type, str, html: true });
+                                            savedConsole[type](...args);
+            };
+
+                                            // ── Override console ──
+                                            console.log = capture('log');
+                                            console.error = capture('error');
+                                            console.warn = capture('warn');
+                                            console.info = capture('info');
+            console.table = (...a) => { try {capture('log')(JSON.stringify(a[0], null, 2)); } catch {capture('log')(...a); } };
+                                            console.dir = capture('log');
+
+                                            // ── Safety net: catch async IIFE rejections that slip through eval ──
+                                            const prevUnhandled = window.onunhandledrejection;
+            window.onunhandledrejection = (event) => {
+                                                event.preventDefault();
+                                            hasError = true;
+                                            const err = event.reason;
+                                            const msg = err instanceof Error
+                                            ? err.name + ': ' + err.message
+                                            : 'Unhandled rejection: ' + String(err);
+                // Only add if not already captured
+                if (!logs.some(l => l.str.includes(msg.split(':')[1] || msg))) {
+                                                logs.push({ type: 'error', str: msg });
+                }
+                                            const elapsed2 = (performance.now() - t0).toFixed(1);
+                                            showOutput(id, logs, hasError, elapsed2 + 'ms', isAsync);
+                                            cell.lastOutput = {lines: logs, hasError, time: elapsed2 + 'ms', isAsync };
+                                            triggerAutoSave();
+            };
+
+                                            try {
+                                                let jsCode = code;
+
+                                            // ── TypeScript transpile ──
+                                            if (lang === 'typescript') {
+                    try {
+                        const result = ts.transpileModule(code, {
+                                                compilerOptions: {
+                                                target: ts.ScriptTarget.ES2020,
+                                            module: ts.ModuleKind.None,
+                                            strict: false,
+                                            experimentalDecorators: true
+                            },
+                                            reportDiagnostics: true,
+                        });
+                                            if (result.diagnostics && result.diagnostics.length) {
+                                                result.diagnostics.forEach(d => {
+                                                    const msg = typeof d.messageText === 'string' ? d.messageText : d.messageText.messageText;
+                                                    logs.push({ type: 'warn', str: '[TS] ' + msg });
+                                                });
+                        }
+                                            jsCode = result.outputText;
+                    } catch (err) {
+                                                logs.push({ type: 'error', str: '[TypeScript compile error] ' + err.message });
+                                            hasError = true;
+                    }
+                }
+
+                                            if (!hasError) {
+                                                isAsync = /\bawait\b|\bPromise\b|async\s+(function|\()/.test(jsCode);
+
+                                            // ── Use eval() so async IIFEs run in the same scope and their
+                                            //    promise rejections are caught via .catch() — same technique
+                                            //    as the reference JS editor ──
+                                            const result = eval(jsCode);
+
+                    // If the top-level expression returned a Promise, attach .catch()
+                    // This handles: (async () => {... })() rejections
+                                            if (result instanceof Promise) {
+                                                result.catch(err => {
+                                                    hasError = true;
+                                                    const msg = err instanceof Error
+                                                        ? err.name + ': ' + err.message
+                                                        : 'Rejected: ' + String(err);
+                                                    logs.push({ type: 'error', str: msg });
+                                                    // Show output now that the promise has rejected
+                                                    const elapsed2 = (performance.now() - t0).toFixed(1);
+                                                    showOutput(id, logs, hasError, elapsed2 + 'ms', isAsync);
+                                                    cell.lastOutput = { lines: logs, hasError, time: elapsed2 + 'ms', isAsync };
+                                                    triggerAutoSave();
+                                                });
+                    }
+                }
+            } catch (err) {
+                                                // ── FIX: Always mark as error and provide clear message ──
+                                                hasError = true;
+                                            if (err instanceof Error) {
+                                                // Main error message
+                                                logs.push({ type: 'error', str: err.name + ': ' + err.message });
+                                            // Stack frames (filtered to user code)
+                                            if (err.stack) {
+                        const frames = err.stack.split('\n')
+                                            .slice(1)
+                            .filter(l => l.trim() && !l.includes('async-function') && !l.includes('<anonymous>:1:'))
+                                                .slice(0, 5);
+                        frames.forEach(line => {
+                            // Extract line numbers from the anonymous function wrapper
+                            const match = line.match(/<anonymous>:(\d+):(\d+)/);
+                                                    if (match) {
+                                // Subtract 1 for the "use strict" line we prepended
+                                const userLine = parseInt(match[1]) - 1;
+                                                    logs.push({type: 'error', str: '  at line ' + userLine + ', col ' + match[2] });
+                            } else {
+                                                        logs.push({ type: 'error', str: '  ' + line.trim() });
+                            }
+                        });
+                    }
+                } else {
+                                                        logs.push({ type: 'error', str: 'Thrown: ' + String(err) });
+                }
+            } finally {
+                                                        // ── Always restore console and unhandledrejection ──
+                                                        ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = savedConsole[m]);
+                // Restore after a tick so the .catch() callbacks above can still fire
+                setTimeout(() => {window.onunhandledrejection = prevUnhandled; }, 2000);
+            }
+
+                                                    const elapsed = (performance.now() - t0).toFixed(1);
+
+                                                    // For async code, give a short tick for synchronous logs to flush,
+                                                    // but don't wait for the inner promise — its .catch() handles that.
+                                                    // Only show "(no output)" if no error AND no logs after sync execution.
+                                                    if (logs.length === 0 && !hasError) {
+                // If it's async, the inner promise may still be running — show
+                // a pending state that gets replaced when the promise resolves/rejects.
+                if (isAsync) {
+                                                        logs.push({ type: 'info', str: '(running async…)' });
+                } else {
+                                                        logs.push({ type: 'info', str: '(no output)' });
                 }
             }
-        }, 150); // 150ms debounce for socket sends
 
-        // Auto-save with separate debounce
-        if (saveTimer) {
-            clearTimeout(saveTimer);
-        }
-        saveTimer = setTimeout(() => {
-            saveCodeToStorage();
-            console.log('💾 Auto-saved to local storage');
-        }, 1000);
-
-        // Auto-execute with separate debounce
-        if (autoExecuteEnabled && code.trim()) {
-            if (changeTimer) {
-                clearTimeout(changeTimer);
-            }
-            changeTimer = setTimeout(() => {
-                safeAutoExecute();
-                console.log('⚡ Auto-executed');
-            }, 800);
-        }
-    });
-
-
-    function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
-        if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
-
-        if (obj === null) return '<span class="object-null">null</span>';
-        if (obj === undefined) return '<span class="object-undefined">undefined</span>';
-
-        const type = typeof obj;
-
-        if (type === 'string') {
-            return `<span class="object-string">"${obj}"</span>`;
-        }
-        if (type === 'number') {
-            return `<span class="object-number">${obj}</span>`;
-        }
-        if (type === 'boolean') {
-            return `<span class="object-boolean">${obj}</span>`;
-        }
-        if (type === 'function') {
-            return `<span class="object-value">ƒ ${obj.name || 'anonymous'}(${getFunctionParams(obj)})</span>`;
+                                                    showOutput(id, logs, hasError, elapsed + 'ms', isAsync);
+                                                    runBtn.classList.remove('running');
+                                                    runBtn.innerHTML = '▶ Run';
+                                                    cell.lastOutput = {lines: logs, hasError, time: elapsed + 'ms', isAsync };
+                                                    triggerAutoSave();
         }
 
-        if (Array.isArray(obj)) {
-            if (obj.length === 0) return '<span class="object-value">[]</span>';
+                                                    // ── FIX: Improved showOutput with error banner ──
+                                                    function showOutput(id, logs, hasError, time, isAsync) {
+            const el = document.getElementById('output-' + id);
+                                                    const content = document.getElementById('ocontent-' + id);
+                                                    const timeEl = document.getElementById('otime-' + id);
+                                                    const asyncBadge = document.getElementById('oasync-' + id);
 
-            const id = `array_${Date.now()}_${Math.random()}`;
-            let html = `<div class="object-inspector">`;
-            html += `<span class="expandable" onclick="toggleExpand('${id}')">Array(${obj.length})</span>`;
-            html += `<div id="${id}" class="object-tree collapsed">`;
+                                                    el.style.display = 'block';
+                                                    if (time) timeEl.textContent = time;
+                                                    if (asyncBadge) asyncBadge.style.display = isAsync ? 'inline' : 'none';
+                                                    content.className = 'out-content ' + (hasError ? 'has-error' : 'has-success');
+                                                    content.innerHTML = '';
 
-            obj.slice().reverse().forEach((item, revIndex, arr) => {
-                const origIndex = obj.length - 1 - revIndex;
-                html += `<div><span class="object-key">${origIndex}:</span> ${createObjectInspector(item, depth + 1, maxDepth, seen)}</div>`;
-            });
-
-            html += `</div></div>`;
-            return html;
-        }
-
-        if (type === 'object') {
-            if (seen.has(obj)) {
-                return '<span class="object-circular">[Circular Reference]</span>';
-            }
-            seen.add(obj);
-
-            const keys = Object.keys(obj);
-            if (keys.length === 0) return '<span class="object-value">{}</span>';
-
-            const id = `obj_${Date.now()}_${Math.random()}`;
-            let html = `<div class="object-inspector">`;
-            html += `<span class="expandable" onclick="toggleExpand('${id}')">${obj.constructor.name || 'Object'}</span>`;
-            html += `<div id="${id}" class="object-tree collapsed">`;
-
-            keys.forEach(key => {
-                html += `<div><span class="object-key">${key}:</span> ${createObjectInspector(obj[key], depth + 1, maxDepth, seen)}</div>`;
-            });
-
-            const prototype = Object.getPrototypeOf(obj);
-            if (prototype && prototype !== Object.prototype) {
-                html += createPrototypeSection(prototype, 0, new WeakSet());
-            }
-
-            html += `</div></div>`;
-            return html;
-        }
-
-        return `<span class="object-value">${String(obj)}</span>`;
-    }
-
-    function createPrototypeSection(prototype, depth = 0, visitedProtos = new WeakSet()) {
-        if (!prototype || prototype === Object.prototype || depth > 5) return '';
-
-        const protoKey = prototype.constructor ? prototype.constructor.name : 'Unknown';
-        if (visitedProtos.has(prototype)) {
-            return `<div class="prototype-section">
-                <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular reference)</div>
-            </div>`;
-        }
-        visitedProtos.add(prototype);
-
-        const id = `proto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        let html = `<div class="prototype-section">`;
-        html += `<div class="prototype-header expandable" onclick="toggleExpand('${id}')">`;
-        html += `🔗 [[Prototype]]: ${protoKey}`;
-        html += `</div>`;
-        html += `<div id="${id}" class="prototype-content collapsed">`;
-
-        try {
-            const allKeys = Object.getOwnPropertyNames(prototype);
-            const descriptors = Object.getOwnPropertyDescriptors(prototype);
-
-            const sortedKeys = allKeys
-                .filter(key => key !== 'constructor')
-                .sort((a, b) => {
-                    const aIsFunction = typeof descriptors[a]?.value === 'function';
-                    const bIsFunction = typeof descriptors[b]?.value === 'function';
-                    if (aIsFunction && !bIsFunction) return -1;
-                    if (!aIsFunction && bIsFunction) return 1;
-                    return a.localeCompare(b);
-                });
-
-            let methodCount = 0;
-            let propertyCount = 0;
-
-            sortedKeys.forEach(key => {
-                const descriptor = descriptors[key];
-                if (!descriptor) return;
-
-                const isMethod = typeof descriptor.value === 'function';
-                const isGetter = typeof descriptor.get === 'function';
-                const isSetter = typeof descriptor.set === 'function';
-
-                if (isMethod) {
-                    methodCount++;
-                    const params = getFunctionParams(descriptor.value);
-                    html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(0, 184, 148, 0.1); border-radius: 4px;">`;
-                    html += `<span class="object-key">⚡ ${key}:</span> `;
-                    html += `<span class="object-value">ƒ ${key}(${params})</span>`;
-                    html += `</div>`;
-                } else if (isGetter || isSetter) {
-                    propertyCount++;
-                    html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(108, 92, 231, 0.1); border-radius: 4px;">`;
-                    html += `<span class="object-key">🔧 ${key}:</span> `;
-                    if (isGetter && isSetter) {
-                        html += `<span class="object-value">[Getter/Setter]</span>`;
-                    } else if (isGetter) {
-                        html += `<span class="object-value">[Getter]</span>`;
+                                                    // ── Show error banner at top when there's an error ──
+                                                    if (hasError) {
+                const errorLogs = (logs || []).filter(l => l.type === 'error');
+                if (errorLogs.length > 0) {
+                    const banner = document.createElement('div');
+                                                    banner.className = 'out-error-banner';
+                                                    const primaryError = errorLogs[0];
+                                                    if (primaryError.html) {
+                                                        banner.innerHTML = '✖ ' + primaryError.str;
                     } else {
-                        html += `<span class="object-value">[Setter]</span>`;
+                                                        banner.innerHTML = '✖ <strong>' + escH(primaryError.str) + '</strong>';
                     }
-                    html += `</div>`;
-                } else {
-                    propertyCount++;
-                    html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(255, 118, 117, 0.1); border-radius: 4px;">`;
-                    html += `<span class="object-key">📦 ${key}:</span> `;
-                    try {
-                        html += createObjectInspector(descriptor.value, 0, 1, new WeakSet());
-                    } catch (e) {
-                        html += `<span class="object-value">[Cannot access]</span>`;
-                    }
-                    html += `</div>`;
+                                                    content.appendChild(banner);
                 }
+            }
+
+                                                    (logs || []).forEach(({type, str, html}) => {
+                const div = document.createElement('div');
+                                                    div.className =
+                                                    type === 'error' ? 'error-line' :
+                                                    type === 'warn' ? 'warn-line' :
+                                                    type === 'info' ? 'info-line' :
+                                                    type === 'return' ? 'return-line' :
+                                                    'log-line';
+                                                    const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : '';
+                                                    if (html) {
+                                                        div.innerHTML = prefix + (str || '');
+                } else {
+                                                        div.textContent = prefix + (str || '');
+                }
+                                                    content.appendChild(div);
+            });
+        }
+
+                                                    // ══════════════════════════════════════════════
+                                                    // SAVE / LOAD
+                                                    // ══════════════════════════════════════════════
+                                                    function triggerAutoSave() {
+                                                        document.getElementById('save-dot').classList.remove('saved');
+                                                    document.getElementById('save-text').textContent = 'Unsaved…';
+                                                    document.getElementById('save-bar').classList.add('visible');
+                                                    clearTimeout(autoSaveTimer);
+                                                    autoSaveTimer = setTimeout(saveAll, 2500);
+        }
+
+                                                    async function saveAll() {
+            const title = document.getElementById('nb-title').value.trim() || 'Untitled Notebook';
+            const cellsData = cells.map(c => {
+                const editor = cellEditors[c.id];
+                                                    const descEl = document.getElementById('desc-' + c.id);
+                                                    return {
+                                                        lang: c.lang,
+                                                    code: editor ? editor.getValue() : '',
+                                                    description: descEl ? descEl.value : c.description || '',
+                                                    output: c.lastOutput || null,
+                                                    linkedQuestionId: c.linkedQuestionId || null,
+                };
             });
 
-            html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
-            html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
-            html += `</div>`;
-        } catch (error) {
-            html += `<div style="color: #ff6b6b; font-style: italic;">Error inspecting prototype: ${error.message}</div>`;
-        }
+                                                    localStorage.setItem('current_notebook', JSON.stringify({title, cells: cellsData, updatedAt: Date.now() }));
+                                                    persistDSA();
 
-        const parentProto = Object.getPrototypeOf(prototype);
-        if (parentProto && parentProto !== Object.prototype && depth < 4) {
-            html += createPrototypeSection(parentProto, depth + 1, visitedProtos);
-        }
+                                                    const bar = document.getElementById('save-bar');
+                                                    const dot = document.getElementById('save-dot');
+                                                    const txt = document.getElementById('save-text');
 
-        html += `</div></div>`;
-        return html;
-    }
-
-    function getFunctionParams(func) {
-        const funcStr = func.toString();
-        const match = funcStr.match(/\(([^)]*)\)/);
-        return match ? match[1] : '';
-    }
-
-    window.toggleExpand = function (id) {
-        const element = document.getElementById(id);
-        const trigger = element.previousElementSibling;
-
-        if (element.classList.contains('collapsed')) {
-            element.classList.remove('collapsed');
-            trigger.classList.add('expanded');
-        } else {
-            element.classList.add('collapsed');
-            trigger.classList.remove('expanded');
-        }
-    };
-
-
-
-    function runCode() {
-        const code = editor.getValue();
-        if (!code) return;
-
-        outputElement.innerHTML = "";
-        logCount = 0;
-
-        const originalConsole = { ...console };
-
-        const seenObjects = new WeakSet();
-        const MAX_OUTPUT_SIZE = 100000;
-        let currentOutputSize = 0;
-
-        function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
-            if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                return '<span class="object-error">[Output truncated: Too large]</span>';
+                                                    if (!db) {
+                                                        dot.classList.add('saved'); txt.textContent = 'Saved locally';
+                                                    document.getElementById('last-saved').textContent = 'saved locally';
+                setTimeout(() => bar.classList.remove('visible'), 2500);
+                                                    return;
             }
 
-            if (depth > maxDepth) return '<span class="object-depth">...</span>';
-            if (obj === null) return '<span class="object-null">null</span>';
-            if (obj === undefined) return '<span class="object-undefined">undefined</span>';
-            if (typeof obj !== 'object') {
-                if (typeof obj === 'string') return `<span class="object-string">"${obj}"</span>`;
-                if (typeof obj === 'number') return `<span class="object-number">${obj}</span>`;
-                if (typeof obj === 'boolean') return `<span class="object-boolean">${obj}</span>`;
-                return `<span class="object-value">${obj}</span>`;
-            }
-
-            if (seen.has(obj)) {
-                return '<span class="object-circular">[Circular Reference]</span>';
-            }
-            seen.add(obj);
-
-            let output = '<div class="object-inspector">';
-            output += `<span class="object-type">[${obj.constructor?.name || 'Object'}]</span> {`;
-            currentOutputSize += output.length;
-
-            const props = Object.getOwnPropertyNames(obj);
-            if (props.length > 0) {
-                output += '<ul style="margin: 0; padding-left: 20px;">';
-                for (const prop of props) {
-                    let value;
-                    try {
-                        value = obj[prop];
-                    } catch (e) {
-                        value = `<span class="object-error">[Error: ${e.message}]</span>`;
-                    }
-                    const valueDisplay = typeof value === 'object' && value !== null
-                        ? createObjectInspector(value, depth + 1, maxDepth, seen)
-                        : createObjectInspector(value, depth + 1, maxDepth, seen);
-                    output += `<li><span class="object-key">${prop}</span>: ${valueDisplay}</li>`;
-                    currentOutputSize += valueDisplay.length;
-                    if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                        output += '<li><span class="object-error">[Output truncated: Too large]</span></li>';
-                        break;
-                    }
-                }
-                output += '</ul>';
-            }
-
-            let proto = Object.getPrototypeOf(obj);
-            if (proto && depth < maxDepth) {
-                output += '<details style="margin-top: 8px; padding-left: 20px;">';
-                output += `<summary><span class="object-proto">[[Prototype]]: [${proto.constructor?.name || 'Object'}]</span></summary>`;
-                output += createObjectInspector(proto, depth + 1, maxDepth, new WeakSet());
-                output += '</details>';
-                currentOutputSize += output.length;
-            }
-
-            output += '}</div>';
-            return output;
-        }
-
-        console.log = function (...args) {
-            currentOutputSize = 0;
-            let content = args.map(arg => {
-                if (typeof arg === 'object' && arg !== null) {
-                    return createObjectInspector(arg, 0, 3, new WeakSet());
-                } else if (arg === undefined) {
-                    return '<span class="object-undefined">undefined</span>';
-                } else if (arg === null) {
-                    return '<span class="object-null">null</span>';
-                } else if (typeof arg === 'string') {
-                    return `<span class="object-string">"${arg}"</span>`;
-                } else if (typeof arg === 'number') {
-                    return `<span class="object-number">${arg}</span>`;
-                } else if (typeof arg === 'boolean') {
-                    return `<span class="object-boolean">${arg}</span>`;
+                                                    try {
+                const payload = {title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+                                                    if (currentNotebookId) {
+                                                        await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
                 } else {
-                    return `<span class="object-value">${arg}</span>`;
+                    const ref = await db.collection('notebooks').add(payload);
+                                                    currentNotebookId = ref.id;
+                                                    saveNotebookId(ref.id);
+                                                    document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
                 }
-            }).join(' ');
-            addLogEntry(content, 'log');
-        };
-
-        console.dir = function (obj) {
-            currentOutputSize = 0;
-            const content = createObjectInspector(obj, 0, 5, new WeakSet());
-            addLogEntry(content, 'dir');
-        };
-
-        console.table = function (data, columns) {
-            if (!data) return;
-            currentOutputSize = 0;
-
-            let output = '<table style="border-collapse: collapse; width: 100%; font-size: 12px;">';
-            const isArray = Array.isArray(data);
-            const rows = isArray ? data : [data];
-            const keys = columns || (rows[0] ? Object.keys(rows[0]) : []);
-
-            output += '<thead><tr>';
-            if (isArray) output += '<th style="border: 1px solid #ccc; padding: 8px;">(index)</th>';
-            for (const key of keys) {
-                output += `<th style="border: 1px solid #ccc; padding: 8px;">${key}</th>`;
+                                                    dot.classList.add('saved');
+                                                    txt.textContent = 'Saved to Firebase ✓';
+                                                    document.getElementById('last-saved').textContent = 'saved ' + new Date().toLocaleTimeString();
+                                                    loadNotebooksList();
+                setTimeout(() => bar.classList.remove('visible'), 2500);
+            } catch (e) {
+                                                        txt.textContent = 'Save failed: ' + e.message;
+                setTimeout(() => bar.classList.remove('visible'), 3500);
+                                                    console.error('Save error:', e);
             }
-            output += '</tr></thead>';
-
-            output += '<tbody>';
-            for (let i = 0; i < rows.length && currentOutputSize < MAX_OUTPUT_SIZE; i++) {
-                const row = rows[i];
-                output += '<tr>';
-                if (isArray) output += `<td style="border: 1px solid #ccc; padding: 8px;">${i}</td>`;
-                for (const key of keys) {
-                    const value = row[key];
-                    const display = typeof value === 'object' && value !== null
-                        ? createObjectInspector(value, 0, 1, new WeakSet())
-                        : createObjectInspector(value, 0, 1, new WeakSet());
-                    output += `<td style="border: 1px solid #ccc; padding: 8px;">${display}</td>`;
-                    currentOutputSize += display.length;
-                    if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                        output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) +
-                            '" style="border: 1px solid #ccc; padding: 8px;">[Output truncated: Too large]</td></tr>';
-                        break;
-                    }
-                }
-                output += '</tr>';
-            }
-            output += '</tbody></table>';
-
-            addLogEntry(output, 'table');
-        };
-
-        console.error = function (...args) {
-            currentOutputSize = 0;
-            const content = args.map(arg => {
-                if (arg instanceof Error) {
-                    return `<strong>${arg.name}:</strong> ${arg.message}<br><pre style="margin-top: 8px; font-size: 11px; opacity: 0.8;">${arg.stack}</pre>`;
-                }
-                return String(arg);
-            }).join(' ');
-            addLogEntry(content, 'error');
-        };
-
-        console.warn = function (...args) {
-            currentOutputSize = 0;
-            const content = args.join(' ');
-            addLogEntry(content, 'warn');
-        };
-
-        console.info = function (...args) {
-            currentOutputSize = 0;
-            const content = args.join(' ');
-            addLogEntry(content, 'info');
-        };
-
-        window.onunhandledrejection = function (event) {
-            console.error("Unhandled Promise Rejection:", event.reason);
-        };
-
-        try {
-            const result = eval(code);
-
-            if (result instanceof Promise) {
-                result.catch(error => {
-                    console.error(error);
-                });
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setTimeout(() => {
-                console.log = originalConsole.log;
-                console.error = originalConsole.error;
-                console.warn = originalConsole.warn;
-                console.info = originalConsole.info;
-                console.dir = originalConsole.dir;
-                console.table = originalConsole.table;
-            }, 1000);
         }
-    }
 
-    window.clearOutput = function () {
-        outputElement.innerHTML = "";
-        logCount = 0;
-    };
+                                                    // ══════════════════════════════════════════════
+                                                    // MODALS
+                                                    // ══════════════════════════════════════════════
+                                                    function openModal(id) {document.getElementById(id).classList.add('open'); }
+                                                    function closeModal(id) {document.getElementById(id).classList.remove('open'); }
 
-    function downloadCode() {
-        const code = editor.getValue();
-        if (!code) return;
-
-        let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
-        let fileName = prompt("Enter the file name (including extension):", `advanced_js_${timestamp}.js`);
-
-        if (fileName === null) return;
-        if (!fileName.trim()) fileName = "code.js";
-
-        const blob = new Blob([code], { type: "text/javascript" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    function formatCode() {
-        try {
-            const code = editor.getValue();
-            if (!code.trim()) return;
-
-            if (typeof window.js_beautify === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js';
-                script.onload = function () {
-                    applyFormatting(code);
-                };
-                document.head.appendChild(script);
-            } else {
-                applyFormatting(code);
-            }
-        } catch (error) {
-            addLogEntry(`⚠️ Formatting error: ${error.message}`, 'error');
+                                                    // ══════════════════════════════════════════════
+                                                    // UTILITIES
+                                                    // ══════════════════════════════════════════════
+                                                    function escH(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
-    }
-
-    function applyFormatting(code) {
-        const beautifyFn = window.js_beautify || window.beautify;
-
-        if (typeof beautifyFn === 'function') {
-            const formattedCode = beautifyFn(code, {
-                indent_size: 2,
-                space_in_empty_paren: true,
-                preserve_newlines: true,
-                max_preserve_newlines: 2,
-                wrap_line_length: 80,
-                indent_with_tabs: false,
-                end_with_newline: true,
-                brace_style: "collapse,preserve-inline"
-            });
-
-            editor.setValue(formattedCode);
-            addLogEntry('✅ Code formatted successfully!', 'info');
-        } else {
-            monaco.editor.getEditors()[0].getAction('editor.action.formatDocument').run();
-            addLogEntry('✅ Code formatted using built-in formatter', 'info');
+                                                function showToast(msg, type) {
+            const t = document.getElementById('toast');
+                                                t.textContent = msg; t.className = 'toast show ' + (type || '');
+            setTimeout(() => t.className = 'toast', 2800);
         }
-    }
 
-    document.getElementById("run").addEventListener("click", runCode);
-    document.getElementById("download").addEventListener("click", downloadCode);
-    document.getElementById("format").addEventListener("click", formatCode);
-
-    document.getElementById("addfile").addEventListener("click", function () {
-        document.getElementById("fileInput").click();
-    });
-
-    document.getElementById("fileInput").addEventListener("change", function (event) {
-        const file = event.target.files[0];
-        if (file && file.name.endsWith('.js')) {
-            const reader = new FileReader();
-            const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
-
-            reader.onload = function (e) {
-                const editorValue = editor.getValue() || "";
-                const newValue = mergeChoice ? `${editorValue}\n\n${e.target.result}` : e.target.result;
-                editor.setValue(newValue);
-            };
-            reader.readAsText(file);
-        } else {
-            alert("Please select a valid JavaScript (.js) file.");
-        }
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            runCode();
-        }
-        if (e.altKey && e.shiftKey && e.key === 'F') {
-            e.preventDefault();
-            formatCode();
-        }
-    });
-    languageList.addEventListener("click", (e) => {
-        const item = e.target.closest("li");
-        if (!item) return;
-
-        const langKey = item.dataset.lang; // "javascript", "typescript", etc.
-        if (!langKey) return;
-
-        console.log("Selected language:", langKey);
-        language = langKey
-
-        // UI: active state
-        document
-            .querySelectorAll("#languageList li")
-            .forEach(li => li.classList.remove("active"));
-
-        item.classList.add("active");
-
-        // // Switch Monaco language
-        switchLanguage(langKey);
-    });
-
-    function switchLanguage(lang) {
-
-
-        switch (lang) {
-            case "javascript":
-                window.location.href = "/src/editor/index.html";
-                break;
-
-            case "typescript":
-                window.location.href = "/src/typescript/index.html"; // Leading slash!
-                break;
-
-            case "html":
-                window.location.href = "/src/html/index.html";
-                break;
-            case "react":
-                window.location.href = "/src/react/index.html";
-                break;
-            case "json":
-                window.location.href = "/src/jsonformatter/index.html";
-                break;
-
-
-            default:
-                console.warn(`No runner defined for ${lang}`);
-        }
-    }
-    const toggle = document.getElementById("autoExecuteToggle");
-    const label = document.getElementById("autoExecuteLabel");
-
-    toggle.addEventListener("change", function () {
-        autoExecuteEnabled = this.checked;
-
-        if (autoExecuteEnabled) {
-            label.textContent = "Auto-Execute: ON";
-            addLogEntry("✅ Auto-execution enabled", "info");
-            safeAutoExecute();
-        } else {
-            label.textContent = "Auto-Execute: OFF";
-
-            if (autoExecuteTimer) {
-                clearTimeout(autoExecuteTimer);
-            }
-
-            addLogEntry("⏸️ Auto-execution disabled", "warn");
-        }
-    });
-
-    function addDebugButton() {
-        const debugBtn = document.createElement('button');
-        debugBtn.textContent = '🔧 Debug Socket';
-        debugBtn.style.marginLeft = '10px';
-        debugBtn.style.padding = '8px 12px';
-        debugBtn.style.background = 'linear-gradient(135deg, #6c5ce7, #a29bfe)';
-        debugBtn.style.color = 'white';
-        debugBtn.style.border = 'none';
-        debugBtn.style.borderRadius = '4px';
-        debugBtn.style.cursor = 'pointer';
-
-        debugBtn.addEventListener('click', () => {
-            debugSocketConnection();
-            if (socket) {
-                const status = {
-                    connected: socket.connected,
-                    id: socket.id,
-                    roomId: roomId,
-                    listeners: socket._callbacks
-                };
-                console.log('Socket debug info:', status);
-
-                addLogEntry(`Socket: ${socket.connected ? 'Connected' : 'Disconnected'}`,
-                    socket.connected ? 'info' : 'error');
-                addLogEntry(`Room: ${roomId}`, 'info');
-
-                if (socket.connected) {
-                    // Test emit
-                    socket.emit("test", {
-                        message: "Debug test",
-                        timestamp: Date.now(),
-                        roomId: roomId
-                    });
-                }
-            } else {
-                addLogEntry('Socket not initialized', 'error');
+        // ══════════════════════════════════════════════
+        // KEYBOARD
+        // ══════════════════════════════════════════════
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {e.preventDefault(); saveAll(); }
+                                                if (e.key === 'Escape') {
+                                                    closeAllPickers();
+                document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
             }
         });
 
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        controlsDiv.appendChild(debugBtn);
-    }
+        // ══════════════════════════════════════════════
+        // INIT
+        // ══════════════════════════════════════════════
+        window.addEventListener('load', () => {
+            try {dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) {dsaQuestions = []; }
+                                                refreshAllDSAUI();
+                                                pickDiff('medium');
 
-    function debugSocketConnection() {
-        console.log('=== Socket.IO Debug Info ===');
-        console.log('Page URL:', window.location.href);
-        console.log('Protocol:', window.location.protocol);
-        console.log('Socket.IO loaded:', typeof io !== 'undefined');
+                                                currentNotebookId = loadNotebookId();
 
-        // Test WebSocket support
-        console.log('WebSocket supported:', 'WebSocket' in window);
-
-        // Test connection to your server
-        const testWs = new WebSocket('wss://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com');
-
-        testWs.onopen = () => {
-            console.log('✅ Raw WebSocket connection successful');
-            testWs.close();
-        };
-
-        testWs.onerror = (error) => {
-            console.log('❌ Raw WebSocket connection failed');
-            console.log('Error:', error);
-        };
-    }
-
-
-    addDebugButton()
-    // Add copy room URL button
-    function addCopyRoomButton() {
-        const copyBtn = document.createElement('button');
-        copyBtn.textContent = '📋 Copy Room URL';
-        copyBtn.style.marginLeft = '10px';
-        copyBtn.style.padding = '8px 12px';
-        copyBtn.style.background = 'linear-gradient(135deg, #fd79a8, #e84393)';
-        copyBtn.style.color = 'white';
-        copyBtn.style.border = 'none';
-        copyBtn.style.borderRadius = '4px';
-        copyBtn.style.cursor = 'pointer';
-
-        copyBtn.addEventListener('click', () => {
-            initializeSocket().then((response) => {
-                if (response) {
-                    const url = window.location.href;
-                    navigator.clipboard.writeText(url).then(() => {
-                        addLogEntry(`Room URL copied to clipboard: ${url}`, 'info');
-                    }).catch(err => {
-                        addLogEntry(`Failed to copy URL: ${err}`, 'error');
-                    });
+                                                let loadedFromLocal = false;
+                                                try {
+                const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
+                if (local && local.cells && local.cells.length > 0) {
+                                                    document.getElementById('nb-title').value = local.title || 'Untitled Notebook';
+                    local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId));
+                                                if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…';
+                                                loadedFromLocal = true;
                 }
-            }).catch(err => {
-                addLogEntry(`Failed to copy URL: ${err}`, 'error');
-                alert(`Failed to copy URL: ${err}`);
-            });
+            } catch (e) { /* ignore */}
+
+                                                if (!loadedFromLocal) addCell('javascript');
+
+                                                const fc = JSON.parse(localStorage.getItem('fb_config') || '{ }');
+                                                if (fc.apiKey && fc.projectId) {
+                                                    ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
+                                                        const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || '';
+                                                    });
+                (async () => {
+                    try {
+                        try {await firebase.app().delete(); } catch (e) { }
+                                                firebase.initializeApp(fc);
+                                                db = firebase.firestore();
+                                                await db.collection('notebooks').limit(1).get();
+                                                setFirebaseStatus(true);
+                                                loadNotebooksList();
+                                                try {
+                            const doc = await db.collection('dsa').doc('questions').get();
+                            if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
+                                                    dsaQuestions = doc.data().questions;
+                                                localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
+                                                refreshAllDSAUI();
+                                cells.forEach(c => refreshBanner(c.id));
+                            }
+                        } catch (e) {console.warn('DSA sync err', e); }
+                    } catch (e) {console.warn('Firebase auto-connect failed:', e); }
+                })();
+            }
         });
+                                            </script>
+                                        </body>
 
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        controlsDiv.appendChild(copyBtn);
-    }
-
-    addCopyRoomButton();
-
-    monaco.languages.registerCompletionItemProvider("javascript", {
-        provideCompletionItems: () => {
-            return {
-                suggestions: [
-                    {
-                        label: "log",
-                        kind: monaco.languages.CompletionItemKind.Function,
-                        insertText: 'console.log($1);',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
-                    }
-                ]
-            };
-        }
-    });
-});
+                                    </html>
