@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Native — Frontend System Design</title>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --surface: #16162a;
+            --card: #1e1e35;
+            --card2: #252545;
+            --border: #2e2e55;
+            --border2: #3a3a70;
+            --accent: #818cf8;
+            --accent2: #38bdf8;
+            --accent3: #fbbf24;
+            --accent4: #f472b6;
+            --success: #34d399;
+            --error: #f87171;
+            --warn: #fb923c;
+            --text: #e2e8f0;
+            --text2: #94a3b8;
+            --muted: #64748b;
+            --rn: #61dafb;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* NAV */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 15, 26, .97);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 56px;
+        }
+
+        .nav-logo {
+            font-size: 1.05rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--rn), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+            margin-right: 16px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--text2);
+            text-decoration: none;
+            font-size: .72rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+            background: rgba(129, 140, 248, .12);
+        }
+
+        /* LAYOUT */
+        .wrapper {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 60px 0 48px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--rn), var(--accent), var(--accent4));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text2);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto 28px;
+        }
+
+        .badge-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: .72rem;
+            font-weight: 700;
+            border: 1px solid;
+        }
+
+        .badge-rn {
+            border-color: var(--rn);
+            color: var(--rn);
+            background: rgba(97, 218, 251, .08);
+        }
+
+        .badge-react {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(129, 140, 248, .08);
+        }
+
+        .badge-perf {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(52, 211, 153, .08);
+        }
+
+        .badge-arch {
+            border-color: var(--accent3);
+            color: var(--accent3);
+            background: rgba(251, 191, 36, .08);
+        }
+
+        /* SECTION */
+        section {
+            margin-bottom: 72px;
+            scroll-margin-top: 72px;
+        }
+
+        .section-label {
+            font-size: .65rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            line-height: 1.25;
+        }
+
+        .section-sub {
+            color: var(--text2);
+            margin-bottom: 28px;
+            font-size: .95rem;
+        }
+
+        /* QUESTION CARD */
+        .q-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: border-color .2s;
+        }
+
+        .q-card:hover {
+            border-color: var(--border2);
+        }
+
+        .q-header {
+            padding: 18px 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            user-select: none;
+        }
+
+        .q-num {
+            font-size: .68rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: var(--muted);
+            background: var(--surface);
+            padding: 3px 8px;
+            border-radius: 5px;
+            white-space: nowrap;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .q-title-wrap {
+            flex: 1;
+        }
+
+        .q-title {
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.35;
+            margin-bottom: 5px;
+        }
+
+        .q-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-size: .6rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid;
+        }
+
+        .tag-arch {
+            border-color: rgba(129, 140, 248, .4);
+            color: var(--accent);
+            background: rgba(129, 140, 248, .08);
+        }
+
+        .tag-perf {
+            border-color: rgba(52, 211, 153, .4);
+            color: var(--success);
+            background: rgba(52, 211, 153, .08);
+        }
+
+        .tag-state {
+            border-color: rgba(251, 191, 36, .4);
+            color: var(--accent3);
+            background: rgba(251, 191, 36, .08);
+        }
+
+        .tag-network {
+            border-color: rgba(56, 189, 248, .4);
+            color: var(--accent2);
+            background: rgba(56, 189, 248, .08);
+        }
+
+        .tag-rn {
+            border-color: rgba(97, 218, 251, .4);
+            color: var(--rn);
+            background: rgba(97, 218, 251, .08);
+        }
+
+        .tag-ux {
+            border-color: rgba(244, 114, 182, .4);
+            color: var(--accent4);
+            background: rgba(244, 114, 182, .08);
+        }
+
+        .tag-security {
+            border-color: rgba(251, 146, 60, .4);
+            color: var(--warn);
+            background: rgba(251, 146, 60, .08);
+        }
+
+        .tag-testing {
+            border-color: rgba(248, 113, 113, .4);
+            color: var(--error);
+            background: rgba(248, 113, 113, .08);
+        }
+
+        .q-chevron {
+            font-size: .8rem;
+            color: var(--muted);
+            transition: transform .25s;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .q-card.open .q-chevron {
+            transform: rotate(180deg);
+        }
+
+        /* ANSWER */
+        .q-body {
+            display: none;
+            padding: 0 22px 22px;
+            border-top: 1px solid var(--border);
+        }
+
+        .q-card.open .q-body {
+            display: block;
+        }
+
+        .q-body h3 {
+            font-size: .82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--accent2);
+            margin: 20px 0 8px;
+        }
+
+        .q-body p {
+            color: var(--text2);
+            margin-bottom: 10px;
+            font-size: .93rem;
+        }
+
+        .q-body ul,
+        .q-body ol {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .q-body li {
+            color: var(--text2);
+            font-size: .93rem;
+            margin-bottom: 5px;
+        }
+
+        .q-body li strong {
+            color: var(--text);
+        }
+
+        /* CODE */
+        pre {
+            background: #0d0d1f;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 18px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: .8rem;
+            line-height: 1.65;
+            margin: 12px 0;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: .85em;
+        }
+
+        .kw {
+            color: #c792ea;
+        }
+
+        .fn {
+            color: #82aaff;
+        }
+
+        .str {
+            color: #c3e88d;
+        }
+
+        .cm {
+            color: #546e7a;
+            font-style: italic;
+        }
+
+        .num {
+            color: #f78c6c;
+        }
+
+        .cmp {
+            color: var(--rn);
+        }
+
+        .prop {
+            color: #ffcb6b;
+        }
+
+        /* DIAGRAM */
+        .diagram {
+            background: #0d0d1f;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: monospace;
+            font-size: .78rem;
+            color: var(--text2);
+            overflow-x: auto;
+            margin: 12px 0;
+            line-height: 1.8;
+        }
+
+        .diagram .box {
+            color: var(--accent2);
+            font-weight: 700;
+        }
+
+        .diagram .arrow {
+            color: var(--accent3);
+        }
+
+        .diagram .label {
+            color: var(--success);
+        }
+
+        .diagram .note {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        /* CALLOUT */
+        .callout {
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 14px 0;
+            font-size: .88rem;
+            border-left: 3px solid;
+        }
+
+        .callout-info {
+            background: rgba(56, 189, 248, .06);
+            border-color: var(--accent2);
+            color: var(--text2);
+        }
+
+        .callout-warn {
+            background: rgba(251, 191, 36, .06);
+            border-color: var(--accent3);
+            color: var(--text2);
+        }
+
+        .callout-tip {
+            background: rgba(52, 211, 153, .06);
+            border-color: var(--success);
+            color: var(--text2);
+        }
+
+        .callout-danger {
+            background: rgba(248, 113, 113, .06);
+            border-color: var(--error);
+            color: var(--text2);
+        }
+
+        .callout strong {
+            color: var(--text);
+        }
+
+        /* COMPARISON TABLE */
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: .85rem;
+        }
+
+        .compare-table th {
+            background: var(--card2);
+            padding: 10px 14px;
+            text-align: left;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text2);
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .compare-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text2);
+            vertical-align: top;
+        }
+
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .compare-table td:first-child {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .yes {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .no {
+            color: var(--error);
+            font-weight: 700;
+        }
+
+        .maybe {
+            color: var(--accent3);
+            font-weight: 700;
+        }
+
+        /* STEP */
+        .steps {
+            counter-reset: step;
+        }
+
+        .step {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 14px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            counter-increment: step;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            font-size: .72rem;
+            font-weight: 800;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .step-num::after {
+            content: counter(step);
+        }
+
+        .step-content {
+            color: var(--text2);
+            font-size: .93rem;
+            flex: 1;
+        }
+
+        .step-content strong {
+            color: var(--text);
+        }
+
+        /* INTERVIEW TIP */
+        .interview-tip {
+            background: linear-gradient(135deg, rgba(129, 140, 248, .08), rgba(97, 218, 251, .05));
+            border: 1px solid rgba(129, 140, 248, .2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 16px 0;
+            font-size: .88rem;
+        }
+
+        .interview-tip .tip-label {
+            font-size: .65rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .interview-tip p {
+            color: var(--text2);
+            margin: 0;
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 28px;
+            margin-bottom: 48px;
+        }
+
+        .toc h3 {
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 6px;
+        }
+
+        .toc a {
+            color: var(--text2);
+            text-decoration: none;
+            font-size: .83rem;
+            padding: 5px 9px;
+            border-radius: 6px;
+            display: block;
+            transition: all .15s;
+        }
+
+        .toc a:hover {
+            background: rgba(129, 140, 248, .1);
+            color: var(--text);
+        }
+
+        .toc a span {
+            color: var(--muted);
+            margin-right: 6px;
+            font-size: .75rem;
+        }
+
+        /* SCROLL */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 2px;
+        }
+
+        @media (max-width: 600px) {
+            nav {
+                padding: 0 16px;
+            }
+
+            .wrapper {
+                padding: 32px 16px 60px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="nav-logo">⚛️ RN System Design</div>
+        <div class="nav-links">
+            <a href="#architecture">Architecture</a>
+            <a href="#state">State</a>
+            <a href="#performance">Performance</a>
+            <a href="#navigation">Navigation</a>
+            <a href="#network">Network</a>
+            <a href="#offline">Offline</a>
+            <a href="#security">Security</a>
+            <a href="#testing">Testing</a>
+            <a href="#realworld">Real-World</a>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+
+        <!-- HERO -->
+        <div class="hero">
+            <h1>React Native<br><span>Frontend System Design</span></h1>
+            <p>Complete interview preparation — architecture, performance, state management, and real-world design
+                problems with detailed explanations.</p>
+            <div class="badge-row">
+                <span class="badge badge-rn">React Native</span>
+                <span class="badge badge-react">React</span>
+                <span class="badge badge-perf">Performance</span>
+                <span class="badge badge-arch">Architecture</span>
+            </div>
+        </div>
+
+        <!-- TOC -->
+        <div class="toc">
+            <h3>📚 Table of Contents</h3>
+            <div class="toc-grid">
+                <a href="#architecture"><span>01</span>App Architecture</a>
+                <a href="#state"><span>02</span>State Management</a>
+                <a href="#performance"><span>03</span>Performance</a>
+                <a href="#navigation"><span>04</span>Navigation Design</a>
+                <a href="#network"><span>05</span>Network & API Layer</a>
+                <a href="#offline"><span>06</span>Offline & Caching</a>
+                <a href="#security"><span>07</span>Security</a>
+                <a href="#testing"><span>08</span>Testing Strategy</a>
+                <a href="#realworld"><span>09</span>Real-World Problems</a>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 01 ARCHITECTURE -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="architecture">
+            <div class="section-label">Section 01</div>
+            <h2>🏛️ App Architecture</h2>
+            <p class="section-sub">How you structure your React Native app is the most foundational system design
+                question.</p>
+
+            <!-- Q1 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q01</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How would you design the folder structure and architecture for a
+                            large-scale React Native app?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-arch">Architecture</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>The Core Idea</h3>
+                    <p>Large RN apps should follow a <strong>feature-based (vertical slice) architecture</strong>, not a
+                        layer-based one. Group by feature, not by type. Each feature is self-contained — it owns its
+                        components, hooks, store slices, types, and tests.</p>
+
+                    <h3>Recommended Structure</h3>
+                    <pre>
+src/
+├── <span class="cmp">app/</span>               <span class="cm"># App entry, providers, global setup</span>
+│   ├── App.tsx
+│   ├── providers/     <span class="cm"># Redux, Theme, Navigation providers</span>
+│   └── store/         <span class="cm"># Root store configuration</span>
+│
+├── <span class="cmp">features/</span>          <span class="cm"># ✅ Feature-based vertical slices</span>
+│   ├── auth/
+│   │   ├── components/
+│   │   ├── screens/
+│   │   ├── hooks/
+│   │   ├── store/     <span class="cm"># authSlice.ts</span>
+│   │   ├── api/       <span class="cm"># authApi.ts (RTK Query / axios)</span>
+│   │   ├── types/
+│   │   └── index.ts   <span class="cm"># Public API of the feature</span>
+│   ├── feed/
+│   ├── profile/
+│   └── chat/
+│
+├── <span class="cmp">shared/</span>            <span class="cm"># Truly shared, no feature dependency</span>
+│   ├── components/    <span class="cm"># Button, Modal, Avatar…</span>
+│   ├── hooks/         <span class="cm"># useDebounce, useTheme…</span>
+│   ├── utils/         <span class="cm"># formatDate, validators…</span>
+│   ├── constants/
+│   └── theme/
+│
+├── <span class="cmp">navigation/</span>        <span class="cm"># All navigation config</span>
+│   ├── RootNavigator.tsx
+│   ├── AuthNavigator.tsx
+│   └── MainTabNavigator.tsx
+│
+└── <span class="cmp">services/</span>          <span class="cm"># External: analytics, storage, push</span>
+    ├── analytics.ts
+    ├── storage.ts
+    └── notifications.ts</pre>
+
+                    <h3>Key Principles</h3>
+                    <ul>
+                        <li><strong>Feature boundaries:</strong> Features can import from <code>shared/</code> but
+                            <em>never</em> from each other directly — use events or the root store.
+                        </li>
+                        <li><strong>Barrel exports:</strong> Each feature has an <code>index.ts</code> that defines its
+                            public API. Other code only imports from that barrel.</li>
+                        <li><strong>Co-location:</strong> Keep tests, types, and styles next to the code they describe.
+                        </li>
+                        <li><strong>Absolute imports:</strong> Configure <code>tsconfig.json</code> path aliases like
+                            <code>@features/auth</code> to avoid <code>../../../</code> hell.
+                        </li>
+                    </ul>
+
+                    <div class="interview-tip">
+                        <div class="tip-label">💡 Interview Signal</div>
+                        <p>Mention <strong>scalability boundaries</strong> — when a new dev joins, they should be able
+                            to work on the "payments" feature without understanding the entire codebase. Feature
+                            isolation achieves that.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q2 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q02</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Explain the React Native bridge architecture and how the new architecture
+                            (JSI/Fabric) improves it.</div>
+                        <div class="q-tags">
+                            <span class="tag tag-rn">React Native</span>
+                            <span class="tag tag-perf">Performance</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Old Architecture (The Bridge)</h3>
+                    <div class="diagram">
+                        <span class="box">JS Thread</span> <span class="arrow">──JSON serialized──▶</span> <span
+                            class="box">Native Bridge</span> <span class="arrow">──▶</span> <span class="box">Native
+                            Thread</span>
+                        (React, business logic) (async, batched) (UI, device APIs)
+
+                        <span class="note">Problems:
+                            - Async serialization adds latency (~1-5ms per call)
+                            - Data must be JSON-serializable (no direct object sharing)
+                            - Bridge is a bottleneck — all JS↔Native goes through it
+                            - Can't share memory between threads</span>
+                    </div>
+
+                    <h3>New Architecture (JSI + Fabric + TurboModules)</h3>
+                    <div class="diagram">
+                        <span class="box">JS Thread</span> <span class="arrow">──JSI C++ Host Objects──▶</span> <span
+                            class="box">Native Code</span>
+                        (synchronous, direct calls, shared memory)
+
+                        <span class="label">JSI</span> = JavaScript Interface — C++ layer, no JSON serialization
+                        <span class="label">Fabric</span> = New UI renderer — concurrent rendering, priority queues
+                        <span class="label">TurboModules</span> = Lazy-loaded native modules (only loads what you use)
+                    </div>
+
+                    <h3>Practical Improvements</h3>
+                    <table class="compare-table">
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Old (Bridge)</th>
+                            <th>New (JSI)</th>
+                        </tr>
+                        <tr>
+                            <td>Communication</td>
+                            <td>Async JSON serialization</td>
+                            <td>Sync C++ direct calls</td>
+                        </tr>
+                        <tr>
+                            <td>Memory</td>
+                            <td>Copied across threads</td>
+                            <td>Shared memory possible</td>
+                        </tr>
+                        <tr>
+                            <td>Startup</td>
+                            <td>All modules loaded</td>
+                            <td>Lazy-loaded TurboModules</td>
+                        </tr>
+                        <tr>
+                            <td>Animations</td>
+                            <td>Can drop frames</td>
+                            <td>Native thread animations</td>
+                        </tr>
+                        <tr>
+                            <td>TypeScript types</td>
+                            <td>Manual / codegen</td>
+                            <td>Auto-generated from C++ spec</td>
+                        </tr>
+                    </table>
+
+                    <div class="callout callout-tip">
+                        <strong>Reanimated 3 / Gesture Handler 2</strong> take advantage of JSI — their worklets run
+                        directly on the UI thread in C++, enabling 60/120fps animations with zero bridge overhead.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q3 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q03</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">When would you choose React Native vs Flutter vs native iOS/Android?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-arch">Architecture</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <table class="compare-table">
+                        <tr>
+                            <th>Factor</th>
+                            <th>React Native</th>
+                            <th>Flutter</th>
+                            <th>Native</th>
+                        </tr>
+                        <tr>
+                            <td>Team expertise</td>
+                            <td>JS/React devs</td>
+                            <td>Dart devs</td>
+                            <td>Swift/Kotlin devs</td>
+                        </tr>
+                        <tr>
+                            <td>Code sharing</td>
+                            <td class="yes">~70-90%</td>
+                            <td class="yes">~80-95%</td>
+                            <td class="no">0%</td>
+                        </tr>
+                        <tr>
+                            <td>Native look/feel</td>
+                            <td class="yes">Yes (native components)</td>
+                            <td class="maybe">Custom (canvas-drawn)</td>
+                            <td class="yes">Perfect</td>
+                        </tr>
+                        <tr>
+                            <td>Performance ceiling</td>
+                            <td class="maybe">High (JSI)</td>
+                            <td class="yes">Very high (Skia)</td>
+                            <td class="yes">Maximum</td>
+                        </tr>
+                        <tr>
+                            <td>Ecosystem</td>
+                            <td class="yes">Huge (npm)</td>
+                            <td class="maybe">Growing</td>
+                            <td class="yes">Platform-specific</td>
+                        </tr>
+                        <tr>
+                            <td>Web sharing</td>
+                            <td class="yes">React Native Web</td>
+                            <td class="maybe">Flutter Web (beta)</td>
+                            <td class="no">No</td>
+                        </tr>
+                        <tr>
+                            <td>Hot reload</td>
+                            <td class="yes">Yes</td>
+                            <td class="yes">Yes</td>
+                            <td class="maybe">Limited</td>
+                        </tr>
+                    </table>
+
+                    <h3>Choose React Native when:</h3>
+                    <ul>
+                        <li>Your team is JS/React-heavy and you want to share logic with a web app</li>
+                        <li>You need platform-native UI components (accessibility, OS updates for free)</li>
+                        <li>You're integrating a large existing native codebase incrementally</li>
+                        <li>Time-to-market is critical and you have one team</li>
+                    </ul>
+
+                    <h3>Choose Native when:</h3>
+                    <ul>
+                        <li>Maximum graphics performance (games, AR, complex camera processing)</li>
+                        <li>Heavy use of cutting-edge platform APIs before they have RN wrappers</li>
+                        <li>Apps where platform-specific UX is a competitive differentiator (e.g. banking)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 02 STATE MANAGEMENT -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="state">
+            <div class="section-label">Section 02</div>
+            <h2>🗂️ State Management</h2>
+            <p class="section-sub">One of the most common system design topics — choosing and architecting state
+                correctly.</p>
+
+            <!-- Q4 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q04</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design a state management strategy for a large React Native social app
+                            (like Instagram).</div>
+                        <div class="q-tags">
+                            <span class="tag tag-state">State</span>
+                            <span class="tag tag-arch">Architecture</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>State Classification First</h3>
+                    <p>Before picking a library, classify your state into 4 categories:</p>
+
+                    <table class="compare-table">
+                        <tr>
+                            <th>Type</th>
+                            <th>Examples</th>
+                            <th>Solution</th>
+                        </tr>
+                        <tr>
+                            <td>Server State</td>
+                            <td>Feed posts, user profiles, comments</td>
+                            <td>React Query / RTK Query</td>
+                        </tr>
+                        <tr>
+                            <td>Global UI State</td>
+                            <td>Auth session, theme, notifications</td>
+                            <td>Redux Toolkit / Zustand</td>
+                        </tr>
+                        <tr>
+                            <td>Local UI State</td>
+                            <td>Modal open, input value, tab index</td>
+                            <td>useState / useReducer</td>
+                        </tr>
+                        <tr>
+                            <td>URL/Navigation State</td>
+                            <td>Current screen, deep link params</td>
+                            <td>React Navigation</td>
+                        </tr>
+                    </table>
+
+                    <h3>Recommended Stack</h3>
+                    <pre>
+<span class="cm">// 1. Server state — React Query handles caching, refetch, pagination</span>
+<span class="kw">const</span> { data: feed, isLoading } = <span class="fn">useQuery</span>({
+  queryKey: [<span class="str">'feed'</span>, userId],
+  queryFn: () => <span class="fn">fetchFeed</span>(userId),
+  staleTime: <span class="num">60_000</span>,        <span class="cm">// 1 minute fresh</span>
+  cacheTime: <span class="num">5 * 60_000</span>,    <span class="cm">// 5 minutes in cache</span>
+});
+
+<span class="cm">// 2. Global UI state — Zustand (lightweight, no boilerplate)</span>
+<span class="kw">const</span> useAuthStore = <span class="fn">create</span>((set) => ({
+  user: <span class="kw">null</span>,
+  token: <span class="kw">null</span>,
+  <span class="fn">login</span>: (user, token) => <span class="fn">set</span>({ user, token }),
+  <span class="fn">logout</span>: () => <span class="fn">set</span>({ user: <span class="kw">null</span>, token: <span class="kw">null</span> }),
+}));
+
+<span class="cm">// 3. Local state — just useState, no global store needed</span>
+<span class="kw">const</span> [isLiked, setIsLiked] = <span class="fn">useState</span>(<span class="kw">false</span>);
+</pre>
+
+                    <h3>Key Design Decisions</h3>
+                    <ul>
+                        <li><strong>Don't put server data in Redux</strong> — it creates a second cache that conflicts
+                            with your API cache. Use React Query for all server-sourced data.</li>
+                        <li><strong>Optimistic updates:</strong> For likes/follows, update local state immediately, then
+                            revert on API failure for instant UX.</li>
+                        <li><strong>Normalized cache:</strong> If using Redux, use <code>createEntityAdapter</code> to
+                            normalize data — a post should live in one place even if referenced from feed, profile, and
+                            search.</li>
+                        <li><strong>Persistence:</strong> Use <code>redux-persist</code> or Zustand's
+                            <code>persist</code> middleware for auth tokens and offline support.
+                        </li>
+                    </ul>
+
+                    <div class="interview-tip">
+                        <div class="tip-label">💡 Interview Signal</div>
+                        <p>Interviewers love when you distinguish <strong>server state vs. client state</strong>. Many
+                            candidates put everything in Redux — showing you understand this distinction shows senior
+                            thinking.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q5 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q05</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Redux vs Zustand vs Context API — when to use each in React Native?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-state">State</span>
+                            <span class="tag tag-perf">Performance</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <table class="compare-table">
+                        <tr>
+                            <th>Library</th>
+                            <th>Best For</th>
+                            <th>Avoid When</th>
+                            <th>Bundle Size</th>
+                        </tr>
+                        <tr>
+                            <td>Context API</td>
+                            <td>Theme, locale, auth (low-frequency updates)</td>
+                            <td>High-frequency updates (causes full re-renders)</td>
+                            <td>0kb (built-in)</td>
+                        </tr>
+                        <tr>
+                            <td>Zustand</td>
+                            <td>Medium apps, simple global state, fast setup</td>
+                            <td>Very complex state with many transitions</td>
+                            <td>~1.5kb</td>
+                        </tr>
+                        <tr>
+                            <td>Redux Toolkit</td>
+                            <td>Enterprise apps, complex state logic, time-travel debugging</td>
+                            <td>Small/MVP apps — overkill</td>
+                            <td>~12kb</td>
+                        </tr>
+                        <tr>
+                            <td>Jotai/Recoil</td>
+                            <td>Atomic state, fine-grained subscriptions</td>
+                            <td>Teams unfamiliar with atom model</td>
+                            <td>~3kb</td>
+                        </tr>
+                    </table>
+
+                    <h3>Context API Performance Problem</h3>
+                    <pre>
+<span class="cm">// ❌ Bad: ALL consumers re-render when ANY value changes</span>
+<span class="kw">const</span> AppContext = <span class="fn">createContext</span>();
+<span class="kw">function</span> <span class="fn">AppProvider</span>({ children }) {
+  <span class="kw">const</span> [user, setUser] = <span class="fn">useState</span>(<span class="kw">null</span>);
+  <span class="kw">const</span> [theme, setTheme] = <span class="fn">useState</span>(<span class="str">'dark'</span>);
+  <span class="kw">const</span> [cart, setCart] = <span class="fn">useState</span>([]);
+  <span class="cm">// Every Cart update re-renders ALL context consumers</span>
+  <span class="kw">return</span> &lt;<span class="cmp">AppContext.Provider</span> value={{ user, theme, cart }}&gt;
+    {children}
+  &lt;/<span class="cmp">AppContext.Provider</span>&gt;;
+}
+
+<span class="cm">// ✅ Good: Split contexts or use Zustand selectors</span>
+<span class="kw">const</span> useCartStore = <span class="fn">create</span>((set) => ({ cart: [] }));
+<span class="kw">const</span> CartBadge = () => {
+  <span class="cm">// Only re-renders when cart.length changes</span>
+  <span class="kw">const</span> count = <span class="fn">useCartStore</span>(state => state.cart.length);
+  <span class="kw">return</span> &lt;<span class="cmp">Text</span>&gt;{count}&lt;/<span class="cmp">Text</span>&gt;;
+};</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 03 PERFORMANCE -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="performance">
+            <div class="section-label">Section 03</div>
+            <h2>⚡ Performance Optimization</h2>
+            <p class="section-sub">Performance is the #1 technical differentiator between junior and senior RN
+                engineers.</p>
+
+            <!-- Q6 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q06</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Your FlatList with 10,000 items is janky and slow. How do you fix it?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-perf">Performance</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Diagnosis First</h3>
+                    <p>Before optimizing, profile with Flipper's React DevTools or the RN Performance Monitor to
+                        identify <em>what</em> is slow — JS thread, UI thread, or renders.</p>
+
+                    <h3>Solution: Layered Optimization Approach</h3>
+
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-num"></div>
+                            <div class="step-content"><strong>Use keyExtractor correctly</strong> — stable, unique keys
+                                prevent full re-renders on data changes. <code>keyExtractor={(item) => item.id}</code>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num"></div>
+                            <div class="step-content"><strong>Memoize the renderItem</strong> — wrap the item component
+                                in <code>React.memo</code> and pass a memoized <code>renderItem</code> with
+                                <code>useCallback</code>.
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num"></div>
+                            <div class="step-content"><strong>Set getItemLayout</strong> — if items have fixed height,
+                                this lets FlatList skip measurement entirely, a massive perf win.</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num"></div>
+                            <div class="step-content"><strong>Tune windowSize, initialNumToRender</strong> — don't
+                                render more than you need.</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num"></div>
+                            <div class="step-content"><strong>Remove anonymous functions from JSX</strong> — they create
+                                new references every render, killing memo.</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num"></div>
+                            <div class="step-content"><strong>FlashList instead of FlatList</strong> — Shopify's
+                                FlashList recycles item components (like Android RecyclerView), 5-10x faster.</div>
+                        </div>
+                    </div>
+
+                    <pre>
+<span class="cm">// ✅ Optimized FlatList pattern</span>
+<span class="kw">const</span> PostItem = <span class="fn">React.memo</span>(({ item, onLike }) => (
+  &lt;<span class="cmp">View</span>&gt;
+    &lt;<span class="cmp">Text</span>&gt;{item.title}&lt;/<span class="cmp">Text</span>&gt;
+    &lt;<span class="cmp">TouchableOpacity</span> onPress={() => <span class="fn">onLike</span>(item.id)}&gt;
+      &lt;<span class="cmp">Text</span>&gt;Like&lt;/<span class="cmp">Text</span>&gt;
+    &lt;/<span class="cmp">TouchableOpacity</span>&gt;
+  &lt;/<span class="cmp">View</span>&gt;
+));
+
+<span class="kw">function</span> <span class="fn">Feed</span>() {
+  <span class="kw">const</span> handleLike = <span class="fn">useCallback</span>((id) => {
+    <span class="cm">// stable reference, won't cause re-renders</span>
+    <span class="fn">likePost</span>(id);
+  }, []);
+
+  <span class="kw">const</span> renderItem = <span class="fn">useCallback</span>(({ item }) => (
+    &lt;<span class="cmp">PostItem</span> item={item} onLike={handleLike} /&gt;
+  ), [handleLike]);
+
+  <span class="kw">return</span> &lt;<span class="cmp">FlashList</span>
+    data={posts}
+    renderItem={renderItem}
+    estimatedItemSize={<span class="num">200</span>}
+    keyExtractor={(item) => item.id}
+    <span class="prop">getItemLayout</span>={(_, index) => ({
+      length: <span class="num">200</span>, offset: <span class="num">200</span> * index, index
+    })}
+  /&gt;;
+}</pre>
+
+                    <div class="callout callout-tip">
+                        <strong>FlashList vs FlatList:</strong> FlashList (Shopify) recycles view instances like
+                        RecyclerView. It can render 10,000 items at 60fps where FlatList struggles at 1,000. Use it for
+                        any list over 50-100 items.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q7 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q07</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you implement smooth 60fps animations in React Native without
+                            dropping frames?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-perf">Performance</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>The Core Problem</h3>
+                    <p>Standard JS animations run on the JS thread. If the JS thread is busy (re-renders, API calls),
+                        animation frames get dropped. Solution: move animations to the <strong>UI thread</strong>.</p>
+
+                    <h3>Animation Libraries (Ranked by Performance)</h3>
+                    <table class="compare-table">
+                        <tr>
+                            <th>Library</th>
+                            <th>Runs On</th>
+                            <th>Use Case</th>
+                        </tr>
+                        <tr>
+                            <td>Reanimated 3 (worklets)</td>
+                            <td>UI Thread (JS engine on UI)</td>
+                            <td>Complex gestures, physics, shared values</td>
+                        </tr>
+                        <tr>
+                            <td>Animated API (useNativeDriver)</td>
+                            <td>UI Thread</td>
+                            <td>Simple transforms, opacity, translate</td>
+                        </tr>
+                        <tr>
+                            <td>Animated API (no native driver)</td>
+                            <td>JS Thread ⚠️</td>
+                            <td>Layout animations, color (limited)</td>
+                        </tr>
+                        <tr>
+                            <td>Lottie</td>
+                            <td>Native thread</td>
+                            <td>After Effects JSON animations</td>
+                        </tr>
+                        <tr>
+                            <td>CSS transitions (web)</td>
+                            <td>GPU</td>
+                            <td>Web target only</td>
+                        </tr>
+                    </table>
+
+                    <pre>
+<span class="cm">// ✅ Reanimated 3 — runs 100% on UI thread</span>
+<span class="kw">import</span> Animated, { useSharedValue, useAnimatedStyle,
+  withSpring, withTiming, runOnJS } <span class="kw">from</span> <span class="str">'react-native-reanimated'</span>;
+
+<span class="kw">function</span> <span class="fn">LikeButton</span>() {
+  <span class="kw">const</span> scale = <span class="fn">useSharedValue</span>(<span class="num">1</span>);
+
+  <span class="kw">const</span> animatedStyle = <span class="fn">useAnimatedStyle</span>(() => ({
+    transform: [{ scale: scale.value }]
+  }));
+
+  <span class="kw">const</span> handlePress = () => {
+    scale.value = <span class="fn">withSpring</span>(<span class="num">1.3</span>, {}, () => {
+      scale.value = <span class="fn">withSpring</span>(<span class="num">1</span>);  <span class="cm">// bounce back</span>
+      <span class="fn">runOnJS</span>(<span class="fn">onLike</span>)();  <span class="cm">// call JS callback from UI thread</span>
+    });
+  };
+
+  <span class="kw">return</span> &lt;<span class="cmp">Animated.View</span> style={animatedStyle}&gt;
+    &lt;<span class="cmp">TouchableOpacity</span> onPress={handlePress}&gt;
+      &lt;<span class="cmp">Text</span>&gt;❤️&lt;/<span class="cmp">Text</span>&gt;
+    &lt;/<span class="cmp">TouchableOpacity</span>&gt;
+  &lt;/<span class="cmp">Animated.View</span>&gt;;
+}</pre>
+
+                    <div class="callout callout-warn">
+                        <strong>Avoid:</strong> Setting <code>useNativeDriver: false</code> unless animating layout
+                        properties. Always use <code>useNativeDriver: true</code> for transform/opacity to keep
+                        animations on the UI thread.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q8 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q08</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you reduce app startup time and bundle size in React Native?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-perf">Performance</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Startup Time Optimizations</h3>
+                    <ul>
+                        <li><strong>Hermes engine:</strong> Enable Hermes (now default in RN 0.70+). It AOT-compiles JS
+                            to bytecode, reducing parse time by ~50%.</li>
+                        <li><strong>Lazy navigation:</strong> Only load screen modules when navigated to, not at
+                            startup.</li>
+                        <li><strong>Inline requires:</strong> Enable <code>inlineRequires</code> in Metro config —
+                            modules only load when first accessed.</li>
+                        <li><strong>Splash screen:</strong> Use <code>react-native-bootsplash</code> to hide white flash
+                            during JS loading.</li>
+                        <li><strong>RAM Bundles:</strong> Load JS modules on-demand from disk instead of loading the
+                            full bundle.</li>
+                    </ul>
+
+                    <h3>Bundle Size Reduction</h3>
+                    <ul>
+                        <li><strong>Tree shaking:</strong> Use named imports:
+                            <code>import { debounce } from 'lodash-es'</code> not <code>import _ from 'lodash'</code>.
+                        </li>
+                        <li><strong>Analyze bundle:</strong> <code>npx react-native bundle-visualizer</code> — find
+                            what's eating your bundle.</li>
+                        <li><strong>Replace heavy libraries:</strong> <code>date-fns</code> over <code>moment.js</code>
+                            (250kb → 20kb tree-shaken).</li>
+                        <li><strong>Image optimization:</strong> Use WebP format, resize images at upload time, never
+                            ship full-resolution images.</li>
+                        <li><strong>Codepush / OTA updates:</strong> Deliver JS updates without App Store review.</li>
+                    </ul>
+
+                    <pre>
+<span class="cm">// metro.config.js — inline requires for lazy loading</span>
+module.exports = {
+  transformer: {
+    getTransformOptions: <span class="kw">async</span> () => ({
+      transform: {
+        inlineRequires: <span class="kw">true</span>,  <span class="cm">// modules load on first use</span>
+      },
+    }),
+  },
+};</pre>
+                </div>
+            </div>
+
+            <!-- Q9 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q09</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you prevent unnecessary re-renders in React Native?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-perf">Performance</span>
+                            <span class="tag tag-state">State</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>The 4 Causes of Unnecessary Re-renders</h3>
+                    <table class="compare-table">
+                        <tr>
+                            <th>Cause</th>
+                            <th>Fix</th>
+                        </tr>
+                        <tr>
+                            <td>New object reference on each render</td>
+                            <td><code>useMemo</code> for objects, <code>useCallback</code> for functions</td>
+                        </tr>
+                        <tr>
+                            <td>Component not memoized</td>
+                            <td><code>React.memo(Component)</code></td>
+                        </tr>
+                        <tr>
+                            <td>Subscribing to entire store</td>
+                            <td>Use selectors: <code>useSelector(state => state.user.name)</code></td>
+                        </tr>
+                        <tr>
+                            <td>Context value changes on every render</td>
+                            <td>Memoize context value with <code>useMemo</code></td>
+                        </tr>
+                    </table>
+
+                    <pre>
+<span class="cm">// ❌ Creates new array every render, kills memo</span>
+&lt;<span class="cmp">PostList</span> filters={[<span class="str">'trending'</span>, <span class="str">'new'</span>]} /&gt;
+
+<span class="cm">// ✅ Stable reference</span>
+<span class="kw">const</span> FILTERS = [<span class="str">'trending'</span>, <span class="str">'new'</span>]; <span class="cm">// outside component</span>
+&lt;<span class="cmp">PostList</span> filters={FILTERS} /&gt;
+
+<span class="cm">// ✅ useMemo for expensive computed values</span>
+<span class="kw">const</span> sortedPosts = <span class="fn">useMemo</span>(
+  () => [...posts].<span class="fn">sort</span>((a, b) => b.likes - a.likes),
+  [posts]  <span class="cm">// only re-sort when posts array changes</span>
+);
+
+<span class="cm">// ✅ Correct React.memo with custom comparator</span>
+<span class="kw">const</span> Avatar = <span class="fn">React.memo</span>(({ user }) => (
+  &lt;<span class="cmp">Image</span> source={{ uri: user.avatar }} /&gt;
+), (prev, next) => prev.user.id === next.user.id);</pre>
+
+                    <div class="callout callout-info">
+                        <strong>Profiling tool:</strong> Use <code>why-did-you-render</code> library to print console
+                        warnings whenever a component re-renders with the same props — invaluable for finding
+                        unnecessary renders.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 04 NAVIGATION -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="navigation">
+            <div class="section-label">Section 04</div>
+            <h2>🧭 Navigation Design</h2>
+            <p class="section-sub">Navigation architecture is critical — it affects deep linking, auth flows, and
+                performance.</p>
+
+            <!-- Q10 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q10</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design the navigation architecture for an app with authentication, deep
+                            links, and multiple tab flows.</div>
+                        <div class="q-tags">
+                            <span class="tag tag-rn">React Native</span>
+                            <span class="tag tag-arch">Architecture</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Navigator Hierarchy</h3>
+                    <div class="diagram">
+                        <span class="box">RootNavigator</span>
+                        ├── <span class="box">AuthNavigator</span> (Stack) <span class="note">← shown when logged
+                            out</span>
+                        │ ├── LoginScreen
+                        │ ├── RegisterScreen
+                        │ └── ForgotPasswordScreen
+                        │
+                        └── <span class="box">AppNavigator</span> (Stack) <span class="note">← shown when logged
+                            in</span>
+                        ├── <span class="box">MainTabNavigator</span> (Bottom Tab)
+                        │ ├── HomeStack (Stack)
+                        │ │ ├── FeedScreen
+                        │ │ └── PostDetailScreen
+                        │ ├── SearchStack
+                        │ ├── NotificationsStack
+                        │ └── ProfileStack
+                        └── <span class="box">Modals</span> (Stack, modal presentation)
+                        ├── CameraModal
+                        └── ShareModal
+                    </div>
+
+                    <h3>Auth Flow Pattern</h3>
+                    <pre>
+<span class="kw">function</span> <span class="fn">RootNavigator</span>() {
+  <span class="kw">const</span> { user, isLoading } = <span class="fn">useAuthStore</span>();
+
+  <span class="kw">if</span> (isLoading) <span class="kw">return</span> &lt;<span class="cmp">SplashScreen</span> /&gt;;
+
+  <span class="kw">return</span> &lt;<span class="cmp">NavigationContainer</span> linking={linkingConfig}&gt;
+    &lt;<span class="cmp">Stack.Navigator</span> screenOptions={{ headerShown: <span class="kw">false</span> }}&gt;
+      {user ? (
+        &lt;<span class="cmp">Stack.Screen</span> name=<span class="str">"App"</span> component={AppNavigator} /&gt;
+      ) : (
+        &lt;<span class="cmp">Stack.Screen</span> name=<span class="str">"Auth"</span> component={AuthNavigator} /&gt;
+      )}
+    &lt;/<span class="cmp">Stack.Navigator</span>&gt;
+  &lt;/<span class="cmp">NavigationContainer</span>&gt;;
+}</pre>
+
+                    <h3>Deep Link Configuration</h3>
+                    <pre>
+<span class="kw">const</span> linkingConfig = {
+  prefixes: [<span class="str">'myapp://'</span>, <span class="str">'https://myapp.com'</span>],
+  config: {
+    screens: {
+      App: {
+        screens: {
+          MainTab: {
+            screens: {
+              HomeStack: {
+                screens: {
+                  PostDetail: <span class="str">'post/:postId'</span>,  <span class="cm">// myapp://post/123</span>
+                }
+              },
+              ProfileStack: {
+                screens: {
+                  Profile: <span class="str">'user/:username'</span>,
+                }
+              }
+            }
+          }
+        }
+      },
+      Auth: {
+        screens: {
+          Login: <span class="str">'login'</span>,
+        }
+      }
+    }
+  }
+};</pre>
+
+                    <div class="callout callout-tip">
+                        <strong>Auth guard pattern:</strong> Don't conditionally show navigators based on auth in each
+                        screen. Use the conditional navigator switch at the root — React Navigation handles the
+                        transition animation automatically, and it prevents protected screens from being accessible in
+                        the navigation stack.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 05 NETWORK -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="network">
+            <div class="section-label">Section 05</div>
+            <h2>🌐 Network & API Layer</h2>
+            <p class="section-sub">Designing a robust, resilient API client layer that handles errors, retries, and
+                caching.</p>
+
+            <!-- Q11 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q11</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design a robust API client layer for a React Native app. Include auth,
+                            retries, and error handling.</div>
+                        <div class="q-tags">
+                            <span class="tag tag-network">Network</span>
+                            <span class="tag tag-arch">Architecture</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Architecture: Axios + Interceptors</h3>
+                    <pre>
+<span class="cm">// api/client.ts — Central API client</span>
+<span class="kw">import</span> axios <span class="kw">from</span> <span class="str">'axios'</span>;
+
+<span class="kw">const</span> apiClient = axios.<span class="fn">create</span>({
+  baseURL: <span class="fn">getApiBaseUrl</span>(),
+  timeout: <span class="num">15000</span>,
+  headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+});
+
+<span class="cm">// ── Request interceptor: inject auth token ──</span>
+apiClient.interceptors.request.<span class="fn">use</span>(async (config) => {
+  <span class="kw">const</span> token = <span class="kw">await</span> <span class="fn">getAccessToken</span>();
+  <span class="kw">if</span> (token) config.headers.Authorization = <span class="str">`Bearer ${token}`</span>;
+  <span class="kw">return</span> config;
+});
+
+<span class="cm">// ── Response interceptor: handle 401 token refresh ──</span>
+<span class="kw">let</span> isRefreshing = <span class="kw">false</span>;
+<span class="kw">let</span> failedQueue = [];
+
+apiClient.interceptors.response.<span class="fn">use</span>(
+  (response) => response,
+  async (error) => {
+    <span class="kw">const</span> original = error.config;
+
+    <span class="kw">if</span> (error.response?.status === <span class="num">401</span> && !original._retry) {
+      <span class="kw">if</span> (isRefreshing) {
+        <span class="cm">// Queue requests while refreshing</span>
+        <span class="kw">return new</span> <span class="fn">Promise</span>((resolve, reject) => {
+          failedQueue.<span class="fn">push</span>({ resolve, reject });
+        }).<span class="fn">then</span>(token => {
+          original.headers.Authorization = <span class="str">`Bearer ${token}`</span>;
+          <span class="kw">return</span> <span class="fn">apiClient</span>(original);
+        });
+      }
+
+      original._retry = <span class="kw">true</span>;
+      isRefreshing = <span class="kw">true</span>;
+
+      <span class="kw">try</span> {
+        <span class="kw">const</span> newToken = <span class="kw">await</span> <span class="fn">refreshAccessToken</span>();
+        <span class="fn">processQueue</span>(<span class="kw">null</span>, newToken);  <span class="cm">// retry queued requests</span>
+        original.headers.Authorization = <span class="str">`Bearer ${newToken}`</span>;
+        <span class="kw">return</span> <span class="fn">apiClient</span>(original);
+      } <span class="kw">catch</span> (refreshError) {
+        <span class="fn">processQueue</span>(refreshError, <span class="kw">null</span>);
+        <span class="fn">logout</span>();  <span class="cm">// force re-login</span>
+        <span class="kw">return</span> Promise.<span class="fn">reject</span>(refreshError);
+      } <span class="kw">finally</span> {
+        isRefreshing = <span class="kw">false</span>;
+      }
+    }
+    <span class="kw">return</span> Promise.<span class="fn">reject</span>(error);
+  }
+);</pre>
+
+                    <h3>Retry Logic for Network Failures</h3>
+                    <pre>
+<span class="cm">// Exponential backoff retry</span>
+<span class="kw">import</span> axiosRetry <span class="kw">from</span> <span class="str">'axios-retry'</span>;
+
+<span class="fn">axiosRetry</span>(apiClient, {
+  retries: <span class="num">3</span>,
+  retryDelay: axiosRetry.exponentialDelay,  <span class="cm">// 1s, 2s, 4s</span>
+  <span class="fn">retryCondition</span>: (error) =>
+    axiosRetry.<span class="fn">isNetworkError</span>(error) ||
+    error.response?.status >= <span class="num">500</span>,  <span class="cm">// retry server errors only</span>
+});</pre>
+                </div>
+            </div>
+
+            <!-- Q12 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q12</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you implement infinite scroll and pagination in React Native?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-network">Network</span>
+                            <span class="tag tag-perf">Performance</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Cursor-based vs Offset Pagination</h3>
+                    <table class="compare-table">
+                        <tr>
+                            <th>Method</th>
+                            <th>Pros</th>
+                            <th>Cons</th>
+                            <th>Use When</th>
+                        </tr>
+                        <tr>
+                            <td>Offset (?page=2)</td>
+                            <td>Simple, easy to jump to page N</td>
+                            <td>Drift when items insert/delete</td>
+                            <td>Static data, admin panels</td>
+                        </tr>
+                        <tr>
+                            <td>Cursor (after: id)</td>
+                            <td>Consistent, no drift</td>
+                            <td>Can't jump to arbitrary page</td>
+                            <td>Feeds, social content</td>
+                        </tr>
+                    </table>
+
+                    <pre>
+<span class="cm">// React Query infinite scroll — clean pattern</span>
+<span class="kw">const</span> {
+  data, fetchNextPage, hasNextPage, isFetchingNextPage
+} = <span class="fn">useInfiniteQuery</span>({
+  queryKey: [<span class="str">'feed'</span>],
+  queryFn: ({ pageParam = <span class="kw">null</span> }) =>
+    <span class="fn">fetchPosts</span>({ cursor: pageParam, limit: <span class="num">20</span> }),
+  <span class="fn">getNextPageParam</span>: (lastPage) => lastPage.nextCursor ?? <span class="kw">undefined</span>,
+});
+
+<span class="cm">// Flatten pages for FlatList</span>
+<span class="kw">const</span> posts = <span class="fn">useMemo</span>(
+  () => data?.pages.<span class="fn">flatMap</span>(page => page.posts) ?? [],
+  [data]
+);
+
+<span class="kw">return</span> &lt;<span class="cmp">FlashList</span>
+  data={posts}
+  renderItem={renderItem}
+  estimatedItemSize={<span class="num">200</span>}
+  <span class="prop">onEndReached</span>={() => {
+    <span class="kw">if</span> (hasNextPage && !isFetchingNextPage)
+      <span class="fn">fetchNextPage</span>();
+  }}
+  onEndReachedThreshold={<span class="num">0.3</span>}   <span class="cm">// trigger 30% before end</span>
+  <span class="prop">ListFooterComponent</span>={() =>
+    isFetchingNextPage ? &lt;<span class="cmp">ActivityIndicator</span> /&gt; : <span class="kw">null</span>
+  }
+/&gt;;</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 06 OFFLINE -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="offline">
+            <div class="section-label">Section 06</div>
+            <h2>📴 Offline First & Caching</h2>
+            <p class="section-sub">Mobile apps must handle poor/no connectivity gracefully.</p>
+
+            <!-- Q13 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q13</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design an offline-first architecture for a React Native app. How do you
+                            handle sync conflicts?</div>
+                        <div class="q-tags">
+                            <span class="tag tag-rn">React Native</span>
+                            <span class="tag tag-arch">Architecture</span>
+                            <span class="tag tag-network">Network</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Offline-First Architecture</h3>
+                    <div class="diagram">
+                        <span class="box">User Action</span>
+                        │
+                        ▼
+                        <span class="box">Local DB (SQLite / MMKV / WatermelonDB)</span> ← Single source of truth
+                        │
+                        ├── Immediately render UI from local data
+                        │
+                        ├── Queue mutation for sync ──▶ <span class="box">Sync Queue</span>
+                        │ │
+                        │ Online? │
+                        │ ┌──Yes──▶ <span class="box">API Server</span>
+                        │ │ │
+                        │ │ ◀── Response
+                        │ │ │
+                        └─────── Update local DB ◀───────────────┘
+                        Resolve conflicts here
+                    </div>
+
+                    <h3>Implementation: WatermelonDB (Recommended)</h3>
+                    <pre>
+<span class="cm">// WatermelonDB — designed for offline-first RN apps</span>
+<span class="cm">// Lazy-loads, Observable queries, sync protocol built-in</span>
+
+<span class="kw">import</span> { synchronize } <span class="kw">from</span> <span class="str">'@nozbe/watermelondb/sync'</span>;
+
+<span class="kw">async function</span> <span class="fn">syncWithServer</span>() {
+  <span class="kw">await</span> <span class="fn">synchronize</span>({
+    database,
+    <span class="fn">pullChanges</span>: async ({ lastPulledAt }) => {
+      <span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">api</span>.get(<span class="str">`/sync?since=${lastPulledAt}`</span>);
+      <span class="kw">return</span> response.data; <span class="cm">// { changes: {...}, timestamp: ... }</span>
+    },
+    <span class="fn">pushChanges</span>: async ({ changes }) => {
+      <span class="kw">await</span> <span class="fn">api</span>.<span class="fn">post</span>(<span class="str">'/sync'</span>, { changes });
+    },
+  });
+}</pre>
+
+                    <h3>Conflict Resolution Strategies</h3>
+                    <ul>
+                        <li><strong>Last-Write-Wins (LWW):</strong> Use timestamps — the most recent write wins. Simple
+                            but can lose data.</li>
+                        <li><strong>Server-Wins:</strong> Server's version always overrides local. Safe for financial
+                            data.</li>
+                        <li><strong>Client-Wins:</strong> Local version overrides server. Good for user preferences.
+                        </li>
+                        <li><strong>Merge:</strong> Combine both changes (e.g. CRDT for collaborative text). Complex but
+                            lossless.</li>
+                        <li><strong>User prompt:</strong> Show the user both versions and let them choose. Last resort
+                            for important data.</li>
+                    </ul>
+
+                    <h3>Network State Detection</h3>
+                    <pre>
+<span class="kw">import</span> NetInfo <span class="kw">from</span> <span class="str">'@react-native-community/netinfo'</span>;
+
+<span class="kw">function</span> <span class="fn">useNetworkSync</span>() {
+  <span class="fn">useEffect</span>(() => {
+    <span class="kw">const</span> unsubscribe = NetInfo.<span class="fn">addEventListener</span>(state => {
+      <span class="kw">if</span> (state.isConnected && state.isInternetReachable) {
+        <span class="fn">syncWithServer</span>();  <span class="cm">// trigger sync when back online</span>
+      }
+    });
+    <span class="kw">return</span> unsubscribe;
+  }, []);
+}</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 07 SECURITY -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="security">
+            <div class="section-label">Section 07</div>
+            <h2>🔐 Security</h2>
+            <p class="section-sub">Mobile security is different from web — local storage is exposed, certificates can be
+                intercepted.</p>
+
+            <!-- Q14 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q14</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you securely store sensitive data (tokens, keys) in React Native?
+                        </div>
+                        <div class="q-tags">
+                            <span class="tag tag-security">Security</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <table class="compare-table">
+                        <tr>
+                            <th>Storage Method</th>
+                            <th>Security Level</th>
+                            <th>Use For</th>
+                        </tr>
+                        <tr>
+                            <td>AsyncStorage</td>
+                            <td class="no">❌ Plain text on disk</td>
+                            <td>Non-sensitive user preferences only</td>
+                        </tr>
+                        <tr>
+                            <td>MMKV</td>
+                            <td class="maybe">⚠️ Encrypted option available</td>
+                            <td>Fast non-sensitive data</td>
+                        </tr>
+                        <tr>
+                            <td>Keychain (iOS) / Keystore (Android)</td>
+                            <td class="yes">✅ OS-level encryption</td>
+                            <td>Auth tokens, passwords, API keys</td>
+                        </tr>
+                        <tr>
+                            <td>Expo SecureStore</td>
+                            <td class="yes">✅ Wraps Keychain/Keystore</td>
+                            <td>Expo apps — tokens</td>
+                        </tr>
+                        <tr>
+                            <td>In-memory only</td>
+                            <td class="yes">✅ Cleared on app close</td>
+                            <td>Highly sensitive temp data</td>
+                        </tr>
+                    </table>
+
+                    <pre>
+<span class="cm">// ✅ Correct: react-native-keychain for tokens</span>
+<span class="kw">import</span> * <span class="kw">as</span> Keychain <span class="kw">from</span> <span class="str">'react-native-keychain'</span>;
+
+<span class="kw">async function</span> <span class="fn">saveToken</span>(token) {
+  <span class="kw">await</span> Keychain.<span class="fn">setGenericPassword</span>(<span class="str">'auth'</span>, token, {
+    accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    securityLevel: Keychain.SECURITY_LEVEL.SECURE_SOFTWARE,
+  });
+}
+
+<span class="kw">async function</span> <span class="fn">getToken</span>() {
+  <span class="kw">const</span> credentials = <span class="kw">await</span> Keychain.<span class="fn">getGenericPassword</span>();
+  <span class="kw">return</span> credentials ? credentials.password : <span class="kw">null</span>;
+}</pre>
+
+                    <h3>Additional Security Measures</h3>
+                    <ul>
+                        <li><strong>Certificate pinning:</strong> Pin your API certificate to prevent MITM attacks. Use
+                            <code>react-native-ssl-pinning</code>.
+                        </li>
+                        <li><strong>Root/Jailbreak detection:</strong> Use <code>react-native-jail-monkey</code> to
+                            detect compromised devices.</li>
+                        <li><strong>Biometric auth:</strong> Use <code>react-native-biometrics</code> for Face ID /
+                            Fingerprint.</li>
+                        <li><strong>Code obfuscation:</strong> Enable Hermes + ProGuard (Android) to make reverse
+                            engineering harder.</li>
+                        <li><strong>Avoid logging sensitive data:</strong> Strip all <code>console.log</code> in
+                            production builds.</li>
+                    </ul>
+
+                    <div class="callout callout-danger">
+                        <strong>Never do this:</strong> Don't store tokens in AsyncStorage, Redux state that gets
+                        persisted to AsyncStorage, or global variables. All of these are readable on rooted/jailbroken
+                        devices.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 08 TESTING -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="testing">
+            <div class="section-label">Section 08</div>
+            <h2>🧪 Testing Strategy</h2>
+            <p class="section-sub">A testing pyramid tailored for React Native apps.</p>
+
+            <!-- Q15 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q15</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design a complete testing strategy for a production React Native app.</div>
+                        <div class="q-tags">
+                            <span class="tag tag-testing">Testing</span>
+                            <span class="tag tag-arch">Architecture</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>The Testing Pyramid for React Native</h3>
+                    <div class="diagram">
+                        <span class="box">E2E Tests</span> ~10%
+                        (Detox / Maestro)
+                        <span class="note">Slow, expensive, high confidence
+                            Test critical user journeys only</span>
+
+                        <span class="box">Integration Tests</span> ~30%
+                        (React Native Testing Library)
+                        <span class="note">Components + hooks + state together
+                            Test user-facing behavior, not implementation</span>
+
+                        <span class="box">Unit Tests</span> ~60%
+                        (Jest + React Native Testing Library)
+                        <span class="note">Pure functions, hooks, utility logic
+                            Fast, isolated, very high coverage</span>
+                    </div>
+
+                    <pre>
+<span class="cm">// Integration test with RNTL — test behavior, not implementation</span>
+<span class="kw">import</span> { render, fireEvent, waitFor } <span class="kw">from</span> <span class="str">'@testing-library/react-native'</span>;
+
+<span class="fn">describe</span>(<span class="str">'LoginScreen'</span>, () => {
+  <span class="fn">it</span>(<span class="str">'shows error when login fails'</span>, <span class="kw">async</span> () => {
+    <span class="fn">mockApi</span>.<span class="fn">post</span>(<span class="str">'/auth/login'</span>).<span class="fn">replyOnce</span>(<span class="num">401</span>);
+
+    <span class="kw">const</span> { getByPlaceholderText, getByText } = <span class="fn">render</span>(&lt;<span class="cmp">LoginScreen</span> /&gt;);
+
+    <span class="fn">fireEvent</span>.<span class="fn">changeText</span>(<span class="fn">getByPlaceholderText</span>(<span class="str">'Email'</span>), <span class="str">'bad@email.com'</span>);
+    <span class="fn">fireEvent</span>.<span class="fn">changeText</span>(<span class="fn">getByPlaceholderText</span>(<span class="str">'Password'</span>), <span class="str">'wrongpass'</span>);
+    <span class="fn">fireEvent</span>.<span class="fn">press</span>(<span class="fn">getByText</span>(<span class="str">'Login'</span>));
+
+    <span class="kw">await</span> <span class="fn">waitFor</span>(() => {
+      <span class="fn">expect</span>(<span class="fn">getByText</span>(<span class="str">'Invalid credentials'</span>)).<span class="fn">toBeTruthy</span>();
+    });
+  });
+});</pre>
+
+                    <h3>What to Test at Each Level</h3>
+                    <ul>
+                        <li><strong>Unit:</strong> Pure utility functions, custom hooks (<code>renderHook</code>), Redux
+                            reducers/selectors</li>
+                        <li><strong>Integration:</strong> Screens with mock API, form validation, navigation flows,
+                            state changes</li>
+                        <li><strong>E2E (Detox):</strong> Login → Feed → Like post → Logout; Payment flow; Onboarding
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- 09 REAL-WORLD PROBLEMS -->
+        <!-- ══════════════════════════════════════════ -->
+        <section id="realworld">
+            <div class="section-label">Section 09</div>
+            <h2>🏗️ Real-World System Design Problems</h2>
+            <p class="section-sub">The big system design questions — design an entire feature end to end.</p>
+
+            <!-- Q16 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q16</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design a real-time chat system in React Native (like WhatsApp).</div>
+                        <div class="q-tags">
+                            <span class="tag tag-arch">Architecture</span>
+                            <span class="tag tag-network">Network</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>System Components</h3>
+                    <div class="diagram">
+                        <span class="box">React Native App</span>
+                        │
+                        ├── <span class="box">WebSocket Client</span> (socket.io / native WS)
+                        │ │ Real-time: new messages, read receipts, typing
+                        │ ▼
+                        │ <span class="box">WebSocket Server</span>
+                        │
+                        ├── <span class="box">REST API</span> (message history, chat list)
+                        │ ▼
+                        │ <span class="box">API Server + DB</span>
+                        │
+                        └── <span class="box">Local DB</span> (SQLite/WatermelonDB)
+                        ↕ Offline messages, message drafts
+                    </div>
+
+                    <h3>Key Design Decisions</h3>
+                    <ul>
+                        <li><strong>WebSocket for real-time:</strong> Persistent connection for message delivery. Fall
+                            back to polling if WS fails.</li>
+                        <li><strong>Optimistic sending:</strong> Show message instantly with "pending" status, update to
+                            "sent" on server ack.</li>
+                        <li><strong>Message deduplication:</strong> Client-generated UUID per message prevents
+                            duplicates on retry.</li>
+                        <li><strong>Inverted FlatList:</strong> Use <code>inverted={true}</code> on FlatList — new
+                            messages at bottom, list grows up naturally.</li>
+                        <li><strong>Read receipts:</strong> Emit read event when message is visible (use
+                            IntersectionObserver equivalent / FlatList viewableItems).</li>
+                        <li><strong>Push notifications:</strong> When WS connection is closed (app backgrounded), use
+                            FCM/APNs push.</li>
+                    </ul>
+
+                    <pre>
+<span class="cm">// Message with optimistic update pattern</span>
+<span class="kw">function</span> <span class="fn">useSendMessage</span>(chatId) {
+  <span class="kw">const</span> queryClient = <span class="fn">useQueryClient</span>();
+
+  <span class="kw">return</span> <span class="fn">useMutation</span>({
+    <span class="fn">mutationFn</span>: (content) => <span class="fn">api</span>.<span class="fn">sendMessage</span>(chatId, content),
+
+    <span class="cm">// Optimistic update — show message immediately</span>
+    <span class="fn">onMutate</span>: <span class="kw">async</span> (content) => {
+      <span class="kw">const</span> tempMessage = {
+        id: <span class="fn">uuid</span>(),          <span class="cm">// client-generated ID</span>
+        content, chatId,
+        status: <span class="str">'pending'</span>,
+        createdAt: <span class="kw">new</span> <span class="fn">Date</span>(),
+      };
+      queryClient.<span class="fn">setQueryData</span>([<span class="str">'messages'</span>, chatId], (old) => ({
+        ...old, messages: [...old.messages, tempMessage]
+      }));
+      <span class="kw">return</span> { tempMessage };
+    },
+
+    <span class="cm">// Replace temp message with server-confirmed message</span>
+    <span class="fn">onSuccess</span>: (serverMessage, _, { tempMessage }) => {
+      queryClient.<span class="fn">setQueryData</span>([<span class="str">'messages'</span>, chatId], (old) => ({
+        ...old, messages: old.messages.<span class="fn">map</span>(m =>
+          m.id === tempMessage.id ? serverMessage : m
+        )
+      }));
+    },
+
+    <span class="fn">onError</span>: (_, __, { tempMessage }) => {
+      <span class="cm">// Mark as failed — show retry button</span>
+      queryClient.<span class="fn">setQueryData</span>([<span class="str">'messages'</span>, chatId], (old) => ({
+        ...old, messages: old.messages.<span class="fn">map</span>(m =>
+          m.id === tempMessage.id ? { ...m, status: <span class="str">'failed'</span> } : m
+        )
+      }));
+    }
+  });
+}</pre>
+                </div>
+            </div>
+
+            <!-- Q17 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q17</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design a video feed like TikTok/Instagram Reels in React Native.</div>
+                        <div class="q-tags">
+                            <span class="tag tag-perf">Performance</span>
+                            <span class="tag tag-rn">React Native</span>
+                            <span class="tag tag-ux">UX</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Core Technical Challenges</h3>
+                    <ul>
+                        <li>Only 1 video plays at a time, 2-3 are preloaded ahead</li>
+                        <li>Smooth swipe between full-screen videos (no jank)</li>
+                        <li>Memory management — can't keep all videos loaded</li>
+                        <li>Autoplay on scroll into view</li>
+                    </ul>
+
+                    <h3>Architecture</h3>
+                    <pre>
+<span class="cm">// PagerView or FlashList (vertical) — one item = full screen</span>
+<span class="kw">import</span> PagerView <span class="kw">from</span> <span class="str">'react-native-pager-view'</span>;
+
+<span class="kw">function</span> <span class="fn">ReelsFeed</span>() {
+  <span class="kw">const</span> [activeIndex, setActiveIndex] = <span class="fn">useState</span>(<span class="num">0</span>);
+
+  <span class="kw">return</span> &lt;<span class="cmp">PagerView</span>
+    style={styles.pager}
+    orientation=<span class="str">"vertical"</span>
+    <span class="prop">onPageSelected</span>={(e) => <span class="fn">setActiveIndex</span>(e.nativeEvent.position)}
+  &gt;
+    {reels.<span class="fn">map</span>((reel, index) => (
+      &lt;<span class="cmp">ReelItem</span>
+        key={reel.id}
+        reel={reel}
+        <span class="cm">// Only active ±1 items render video player</span>
+        isActive={index === activeIndex}
+        shouldPreload={Math.<span class="fn">abs</span>(index - activeIndex) === <span class="num">1</span>}
+      /&gt;
+    ))}
+  &lt;/<span class="cmp">PagerView</span>&gt;;
+}
+
+<span class="kw">const</span> ReelItem = <span class="fn">React.memo</span>(({ reel, isActive, shouldPreload }) => {
+  <span class="kw">return</span> &lt;<span class="cmp">View</span> style={styles.fullScreen}&gt;
+    {(isActive || shouldPreload) && (
+      &lt;<span class="cmp">Video</span>
+        source={{ uri: reel.videoUrl }}
+        paused={!isActive}       <span class="cm">// pause when not visible</span>
+        repeat={isActive}        <span class="cm">// loop only active video</span>
+        resizeMode=<span class="str">"cover"</span>
+        onBuffer={() => <span class="fn">showLoadingIndicator</span>()}
+      /&gt;
+    )}
+  &lt;/<span class="cmp">View</span>&gt;;
+});</pre>
+
+                    <h3>Performance Strategies</h3>
+                    <ul>
+                        <li><strong>Window: only render ±1 from active:</strong> Unmount videos 2+ away from active to
+                            free memory.</li>
+                        <li><strong>Preload URLs:</strong> Pre-cache video URLs for the next 2 items using
+                            <code>Video.prefetch(url)</code>.
+                        </li>
+                        <li><strong>Thumbnail placeholder:</strong> Show static thumbnail until video loads to avoid
+                            black screen.</li>
+                        <li><strong>CDN + adaptive bitrate:</strong> Serve HLS streams — mobile gets lower quality, WiFi
+                            gets HD.</li>
+                        <li><strong>Background audio handling:</strong> Pause video when app goes to background, handle
+                            audio session.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Q18 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q18</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">Design a design system / component library for a large React Native app.
+                        </div>
+                        <div class="q-tags">
+                            <span class="tag tag-arch">Architecture</span>
+                            <span class="tag tag-ux">UX</span>
+                            <span class="tag tag-rn">React Native</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Design Tokens → Components → Patterns</h3>
+                    <pre>
+<span class="cm">// 1. Design Tokens — single source of truth</span>
+<span class="kw">const</span> tokens = {
+  colors: {
+    primary: <span class="str">'#818cf8'</span>,
+    surface: <span class="str">'#1e1e2e'</span>,
+    text: { primary: <span class="str">'#e2e8f0'</span>, secondary: <span class="str">'#94a3b8'</span> },
+    semantic: { error: <span class="str">'#f87171'</span>, success: <span class="str">'#34d399'</span> },
+  },
+  spacing: { xs: <span class="num">4</span>, sm: <span class="num">8</span>, md: <span class="num">16</span>, lg: <span class="num">24</span>, xl: <span class="num">32</span> },
+  typography: {
+    sizes: { xs: <span class="num">11</span>, sm: <span class="num">13</span>, md: <span class="num">15</span>, lg: <span class="num">18</span>, xl: <span class="num">24</span> },
+    weights: { regular: <span class="str">'400'</span>, semibold: <span class="str">'600'</span>, bold: <span class="str">'700'</span> },
+  },
+  radii: { sm: <span class="num">6</span>, md: <span class="num">10</span>, lg: <span class="num">16</span>, full: <span class="num">9999</span> },
+};
+
+<span class="cm">// 2. Themed components using tokens</span>
+<span class="kw">function</span> <span class="fn">Button</span>({ variant = <span class="str">'primary'</span>, size = <span class="str">'md'</span>, label, onPress }) {
+  <span class="kw">const</span> theme = <span class="fn">useTheme</span>();
+  <span class="kw">return</span> &lt;<span class="cmp">TouchableOpacity</span>
+    onPress={onPress}
+    style={[styles.base, styles[variant], styles[<span class="str">`size_${size}`</span>]]}
+    accessibilityRole=<span class="str">"button"</span>
+    accessibilityLabel={label}
+  &gt;
+    &lt;<span class="cmp">Text</span> style={styles.label}&gt;{label}&lt;/<span class="cmp">Text</span>&gt;
+  &lt;/<span class="cmp">TouchableOpacity</span>&gt;;
+}
+
+<span class="cm">// 3. Dark mode — swap token values, not component styles</span>
+<span class="kw">const</span> darkTheme = { ...tokens, colors: { ...tokens.colors, surface: <span class="str">'#0f0f1a'</span> } };
+<span class="kw">const</span> lightTheme = { ...tokens, colors: { ...tokens.colors, surface: <span class="str">'#ffffff'</span> } };</pre>
+
+                    <h3>Component Library Structure</h3>
+                    <ul>
+                        <li><strong>Atoms:</strong> Button, Text, Icon, Avatar, Badge, Input</li>
+                        <li><strong>Molecules:</strong> Card, ListItem, SearchBar, FormField</li>
+                        <li><strong>Organisms:</strong> Header, BottomSheet, Modal, PostCard</li>
+                        <li><strong>Templates:</strong> AuthLayout, TabLayout, ModalLayout</li>
+                    </ul>
+
+                    <div class="callout callout-tip">
+                        <strong>Storybook for RN:</strong> Use <code>@storybook/react-native</code> to develop and
+                        document components in isolation. It's the gold standard for component libraries and shows great
+                        engineering maturity in interviews.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q19 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q19</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you handle push notifications and background tasks in React Native?
+                        </div>
+                        <div class="q-tags">
+                            <span class="tag tag-rn">React Native</span>
+                            <span class="tag tag-arch">Architecture</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Push Notification Architecture</h3>
+                    <div class="diagram">
+                        <span class="box">Backend Server</span>
+                        │
+                        ▼
+                        <span class="box">FCM (Android) / APNs (iOS)</span> <span class="note">← Use a provider like
+                            Firebase</span>
+                        │
+                        ▼
+                        <span class="box">Device</span>
+                        ├── App Foreground → <span class="label">In-app notification handler</span>
+                        ├── App Background → <span class="label">OS notification center</span>
+                        └── App Killed → <span class="label">OS notification center + cold start data</span>
+                    </div>
+
+                    <pre>
+<span class="cm">// react-native-firebase/messaging — comprehensive solution</span>
+<span class="kw">import</span> messaging <span class="kw">from</span> <span class="str">'@react-native-firebase/messaging'</span>;
+
+<span class="kw">function</span> <span class="fn">setupNotifications</span>() {
+  <span class="cm">// 1. Foreground notifications</span>
+  messaging().<span class="fn">onMessage</span>(async (remoteMessage) => {
+    <span class="fn">showInAppNotification</span>(remoteMessage);
+  });
+
+  <span class="cm">// 2. App opened from background tap</span>
+  messaging().<span class="fn">onNotificationOpenedApp</span>((remoteMessage) => {
+    <span class="fn">navigateToScreen</span>(remoteMessage.data);
+  });
+
+  <span class="cm">// 3. App opened from killed state</span>
+  messaging().<span class="fn">getInitialNotification</span>().<span class="fn">then</span>((remoteMessage) => {
+    <span class="kw">if</span> (remoteMessage) <span class="fn">navigateToScreen</span>(remoteMessage.data);
+  });
+
+  <span class="cm">// 4. Background handler (runs even when app is killed)</span>
+  messaging().<span class="fn">setBackgroundMessageHandler</span>(async (remoteMessage) => {
+    <span class="fn">updateBadgeCount</span>(remoteMessage);
+  });
+}</pre>
+                </div>
+            </div>
+
+            <!-- Q20 -->
+            <div class="q-card" onclick="toggle(this)">
+                <div class="q-header">
+                    <span class="q-num">Q20</span>
+                    <div class="q-title-wrap">
+                        <div class="q-title">How do you measure and monitor React Native app performance in production?
+                        </div>
+                        <div class="q-tags">
+                            <span class="tag tag-perf">Performance</span>
+                            <span class="tag tag-arch">Architecture</span>
+                        </div>
+                    </div>
+                    <span class="q-chevron">▼</span>
+                </div>
+                <div class="q-body">
+                    <h3>Observability Stack</h3>
+                    <table class="compare-table">
+                        <tr>
+                            <th>What to Measure</th>
+                            <th>Tool</th>
+                            <th>Key Metrics</th>
+                        </tr>
+                        <tr>
+                            <td>Crashes & errors</td>
+                            <td>Sentry / Firebase Crashlytics</td>
+                            <td>Crash-free rate, error frequency</td>
+                        </tr>
+                        <tr>
+                            <td>Performance</td>
+                            <td>Sentry Performance / Datadog</td>
+                            <td>App start time, slow renders, ANRs</td>
+                        </tr>
+                        <tr>
+                            <td>Analytics</td>
+                            <td>Firebase Analytics / Mixpanel</td>
+                            <td>Screen time, funnel completion</td>
+                        </tr>
+                        <tr>
+                            <td>Network</td>
+                            <td>Sentry / Charles Proxy (dev)</td>
+                            <td>API latency, error rates, payload size</td>
+                        </tr>
+                        <tr>
+                            <td>JS bundle</td>
+                            <td>Source maps + Sentry</td>
+                            <td>Readable stack traces in production</td>
+                        </tr>
+                    </table>
+
+                    <h3>Key Performance Metrics to Track</h3>
+                    <ul>
+                        <li><strong>Time to Interactive (TTI):</strong> Time from launch to first meaningful user
+                            interaction.</li>
+                        <li><strong>JS thread FPS:</strong> Target 60fps; drops below 55fps are noticeable to users.
+                        </li>
+                        <li><strong>App start time:</strong> Cold start (first install/after killed) vs warm start (from
+                            background).</li>
+                        <li><strong>Memory usage:</strong> Watch for memory leaks, especially with image-heavy screens.
+                        </li>
+                        <li><strong>Crash-free sessions:</strong> Industry standard is 99.5%+ crash-free rate.</li>
+                    </ul>
+
+                    <pre>
+<span class="cm">// Sentry performance tracing example</span>
+<span class="kw">import</span> * <span class="kw">as</span> Sentry <span class="kw">from</span> <span class="str">'@sentry/react-native'</span>;
+
+<span class="cm">// Measure a critical user flow</span>
+<span class="kw">const</span> transaction = Sentry.<span class="fn">startTransaction</span>({
+  name: <span class="str">'checkout.complete'</span>, op: <span class="str">'user-action'</span>
+});
+
+<span class="kw">try</span> {
+  <span class="kw">const</span> span = transaction.<span class="fn">startChild</span>({ op: <span class="str">'api.call'</span>, description: <span class="str">'POST /orders'</span> });
+  <span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">createOrder</span>(cart);
+  span.<span class="fn">finish</span>();
+} <span class="kw">finally</span> {
+  transaction.<span class="fn">finish</span>();
+}</pre>
+
+                    <div class="interview-tip">
+                        <div class="tip-label">💡 Interview Signal</div>
+                        <p>Mentioning <strong>production observability</strong> shows senior maturity. Most candidates
+                            only talk about dev tools — talking about Sentry, crash rates, and real-user monitoring
+                            separates you from the pack.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER NOTE -->
+        <div
+            style="text-align:center; padding: 40px 0; color: var(--muted); font-size: .82rem; border-top: 1px solid var(--border);">
+            <p style="margin-bottom:8px">📱 React Native Frontend System Design Guide</p>
+            <p>20 questions covering Architecture · State · Performance · Navigation · Network · Offline · Security ·
+                Testing</p>
+        </div>
+
+    </div>
+
+    <script>
+        function toggle(card) {
+            // Close others
+            document.querySelectorAll('.q-card.open').forEach(c => {
+                if (c !== card) c.classList.remove('open');
+            });
+            card.classList.toggle('open');
+            // Smooth scroll into view
+            if (card.classList.contains('open')) {
+                setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+            }
+        }
+
+        // Highlight active nav link on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-links a');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(s => {
+                if (window.scrollY >= s.offsetTop - 100) current = s.getAttribute('id');
+            });
+            navLinks.forEach(a => {
+                a.style.color = a.getAttribute('href') === '#' + current ? 'var(--accent)' : '';
+                a.style.background = a.getAttribute('href') === '#' + current ? 'rgba(129,140,248,.12)' : '';
+            });
+        }, { passive: true });
+    </script>
+</body>
+
+</html>

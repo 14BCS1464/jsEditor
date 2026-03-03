@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design Tracker</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f2eb;
+            --bg2: #ede9e0;
+            --bg3: #e4dfd3;
+            --ink: #1c1a16;
+            --ink2: #3d3a34;
+            --muted: #8a8478;
+            --border: #d4cfc5;
+            --border2: #c5bfb3;
+            --solved: #2ab87a;
+            --inprog: #e8962a;
+            --shadow: 0 2px 8px rgba(28, 26, 22, 0.08);
+            --shadow-lg: 0 8px 32px rgba(28, 26, 22, 0.14);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* =================== SETUP =================== */
+        #setup-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 2rem;
+            gap: 1.75rem;
+        }
+
+        .setup-brand h1 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            text-align: center;
+        }
+
+        .setup-brand h1 em {
+            font-style: italic;
+            color: #e85d2a;
+        }
+
+        .setup-brand p {
+            font-size: 0.82rem;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            text-align: center;
+            margin-top: 0.4rem;
+        }
+
+        .setup-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .setup-tabs {
+            display: flex;
+            background: var(--bg2);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .stab {
+            flex: 1;
+            padding: 0.58rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--muted);
+            transition: all 0.18s;
+        }
+
+        .stab.active {
+            background: #fff;
+            color: var(--ink);
+        }
+
+        .flabel {
+            display: block;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .finput {
+            width: 100%;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.6rem 0.85rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .finput:focus {
+            border-color: #e85d2a;
+        }
+
+        .fg {
+            margin-bottom: 0.85rem;
+        }
+
+        .fgrow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.7rem;
+        }
+
+        .btn-connect {
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.78rem;
+            background: var(--ink);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-connect:hover {
+            background: #e85d2a;
+            transform: translateY(-1px);
+        }
+
+        .file-zone {
+            border: 2px dashed var(--border2);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-zone:hover,
+        .file-zone.over {
+            border-color: #e85d2a;
+            background: rgba(232, 93, 42, 0.04);
+        }
+
+        .file-zone input {
+            display: none;
+        }
+
+        .demo-box {
+            border: 1.5px dashed var(--border2);
+            border-radius: 14px;
+            padding: 1.75rem;
+            text-align: center;
+        }
+
+        .demo-box h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+
+        .demo-box p {
+            font-size: 0.82rem;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+        }
+
+        .err-msg {
+            background: rgba(232, 93, 42, 0.08);
+            border: 1px solid rgba(232, 93, 42, 0.3);
+            border-radius: 8px;
+            padding: 0.55rem 0.85rem;
+            font-size: 0.76rem;
+            color: #e85d2a;
+            font-family: 'DM Mono', monospace;
+            margin-top: 0.6rem;
+            display: none;
+        }
+
+        /* =================== APP =================== */
+        #app {
+            display: none;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(245, 242, 235, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #e85d2a;
+        }
+
+        .hbtn {
+            padding: 0.42rem 0.95rem;
+            border-radius: 8px;
+            border: 1.5px solid var(--border2);
+            background: #fff;
+            color: var(--ink2);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.79rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .hbtn:hover {
+            border-color: var(--ink);
+        }
+
+        .hbtn.primary {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink);
+        }
+
+        .hbtn.primary:hover {
+            background: #e85d2a;
+            border-color: #e85d2a;
+        }
+
+        /* stats */
+        .stats-strip {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.75rem;
+            overflow-x: auto;
+        }
+
+        .stat-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .stat-num {
+            font-family: 'Fraunces', serif;
+            font-size: 1.9rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+
+        .stat-lbl {
+            font-size: 0.65rem;
+            font-family: 'DM Mono', monospace;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .s-solved .stat-num {
+            color: var(--solved);
+        }
+
+        .s-prog .stat-num {
+            color: var(--inprog);
+        }
+
+        .s-none .stat-num {
+            color: var(--muted);
+        }
+
+        .sdiv {
+            width: 1px;
+            height: 36px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        .prog-block {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .prog-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.35rem;
+        }
+
+        .prog-header span {
+            font-size: 0.68rem;
+            font-family: 'DM Mono', monospace;
+            color: var(--muted);
+        }
+
+        .prog-header strong {
+            color: var(--solved);
+            font-size: 0.68rem;
+            font-family: 'DM Mono', monospace;
+        }
+
+        .pbar {
+            height: 7px;
+            background: var(--bg3);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .pfill {
+            height: 100%;
+            background: linear-gradient(90deg, #e85d2a, var(--solved));
+            border-radius: 99px;
+            transition: width 0.6s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        /* layout */
+        .app-body {
+            display: grid;
+            grid-template-columns: 232px 1fr;
+            min-height: calc(100vh - 110px);
+        }
+
+        /* sidebar */
+        .sidebar {
+            border-right: 1px solid var(--border);
+            padding: 1.1rem 0.65rem;
+            position: sticky;
+            top: 58px;
+            height: calc(100vh - 58px);
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 99px;
+        }
+
+        .side-sec {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            padding: 0.35rem 0.55rem;
+            margin-top: 0.9rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .cat-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            width: 100%;
+            padding: 0.5rem 0.65rem;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.8rem;
+            color: var(--ink2);
+            transition: all 0.14s;
+        }
+
+        .cat-btn:hover {
+            background: var(--bg2);
+        }
+
+        .cat-btn.active {
+            background: var(--ink);
+            color: #fff;
+        }
+
+        .cat-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .cat-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .cat-ct {
+            font-size: 0.64rem;
+            font-family: 'DM Mono', monospace;
+            color: var(--muted);
+            background: var(--bg3);
+            padding: 1px 6px;
+            border-radius: 99px;
+        }
+
+        .cat-btn.active .cat-ct {
+            background: rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        /* main */
+        .main-panel {
+            padding: 1.4rem 1.75rem;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 170px;
+        }
+
+        .search-wrap input {
+            width: 100%;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 0.58rem 0.85rem 0.58rem 2.2rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.83rem;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-wrap input:focus {
+            border-color: var(--ink);
+        }
+
+        .s-ico {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .fchip {
+            padding: 0.42rem 0.85rem;
+            border-radius: 999px;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            color: var(--muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.14s;
+        }
+
+        .fchip:hover {
+            border-color: var(--ink2);
+            color: var(--ink2);
+        }
+
+        .fchip.fa {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink);
+        }
+
+        .fchip.fs {
+            background: var(--solved);
+            color: #fff;
+            border-color: var(--solved);
+        }
+
+        .fchip.fp {
+            background: var(--inprog);
+            color: #fff;
+            border-color: var(--inprog);
+        }
+
+        .fchip.fn {
+            background: var(--muted);
+            color: #fff;
+            border-color: var(--muted);
+        }
+
+        .view-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        /* add drawer */
+        .add-drawer {
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 1.4rem;
+            margin-bottom: 1.4rem;
+            display: none;
+            animation: fd .25s ease;
+        }
+
+        .add-drawer.open {
+            display: block;
+        }
+
+        @keyframes fd {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .drawer-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .frow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.7rem;
+        }
+
+        .finput2 {
+            width: 100%;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.58rem 0.8rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s;
+            appearance: none;
+        }
+
+        .finput2:focus {
+            border-color: var(--ink);
+        }
+
+        .ftextarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 0.65rem 0.8rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.76rem;
+            line-height: 1.6;
+            color: var(--ink);
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .ftextarea:focus {
+            border-color: var(--ink);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.55rem;
+            margin-top: 0.9rem;
+        }
+
+        .btn-save {
+            padding: 0.58rem 1.3rem;
+            background: var(--ink);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-save:hover {
+            background: #e85d2a;
+        }
+
+        .btn-ghost {
+            padding: 0.58rem 1rem;
+            background: transparent;
+            color: var(--muted);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.14s;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--ink2);
+            color: var(--ink2);
+        }
+
+        /* cards */
+        .q-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .q-card {
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .q-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .q-card.solved::before {
+            background: var(--solved);
+        }
+
+        .q-card.in-progress::before {
+            background: var(--inprog);
+        }
+
+        .q-card.unsolved::before {
+            background: var(--border);
+        }
+
+        .q-card:hover {
+            border-color: var(--ink2);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .q-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .q-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .diff {
+            font-size: 0.58rem;
+            font-family: 'DM Mono', monospace;
+            padding: 2px 7px;
+            border-radius: 99px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .diff.easy {
+            background: rgba(42, 184, 122, 0.12);
+            color: var(--solved);
+        }
+
+        .diff.medium {
+            background: rgba(232, 150, 42, 0.12);
+            color: var(--inprog);
+        }
+
+        .diff.hard {
+            background: rgba(232, 93, 42, 0.12);
+            color: #e85d2a;
+        }
+
+        .q-cat {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.7rem;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .q-cdot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .q-np {
+            font-size: 0.73rem;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            line-height: 1.5;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .q-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .qtag {
+            font-size: 0.61rem;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: var(--bg2);
+            color: var(--muted);
+            border: 1px solid var(--border);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .q-bot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 0.45rem;
+            border-top: 1px solid var(--bg2);
+        }
+
+        .qstatus {
+            display: flex;
+            align-items: center;
+            gap: 0.32rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .qsdot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .qstatus.solved {
+            color: var(--solved);
+        }
+
+        .qstatus.solved .qsdot {
+            background: var(--solved);
+            box-shadow: 0 0 4px var(--solved);
+        }
+
+        .qstatus.in-progress {
+            color: var(--inprog);
+        }
+
+        .qstatus.in-progress .qsdot {
+            background: var(--inprog);
+        }
+
+        .qstatus.unsolved {
+            color: var(--muted);
+        }
+
+        .qstatus.unsolved .qsdot {
+            background: var(--border2);
+        }
+
+        .q-date {
+            font-size: 0.63rem;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .empty {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--muted);
+        }
+
+        .empty h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.2rem;
+            color: var(--ink2);
+            margin: 0.5rem 0 0.3rem;
+        }
+
+        /* modal */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(28, 26, 22, .5);
+            backdrop-filter: blur(6px);
+            z-index: 200;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg);
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 720px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: sup .32s cubic-bezier(.4, 0, .2, 1);
+            border-top: 1px solid var(--border);
+        }
+
+        @keyframes sup {
+            from {
+                transform: translateY(60px);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        .m-top {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1.2rem 1.4rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            z-index: 1;
+        }
+
+        .m-title-wrap {
+            flex: 1;
+        }
+
+        .m-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.35rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .m-sub {
+            display: flex;
+            gap: 0.45rem;
+            margin-top: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .mpill {
+            font-size: 0.66rem;
+            font-family: 'DM Mono', monospace;
+            padding: 2px 9px;
+            border-radius: 99px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        .close-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--muted);
+            transition: all .14s;
+            flex-shrink: 0;
+        }
+
+        .close-btn:hover {
+            border-color: var(--ink);
+            color: var(--ink);
+        }
+
+        .m-body {
+            padding: 1.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+
+        .msec-lbl {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 0.45rem;
+        }
+
+        .stog-row {
+            display: flex;
+            gap: 0.45rem;
+        }
+
+        .stog {
+            flex: 1;
+            padding: 0.58rem;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-align: center;
+            transition: all .14s;
+        }
+
+        .stog.au {
+            background: var(--bg2);
+            color: var(--ink);
+            border-color: var(--ink);
+        }
+
+        .stog.ap {
+            background: rgba(232, 150, 42, .1);
+            color: var(--inprog);
+            border-color: var(--inprog);
+        }
+
+        .stog.as {
+            background: rgba(42, 184, 122, .1);
+            color: var(--solved);
+            border-color: var(--solved);
+        }
+
+        .concept-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .cchip {
+            padding: 0.28rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.73rem;
+            font-family: 'DM Mono', monospace;
+            border: 1px solid;
+        }
+
+        .res-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .res-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.7rem;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.76rem;
+        }
+
+        .m-foot {
+            position: sticky;
+            bottom: 0;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 0.95rem 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .del-btn {
+            padding: 0.5rem 1rem;
+            border: 1.5px solid rgba(232, 93, 42, .3);
+            border-radius: 8px;
+            background: transparent;
+            color: #e85d2a;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .14s;
+        }
+
+        .del-btn:hover {
+            background: rgba(232, 93, 42, .08);
+            border-color: #e85d2a;
+        }
+
+        /* toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 9999;
+            background: var(--ink);
+            color: #fff;
+            padding: 0.65rem 1.35rem;
+            border-radius: 10px;
+            font-size: 0.83rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all .3s cubic-bezier(.4, 0, .2, 1);
+            box-shadow: 0 8px 24px rgba(28, 26, 22, .2);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @media(max-width:768px) {
+            .app-body {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                padding: 0.7rem;
+            }
+
+            .side-sec {
+                display: none;
+            }
+
+            .cat-btn {
+                width: auto;
+                flex: 0 0 auto;
+                padding: 0.38rem 0.65rem;
+            }
+
+            .main-panel {
+                padding: 1rem;
+            }
+
+            .frow {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                max-height: 95vh;
+            }
+
+            .stog-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ======== SETUP ======== -->
+    <div id="setup-screen">
+        <div class="setup-brand">
+            <h1>System Design <em>Tracker</em></h1>
+            <p>// frontend · backend · react native · full-stack</p>
+        </div>
+        <div class="setup-card">
+            <div class="setup-tabs">
+                <button class="stab active" onclick="switchTab('manual')">Manual Config</button>
+                <button class="stab" onclick="switchTab('json')">Upload JSON</button>
+                <button class="stab" onclick="switchTab('demo')">Demo Mode</button>
+            </div>
+
+            <div id="t-manual">
+                <div class="fg"><label class="flabel">API Key *</label><input class="finput" id="f-ak"
+                        placeholder="AIzaSy..." /></div>
+                <div class="fgrow">
+                    <div class="fg"><label class="flabel">Auth Domain *</label><input class="finput" id="f-ad"
+                            placeholder="app.firebaseapp.com" /></div>
+                    <div class="fg"><label class="flabel">Project ID *</label><input class="finput" id="f-pid"
+                            placeholder="my-project" /></div>
+                </div>
+                <div class="fgrow">
+                    <div class="fg"><label class="flabel">Storage Bucket</label><input class="finput" id="f-sb"
+                            placeholder="app.appspot.com" /></div>
+                    <div class="fg"><label class="flabel">App ID</label><input class="finput" id="f-aid"
+                            placeholder="1:123:web:abc" /></div>
+                </div>
+                <div class="fg"><label class="flabel">Database URL <span
+                            style="opacity:.6">(optional)</span></label><input class="finput" id="f-db"
+                        placeholder="https://app-rtdb.firebaseio.com" /></div>
+                <div class="err-msg" id="err-m">API Key, Auth Domain and Project ID are required.</div>
+                <button class="btn-connect" onclick="connectManual()">⚡ Connect to Firebase</button>
+            </div>
+
+            <div id="t-json" style="display:none">
+                <div class="file-zone" id="drop-zone" onclick="document.getElementById('jfile').click()">
+                    <input type="file" id="jfile" accept=".json" onchange="handleJSON(event)" />
+                    <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
+                    <div style="font-weight:700;margin-bottom:.25rem;font-size:.9rem">Drop your Firebase config JSON
+                    </div>
+                    <div style="font-size:.76rem;color:var(--muted)">or click to browse</div>
+                </div>
+                <div id="j-preview" style="display:none;margin-top:1rem">
+                    <label class="flabel">Detected Config</label>
+                    <textarea class="finput" style="height:90px;resize:vertical" id="j-text" readonly></textarea>
+                    <button class="btn-connect" onclick="connectJSON()" style="margin-top:.7rem">⚡ Connect to
+                        Firebase</button>
+                </div>
+                <div class="err-msg" id="err-j"></div>
+            </div>
+
+            <div id="t-demo" style="display:none">
+                <div class="demo-box">
+                    <div style="font-size:2.2rem;margin-bottom:.7rem">🚀</div>
+                    <h3>Explore Without Firebase</h3>
+                    <p>30+ preloaded questions across <strong>Frontend SD</strong> topics — Performance, Component
+                        Architecture, State Management, Micro-frontends, React Native, Build Tools, A11y/SEO, Browser &
+                        Rendering — plus Backend SD classics. Data saved locally.</p>
+                    <button class="btn-connect" onclick="startDemo()">✨ Launch Demo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- ======== APP ======== -->
+    <div id="app">
+        <header>
+            <div class="logo">SD <em>Tracker</em></div>
+            <div style="display:flex;gap:.55rem">
+                <button class="hbtn primary" onclick="toggleDrawer()">+ Add Question</button>
+                <button class="hbtn" onclick="location.reload()">⏏ Disconnect</button>
+            </div>
+        </header>
+
+        <div class="stats-strip">
+            <div class="stat-block">
+                <div class="stat-num" id="s-tot">0</div>
+                <div class="stat-lbl">Total</div>
+            </div>
+            <div class="sdiv"></div>
+            <div class="stat-block s-solved">
+                <div class="stat-num" id="s-sol">0</div>
+                <div class="stat-lbl">Solved</div>
+            </div>
+            <div class="stat-block s-prog">
+                <div class="stat-num" id="s-prg">0</div>
+                <div class="stat-lbl">In Progress</div>
+            </div>
+            <div class="stat-block s-none">
+                <div class="stat-num" id="s-non">0</div>
+                <div class="stat-lbl">Not Started</div>
+            </div>
+            <div class="sdiv"></div>
+            <div class="prog-block">
+                <div class="prog-header"><span>Completion</span><strong id="s-pct">0%</strong></div>
+                <div class="pbar">
+                    <div class="pfill" id="pfill" style="width:0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-body">
+            <div class="sidebar">
+                <div class="side-sec">Overview</div>
+                <button class="cat-btn active" id="cat-all" onclick="setCat('all')">
+                    <span class="cat-dot" style="background:var(--ink)"></span>
+                    <span class="cat-name">All Topics</span>
+                    <span class="cat-ct" id="badge-all">0</span>
+                </button>
+                <div class="side-sec">⚡ Frontend SD</div>
+                <div id="fe-cats"></div>
+                <div class="side-sec">🗄 Backend SD</div>
+                <div id="be-cats"></div>
+            </div>
+
+            <div class="main-panel">
+                <!-- Add Drawer -->
+                <div class="add-drawer" id="add-drawer">
+                    <div class="drawer-title">Add New Question</div>
+                    <div class="fg"><label class="flabel">Question Title *</label><input class="finput2" id="n-title"
+                            placeholder="Design an infinite scroll feed" /></div>
+                    <div class="frow">
+                        <div class="fg"><label class="flabel">Category *</label>
+                            <select class="finput2" id="n-cat">
+                                <optgroup label="⚡ Frontend SD">
+                                    <option>Performance &amp; Core Web Vitals</option>
+                                    <option>Component Architecture</option>
+                                    <option>State Management</option>
+                                    <option>Micro-frontends</option>
+                                    <option>Accessibility &amp; SEO</option>
+                                    <option>Build Tools &amp; Bundling</option>
+                                    <option>React Native</option>
+                                    <option>Browser &amp; Rendering</option>
+                                    <option>Frontend Security</option>
+                                </optgroup>
+                                <optgroup label="🗄 Backend SD">
+                                    <option>Scalability</option>
+                                    <option>Data Systems</option>
+                                    <option>Messaging &amp; Events</option>
+                                    <option>Storage Systems</option>
+                                    <option>API Design</option>
+                                    <option>Infrastructure</option>
+                                </optgroup>
+                                <option>General</option>
+                            </select>
+                        </div>
+                        <div class="fg"><label class="flabel">Difficulty</label>
+                            <select class="finput2" id="n-diff">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="frow">
+                        <div class="fg"><label class="flabel">Status</label>
+                            <select class="finput2" id="n-status">
+                                <option value="unsolved">Not Started</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="solved">Solved</option>
+                            </select>
+                        </div>
+                        <div class="fg"><label class="flabel">Tags (comma separated)</label><input class="finput2"
+                                id="n-tags" placeholder="React, Virtualization, memo" /></div>
+                    </div>
+                    <div class="fg"><label class="flabel">Key Concepts (comma separated)</label><input class="finput2"
+                            id="n-concepts" placeholder="Virtual DOM, Lazy Loading, Code Splitting" /></div>
+                    <div class="fg"><label class="flabel">Resources (URLs, comma separated)</label><input
+                            class="finput2" id="n-res" placeholder="https://web.dev/..." /></div>
+                    <div class="fg"><label class="flabel">Notes / My Approach</label><textarea class="ftextarea"
+                            id="n-notes" rows="3" placeholder="My thoughts..."></textarea></div>
+                    <div class="form-actions">
+                        <button class="btn-save" onclick="addQuestion()">Save Question</button>
+                        <button class="btn-ghost" onclick="toggleDrawer()">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="search-wrap">
+                        <span class="s-ico">🔍</span>
+                        <input type="text" placeholder="Search questions, tags, concepts..." id="s-in"
+                            oninput="render()" />
+                    </div>
+                    <button class="fchip fa" onclick="setSt('all',this)">All</button>
+                    <button class="fchip" onclick="setSt('solved',this)">✅ Solved</button>
+                    <button class="fchip" onclick="setSt('in-progress',this)">🔄 Progress</button>
+                    <button class="fchip" onclick="setSt('unsolved',this)">🔲 Not Started</button>
+                </div>
+
+                <div class="view-title" id="view-title">All Topics</div>
+                <div class="q-grid" id="q-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="overlay" id="overlay" onclick="closeModal(event)">
+        <div class="modal">
+            <div class="m-top">
+                <div class="m-title-wrap">
+                    <div class="m-title" id="m-title"></div>
+                    <div class="m-sub" id="m-sub"></div>
+                </div>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="m-body">
+                <div>
+                    <div class="msec-lbl">Status</div>
+                    <div class="stog-row">
+                        <button class="stog" id="tog-unsolved" onclick="setPS('unsolved')">🔲 Not Started</button>
+                        <button class="stog" id="tog-in-progress" onclick="setPS('in-progress')">🔄 In Progress</button>
+                        <button class="stog" id="tog-solved" onclick="setPS('solved')">✅ Solved</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="msec-lbl">Key Concepts</div>
+                    <div class="concept-cloud" id="m-concepts"></div>
+                </div>
+                <div>
+                    <div class="msec-lbl">Tags</div>
+                    <div class="q-tags" id="m-tags"></div>
+                </div>
+                <div id="m-res-wrap">
+                    <div class="msec-lbl">Resources</div>
+                    <div class="res-list" id="m-res"></div>
+                </div>
+                <div>
+                    <div class="msec-lbl">My Notes &amp; Approach</div>
+                    <textarea class="ftextarea" id="m-notes" rows="6"
+                        placeholder="Write your approach, key insights, trade-offs..."></textarea>
+                </div>
+                <div>
+                    <div class="msec-lbl">Last Updated</div>
+                    <div style="font-size:.76rem;color:var(--muted);font-family:'DM Mono',monospace" id="m-date">—</div>
+                </div>
+            </div>
+            <div class="m-foot">
+                <button class="del-btn" onclick="deleteQ()">🗑 Delete</button>
+                <div style="display:flex;gap:.55rem">
+                    <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+                    <button class="btn-save" onclick="saveQ()">💾 Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        window._FB = { initializeApp, getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot };
+        document.dispatchEvent(new Event('fb-ready'));
+    </script>
+
+    <script>
+        const TOPICS = {
+            'Performance & Core Web Vitals': { color: '#e85d2a', side: 'fe' },
+            'Component Architecture': { color: '#2a7be8', side: 'fe' },
+            'State Management': { color: '#9c27b0', side: 'fe' },
+            'Micro-frontends': { color: '#e8962a', side: 'fe' },
+            'Accessibility & SEO': { color: '#2ab87a', side: 'fe' },
+            'Build Tools & Bundling': { color: '#c4302b', side: 'fe' },
+            'React Native': { color: '#61aff7', side: 'fe' },
+            'Browser & Rendering': { color: '#7c3aed', side: 'fe' },
+            'Frontend Security': { color: '#e82a6a', side: 'fe' },
+            'Scalability': { color: '#4a6fa5', side: 'be' },
+            'Data Systems': { color: '#3d8b37', side: 'be' },
+            'Messaging & Events': { color: '#b5742a', side: 'be' },
+            'Storage Systems': { color: '#7a4a9c', side: 'be' },
+            'API Design': { color: '#2a8b8b', side: 'be' },
+            'Infrastructure': { color: '#8b5a2a', side: 'be' },
+            'General': { color: '#888', side: 'be' },
+        };
+
+        const DEMO_DATA = {
+            'pe1': { id: 'pe1', title: 'Design a lazy-loading image system', category: 'Performance & Core Web Vitals', difficulty: 'medium', status: 'solved', tags: ['IntersectionObserver', 'LQIP', 'WebP'], concepts: ['IntersectionObserver API', 'Low-Quality Image Placeholder', 'Responsive Images', 'srcset', 'WebP format'], notes: 'Used IntersectionObserver with 200px rootMargin. Serve LQIP first then swap to full res. srcset for responsive breakpoints.', resources: ['https://web.dev/lazy-loading-images/'], date: '2025-02-10' },
+            'pe2': { id: 'pe2', title: 'Improve LCP on a content-heavy marketing page', category: 'Performance & Core Web Vitals', difficulty: 'hard', status: 'in-progress', tags: ['LCP', 'Critical Path', 'Preload'], concepts: ['Largest Contentful Paint', 'Critical Rendering Path', 'Preload Hints', 'font-display:swap', 'Resource Prioritization'], notes: 'Hero image preload + font-display:swap giving big wins. Still reducing main thread work.', resources: ['https://web.dev/lcp/'], date: '2025-02-18' },
+            'pe3': { id: 'pe3', title: 'Design a Real User Monitoring (RUM) SDK', category: 'Performance & Core Web Vitals', difficulty: 'hard', status: 'unsolved', tags: ['PerformanceObserver', 'Beacon API', 'Core Web Vitals'], concepts: ['Real User Monitoring', 'PerformanceObserver', 'navigator.sendBeacon', 'Sampling Strategy', 'Session Attribution'], notes: '', resources: [], date: '' },
+            'pe4': { id: 'pe4', title: 'Design a client-side caching strategy', category: 'Performance & Core Web Vitals', difficulty: 'medium', status: 'solved', tags: ['Cache-Control', 'Service Worker', 'ETags'], concepts: ['HTTP Caching Headers', 'Service Worker Cache', 'Stale-While-Revalidate', 'Cache Busting', 'ETags'], notes: 'Use stale-while-revalidate for non-critical assets. Hard-bust hashed filenames in prod.', resources: [], date: '2025-01-25' },
+            'ca1': { id: 'ca1', title: 'Design a scalable design system component library', category: 'Component Architecture', difficulty: 'hard', status: 'in-progress', tags: ['Design Tokens', 'Storybook', 'Compound Components'], concepts: ['Design Tokens', 'Compound Component Pattern', 'Controlled vs Uncontrolled', 'Polymorphic as prop', 'Accessibility from scratch'], notes: 'Token layer → primitive components → composite components. Polymorphic `as` prop pattern for flexibility.', resources: ['https://bradfrost.com/blog/post/atomic-web-design/'], date: '2025-02-20' },
+            'ca2': { id: 'ca2', title: 'Design a virtualized infinite scroll list', category: 'Component Architecture', difficulty: 'medium', status: 'solved', tags: ['Virtualization', 'react-window', 'Pagination'], concepts: ['DOM Windowing', 'IntersectionObserver sentinel', 'Debounce', 'Skeleton Loading', 'react-window'], notes: 'react-window for virtualization + IntersectionObserver at bottom for pagination trigger.', resources: ['https://web.dev/virtualize-long-lists-react-window/'], date: '2025-01-30' },
+            'ca3': { id: 'ca3', title: 'Design a drag-and-drop kanban board', category: 'Component Architecture', difficulty: 'hard', status: 'unsolved', tags: ['DnD', 'Pointer Events', 'ARIA'], concepts: ['HTML5 Drag and Drop', 'Pointer Events API', 'ARIA Live Regions', 'Optimistic Reordering', 'dnd-kit'], notes: '', resources: [], date: '' },
+            'ca4': { id: 'ca4', title: 'Build a headless data table component', category: 'Component Architecture', difficulty: 'medium', status: 'solved', tags: ['Headless UI', 'TanStack Table', 'Render Props'], concepts: ['Headless Component Pattern', 'Render Props', 'Virtual Rows', 'Multi-sort', 'Column Pinning'], notes: 'TanStack Table for logic, completely custom render layer. Memo-ize heavy cell renderers.', resources: [], date: '2025-02-05' },
+            'sm1': { id: 'sm1', title: 'Design global state architecture for large React app', category: 'State Management', difficulty: 'hard', status: 'in-progress', tags: ['Zustand', 'React Query', 'Colocation'], concepts: ['Server State vs Client State', 'State Colocation', 'Selector Pattern', 'Zustand Slices', 'React Query Caching'], notes: 'Server state → React Query. Client UI state → Zustand slices. Keep local state local.', resources: ['https://tkdodo.eu/blog/react-query-as-a-state-manager'], date: '2025-02-22' },
+            'sm2': { id: 'sm2', title: 'Implement optimistic UI updates with rollback', category: 'State Management', difficulty: 'medium', status: 'solved', tags: ['Optimistic', 'Rollback', 'useMutation'], concepts: ['Optimistic Updates', 'onMutate / onError', 'Cache Snapshots', 'Rollback Pattern', 'Versioning'], notes: 'React Query useMutation: onMutate saves snapshot, updates cache optimistically, onError rolls back.', resources: [], date: '2025-02-12' },
+            'sm3': { id: 'sm3', title: 'Design offline-first state sync with conflict resolution', category: 'State Management', difficulty: 'hard', status: 'unsolved', tags: ['IndexedDB', 'CRDT', 'Sync'], concepts: ['Offline-First Architecture', 'IndexedDB', 'CRDT', 'Background Sync API', 'Merge Strategies'], notes: '', resources: [], date: '' },
+            'mf1': { id: 'mf1', title: 'Design a micro-frontend shell with Module Federation', category: 'Micro-frontends', difficulty: 'hard', status: 'in-progress', tags: ['Module Federation', 'Webpack 5', 'Shell App'], concepts: ['Module Federation', 'Shell App Pattern', 'Shared Singletons', 'Independent Deployments', 'Runtime Integration'], notes: 'Host shell loads remote apps at runtime. Share React/ReactDOM to avoid duplicate bundle weight.', resources: ['https://module-federation.io/'], date: '2025-02-19' },
+            'mf2': { id: 'mf2', title: 'Handle shared auth across micro-frontends', category: 'Micro-frontends', difficulty: 'hard', status: 'unsolved', tags: ['SSO', 'BroadcastChannel', 'Token Refresh'], concepts: ['Shared Session Token', 'BroadcastChannel API', 'Silent Token Refresh', 'Cookie Strategy', 'Cross-Origin Auth'], notes: '', resources: [], date: '' },
+            'mf3': { id: 'mf3', title: 'Design cross-MFE routing strategy', category: 'Micro-frontends', difficulty: 'medium', status: 'solved', tags: ['History API', 'CustomEvents', 'Route Ownership'], concepts: ['History API', 'Route Ownership Model', 'CustomEvents for navigation', 'popstate listener'], notes: 'Each MFE owns its route segment. Shell listens to popstate. CustomEvents for cross-MFE navigation.', resources: [], date: '2025-01-28' },
+            'a1': { id: 'a1', title: 'Design an accessible modal dialog system', category: 'Accessibility & SEO', difficulty: 'medium', status: 'solved', tags: ['Focus Trap', 'ARIA', 'WCAG 2.1'], concepts: ['Focus Trap', 'role="dialog"', 'aria-modal', 'Return Focus on Close', 'Keyboard Navigation'], notes: 'Focus trap on open. ESC to close. Return focus to trigger. role="dialog" + aria-labelledby.', resources: ['https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/'], date: '2025-02-08' },
+            'a2': { id: 'a2', title: 'Design Next.js app architecture for maximum SEO', category: 'Accessibility & SEO', difficulty: 'medium', status: 'in-progress', tags: ['SSR', 'SSG', 'Structured Data'], concepts: ['SSR vs SSG vs ISR', 'JSON-LD Structured Data', 'Open Graph Tags', 'Canonical URLs', 'Sitemaps'], notes: 'SSG for static pages, ISR for product pages (revalidate:60). JSON-LD per page type.', resources: [], date: '2025-02-21' },
+            'a3': { id: 'a3', title: 'Build an accessible combobox autocomplete', category: 'Accessibility & SEO', difficulty: 'hard', status: 'unsolved', tags: ['ARIA combobox', 'aria-activedescendant', 'Screen Reader'], concepts: ['ARIA combobox pattern', 'aria-activedescendant', 'Announce results', 'VoiceOver testing', 'Keyboard Navigation'], notes: '', resources: [], date: '' },
+            'bt1': { id: 'bt1', title: 'Optimize Webpack bundle for production', category: 'Build Tools & Bundling', difficulty: 'medium', status: 'solved', tags: ['Tree Shaking', 'Code Splitting', 'Bundle Analyzer'], concepts: ['Tree Shaking', 'Dynamic import()', 'SplitChunksPlugin', 'Side Effects Flag', 'Bundle Analyzer'], notes: 'Analyze with webpack-bundle-analyzer. Dynamic import for routes. sideEffects:false in package.json.', resources: [], date: '2025-01-20' },
+            'bt2': { id: 'bt2', title: 'Design monorepo build pipeline with Turborepo', category: 'Build Tools & Bundling', difficulty: 'hard', status: 'in-progress', tags: ['Turborepo', 'Monorepo', 'Remote Cache'], concepts: ['Task Pipeline', 'Turborepo Remote Caching', 'Topological Sort', 'Affected Packages', 'Changesets'], notes: 'Remote cache cuts CI time by ~70%. Pipeline: lint → typecheck → test → build in topological order.', resources: ['https://turbo.build/repo/docs'], date: '2025-02-15' },
+            'bt3': { id: 'bt3', title: 'Migrate Create React App to Vite', category: 'Build Tools & Bundling', difficulty: 'medium', status: 'unsolved', tags: ['Vite', 'ESM', 'HMR'], concepts: ['Native ESM Dev Server', 'HMR Protocol', 'Rollup Production Build', 'Vite Plugin API', 'Env Variable Migration'], notes: '', resources: [], date: '' },
+            'rn1': { id: 'rn1', title: 'Design offline-capable React Native app', category: 'React Native', difficulty: 'hard', status: 'in-progress', tags: ['WatermelonDB', 'AsyncStorage', 'Background Sync'], concepts: ['WatermelonDB', 'AsyncStorage', 'NetInfo API', 'Background Fetch', 'Conflict Resolution'], notes: 'WatermelonDB for structured local data. NetInfo for connectivity detection. Background sync on reconnect.', resources: [], date: '2025-02-17' },
+            'rn2': { id: 'rn2', title: 'Optimize FlatList performance in React Native', category: 'React Native', difficulty: 'medium', status: 'solved', tags: ['FlatList', 'getItemLayout', 'memo'], concepts: ['getItemLayout', 'keyExtractor', 'removeClippedSubviews', 'memo + useCallback', 'initialNumToRender'], notes: 'getItemLayout avoids async layout measurement. removeClippedSubviews=true. Memo item component rigorously.', resources: [], date: '2025-02-03' },
+            'rn3': { id: 'rn3', title: 'Design push notification system for React Native', category: 'React Native', difficulty: 'hard', status: 'unsolved', tags: ['FCM', 'APNs', 'Deep Linking'], concepts: ['FCM', 'APNs', 'Expo Notifications', 'Deep Linking', 'Background Message Handler', 'Permission UX'], notes: '', resources: [], date: '' },
+            'rn4': { id: 'rn4', title: 'Design navigation architecture for large RN app', category: 'React Native', difficulty: 'medium', status: 'solved', tags: ['React Navigation', 'Deep Links', 'Tab+Stack'], concepts: ['React Navigation v6', 'Nested Navigators', 'Deep Link Configuration', 'State Persistence', 'Tab + Stack Pattern'], notes: 'Root Tab navigator with Stack per tab. Deep links configured at root. Persist nav state for UX.', resources: [], date: '2025-01-22' },
+            'br1': { id: 'br1', title: 'Explain the browser rendering pipeline', category: 'Browser & Rendering', difficulty: 'medium', status: 'solved', tags: ['CRP', 'Paint', 'Composite'], concepts: ['DOM Construction', 'CSSOM', 'Render Tree', 'Layout/Reflow', 'Paint', 'Composite Layers'], notes: 'HTML → DOM, CSS → CSSOM → Render Tree → Layout → Paint → Composite. Avoid forced synchronous layout.', resources: ['https://web.dev/rendering-performance/'], date: '2025-02-01' },
+            'br2': { id: 'br2', title: 'Design a React concurrent rendering strategy', category: 'Browser & Rendering', difficulty: 'hard', status: 'in-progress', tags: ['Concurrent Mode', 'Suspense', 'Transitions'], concepts: ['React Concurrent Mode', 'useTransition', 'Suspense Boundaries', 'Time Slicing', 'startTransition'], notes: 'Wrap non-urgent state updates in startTransition. Suspense boundaries for async data fetching.', resources: [], date: '2025-02-23' },
+            'fs1': { id: 'fs1', title: 'Implement Content Security Policy (CSP)', category: 'Frontend Security', difficulty: 'medium', status: 'solved', tags: ['CSP', 'XSS', 'Nonces'], concepts: ['Content Security Policy', 'script-src nonce', 'Strict CSP', 'Trusted Types', 'XSS Prevention'], notes: 'Strict CSP with nonces on scripts. Trusted Types to prevent DOM XSS. Report-only mode for rollout.', resources: [], date: '2025-02-06' },
+            'be1': { id: 'be1', title: 'Design a URL Shortener', category: 'Scalability', difficulty: 'medium', status: 'solved', tags: ['Hashing', 'Redis', 'CDN'], concepts: ['Base62 Encoding', 'Consistent Hashing', 'Rate Limiting', 'Cache TTL'], notes: 'Base62 short codes, Redis for hot URLs, CDN for redirect serving at edge.', resources: [], date: '2025-02-15' },
+            'be2': { id: 'be2', title: "Design Twitter's Timeline Feed", category: 'Scalability', difficulty: 'hard', status: 'in-progress', tags: ['Fan-out', 'Kafka', 'Cache'], concepts: ['Fan-out on Write', 'Fan-out on Read', 'Celebrity Problem', 'Hybrid Strategy', 'Timeline Cache'], notes: 'Fan-out on write for normal users, fan-out on read for celebrities. Hybrid approach.', resources: [], date: '2025-02-20' },
+            'be3': { id: 'be3', title: 'Design a real-time chat system', category: 'Messaging & Events', difficulty: 'hard', status: 'solved', tags: ['WebSocket', 'Cassandra', 'Presence'], concepts: ['WebSocket', 'Cassandra', 'Message Ordering', 'Presence Detection', 'Heartbeat'], notes: 'WebSocket connections per server. Cassandra for message history. Redis for online presence.', resources: [], date: '2025-02-10' },
+        };
+
+        let db = null, isDemo = false, questions = {}, activeCat = 'all', activeSt = 'all', activeModalId = null, pendingStatus = null;
+
+        // ---- SETUP ----
+        function switchTab(t) {
+            ['manual', 'json', 'demo'].forEach((n, i) => { document.getElementById('t-' + n).style.display = n === t ? 'block' : 'none'; document.querySelectorAll('.stab')[i].classList.toggle('active', n === t); });
+        }
+        window.switchTab = switchTab;
+
+        window.connectManual = async function () {
+            const cfg = { apiKey: gv('f-ak'), authDomain: gv('f-ad'), projectId: gv('f-pid'), storageBucket: gv('f-sb'), appId: gv('f-aid'), databaseURL: gv('f-db') };
+            if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId) { show('err-m'); return; }
+            hide('err-m'); await bootFB(cfg);
+        };
+
+        window.handleJSON = function (e) {
+            const file = e.target.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                try { const d = JSON.parse(ev.target.result); document.getElementById('j-text').value = JSON.stringify(d, null, 2); document.getElementById('j-preview').style.display = 'block'; hide('err-j'); window._jc = d; }
+                catch (er) { document.getElementById('err-j').textContent = 'Invalid JSON: ' + er.message; show('err-j'); }
+            }; r.readAsText(file);
+        };
+
+        window.connectJSON = async function () { if (!window._jc) return; const cfg = window._jc.apiKey ? window._jc : (window._jc.firebase || window._jc); await bootFB(cfg); };
+
+        window.startDemo = function () {
+            isDemo = true; questions = JSON.parse(JSON.stringify(DEMO_DATA));
+            launchApp(); refresh(); toast('🚀 Demo — 30 questions across all topics!');
+        };
+
+        async function bootFB(cfg) {
+            try {
+                if (!window._FB) await new Promise(r => document.addEventListener('fb-ready', r, { once: true }));
+                const app = window._FB.initializeApp(cfg); db = window._FB.getFirestore(app); launchApp();
+                const { collection, onSnapshot } = window._FB;
+                onSnapshot(collection(db, 'sd_questions'), snap => {
+                    questions = {}; snap.forEach(d => questions[d.id] = { id: d.id, ...d.data() }); refresh();
+                });
+            } catch (e) { alert('Firebase error: ' + e.message); }
+        }
+
+        function launchApp() { document.getElementById('setup-screen').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
+
+        // drag/drop
+        document.addEventListener('DOMContentLoaded', () => {
+            const dz = document.getElementById('drop-zone');
+            ['dragover', 'dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
+                e.preventDefault();
+                if (ev === 'dragover') dz.classList.add('over');
+                else if (ev === 'dragleave') dz.classList.remove('over');
+                else { dz.classList.remove('over'); handleJSON({ target: { files: e.dataTransfer.files } }); }
+            }));
+        });
+
+        // ---- DATA ----
+        function refresh() { updateStats(); buildSidebar(); render(); }
+
+        function updateStats() {
+            const all = Object.values(questions);
+            const sol = all.filter(q => q.status === 'solved').length;
+            const prg = all.filter(q => q.status === 'in-progress').length;
+            const non = all.filter(q => q.status === 'unsolved').length;
+            const pct = all.length ? Math.round(sol / all.length * 100) : 0;
+            setText('s-tot', all.length); setText('s-sol', sol); setText('s-prg', prg); setText('s-non', non);
+            setText('s-pct', pct + '%'); document.getElementById('pfill').style.width = pct + '%';
+            document.getElementById('badge-all').textContent = all.length;
+        }
+
+        function buildSidebar() {
+            const cats = {}; Object.values(questions).forEach(q => cats[q.category] = (cats[q.category] || 0) + 1);
+            const fe = document.getElementById('fe-cats'), be = document.getElementById('be-cats');
+            fe.innerHTML = ''; be.innerHTML = '';
+            Object.entries(TOPICS).forEach(([cat, meta]) => {
+                const count = cats[cat] || 0;
+                const btn = document.createElement('button');
+                btn.className = 'cat-btn' + (activeCat === cat ? ' active' : '');
+                btn.innerHTML = `<span class="cat-dot" style="background:${meta.color}"></span><span class="cat-name">${cat}</span><span class="cat-ct">${count}</span>`;
+                btn.onclick = () => setCat(cat);
+                (meta.side === 'fe' ? fe : be).appendChild(btn);
+            });
+            document.getElementById('cat-all').classList.toggle('active', activeCat === 'all');
+        }
+
+        function render() {
+            const grid = document.getElementById('q-grid');
+            const search = document.getElementById('s-in').value.toLowerCase();
+            let list = Object.values(questions).filter(q => {
+                const mc = activeCat === 'all' || q.category === activeCat;
+                const ms = activeSt === 'all' || q.status === activeSt;
+                const mt = !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search) || (q.tags || []).join(' ').toLowerCase().includes(search) || (q.concepts || []).join(' ').toLowerCase().includes(search);
+                return mc && ms && mt;
+            });
+            document.getElementById('view-title').textContent = activeCat === 'all' ? 'All Topics' : activeCat;
+            if (!list.length) { grid.innerHTML = '<div class="empty"><div style="font-size:2.5rem">🔍</div><h3>No questions found</h3><p>Adjust filters or add a new question.</p></div>'; return; }
+            const tc = cat => TOPICS[cat] || { color: '#888' };
+            grid.innerHTML = list.map(q => `
+    <div class="q-card ${q.status || 'unsolved'}" onclick="openModal('${q.id}')">
+      <div class="q-top">
+        <div class="q-title">${q.title}</div>
+        <span class="diff ${q.difficulty || 'medium'}">${q.difficulty || 'medium'}</span>
+      </div>
+      <div class="q-cat"><span class="q-cdot" style="background:${tc(q.category).color}"></span>${q.category || 'General'}</div>
+      ${q.notes ? `<div class="q-np">${q.notes}</div>` : ''}
+      <div class="q-tags">${(q.tags || []).slice(0, 4).map(t => `<span class="qtag">${t}</span>`).join('')}</div>
+      <div class="q-bot">
+        <div class="qstatus ${q.status || 'unsolved'}"><span class="qsdot"></span>${q.status === 'solved' ? 'Solved' : q.status === 'in-progress' ? 'In Progress' : 'Not Started'}</div>
+        <div class="q-date">${q.date || ''}</div>
+      </div>
+    </div>`).join('');
+        }
+
+        window.setCat = function (cat) { activeCat = cat; buildSidebar(); render(); };
+        window.setSt = function (s, el) {
+            activeSt = s;
+            document.querySelectorAll('.fchip').forEach(c => c.classList.remove('fa', 'fs', 'fp', 'fn'));
+            el.classList.add(s === 'all' ? 'fa' : s === 'solved' ? 'fs' : s === 'in-progress' ? 'fp' : 'fn');
+            render();
+        };
+
+        // ---- ADD ----
+        window.toggleDrawer = function () { document.getElementById('add-drawer').classList.toggle('open'); };
+        window.addQuestion = async function () {
+            const title = gv('n-title'); if (!title) { alert('Title required'); return; }
+            const id = 'q' + Date.now();
+            const q = {
+                id, title, category: gv('n-cat') || 'General', difficulty: gv('n-diff') || 'medium', status: gv('n-status') || 'unsolved',
+                tags: gv('n-tags').split(',').map(t => t.trim()).filter(Boolean),
+                concepts: gv('n-concepts').split(',').map(c => c.trim()).filter(Boolean),
+                resources: gv('n-res').split(',').map(r => r.trim()).filter(Boolean),
+                notes: gv('n-notes'), date: today()
+            };
+            questions[id] = q;
+            if (!isDemo && db) await fbSave(q);
+            ['n-title', 'n-tags', 'n-concepts', 'n-res', 'n-notes'].forEach(i => sv(i, ''));
+            toggleDrawer(); refresh(); toast('✅ Question added!');
+        };
+
+        // ---- MODAL ----
+        window.openModal = function (id) {
+            const q = questions[id]; if (!q) return;
+            activeModalId = id; pendingStatus = q.status || 'unsolved';
+            document.getElementById('m-title').textContent = q.title;
+            const meta = TOPICS[q.category] || { color: '#888' };
+            document.getElementById('m-sub').innerHTML = `<span class="mpill" style="color:${meta.color};border-color:${meta.color}30">${q.category || 'General'}</span><span class="mpill diff ${q.difficulty || 'medium'}">${(q.difficulty || 'medium').toUpperCase()}</span>`;
+            document.getElementById('m-concepts').innerHTML = (q.concepts || []).length ? (q.concepts || []).map(c => `<span class="cchip" style="background:${meta.color}15;color:${meta.color};border-color:${meta.color}30">${c}</span>`).join('') : '<span style="font-size:.76rem;color:var(--muted)">None added</span>';
+            document.getElementById('m-tags').innerHTML = (q.tags || []).map(t => `<span class="qtag">${t}</span>`).join('') || '<span style="font-size:.76rem;color:var(--muted)">None</span>';
+            const res = (q.resources || []).filter(Boolean);
+            const rw = document.getElementById('m-res-wrap');
+            if (res.length) { rw.style.display = 'block'; document.getElementById('m-res').innerHTML = res.map(r => `<div class="res-item">🔗 <a href="${r}" target="_blank" style="color:#e85d2a;text-decoration:none;font-family:'DM Mono',monospace;font-size:.73rem;word-break:break-all">${r}</a></div>`).join(''); }
+            else rw.style.display = 'none';
+            document.getElementById('m-notes').value = q.notes || '';
+            document.getElementById('m-date').textContent = q.date ? 'Last updated: ' + q.date : 'Never updated';
+            updateTogs();
+            document.getElementById('overlay').classList.add('open');
+        };
+
+        function updateTogs() {
+            ['unsolved', 'in-progress', 'solved'].forEach(s => {
+                const el = document.getElementById('tog-' + s);
+                el.className = 'stog';
+                if (s === pendingStatus) el.classList.add(s === 'unsolved' ? 'au' : s === 'in-progress' ? 'ap' : 'as');
+            });
+        }
+        window.setPS = function (s) { pendingStatus = s; updateTogs(); };
+        window.saveQ = async function () {
+            const q = questions[activeModalId]; if (!q) return;
+            q.status = pendingStatus; q.notes = document.getElementById('m-notes').value; q.date = today();
+            if (!isDemo && db) await fbSave(q);
+            closeModal(); refresh(); toast('💾 Saved!');
+        };
+        window.deleteQ = async function () {
+            if (!confirm('Delete this question?')) return;
+            const id = activeModalId;
+            if (!isDemo && db) await fbDel(id);
+            delete questions[id]; closeModal(); refresh(); toast('🗑 Deleted');
+        };
+        window.closeModal = function (e) {
+            if (e && e.target !== document.getElementById('overlay')) return;
+            document.getElementById('overlay').classList.remove('open');
+            activeModalId = null; pendingStatus = null;
+        };
+
+        // ---- FIREBASE ----
+        async function fbSave(q) { const { doc, setDoc } = window._FB; await setDoc(doc(db, 'sd_questions', q.id), q); }
+        async function fbDel(id) { const { doc, deleteDoc } = window._FB; await deleteDoc(doc(db, 'sd_questions', id)); }
+
+        // ---- HELPERS ----
+        const gv = id => document.getElementById(id)?.value?.trim() || '';
+        const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+        const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        const show = id => document.getElementById(id).style.display = 'block';
+        const hide = id => document.getElementById(id).style.display = 'none';
+        const today = () => new Date().toISOString().split('T')[0];
+        function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
+    </script>
+</body>
+
+</html>

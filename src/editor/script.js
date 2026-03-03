@@ -598,7 +598,7 @@ require(["vs/editor/editor.main"], async function () {
     });
 
 
-    function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+    function createObjectInspector(obj, depth = 0, maxDepth = 5, seen = new WeakSet()) {
         if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
 
         if (obj === null) return '<span class="object-null">null</span>';
