@@ -1540,7 +1540,7 @@
         }
 
         .desc-label {
-            font-size: 0.6rem;
+            font-size: 0.5rem;
             text-transform: uppercase;
             letter-spacing: 3px;
             color: var(--cyan);
@@ -1560,9 +1560,9 @@
             resize: none;
             color: var(--text);
             font-family: 'Exo 2', sans-serif;
-            font-size: 1rem;
+            font-size: 0.82rem;
             line-height: 1.65;
-            height: 190px;
+            height: 70px;
             overflow-y: auto;
             display: block;
         }
@@ -2296,6 +2296,256 @@
             background: rgba(0, 212, 255, 0.2);
             color: var(--cyan2);
         }
+
+        /* ─── DELETE CONFIRMATION MODAL ─── */
+        #delete-modal .modal {
+            width: 460px;
+            border-color: rgba(255, 51, 102, 0.35);
+            box-shadow: 0 0 0 1px rgba(255, 51, 102, 0.08), 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 51, 102, 0.1);
+        }
+
+        #delete-modal .modal::before {
+            background: linear-gradient(90deg, transparent, var(--error), rgba(255, 184, 0, 0.6), var(--error), transparent);
+        }
+
+        .del-modal-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: rgba(255, 51, 102, 0.08);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin: 0 auto 18px;
+            animation: delIconPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.15), inset 0 0 20px rgba(255, 51, 102, 0.05);
+        }
+
+        @keyframes delIconPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(255, 51, 102, 0.15), inset 0 0 20px rgba(255, 51, 102, 0.05);
+            }
+
+            50% {
+                box-shadow: 0 0 35px rgba(255, 51, 102, 0.3), inset 0 0 20px rgba(255, 51, 102, 0.1);
+            }
+        }
+
+        .del-modal-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--error);
+            text-align: center;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+            margin-bottom: 6px;
+        }
+
+        .del-modal-subtitle {
+            font-size: 0.68rem;
+            color: var(--text2);
+            text-align: center;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+
+        .del-warning-box {
+            background: rgba(255, 51, 102, 0.04);
+            border: 1px solid rgba(255, 51, 102, 0.18);
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .del-warning-box::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--error), var(--amber));
+        }
+
+        .del-warning-label {
+            font-size: 0.5rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--error);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .del-warning-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255, 51, 102, 0.3), transparent);
+        }
+
+        .del-warning-items {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .del-warning-items li {
+            font-size: 0.7rem;
+            color: var(--text2);
+            font-family: 'Fira Code', monospace;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.5;
+        }
+
+        .del-warning-items li::before {
+            content: '▸';
+            color: var(--amber);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .del-target-name {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+            border-radius: 4px;
+            padding: 8px 14px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            text-align: center;
+            margin-bottom: 16px;
+            word-break: break-all;
+            letter-spacing: 0.5px;
+        }
+
+        .del-confirm-input-wrap {
+            margin-bottom: 16px;
+        }
+
+        .del-confirm-input-wrap label {
+            display: block;
+            font-size: 0.55rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--text2);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .del-confirm-input-wrap label span {
+            color: var(--error);
+            font-weight: 700;
+        }
+
+        .del-confirm-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 51, 102, 0.25);
+            border-radius: 4px;
+            padding: 9px 12px;
+            color: var(--error);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            outline: none;
+            letter-spacing: 2px;
+            transition: all .2s;
+            text-transform: uppercase;
+        }
+
+        .del-confirm-input:focus {
+            border-color: rgba(255, 51, 102, 0.5);
+            box-shadow: 0 0 0 1px rgba(255, 51, 102, 0.1), inset 0 0 20px rgba(255, 51, 102, 0.03);
+        }
+
+        .del-confirm-input.valid {
+            border-color: var(--error);
+            color: var(--error);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.15);
+        }
+
+        .del-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .btn-delete-confirm {
+            flex: 1;
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.4);
+            padding: 9px 16px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: not-allowed;
+            opacity: 0.4;
+            transition: all .2s;
+        }
+
+        .btn-delete-confirm.armed {
+            opacity: 1;
+            cursor: pointer;
+            animation: armPulse 1.5s ease-in-out infinite;
+        }
+
+        .btn-delete-confirm.armed:hover {
+            background: rgba(255, 51, 102, 0.2);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.25);
+            transform: translateY(-1px);
+        }
+
+        @keyframes armPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 rgba(255, 51, 102, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(255, 51, 102, 0.2);
+            }
+        }
+
+        .btn-cancel-delete {
+            flex: 1;
+            background: rgba(0, 212, 255, 0.04);
+            color: var(--text2);
+            border: 1px solid var(--border2);
+            padding: 9px 16px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-cancel-delete:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+        }
     </style>
 </head>
 
@@ -2541,6 +2791,34 @@
         </div>
     </div>
 
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <div class="del-modal-icon">⊗</div>
+            <div class="del-modal-title">CONFIRM DELETION</div>
+            <div class="del-modal-subtitle" id="del-modal-subtitle">// This action cannot be undone</div>
+
+            <div class="del-target-name" id="del-target-name">—</div>
+
+            <div class="del-warning-box">
+                <div class="del-warning-label">⚠ WARNING — DATA LOSS</div>
+                <ul class="del-warning-items" id="del-warning-items"></ul>
+            </div>
+
+            <div class="del-confirm-input-wrap" id="del-confirm-wrap">
+                <label>Type <span id="del-keyword-label">DELETE</span> to confirm</label>
+                <input class="del-confirm-input" id="del-confirm-input" type="text" placeholder="TYPE HERE TO CONFIRM…"
+                    oninput="checkDeleteConfirm()" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="del-modal-actions">
+                <button class="btn-cancel-delete" onclick="closeDeleteModal()">✕ ABORT</button>
+                <button class="btn-delete-confirm" id="del-confirm-btn" onclick="executeDelete()" disabled>⊗ EXECUTE
+                    DELETE</button>
+            </div>
+        </div>
+    </div>
+
     <div class="save-bar" id="save-bar">
         <div class="save-dot" id="save-dot"></div>
         <span id="save-text">SAVED</span>
@@ -2557,8 +2835,57 @@
         const DEFAULT_FONT_IDX = 2;
         let cellFontSizeIdx = {};
 
+        // Delete modal state
+        let pendingDeleteFn = null;
+        let deleteConfirmKeyword = 'DELETE';
+
         function saveNotebookId(id) { if (id) localStorage.setItem('current_notebook_id', id); else localStorage.removeItem('current_notebook_id'); }
         function loadNotebookId() { return localStorage.getItem('current_notebook_id') || null; }
+
+        /* ── CUSTOM DELETE CONFIRMATION MODAL ── */
+        function openDeleteModal({ title, subtitle, targetName, warningItems, keyword, onConfirm }) {
+            deleteConfirmKeyword = (keyword || 'DELETE').toUpperCase();
+            pendingDeleteFn = onConfirm;
+
+            document.getElementById('del-modal-subtitle').textContent = subtitle || '// This action cannot be undone';
+            document.getElementById('del-target-name').textContent = targetName || '—';
+            document.getElementById('del-keyword-label').textContent = deleteConfirmKeyword;
+            document.getElementById('del-confirm-input').value = '';
+            document.getElementById('del-confirm-input').classList.remove('valid');
+
+            const btn = document.getElementById('del-confirm-btn');
+            btn.disabled = true;
+            btn.classList.remove('armed');
+
+            const warnEl = document.getElementById('del-warning-items');
+            warnEl.innerHTML = (warningItems || []).map(w => `<li>${escH(w)}</li>`).join('');
+
+            document.getElementById('delete-modal').classList.add('open');
+            setTimeout(() => document.getElementById('del-confirm-input').focus(), 200);
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('open');
+            document.getElementById('del-confirm-input').value = '';
+            pendingDeleteFn = null;
+        }
+
+        function checkDeleteConfirm() {
+            const val = (document.getElementById('del-confirm-input').value || '').trim().toUpperCase();
+            const match = val === deleteConfirmKeyword;
+            const btn = document.getElementById('del-confirm-btn');
+            const inp = document.getElementById('del-confirm-input');
+            inp.classList.toggle('valid', match);
+            btn.disabled = !match;
+            btn.classList.toggle('armed', match);
+        }
+
+        function executeDelete() {
+            const btn = document.getElementById('del-confirm-btn');
+            if (btn.disabled) return;
+            closeDeleteModal();
+            if (pendingDeleteFn) pendingDeleteFn();
+        }
 
         /* ── FONT SIZE ── */
         function getFontIdx(id) { return cellFontSizeIdx[id] !== undefined ? cellFontSizeIdx[id] : DEFAULT_FONT_IDX; }
@@ -2775,23 +3102,42 @@
             } catch (e) { showToast('Failed: ' + e.message, 'error'); }
         }
 
-        async function deleteNotebook(id) {
-            if (!confirm('Delete this notebook? This cannot be undone.')) return;
-            if (id === currentNotebookId) {
-                currentNotebookId = null; saveNotebookId(null);
-                document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
-                document.getElementById('nb-id').textContent = 'LOCAL';
-                cells = []; cellEditors = {}; cellFontSizeIdx = {};
-                document.getElementById('cells-container').innerHTML = '';
-                addCell('javascript');
-            }
-            if (db) {
-                try { await db.collection('notebooks').doc(id).delete(); showToast('Notebook deleted', 'success'); loadNotebooksList(); }
-                catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
-            } else {
-                const el = document.getElementById('nb-item-' + id); if (el) el.remove();
-                showToast('Notebook deleted locally', 'success');
-            }
+        function deleteNotebook(id) {
+            // Gather info about this notebook for the warning
+            const nbEl = document.getElementById('nb-item-' + id);
+            const nbTitle = nbEl ? nbEl.querySelector('.nb-item-title').textContent : id.slice(0, 8) + '…';
+            const nbMeta = nbEl ? nbEl.querySelector('.nb-item-meta').textContent : '';
+            const linkedCells = cells.filter(c => c.linkedQuestionId).length;
+
+            openDeleteModal({
+                subtitle: '// Permanently deletes notebook from all storage',
+                targetName: nbTitle,
+                warningItems: [
+                    nbMeta || 'All code cells and their execution outputs will be erased',
+                    'All solution notes written inside cells will be lost',
+                    linkedCells > 0 ? `${linkedCells} cell(s) linked to DSA questions — links will be broken` : 'Any linked DSA question connections will be removed',
+                    db ? 'Will be deleted from Firebase cloud storage permanently' : 'Will be removed from local storage',
+                    id === currentNotebookId ? 'This is your CURRENTLY OPEN notebook — editor will reset' : 'Notebook will be removed from the sidebar list',
+                ],
+                keyword: 'DELETE',
+                onConfirm: async () => {
+                    if (id === currentNotebookId) {
+                        currentNotebookId = null; saveNotebookId(null);
+                        document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
+                        document.getElementById('nb-id').textContent = 'LOCAL';
+                        cells = []; cellEditors = {}; cellFontSizeIdx = {};
+                        document.getElementById('cells-container').innerHTML = '';
+                        addCell('javascript');
+                    }
+                    if (db) {
+                        try { await db.collection('notebooks').doc(id).delete(); showToast('Notebook deleted', 'success'); loadNotebooksList(); }
+                        catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
+                    } else {
+                        const el = document.getElementById('nb-item-' + id); if (el) el.remove();
+                        showToast('Notebook deleted', 'success');
+                    }
+                }
+            });
         }
 
         function openRenameModal(id, currentTitle) {
@@ -2861,10 +3207,30 @@
         }
 
         function deleteDSAQuestion(id) {
-            if (!confirm('Delete this question?')) return;
-            cells.forEach(c => { if (c.linkedQuestionId === id) { c.linkedQuestionId = null; refreshBanner(c.id); } });
-            dsaQuestions = dsaQuestions.filter(q => q.id !== id);
-            persistDSA(); refreshAllDSAUI(); triggerAutoSave(); showToast('Deleted', 'success');
+            const q = dsaQuestions.find(q => q.id === id);
+            if (!q) return;
+            const linkedCount = cells.filter(c => c.linkedQuestionId === id).length;
+
+            openDeleteModal({
+                subtitle: '// Removes question from DSA training matrix',
+                targetName: q.title,
+                warningItems: [
+                    `Difficulty: ${q.difficulty.toUpperCase()} · Category: ${q.category || 'Uncategorized'}`,
+                    linkedCount > 0
+                        ? `${linkedCount} notebook cell(s) are linked to this question — all links will be severed`
+                        : 'No cells are currently linked to this question',
+                    q.solved ? 'This question is marked SOLVED — your progress record will be lost' : 'Question has not been solved yet',
+                    q.url ? `External problem link will no longer be tracked: ${q.url}` : 'No external URL attached',
+                    q.description ? 'Problem description and notes will be permanently erased' : '',
+                ].filter(Boolean),
+                keyword: 'DELETE',
+                onConfirm: () => {
+                    cells.forEach(c => { if (c.linkedQuestionId === id) { c.linkedQuestionId = null; refreshBanner(c.id); } });
+                    dsaQuestions = dsaQuestions.filter(q => q.id !== id);
+                    persistDSA(); refreshAllDSAUI(); triggerAutoSave();
+                    showToast('Question deleted', 'success');
+                }
+            });
         }
 
         function toggleSolved(id) {
@@ -3116,8 +3482,32 @@
         }
 
         function deleteCell(id) {
-            const idx = cells.findIndex(c => c.id === id);
-            if (idx !== -1) { cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
+            const cell = cells.find(c => c.id === id);
+            if (!cell) return;
+            const cellIdx = cells.findIndex(c => c.id === id);
+            const editor = cellEditors[id];
+            const descEl = document.getElementById('desc-' + id);
+            const codeLines = editor ? editor.getValue().split('\n').length : 0;
+            const hasDesc = descEl && descEl.value.trim().length > 0;
+            const linkedQ = cell.linkedQuestionId ? dsaQuestions.find(q => q.id === cell.linkedQuestionId) : null;
+            const hasOutput = cell.lastOutput && cell.lastOutput.lines && cell.lastOutput.lines.length > 0;
+
+            openDeleteModal({
+                subtitle: `// Removes Cell [${String(cellIdx + 1).padStart(2, '0')}] from this notebook`,
+                targetName: `Cell [${String(cellIdx + 1).padStart(2, '0')}] — ${cell.lang.toUpperCase()}`,
+                warningItems: [
+                    `${codeLines} line(s) of ${cell.lang.toUpperCase()} code will be permanently erased`,
+                    hasDesc ? 'Solution notes written in this cell will be lost' : 'No solution notes to lose',
+                    linkedQ ? `Linked DSA question "${linkedQ.title}" — the link will be severed (question is kept)` : 'No DSA question linked',
+                    hasOutput ? 'Saved execution output and run history will be cleared' : 'No execution output to lose',
+                    cells.length === 1 ? '⚠ This is your ONLY cell — notebook will be left empty' : `${cells.length - 1} other cell(s) will remain`,
+                ],
+                keyword: 'DELETE',
+                onConfirm: () => {
+                    const idx = cells.findIndex(c => c.id === id);
+                    if (idx !== -1) { cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
+                }
+            });
         }
 
         function updateCellCount() {
@@ -3379,6 +3769,7 @@
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
             if (e.key === 'Escape') {
                 closeAllPickers();
+                closeDeleteModal();
                 document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
             }
         });
