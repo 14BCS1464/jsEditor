@@ -1427,7 +1427,7 @@
 
         .cell-editor-wrap .CodeMirror {
             font-family: 'JetBrains Mono', monospace !important;
-            font-size: var(--code-font-size) !important;
+            font-size: 13.5px;
             line-height: 1.65 !important;
             height: auto !important;
             min-height: 80px !important;
@@ -2131,18 +2131,26 @@
             cellFontSizeIdx[cellId] = idx;
             const size = FONT_SIZES[idx];
 
-            // Update CodeMirror editor font size
-            const editor = cellEditors[cellId];
-            if (editor) {
-                editor.getWrapperElement().style.fontSize = size + 'px';
-                editor.refresh();
-            }
+            applyFontSize(cellId, size);
 
             // Update display
             const disp = document.getElementById('fsize-' + cellId);
             if (disp) disp.textContent = size + 'px';
 
             triggerAutoSave();
+        }
+
+        function applyFontSize(cellId, size) {
+            const editor = cellEditors[cellId];
+            if (!editor) return;
+            // Must target the inner CodeMirror div, not just the wrapper,
+            // because our CSS uses !important on .cell-editor-wrap .CodeMirror
+            const cmEl = editor.getWrapperElement().querySelector('.CodeMirror');
+            if (cmEl) cmEl.style.setProperty('font-size', size + 'px', 'important');
+            // Also update the wrapper so line-height / gutter scale together
+            editor.getWrapperElement().style.fontSize = size + 'px';
+            // Recalculate layout after font change
+            setTimeout(() => editor.refresh(), 0);
         }
 
         // ══════════════════════════════════════════════
@@ -2701,8 +2709,8 @@
                 indentUnit: 2, tabSize: 2, indentWithTabs: false,
             });
 
-            // Apply saved font size
-            editor.getWrapperElement().style.fontSize = fontSize + 'px';
+            // Apply saved font size (deferred so CodeMirror has rendered)
+            setTimeout(() => applyFontSize(id, fontSize), 0);
 
             let hintTimer = null;
             editor.on('inputRead', (cm, change) => {
