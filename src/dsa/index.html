@@ -4,12 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeBook — JS/TS DSA Notebook</title>
-
+    <title>CodeBook — Neural IDE</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js"></script>
-    <!-- Prettier for code formatting -->
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
@@ -25,30 +23,42 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Fira+Code:wght@300;400;500;600&family=Exo+2:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
     <style>
         :root {
-            --bg: #1e1e2e;
-            --surface: #252535;
-            --card: #2a2a3d;
-            --card2: #30304a;
-            --border: #3a3a55;
-            --border2: #46466a;
-            --accent: #818cf8;
-            --accent2: #38bdf8;
-            --accent3: #fbbf24;
-            --accent4: #f472b6;
-            --success: #34d399;
-            --error: #f87171;
-            --text: #e2e8f0;
-            --text2: #a5b4c8;
-            --muted: #6b7a9a;
-            --code-font-size: 13.5px;
+            --void: #020408;
+            --deep: #040c14;
+            --surface: #071220;
+            --panel: #0a1828;
+            --card: #0d1f33;
+            --card2: #102540;
+            --border: rgba(0, 212, 255, 0.12);
+            --border2: rgba(0, 212, 255, 0.28);
+            --border3: rgba(0, 212, 255, 0.5);
+            --cyan: #00d4ff;
+            --cyan2: #00f5ff;
+            --plasma: #00ffcc;
+            --neon: #7dffb3;
+            --amber: #ffb800;
+            --amber2: #ffd60a;
+            --magenta: #ff006e;
+            --violet: #9333ea;
+            --success: #00ffcc;
+            --error: #ff3366;
+            --warn: #ffb800;
+            --text: #c8e8f8;
+            --text2: #6a9ab8;
+            --muted: #2a4a6a;
+            --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 60px rgba(0, 212, 255, 0.15);
+            --glow-plasma: 0 0 20px rgba(0, 255, 204, 0.4), 0 0 60px rgba(0, 255, 204, 0.15);
+            --glow-amber: 0 0 20px rgba(255, 184, 0, 0.4), 0 0 60px rgba(255, 184, 0, 0.1);
         }
 
-        * {
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -59,24 +69,117 @@
         }
 
         body {
-            background: var(--bg);
+            background: var(--void);
             color: var(--text);
-            font-family: 'Syne', sans-serif;
+            font-family: 'Exo 2', sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
+            cursor: default;
         }
 
+        /* ─── GRID BACKGROUND ─── */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(129, 140, 248, .08) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 40% at 85% 90%, rgba(56, 189, 248, .06) 0%, transparent 55%);
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
         }
 
-        /* HEADER */
+        /* ─── AMBIENT GLOW ─── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 10% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 90% 100%, rgba(0, 255, 204, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 30% at 50% 50%, rgba(147, 51, 234, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── SCANLINE ─── */
+        .scanline-overlay {
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.03) 2px,
+                    rgba(0, 0, 0, 0.03) 4px);
+            pointer-events: none;
+            z-index: 999;
+            animation: scanMove 8s linear infinite;
+        }
+
+        @keyframes scanMove {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 0 100vh;
+            }
+        }
+
+        /* ─── HUD CORNERS ─── */
+        .hud-corner {
+            position: fixed;
+            width: 28px;
+            height: 28px;
+            pointer-events: none;
+            z-index: 998;
+        }
+
+        .hud-corner::before,
+        .hud-corner::after {
+            content: '';
+            position: absolute;
+            background: var(--cyan);
+            opacity: 0.6;
+        }
+
+        .hud-corner::before {
+            width: 100%;
+            height: 2px;
+            top: 0;
+        }
+
+        .hud-corner::after {
+            width: 2px;
+            height: 100%;
+            top: 0;
+        }
+
+        .hud-tl {
+            top: 8px;
+            left: 8px;
+        }
+
+        .hud-tr {
+            top: 8px;
+            right: 8px;
+            transform: scaleX(-1);
+        }
+
+        .hud-bl {
+            bottom: 8px;
+            left: 8px;
+            transform: scaleY(-1);
+        }
+
+        .hud-br {
+            bottom: 8px;
+            right: 8px;
+            transform: scale(-1);
+        }
+
+        /* ─── HEADER ─── */
         header {
             position: sticky;
             top: 0;
@@ -84,147 +187,156 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
-            height: 54px;
-            background: rgba(30, 30, 46, .97);
-            backdrop-filter: blur(24px);
-            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 58px;
+            background: rgba(4, 12, 20, 0.95);
+            backdrop-filter: blur(30px);
+            border-bottom: 1px solid var(--border2);
+            box-shadow: 0 1px 0 rgba(0, 212, 255, 0.1), 0 4px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), var(--plasma), var(--cyan), transparent);
+            opacity: 0.5;
+            animation: headerLine 4s ease-in-out infinite;
+        }
+
+        @keyframes headerLine {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 1.1rem;
-            font-weight: 800;
-            letter-spacing: -.5px;
+            gap: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+            position: relative;
         }
 
         .logo-icon {
-            width: 26px;
-            height: 26px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--cyan), var(--plasma));
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 14px;
+            box-shadow: var(--glow-cyan);
+            position: relative;
+            overflow: hidden;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                box-shadow: var(--glow-cyan);
+            }
+
+            50% {
+                box-shadow: 0 0 30px rgba(0, 255, 204, 0.6), 0 0 80px rgba(0, 212, 255, 0.2);
+            }
+        }
+
+        .logo-sub {
+            font-size: 0.45rem;
+            letter-spacing: 2px;
+            color: var(--text2);
+            font-weight: 400;
+            margin-top: 1px;
+            display: block;
+            font-family: 'Fira Code', monospace;
         }
 
         .header-center {
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
         }
 
         .tab-btn {
-            padding: 5px 13px;
-            border-radius: 7px;
-            font-family: 'Syne', sans-serif;
-            font-size: .77rem;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.58rem;
             font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             cursor: pointer;
             border: 1px solid transparent;
             color: var(--text2);
             background: transparent;
-            transition: all .15s;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(0, 212, 255, 0.05));
+            opacity: 0;
+            transition: opacity .2s;
         }
 
         .tab-btn:hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, .05);
+            color: var(--cyan);
+            border-color: var(--border2);
+        }
+
+        .tab-btn:hover::before {
+            opacity: 1;
         }
 
         .tab-btn.active {
-            background: rgba(129, 140, 248, .2);
-            border-color: rgba(129, 140, 248, .4);
-            color: var(--text);
+            background: rgba(0, 212, 255, 0.08);
+            border-color: var(--border3);
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05), 0 0 15px rgba(0, 212, 255, 0.1);
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 7px;
-        }
-
-        /* BUTTONS */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 12px;
-            border-radius: 7px;
-            font-family: 'Syne', sans-serif;
-            font-size: .77rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all .15s;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            border-color: var(--border2);
-            color: var(--text2);
-        }
-
-        .btn-ghost:hover {
-            border-color: var(--accent);
-            color: var(--text);
-            background: rgba(129, 140, 248, .1);
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-            border-color: var(--accent);
-        }
-
-        .btn-primary:hover {
-            background: #6366f1;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 18px rgba(129, 140, 248, .4);
-        }
-
-        .btn-danger {
-            background: transparent;
-            border-color: rgba(248, 113, 113, .35);
-            color: var(--error);
-        }
-
-        .btn-danger:hover {
-            background: rgba(248, 113, 113, .1);
-            border-color: var(--error);
-        }
-
-        .btn-success {
-            background: transparent;
-            border-color: rgba(52, 211, 153, .35);
-            color: var(--success);
-        }
-
-        .btn-success:hover {
-            background: rgba(52, 211, 153, .1);
-            border-color: var(--success);
-        }
-
-        .btn-sm {
-            padding: 3px 9px;
-            font-size: .7rem;
-        }
-
-        .btn-xs {
-            padding: 2px 7px;
-            font-size: .65rem;
+            gap: 8px;
         }
 
         .firebase-status {
             display: flex;
             align-items: center;
-            gap: 5px;
-            font-size: .7rem;
+            gap: 6px;
+            font-size: 0.6rem;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            background: rgba(0, 212, 255, 0.02);
         }
 
         .fb-dot {
@@ -232,33 +344,142 @@
             height: 6px;
             border-radius: 50%;
             background: var(--muted);
-            transition: background .3s;
+            transition: all .3s;
         }
 
         .fb-dot.on {
-            background: var(--success);
-            box-shadow: 0 0 6px var(--success);
+            background: var(--plasma);
+            box-shadow: 0 0 10px var(--plasma), 0 0 20px rgba(0, 255, 204, 0.4);
+            animation: dotBlink 2s ease-in-out infinite;
         }
 
-        /* LAYOUT */
+        @keyframes dotBlink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.58rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 40%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.06);
+            transform: skewX(-20deg);
+            transition: left 0.4s;
+        }
+
+        .btn:hover::after {
+            left: 160%;
+        }
+
+        .btn-ghost {
+            background: rgba(0, 212, 255, 0.04);
+            border-color: var(--border2);
+            color: var(--text2);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 255, 204, 0.1));
+            color: var(--cyan);
+            border-color: var(--border3);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(0, 255, 204, 0.2));
+            box-shadow: var(--glow-cyan);
+            transform: translateY(-1px);
+            color: var(--cyan2);
+        }
+
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.06);
+            border-color: rgba(255, 51, 102, 0.3);
+            color: var(--error);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 51, 102, 0.15);
+            border-color: var(--error);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.2);
+        }
+
+        .btn-success {
+            background: rgba(0, 255, 204, 0.06);
+            border-color: rgba(0, 255, 204, 0.3);
+            color: var(--plasma);
+        }
+
+        .btn-success:hover {
+            background: rgba(0, 255, 204, 0.15);
+            border-color: var(--plasma);
+            box-shadow: var(--glow-plasma);
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.5rem;
+        }
+
+        .btn-xs {
+            padding: 3px 8px;
+            font-size: 0.48rem;
+        }
+
+        /* ─── LAYOUT ─── */
         .app-layout {
             display: grid;
-            grid-template-columns: 258px 1fr;
-            min-height: calc(100vh - 54px);
+            grid-template-columns: 270px 1fr;
+            min-height: calc(100vh - 58px);
             position: relative;
             z-index: 1;
         }
 
-        /* SIDEBAR */
+        /* ─── SIDEBAR ─── */
         .sidebar {
             border-right: 1px solid var(--border);
-            background: rgba(37, 37, 53, .92);
+            background: rgba(7, 18, 32, 0.97);
             display: flex;
             flex-direction: column;
             position: sticky;
-            top: 54px;
-            height: calc(100vh - 54px);
+            top: 58px;
+            height: calc(100vh - 58px);
             overflow: hidden;
+            box-shadow: inset -1px 0 0 rgba(0, 212, 255, 0.06);
         }
 
         .sidebar-tabs {
@@ -268,11 +489,11 @@
 
         .stab {
             flex: 1;
-            padding: 9px 4px;
+            padding: 10px 4px;
             text-align: center;
-            font-size: .63rem;
+            font-size: 0.5rem;
             font-weight: 700;
-            letter-spacing: .5px;
+            letter-spacing: 2px;
             text-transform: uppercase;
             cursor: pointer;
             color: var(--muted);
@@ -281,8 +502,8 @@
             border-top: none;
             border-left: none;
             border-right: none;
-            font-family: 'Space Mono', monospace;
-            transition: all .15s;
+            font-family: 'Orbitron', monospace;
+            transition: all .2s;
         }
 
         .stab:hover {
@@ -290,8 +511,9 @@
         }
 
         .stab.active {
-            color: var(--accent2);
-            border-bottom-color: var(--accent2);
+            color: var(--cyan);
+            border-bottom-color: var(--cyan);
+            text-shadow: var(--glow-cyan);
         }
 
         .spanel {
@@ -306,63 +528,86 @@
         }
 
         .panel-top {
-            padding: 9px 10px;
+            padding: 10px 12px;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 6px;
         }
 
         .nb-list {
             flex: 1;
             overflow-y: auto;
-            padding: 5px;
+            padding: 6px;
         }
 
         .nb-item {
-            padding: 8px 10px;
-            border-radius: 7px;
+            padding: 9px 12px;
+            border-radius: 4px;
             cursor: pointer;
             border: 1px solid transparent;
-            margin-bottom: 2px;
-            transition: all .12s;
+            margin-bottom: 3px;
+            transition: all .15s;
             position: relative;
+            background: rgba(0, 212, 255, 0.02);
+        }
+
+        .nb-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20%;
+            bottom: 20%;
+            width: 2px;
+            background: var(--cyan);
+            opacity: 0;
+            transition: opacity .2s;
+            border-radius: 1px;
         }
 
         .nb-item:hover {
-            background: rgba(129, 140, 248, .08);
-            border-color: var(--border2);
+            background: rgba(0, 212, 255, 0.06);
+            border-color: var(--border);
+        }
+
+        .nb-item:hover::before {
+            opacity: 0.5;
         }
 
         .nb-item.active-nb {
-            background: rgba(129, 140, 248, .16);
-            border-color: rgba(129, 140, 248, .4);
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--border2);
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.04);
+        }
+
+        .nb-item.active-nb::before {
+            opacity: 1;
+            box-shadow: 0 0 8px var(--cyan);
         }
 
         .nb-item-title {
-            font-size: .76rem;
+            font-size: 0.73rem;
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            padding-right: 40px;
+            padding-right: 50px;
         }
 
         .nb-item-meta {
-            font-size: .62rem;
+            font-size: 0.58rem;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 0.5px;
         }
 
         .nb-item-actions {
             position: absolute;
-            right: 7px;
+            right: 8px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
             gap: 3px;
             opacity: 0;
-            transition: opacity .12s;
+            transition: opacity .15s;
         }
 
         .nb-item:hover .nb-item-actions {
@@ -370,11 +615,11 @@
         }
 
         .nb-act-btn {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: none;
-            background: rgba(255, 255, 255, .07);
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.4);
             color: var(--text2);
             cursor: pointer;
             font-size: 10px;
@@ -385,43 +630,52 @@
         }
 
         .nb-act-btn:hover {
-            background: rgba(248, 113, 113, .2);
+            background: rgba(255, 51, 102, 0.15);
             color: var(--error);
+            border-color: rgba(255, 51, 102, 0.3);
         }
 
         .nb-act-btn.rename:hover {
-            background: rgba(129, 140, 248, .2);
-            color: var(--accent);
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyan);
+            border-color: var(--border2);
         }
 
         .nb-act-btn.duplicate:hover {
-            background: rgba(52, 211, 153, .2);
-            color: var(--success);
+            background: rgba(0, 255, 204, 0.15);
+            color: var(--plasma);
+            border-color: rgba(0, 255, 204, 0.3);
         }
 
         /* DSA sidebar */
         .dsa-toolbar {
-            padding: 9px 10px;
+            padding: 10px 12px;
             border-bottom: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 7px;
         }
 
         .dsa-search {
-            background: var(--bg);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 6px 9px;
+            border-radius: 4px;
+            padding: 7px 10px;
             color: var(--text);
-            font-family: 'Space Mono', monospace;
-            font-size: .7rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
             outline: none;
             width: 100%;
+            transition: border-color .2s;
+        }
+
+        .dsa-search::placeholder {
+            color: var(--muted);
         }
 
         .dsa-search:focus {
-            border-color: var(--accent2);
+            border-color: var(--border3);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.08);
         }
 
         .dsa-filters {
@@ -431,47 +685,49 @@
         }
 
         .fchip {
-            padding: 2px 7px;
+            padding: 3px 8px;
             border-radius: 20px;
-            font-size: .6rem;
+            font-size: 0.52rem;
             font-weight: 700;
             cursor: pointer;
-            border: 1px solid var(--border2);
+            border: 1px solid var(--border);
             background: transparent;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
-            transition: all .12s;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 0.5px;
+            transition: all .15s;
         }
 
         .fchip.fa {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: rgba(129, 140, 248, .12);
+            border-color: var(--border3);
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+            text-shadow: var(--glow-cyan);
         }
 
         .fchip.fe {
-            border-color: var(--success);
-            color: var(--success);
-            background: rgba(52, 211, 153, .1);
+            border-color: rgba(0, 255, 204, 0.4);
+            color: var(--plasma);
+            background: rgba(0, 255, 204, 0.06);
         }
 
         .fchip.fm {
-            border-color: var(--accent3);
-            color: var(--accent3);
-            background: rgba(251, 191, 36, .1);
+            border-color: rgba(255, 184, 0, 0.4);
+            color: var(--amber);
+            background: rgba(255, 184, 0, 0.06);
         }
 
         .fchip.fh {
-            border-color: var(--error);
+            border-color: rgba(255, 51, 102, 0.4);
             color: var(--error);
-            background: rgba(248, 113, 113, .1);
+            background: rgba(255, 51, 102, 0.06);
         }
 
         .dsa-stats {
             display: flex;
-            gap: 8px;
-            font-size: .6rem;
-            font-family: 'Space Mono', monospace;
+            gap: 10px;
+            font-size: 0.55rem;
+            font-family: 'Fira Code', monospace;
             color: var(--muted);
         }
 
@@ -479,29 +735,31 @@
             width: 5px;
             height: 5px;
             border-radius: 50%;
+            display: inline-block;
+            margin-right: 3px;
         }
 
         .dsa-list {
             flex: 1;
             overflow-y: auto;
-            padding: 5px;
+            padding: 6px;
         }
 
         .dsa-sb-item {
-            padding: 9px 10px;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            margin-bottom: 3px;
-            transition: all .12s;
-            background: var(--card);
+            padding: 10px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            margin-bottom: 4px;
+            transition: all .15s;
+            background: rgba(0, 212, 255, 0.02);
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
         }
 
         .dsa-sb-item:hover {
             border-color: var(--border2);
-            background: var(--card2);
+            background: rgba(0, 212, 255, 0.06);
         }
 
         .dsa-sb-header {
@@ -512,7 +770,7 @@
         }
 
         .dsa-sb-title {
-            font-size: .75rem;
+            font-size: 0.72rem;
             font-weight: 600;
             flex: 1;
             line-height: 1.3;
@@ -532,9 +790,9 @@
         .dsa-sb-btn {
             width: 20px;
             height: 20px;
-            border-radius: 4px;
-            border: none;
-            background: rgba(255, 255, 255, .06);
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.4);
             color: var(--text2);
             cursor: pointer;
             font-size: 10px;
@@ -545,13 +803,15 @@
         }
 
         .dsa-sb-btn.view-btn:hover {
-            background: rgba(56, 189, 248, .2);
-            color: var(--accent2);
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyan);
+            border-color: var(--border2);
         }
 
         .dsa-sb-btn.del-btn:hover {
-            background: rgba(248, 113, 113, .2);
+            background: rgba(255, 51, 102, 0.15);
             color: var(--error);
+            border-color: rgba(255, 51, 102, 0.3);
         }
 
         .dsa-sb-footer {
@@ -561,65 +821,70 @@
         }
 
         .diff-badge {
-            font-size: .57rem;
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-family: 'Space Mono', monospace;
-            font-weight: 700;
+            font-size: 0.5rem;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            letter-spacing: 1px;
             text-transform: uppercase;
         }
 
         .diff-easy {
-            background: rgba(52, 211, 153, .12);
-            color: var(--success);
+            background: rgba(0, 255, 204, 0.1);
+            color: var(--plasma);
+            border: 1px solid rgba(0, 255, 204, 0.2);
         }
 
         .diff-medium {
-            background: rgba(251, 191, 36, .12);
-            color: var(--accent3);
+            background: rgba(255, 184, 0, 0.1);
+            color: var(--amber);
+            border: 1px solid rgba(255, 184, 0, 0.2);
         }
 
         .diff-hard {
-            background: rgba(248, 113, 113, .12);
+            background: rgba(255, 51, 102, 0.1);
             color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.2);
         }
 
         .dsa-cat-tag {
-            font-size: .6rem;
+            font-size: 0.56rem;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
         }
 
         .dsa-lc {
-            font-size: .58rem;
-            color: var(--accent2);
-            font-family: 'Space Mono', monospace;
+            font-size: 0.52rem;
+            color: var(--cyan);
+            font-family: 'Fira Code', monospace;
             margin-left: auto;
+            letter-spacing: 1px;
         }
 
         .dsa-solved-mark {
-            color: var(--success);
-            font-size: .65rem;
+            color: var(--plasma);
+            font-size: 0.6rem;
         }
 
         .dsa-bottom {
-            padding: 9px 10px;
+            padding: 10px 12px;
             border-top: 1px solid var(--border);
         }
 
-        /* MODALS */
+        /* ─── MODALS ─── */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, .78);
-            backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
             z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity .2s;
+            transition: opacity .25s;
         }
 
         .modal-overlay.open {
@@ -628,71 +893,92 @@
         }
 
         .modal {
-            background: var(--card2);
+            background: var(--panel);
             border: 1px solid var(--border2);
-            border-radius: 16px;
-            padding: 26px;
-            width: 500px;
+            border-radius: 8px;
+            padding: 28px;
+            width: 520px;
             max-width: 95vw;
-            transform: translateY(14px);
-            transition: transform .2s;
+            transform: translateY(16px) scale(0.98);
+            transition: transform .25s;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.05), 0 30px 80px rgba(0, 0, 0, 0.8), var(--glow-cyan);
+            position: relative;
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), var(--plasma), transparent);
+            opacity: 0.6;
         }
 
         .modal-overlay.open .modal {
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
         }
 
         .modal-wide {
-            width: 720px;
+            width: 740px;
         }
 
         .modal h2 {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 800;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
+            font-family: 'Orbitron', monospace;
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .modal>.modal-sub {
-            font-size: .8rem;
-            color: var(--muted);
-            margin-bottom: 16px;
+            font-size: 0.72rem;
+            color: var(--text2);
+            margin-bottom: 18px;
+            font-family: 'Fira Code', monospace;
         }
 
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .form-group label {
             display: block;
-            font-size: .68rem;
-            color: var(--muted);
-            margin-bottom: 4px;
-            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--cyan);
+            margin-bottom: 5px;
+            font-family: 'Fira Code', monospace;
             text-transform: uppercase;
-            letter-spacing: .5px;
+            letter-spacing: 2px;
+            opacity: 0.8;
         }
 
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            background: var(--bg);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border);
-            border-radius: 7px;
-            padding: 8px 10px;
+            border-radius: 4px;
+            padding: 9px 12px;
             color: var(--text);
-            font-family: 'Syne', sans-serif;
-            font-size: .8rem;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.8rem;
             outline: none;
-            transition: border-color .15s;
+            transition: all .2s;
         }
 
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
-            border-color: var(--accent);
+            border-color: var(--border3);
+            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1), inset 0 0 20px rgba(0, 212, 255, 0.03);
         }
 
         .form-group input::placeholder,
@@ -701,81 +987,87 @@
         }
 
         .form-group select option {
-            background: var(--card2);
+            background: var(--panel);
         }
 
         .form-group textarea {
             resize: vertical;
-            min-height: 70px;
-            font-family: 'Space Mono', monospace;
-            font-size: .76rem;
+            min-height: 80px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.73rem;
         }
 
         .radio-group {
             display: flex;
-            gap: 7px;
+            gap: 8px;
         }
 
         .radio-opt {
             flex: 1;
-            padding: 7px;
-            border-radius: 7px;
-            border: 1px solid var(--border2);
-            background: transparent;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
             color: var(--text2);
             cursor: pointer;
-            font-family: 'Space Mono', monospace;
-            font-size: .67rem;
-            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.6rem;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 1px;
             text-align: center;
-            transition: all .12s;
+            transition: all .15s;
         }
 
         .radio-opt.sel-easy {
-            border-color: var(--success);
-            color: var(--success);
-            background: rgba(52, 211, 153, .1);
+            border-color: rgba(0, 255, 204, 0.5);
+            color: var(--plasma);
+            background: rgba(0, 255, 204, 0.08);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.1);
         }
 
         .radio-opt.sel-medium {
-            border-color: var(--accent3);
-            color: var(--accent3);
-            background: rgba(251, 191, 36, .1);
+            border-color: rgba(255, 184, 0, 0.5);
+            color: var(--amber);
+            background: rgba(255, 184, 0, 0.08);
+            box-shadow: 0 0 15px rgba(255, 184, 0, 0.1);
         }
 
         .radio-opt.sel-hard {
-            border-color: var(--error);
+            border-color: rgba(255, 51, 102, 0.5);
             color: var(--error);
-            background: rgba(248, 113, 113, .1);
+            background: rgba(255, 51, 102, 0.08);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.1);
         }
 
         .modal-actions {
             display: flex;
             justify-content: flex-end;
-            gap: 7px;
-            margin-top: 16px;
+            gap: 8px;
+            margin-top: 18px;
         }
 
         .modal-divider {
             height: 1px;
             background: var(--border);
-            margin: 14px 0;
+            margin: 16px 0;
         }
 
         .upload-area {
-            border: 2px dashed var(--border2);
-            border-radius: 9px;
-            padding: 18px;
+            border: 1px dashed var(--border2);
+            border-radius: 6px;
+            padding: 20px;
             text-align: center;
             cursor: pointer;
-            transition: all .15s;
+            transition: all .2s;
             position: relative;
+            background: rgba(0, 212, 255, 0.02);
         }
 
         .upload-area:hover {
-            border-color: var(--accent);
-            background: rgba(129, 140, 248, .05);
+            border-color: var(--border3);
+            background: rgba(0, 212, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.06);
         }
 
         .upload-area input[type=file] {
@@ -786,60 +1078,63 @@
         }
 
         .upload-area-text {
-            font-size: .78rem;
-            color: var(--muted);
+            font-size: 0.76rem;
+            color: var(--text2);
         }
 
         .upload-area-text span {
-            color: var(--accent);
+            color: var(--cyan);
             font-weight: 600;
         }
 
         .fb-file-status {
-            font-size: .72rem;
-            font-family: 'Space Mono', monospace;
-            padding: 6px 10px;
-            border-radius: 6px;
-            background: rgba(52, 211, 153, .08);
-            border: 1px solid rgba(52, 211, 153, .2);
-            color: var(--success);
+            font-size: 0.68rem;
+            font-family: 'Fira Code', monospace;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background: rgba(0, 255, 204, 0.06);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            color: var(--plasma);
             display: none;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
-        /* Question View Modal */
+        /* Question view modal */
         .qview-header {
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .qview-title {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
             flex: 1;
             line-height: 1.3;
+            font-family: 'Orbitron', monospace;
+            color: var(--cyan);
         }
 
         .qview-badges {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .qview-desc {
-            font-size: 1.5rem;
+            font-size: 0.8rem;
             color: var(--text2);
-            line-height: 1.7;
+            line-height: 1.8;
             white-space: pre-wrap;
-            background: var(--bg);
-            border-radius: 8px;
-            padding: 12px 14px;
-            margin-bottom: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
             border: 1px solid var(--border);
+            font-family: 'Fira Code', monospace;
         }
 
         .qview-cells {
@@ -849,37 +1144,37 @@
         }
 
         .qview-cell {
-            background: var(--bg);
+            background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 6px;
             overflow: hidden;
         }
 
         .qview-cell-header {
-            padding: 8px 12px;
-            background: var(--surface);
+            padding: 8px 14px;
+            background: rgba(0, 212, 255, 0.04);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: .7rem;
-            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            font-family: 'Fira Code', monospace;
             color: var(--muted);
         }
 
         .qview-cell-desc {
-            padding: 8px 12px;
-            font-size: .78rem;
+            padding: 8px 14px;
+            font-size: 0.75rem;
             color: var(--text2);
             border-bottom: 1px solid var(--border);
-            background: rgba(56, 189, 248, .04);
+            background: rgba(0, 212, 255, 0.03);
         }
 
         .qview-cell-code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: .78rem;
-            padding: 10px 12px;
-            line-height: 1.6;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.74rem;
+            padding: 12px 14px;
+            line-height: 1.7;
             color: var(--text);
             white-space: pre-wrap;
             overflow-x: auto;
@@ -887,15 +1182,15 @@
 
         .qview-empty {
             text-align: center;
-            padding: 24px;
+            padding: 28px;
             color: var(--muted);
-            font-size: .8rem;
-            font-family: 'Space Mono', monospace;
+            font-size: 0.76rem;
+            font-family: 'Fira Code', monospace;
         }
 
-        /* MAIN */
+        /* ─── MAIN ─── */
         .main-content {
-            min-height: calc(100vh - 54px);
+            min-height: calc(100vh - 58px);
             display: flex;
             flex-direction: column;
         }
@@ -910,18 +1205,18 @@
             display: flex;
         }
 
-        /* Notebook page */
+        /* ─── NOTEBOOK PAGE ─── */
         .nb-page {
             width: 100%;
-            padding: 24px 28px;
+            padding: 28px 32px;
         }
 
         .nb-header {
-            margin-bottom: 22px;
+            margin-bottom: 26px;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
+            gap: 16px;
         }
 
         .nb-title-wrap {
@@ -932,18 +1227,21 @@
             background: transparent;
             border: none;
             outline: none;
-            font-family: 'Syne', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--text);
+            font-family: 'Orbitron', monospace;
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: var(--cyan);
             width: 100%;
-            padding: 3px 0;
-            border-bottom: 2px solid transparent;
-            transition: border-color .2s;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            transition: all .3s;
+            text-shadow: var(--glow-cyan);
+            letter-spacing: 2px;
         }
 
         .nb-title-input:focus {
-            border-bottom-color: var(--accent);
+            border-bottom-color: var(--cyan);
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
         }
 
         .nb-title-input::placeholder {
@@ -953,48 +1251,76 @@
         .nb-meta {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 6px;
-            font-size: .68rem;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 0.6rem;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 1px;
         }
 
-        /* CELLS */
+        .nb-meta span {
+            color: var(--border3);
+        }
+
+        /* ─── CELLS ─── */
         #cells-container {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
         }
 
         .cell {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 8px;
             overflow: hidden;
-            transition: border-color .2s, box-shadow .2s;
-            animation: cellIn .25s ease;
+            transition: border-color .25s, box-shadow .25s;
+            animation: cellSlideIn .3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
 
-        @keyframes cellIn {
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+            opacity: 0;
+            transition: opacity .3s;
+        }
+
+        .cell:hover::before {
+            opacity: 1;
+        }
+
+        .cell.focused::before {
+            opacity: 1;
+            background: linear-gradient(90deg, transparent, var(--cyan), var(--plasma), transparent);
+        }
+
+        @keyframes cellSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(8px)
+                transform: translateY(12px);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0)
+                transform: translateY(0);
             }
         }
 
         .cell:hover {
             border-color: var(--border2);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         }
 
         .cell.focused {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(129, 140, 248, .18);
+            border-color: var(--border3);
+            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15), 0 8px 40px rgba(0, 0, 0, 0.5);
         }
 
         /* Question banner */
@@ -1002,20 +1328,20 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 14px;
-            min-height: 38px;
-            background: rgba(48, 48, 74, .6);
+            padding: 9px 16px;
+            min-height: 40px;
+            background: rgba(0, 0, 0, 0.3);
             border-bottom: 1px solid var(--border);
-            transition: background .2s;
+            transition: background .25s;
         }
 
         .cell-qbanner.linked {
-            background: linear-gradient(90deg, rgba(129, 140, 248, .1), rgba(56, 189, 248, .06));
-            border-bottom-color: rgba(129, 140, 248, .25);
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.06), rgba(0, 255, 204, 0.03));
+            border-bottom-color: rgba(0, 212, 255, 0.2);
         }
 
         .qb-icon {
-            font-size: 12px;
+            font-size: 11px;
             flex-shrink: 0;
         }
 
@@ -1025,19 +1351,20 @@
         }
 
         .qb-sublabel {
-            font-size: .56rem;
+            font-size: 0.48rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
         }
 
         .qb-title {
-            font-size: .76rem;
+            font-size: 0.74rem;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--cyan);
         }
 
         .qb-meta {
@@ -1048,8 +1375,9 @@
         }
 
         .qb-empty {
-            font-size: .73rem;
+            font-size: 0.7rem;
             color: var(--muted);
+            font-family: 'Fira Code', monospace;
         }
 
         .qb-right {
@@ -1064,99 +1392,100 @@
         }
 
         .qb-link-btn {
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: .63rem;
+            padding: 3px 9px;
+            border-radius: 3px;
+            font-size: 0.55rem;
             font-weight: 700;
             cursor: pointer;
             border: 1px dashed var(--border2);
             background: transparent;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
-            transition: all .12s;
+            font-family: 'Fira Code', monospace;
+            transition: all .15s;
             white-space: nowrap;
+            letter-spacing: 1px;
         }
 
         .qb-link-btn:hover {
-            border-color: var(--accent3);
-            color: var(--accent3);
+            border-color: var(--amber);
+            color: var(--amber);
             border-style: solid;
         }
 
         .qb-link-btn.linked {
             border-style: solid;
-            border-color: rgba(129, 140, 248, .5);
-            color: var(--accent);
+            border-color: var(--border3);
+            color: var(--cyan);
         }
 
         .qb-picker {
             position: absolute;
-            top: calc(100% + 5px);
+            top: calc(100% + 6px);
             right: 0;
-            background: var(--card2);
+            background: var(--panel);
             border: 1px solid var(--border2);
-            border-radius: 9px;
+            border-radius: 6px;
             z-index: 200;
             overflow: hidden;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
-            width: 285px;
-            animation: dropIn .14s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), var(--glow-cyan);
+            width: 300px;
+            animation: dropIn .15s ease;
         }
 
         @keyframes dropIn {
             from {
                 opacity: 0;
-                transform: translateY(-5px)
+                transform: translateY(-6px);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0)
+                transform: translateY(0);
             }
         }
 
         .qb-psearch {
-            padding: 7px 9px;
+            padding: 8px 10px;
             border-bottom: 1px solid var(--border);
         }
 
         .qb-psearch input {
             width: 100%;
-            background: var(--bg);
+            background: rgba(0, 0, 0, 0.5);
             border: 1px solid var(--border);
-            border-radius: 5px;
-            padding: 5px 8px;
+            border-radius: 3px;
+            padding: 5px 9px;
             color: var(--text);
-            font-family: 'Space Mono', monospace;
-            font-size: .7rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
             outline: none;
         }
 
         .qb-psearch input:focus {
-            border-color: var(--accent);
+            border-color: var(--border3);
         }
 
         .qb-plist {
-            max-height: 180px;
+            max-height: 200px;
             overflow-y: auto;
         }
 
         .qb-pitem {
-            padding: 7px 10px;
+            padding: 8px 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
             transition: background .1s;
-            font-size: .75rem;
+            font-size: 0.74rem;
         }
 
         .qb-pitem:hover {
-            background: rgba(129, 140, 248, .1);
+            background: rgba(0, 212, 255, 0.08);
         }
 
         .qb-pitem.selected {
-            background: rgba(129, 140, 248, .18);
+            background: rgba(0, 212, 255, 0.12);
         }
 
         .qb-pname {
@@ -1165,47 +1494,62 @@
         }
 
         .qb-pempty {
-            padding: 12px;
+            padding: 14px;
             text-align: center;
             color: var(--muted);
-            font-size: .72rem;
-            font-family: 'Space Mono', monospace;
+            font-size: 0.68rem;
+            font-family: 'Fira Code', monospace;
         }
 
         .qb-unlink {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: .58rem;
+            padding: 3px 7px;
+            border-radius: 3px;
+            font-size: 0.52rem;
             cursor: pointer;
-            border: 1px solid rgba(248, 113, 113, .3);
+            border: 1px solid rgba(255, 51, 102, 0.25);
             background: transparent;
             color: var(--error);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
             flex-shrink: 0;
             transition: all .1s;
+            letter-spacing: 1px;
         }
 
         .qb-unlink:hover {
-            background: rgba(248, 113, 113, .1);
+            background: rgba(255, 51, 102, 0.1);
+            border-color: var(--error);
         }
 
-        /* Description */
+        /* ─── CELL DESCRIPTION ─── */
         .cell-desc {
-            padding: 10px 14px;
-            background: rgba(56, 189, 48, .04);
+            padding: 12px 16px;
+            background: rgba(0, 212, 255, 0.02);
             border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .cell-desc::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--cyan), var(--plasma));
+            opacity: 0.4;
         }
 
         .desc-label {
-            font-size: 1.56rem;
+            font-size: 0.5rem;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--accent2);
-            font-family: 'Space Mono', monospace;
-            margin-bottom: 4px;
+            letter-spacing: 3px;
+            color: var(--cyan);
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            opacity: 0.8;
         }
 
         .desc-ta {
@@ -1215,10 +1559,10 @@
             outline: none;
             resize: none;
             color: var(--text);
-            font-family: 'Syne', sans-serif;
-            font-size: 1.3rem;
-            line-height: 1.6;
-            height: 220px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.82rem;
+            line-height: 1.65;
+            height: 70px;
             overflow-y: auto;
             display: block;
         }
@@ -1227,291 +1571,336 @@
             color: var(--muted);
         }
 
-        /* Cell toolbar */
+        /* ─── CELL TOOLBAR ─── */
         .cell-toolbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 6px 12px;
-            background: var(--surface);
+            padding: 7px 14px;
+            background: rgba(0, 0, 0, 0.4);
             border-bottom: 1px solid var(--border);
         }
 
         .tl-left {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
         }
 
         .tl-right {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
 
         .cell-num {
-            font-family: 'Space Mono', monospace;
-            font-size: .62rem;
-            color: var(--muted);
-            background: var(--bg);
-            padding: 2px 7px;
-            border-radius: 4px;
-            min-width: 28px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.58rem;
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+            padding: 2px 8px;
+            border-radius: 3px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            min-width: 32px;
             text-align: center;
+            letter-spacing: 1px;
         }
 
         .lang-toggle {
             display: flex;
-            background: var(--bg);
-            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 4px;
             overflow: hidden;
             border: 1px solid var(--border);
         }
 
         .lang-btn {
-            padding: 2px 9px;
-            font-size: .65rem;
-            font-family: 'Space Mono', monospace;
-            font-weight: 700;
+            padding: 3px 11px;
+            font-size: 0.57rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
             cursor: pointer;
             border: none;
             background: transparent;
             color: var(--muted);
-            transition: all .12s;
+            transition: all .15s;
+            letter-spacing: 1px;
         }
 
         .lang-btn.active {
-            background: var(--accent);
-            color: #fff;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 255, 204, 0.1));
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
         }
 
         .hint {
-            font-size: .6rem;
+            font-size: 0.52rem;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 0.5px;
         }
 
+        /* ─── RUN BUTTON ─── */
         .run-btn {
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 4px 12px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-family: 'Syne', sans-serif;
-            font-size: .72rem;
+            gap: 5px;
+            padding: 5px 14px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 255, 204, 0.1));
+            color: var(--cyan);
+            border: 1px solid var(--border3);
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.55rem;
             font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             cursor: pointer;
-            transition: all .15s;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .run-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.15), transparent);
+            transition: left 0.5s;
+        }
+
+        .run-btn:hover::before {
+            left: 100%;
         }
 
         .run-btn:hover {
-            background: #6366f1;
+            box-shadow: var(--glow-cyan);
             transform: translateY(-1px);
+            color: var(--cyan2);
         }
 
         .run-btn.running {
-            background: var(--muted);
+            background: rgba(0, 0, 0, 0.4);
             cursor: not-allowed;
-            animation: pulse 1s infinite;
+            animation: runPulse 1s infinite;
+            border-color: var(--border);
         }
 
-        @keyframes pulse {
+        @keyframes runPulse {
 
             0%,
             100% {
-                opacity: 1
+                opacity: 1;
+                box-shadow: none;
             }
 
             50% {
-                opacity: .5
+                opacity: 0.6;
+                box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
             }
         }
 
-        /* ── FORMAT BUTTON ── */
+        /* ─── FORMAT BUTTON ─── */
         .format-btn {
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 4px 10px;
-            background: transparent;
-            color: var(--accent3);
-            border: 1px solid rgba(251, 191, 36, .35);
-            border-radius: 6px;
-            font-family: 'Space Mono', monospace;
-            font-size: .63rem;
-            font-weight: 700;
+            padding: 5px 11px;
+            background: rgba(255, 184, 0, 0.06);
+            color: var(--amber);
+            border: 1px solid rgba(255, 184, 0, 0.25);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.57rem;
+            font-weight: 600;
+            letter-spacing: 1px;
             cursor: pointer;
-            transition: all .15s;
+            transition: all .2s;
             white-space: nowrap;
         }
 
         .format-btn:hover {
-            background: rgba(251, 191, 36, .1);
-            border-color: var(--accent3);
+            background: rgba(255, 184, 0, 0.12);
+            border-color: var(--amber);
+            box-shadow: var(--glow-amber);
             transform: translateY(-1px);
         }
 
         .format-btn.formatting {
-            animation: pulse 0.8s infinite;
+            animation: runPulse 0.8s infinite;
             cursor: not-allowed;
         }
 
-        /* ── FONT SIZE CONTROLS ── */
+        /* ─── FONT SIZE CONTROL ─── */
         .font-size-ctrl {
             display: flex;
             align-items: center;
             gap: 0;
-            background: var(--bg);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border);
-            border-radius: 5px;
+            border-radius: 4px;
             overflow: hidden;
         }
 
         .fs-btn {
-            padding: 2px 7px;
+            padding: 3px 8px;
             border: none;
             background: transparent;
-            color: var(--muted);
+            color: var(--text2);
             cursor: pointer;
-            font-size: .75rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
             transition: all .12s;
             line-height: 1;
         }
 
         .fs-btn:hover {
-            background: rgba(129, 140, 248, .15);
-            color: var(--text);
+            background: rgba(0, 212, 255, 0.12);
+            color: var(--cyan);
         }
 
         .fs-display {
-            padding: 2px 5px;
-            font-size: .6rem;
-            font-family: 'Space Mono', monospace;
+            padding: 3px 6px;
+            font-size: 0.52rem;
+            font-family: 'Fira Code', monospace;
             color: var(--muted);
-            min-width: 28px;
+            min-width: 34px;
             text-align: center;
             border-left: 1px solid var(--border);
             border-right: 1px solid var(--border);
+            letter-spacing: 1px;
         }
 
         .icon-btn {
             background: transparent;
-            border: 1px solid var(--border2);
+            border: 1px solid var(--border);
             color: var(--muted);
-            width: 25px;
-            height: 25px;
-            border-radius: 5px;
+            width: 27px;
+            height: 27px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             font-size: 11px;
-            transition: all .12s;
+            transition: all .15s;
         }
 
         .icon-btn:hover {
-            border-color: var(--error);
+            border-color: rgba(255, 51, 102, 0.4);
             color: var(--error);
+            background: rgba(255, 51, 102, 0.06);
         }
 
-        /* ── EDITOR: scoped CodeMirror styles ── */
+        /* ─── EDITOR ─── */
         .cell-editor-wrap {
             position: relative;
             overflow: hidden;
         }
 
         .cell-editor-wrap .CodeMirror {
-            font-family: 'JetBrains Mono', monospace !important;
-            font-size: 13.5px;
-            line-height: 1.65 !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 13px;
+            line-height: 1.7 !important;
             height: auto !important;
-            min-height: 80px !important;
-            background: var(--card) !important;
+            min-height: 90px !important;
+            background: rgba(2, 4, 8, 0.9) !important;
             color: var(--text) !important;
             border: none !important;
             border-radius: 0 !important;
         }
 
         .cell-editor-wrap .CodeMirror-scroll {
-            min-height: 80px !important;
+            min-height: 90px !important;
             overflow-x: auto !important;
             overflow-y: hidden !important;
         }
 
         .cell-editor-wrap .CodeMirror-gutters {
-            background: #252535 !important;
+            background: rgba(4, 12, 20, 0.9) !important;
             border-right: 1px solid var(--border) !important;
             min-height: 100% !important;
         }
 
         .cell-editor-wrap .CodeMirror-linenumber {
-            color: var(--muted) !important;
-            font-family: 'JetBrains Mono', monospace !important;
-            font-size: 11px !important;
+            color: rgba(0, 212, 255, 0.25) !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 10px !important;
             padding: 0 8px !important;
-            min-width: 26px !important;
+            min-width: 28px !important;
         }
 
         .cell-editor-wrap .CodeMirror-lines {
-            padding: 6px 0 !important;
+            padding: 8px 0 !important;
         }
 
         .cell-editor-wrap .CodeMirror-line {
-            padding: 0 12px !important;
+            padding: 0 14px !important;
         }
 
-        /* Output */
+        .cell-editor-wrap .CodeMirror-cursor {
+            border-left: 2px solid var(--cyan) !important;
+            box-shadow: 0 0 8px var(--cyan) !important;
+        }
+
+        .cell-editor-wrap .CodeMirror-selected {
+            background: rgba(0, 212, 255, 0.1) !important;
+        }
+
+        /* ─── OUTPUT ─── */
         .cell-output {
             border-top: 1px solid var(--border);
-            background: var(--surface);
+            background: rgba(0, 0, 0, 0.5);
         }
 
         .out-header {
-            font-size: .57rem;
+            font-size: 0.5rem;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 3px;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
-            padding: 6px 13px 4px;
+            font-family: 'Fira Code', monospace;
+            padding: 7px 14px 5px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
         }
 
         .out-async-badge {
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-size: .55rem;
-            background: rgba(56, 189, 248, .12);
-            color: var(--accent2);
-            border: 1px solid rgba(56, 189, 248, .2);
+            padding: 1px 6px;
+            border-radius: 2px;
+            font-size: 0.48rem;
+            background: rgba(0, 212, 255, 0.08);
+            color: var(--cyan);
+            border: 1px solid rgba(0, 212, 255, 0.2);
         }
 
         .out-time {
             margin-left: auto;
-            color: var(--accent3);
+            color: var(--amber);
+            font-size: 0.52rem;
         }
 
         .out-content {
-            padding: 9px 13px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: .79rem;
-            line-height: 1.7;
+            padding: 10px 14px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            line-height: 1.75;
             word-break: break-word;
         }
 
         .out-content.has-error {
-            border-left: 3px solid var(--error);
+            border-left: 2px solid var(--error);
+            box-shadow: inset 3px 0 15px rgba(255, 51, 102, 0.05);
         }
 
         .out-content.has-success {
-            border-left: 3px solid var(--success);
+            border-left: 2px solid var(--plasma);
+            box-shadow: inset 3px 0 15px rgba(0, 255, 204, 0.05);
         }
 
         .log-line {
@@ -1524,152 +1913,192 @@
             color: var(--error);
             display: block;
             white-space: pre-wrap;
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
         }
 
         .warn-line {
-            color: var(--accent3);
+            color: var(--amber);
             display: block;
             white-space: pre-wrap;
         }
 
         .info-line {
-            color: var(--accent2);
+            color: var(--cyan);
             display: block;
             white-space: pre-wrap;
         }
 
         .return-line {
-            color: #a78bfa;
+            color: var(--plasma);
             display: block;
             white-space: pre-wrap;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
         }
 
-        /* Add cell */
+        /* ─── ADD CELL ─── */
         .add-cell-row {
             display: flex;
-            gap: 9px;
-            margin-top: 4px;
-            padding: 12px 0;
+            gap: 12px;
+            margin-top: 8px;
+            padding: 16px 0;
         }
 
         .add-cell-btn {
             flex: 1;
             background: transparent;
-            border: 1px dashed var(--border2);
-            border-radius: 9px;
-            padding: 10px;
+            border: 1px dashed rgba(0, 212, 255, 0.2);
+            border-radius: 6px;
+            padding: 12px;
             color: var(--muted);
-            font-family: 'Syne', sans-serif;
-            font-size: .75rem;
-            font-weight: 600;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.55rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             cursor: pointer;
-            transition: all .18s;
+            transition: all .25s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-cell-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.03), transparent);
+            opacity: 0;
+            transition: opacity .25s;
         }
 
         .add-cell-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: rgba(129, 140, 248, .06);
+            border-color: var(--border3);
+            color: var(--cyan);
+            border-style: solid;
+        }
+
+        .add-cell-btn:hover::before {
+            opacity: 1;
         }
 
         .add-cell-btn.ts:hover {
-            border-color: var(--accent2);
-            color: var(--accent2);
-            background: rgba(56, 189, 248, .05);
+            border-color: rgba(0, 255, 204, 0.5);
+            color: var(--plasma);
         }
 
-        /* DSA page */
+        /* ─── DSA PAGE ─── */
         .dsa-page {
             width: 100%;
-            padding: 24px 28px;
+            padding: 28px 32px;
         }
 
         .dsa-ph {
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .dsa-pt {
             font-size: 1.5rem;
-            font-weight: 800;
+            font-weight: 900;
+            font-family: 'Orbitron', monospace;
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+            letter-spacing: 3px;
+            text-transform: uppercase;
         }
 
         .dsa-pt span {
-            color: var(--accent2);
+            color: var(--plasma);
+            text-shadow: var(--glow-plasma);
         }
 
         .dsa-pm {
-            font-size: .7rem;
+            font-size: 0.6rem;
             color: var(--muted);
-            font-family: 'Space Mono', monospace;
-            margin-top: 3px;
+            font-family: 'Fira Code', monospace;
+            margin-top: 4px;
+            letter-spacing: 1px;
         }
 
         .dsa-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-            gap: 13px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
         }
 
         .dsa-card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 11px;
-            padding: 15px;
-            transition: all .18s;
-            animation: cellIn .22s ease;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all .25s;
+            animation: cellSlideIn .25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dsa-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.05), transparent 70%);
+            border-radius: 0 8px 0 0;
         }
 
         .dsa-card:hover {
             border-color: var(--border2);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 255, 0.06);
         }
 
         .dsa-card.solved-card {
-            opacity: .68;
+            opacity: 0.6;
         }
 
         .dc-header {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 7px;
-            margin-bottom: 7px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .dc-num {
-            font-size: .6rem;
-            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            font-family: 'Fira Code', monospace;
             color: var(--muted);
             flex-shrink: 0;
             margin-top: 2px;
+            letter-spacing: 1px;
         }
 
         .dc-title {
-            font-size: .88rem;
+            font-size: 0.85rem;
             font-weight: 700;
             flex: 1;
             line-height: 1.3;
         }
 
         .dc-check {
-            color: var(--success);
-            font-size: 13px;
+            color: var(--plasma);
+            font-size: 12px;
             flex-shrink: 0;
+            text-shadow: var(--glow-plasma);
         }
 
         .dc-desc {
-            font-size: .73rem;
+            font-size: 0.7rem;
             color: var(--text2);
-            line-height: 1.5;
-            margin-bottom: 9px;
+            line-height: 1.6;
+            margin-bottom: 10px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -1679,63 +2108,66 @@
         .dc-footer {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 7px;
             flex-wrap: wrap;
         }
 
         .dc-lc {
             margin-left: auto;
-            font-size: .6rem;
-            color: var(--accent2);
-            font-family: 'Space Mono', monospace;
-            background: rgba(56, 189, 248, .08);
-            padding: 2px 6px;
-            border-radius: 4px;
+            font-size: 0.55rem;
+            color: var(--cyan);
+            font-family: 'Fira Code', monospace;
+            background: rgba(0, 212, 255, 0.08);
+            padding: 2px 7px;
+            border-radius: 3px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
         }
 
         .dc-actions {
             display: flex;
             gap: 5px;
-            margin-top: 9px;
+            margin-top: 10px;
             flex-wrap: wrap;
         }
 
         .empty-state {
             grid-column: 1/-1;
             text-align: center;
-            padding: 56px 20px;
+            padding: 64px 20px;
             color: var(--muted);
         }
 
         .empty-icon {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
-            opacity: .35;
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.25;
         }
 
         .empty-state p {
-            font-size: .82rem;
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
         }
 
-        /* Save bar */
+        /* ─── SAVE BAR ─── */
         .save-bar {
             position: fixed;
-            bottom: 18px;
-            right: 18px;
+            bottom: 20px;
+            right: 20px;
             display: flex;
             align-items: center;
-            gap: 7px;
-            background: var(--card2);
+            gap: 8px;
+            background: var(--panel);
             border: 1px solid var(--border2);
-            border-radius: 9px;
-            padding: 9px 14px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-            font-size: .7rem;
+            border-radius: 6px;
+            padding: 10px 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7), var(--glow-cyan);
+            font-size: 0.6rem;
             z-index: 50;
-            transform: translateY(20px);
+            transform: translateY(24px);
             opacity: 0;
-            transition: all .25s;
-            font-family: 'Space Mono', monospace;
+            transition: all .3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 1px;
         }
 
         .save-bar.visible {
@@ -1747,29 +2179,33 @@
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: var(--accent3);
+            background: var(--amber);
+            transition: all .3s;
         }
 
         .save-dot.saved {
-            background: var(--success);
+            background: var(--plasma);
+            box-shadow: 0 0 10px var(--plasma);
         }
 
-        /* Toast */
+        /* ─── TOAST ─── */
         .toast {
             position: fixed;
-            top: 66px;
-            right: 18px;
-            background: var(--card2);
+            top: 70px;
+            right: 20px;
+            background: var(--panel);
             border: 1px solid var(--border2);
-            border-radius: 8px;
-            padding: 8px 13px;
-            font-size: .73rem;
+            border-radius: 6px;
+            padding: 9px 16px;
+            font-size: 0.68rem;
             z-index: 500;
             opacity: 0;
-            transform: translateX(14px);
-            transition: all .22s;
+            transform: translateX(16px);
+            transition: all .25s;
             pointer-events: none;
-            font-family: 'Space Mono', monospace;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 0.5px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
         }
 
         .toast.show {
@@ -1778,23 +2214,25 @@
         }
 
         .toast.success {
-            border-color: var(--success);
-            color: var(--success);
+            border-color: rgba(0, 255, 204, 0.4);
+            color: var(--plasma);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
         }
 
         .toast.error {
-            border-color: var(--error);
+            border-color: rgba(255, 51, 102, 0.4);
             color: var(--error);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.1);
         }
 
-        /* Format flash animation */
+        /* ─── FORMAT FLASH ─── */
         @keyframes formatFlash {
             0% {
-                background: rgba(251, 191, 36, 0);
+                background: transparent;
             }
 
             30% {
-                background: rgba(251, 191, 36, .08);
+                background: rgba(255, 184, 0, 0.05);
             }
 
             100% {
@@ -1803,11 +2241,13 @@
         }
 
         .cell.format-flash .cell-editor-wrap {
-            animation: formatFlash 0.6s ease;
+            animation: formatFlash 0.7s ease;
         }
 
+        /* ─── SCROLLBAR ─── */
         ::-webkit-scrollbar {
-            width: 3px;
+            width: 4px;
+            height: 4px;
         }
 
         ::-webkit-scrollbar-track {
@@ -1815,58 +2255,77 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--border2);
+            background: rgba(0, 212, 255, 0.15);
             border-radius: 2px;
         }
 
-        /* CodeMirror autocomplete */
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        /* CodeMirror hints */
         .CodeMirror-hints {
-            background: var(--card2) !important;
+            background: var(--panel) !important;
             border: 1px solid var(--border2) !important;
-            border-radius: 9px !important;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, .5) !important;
+            border-radius: 6px !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), var(--glow-cyan) !important;
             padding: 4px !important;
-            font-family: 'JetBrains Mono', monospace !important;
-            font-size: .8rem !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 0.76rem !important;
             z-index: 9999 !important;
         }
 
         .CodeMirror-hint {
             color: var(--text) !important;
-            border-radius: 5px !important;
-            padding: 4px 10px !important;
+            border-radius: 4px !important;
+            padding: 5px 10px !important;
             line-height: 1.5 !important;
         }
 
         .CodeMirror-hint-active {
-            background: rgba(129, 140, 248, .25) !important;
-            color: var(--text) !important;
+            background: rgba(0, 212, 255, 0.15) !important;
+            color: var(--cyan) !important;
         }
 
         li.CodeMirror-hint:hover {
-            background: rgba(129, 140, 248, .15) !important;
+            background: rgba(0, 212, 255, 0.1) !important;
+        }
+
+        /* ─── SELECTION HIGHLIGHT in input ─── */
+        ::selection {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--cyan2);
         }
     </style>
 </head>
 
 <body>
+    <div class="scanline-overlay"></div>
+    <div class="hud-corner hud-tl"></div>
+    <div class="hud-corner hud-tr"></div>
+    <div class="hud-corner hud-bl"></div>
+    <div class="hud-corner hud-br"></div>
     <div class="toast" id="toast"></div>
 
     <header>
         <div class="logo">
-            <div class="logo-icon">⚡</div>CodeBook
+            <div class="logo-icon">⚡</div>
+            <div>
+                CODEBOOK
+                <span class="logo-sub">NEURAL IDE v2.035</span>
+            </div>
         </div>
         <div class="header-center">
-            <button class="tab-btn active" id="tab-notebook" onclick="switchPage('notebook')">📓 Notebook</button>
-            <button class="tab-btn" id="tab-dsa" onclick="switchPage('dsa')">🎯 DSA Questions</button>
+            <button class="tab-btn active" id="tab-notebook" onclick="switchPage('notebook')">▸ Notebook</button>
+            <button class="tab-btn" id="tab-dsa" onclick="switchPage('dsa')">⬡ DSA Matrix</button>
         </div>
         <div class="header-right">
             <div class="firebase-status">
                 <div class="fb-dot" id="fb-dot"></div>
-                <span id="fb-status">offline</span>
+                <span id="fb-status">OFFLINE</span>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="openFirebaseModal()">⚙ Firebase</button>
-            <button class="btn btn-primary btn-sm" onclick="saveAll()">💾 Save</button>
+            <button class="btn btn-ghost btn-sm" onclick="openFirebaseModal()">⚙ SYNC</button>
+            <button class="btn btn-primary btn-sm" onclick="saveAll()">↯ SAVE</button>
         </div>
     </header>
 
@@ -1876,42 +2335,44 @@
                 <button class="stab active" id="stab-nb" onclick="switchSidebarTab('nb')">Notebooks</button>
                 <button class="stab" id="stab-dsa" onclick="switchSidebarTab('dsa')">DSA List</button>
             </div>
+
             <div class="spanel active" id="spanel-nb">
                 <div class="panel-top">
-                    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="newNotebook()">＋
-                        New Notebook</button>
+                    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="newNotebook()">⊕
+                        NEW NOTEBOOK</button>
                 </div>
                 <div class="nb-list" id="nb-list">
                     <div
-                        style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:'Space Mono',monospace">
-                        Connect Firebase to sync</div>
+                        style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:'Fira Code',monospace;letter-spacing:1px">
+                        CONNECT FIREBASE TO SYNC</div>
                 </div>
             </div>
+
             <div class="spanel" id="spanel-dsa">
                 <div class="dsa-toolbar">
                     <input class="dsa-search" id="sb-dsa-search" placeholder="Search questions…"
                         oninput="renderDSASidebar()">
                     <div class="dsa-filters">
-                        <button class="fchip fa" id="fc-all" onclick="setFilter('all')">All</button>
-                        <button class="fchip" id="fc-easy" onclick="setFilter('easy')">Easy</button>
-                        <button class="fchip" id="fc-medium" onclick="setFilter('medium')">Med</button>
-                        <button class="fchip" id="fc-hard" onclick="setFilter('hard')">Hard</button>
-                        <button class="fchip" id="fc-unsolved" onclick="setFilter('unsolved')">Todo</button>
+                        <button class="fchip fa" id="fc-all" onclick="setFilter('all')">ALL</button>
+                        <button class="fchip" id="fc-easy" onclick="setFilter('easy')">EASY</button>
+                        <button class="fchip" id="fc-medium" onclick="setFilter('medium')">MED</button>
+                        <button class="fchip" id="fc-hard" onclick="setFilter('hard')">HARD</button>
+                        <button class="fchip" id="fc-unsolved" onclick="setFilter('unsolved')">TODO</button>
                     </div>
                     <div class="dsa-stats">
-                        <span><span class="stat-dot" style="background:var(--success)"></span><span
-                                id="stat-easy">0</span></span>
-                        <span><span class="stat-dot" style="background:var(--accent3)"></span><span
-                                id="stat-med">0</span></span>
+                        <span><span class="stat-dot" style="background:var(--plasma)"></span><span
+                                id="stat-easy">0</span> easy</span>
+                        <span><span class="stat-dot" style="background:var(--amber)"></span><span id="stat-med">0</span>
+                            med</span>
                         <span><span class="stat-dot" style="background:var(--error)"></span><span
-                                id="stat-hard">0</span></span>
-                        <span>✓ <span id="stat-solved">0</span></span>
+                                id="stat-hard">0</span> hard</span>
+                        <span style="color:var(--plasma)">✓ <span id="stat-solved">0</span></span>
                     </div>
                 </div>
                 <div class="dsa-list" id="sb-dsa-list"></div>
                 <div class="dsa-bottom">
-                    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openDSAModal()">＋
-                        Add Question</button>
+                    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openDSAModal()">⊕
+                        ADD QUESTION</button>
                 </div>
             </div>
         </aside>
@@ -1921,19 +2382,19 @@
                 <div class="nb-page">
                     <div class="nb-header">
                         <div class="nb-title-wrap">
-                            <input class="nb-title-input" id="nb-title" type="text" placeholder="Untitled Notebook"
-                                value="Untitled Notebook" onchange="triggerAutoSave()">
+                            <input class="nb-title-input" id="nb-title" type="text" placeholder="UNTITLED_NOTEBOOK"
+                                value="UNTITLED_NOTEBOOK" onchange="triggerAutoSave()">
                             <div class="nb-meta">
-                                <span id="nb-id">local</span><span>·</span>
-                                <span id="cell-count">0 cells</span><span>·</span>
-                                <span id="last-saved">unsaved</span>
+                                <span id="nb-id">LOCAL</span><span>·</span>
+                                <span id="cell-count">0 CELLS</span><span>·</span>
+                                <span id="last-saved">UNSAVED</span>
                             </div>
                         </div>
                     </div>
                     <div id="cells-container"></div>
                     <div class="add-cell-row">
-                        <button class="add-cell-btn" onclick="addCell('javascript')">＋ JS Cell</button>
-                        <button class="add-cell-btn ts" onclick="addCell('typescript')">＋ TS Cell</button>
+                        <button class="add-cell-btn" onclick="addCell('javascript')">⊕ JS CELL</button>
+                        <button class="add-cell-btn ts" onclick="addCell('typescript')">⊕ TS CELL</button>
                     </div>
                 </div>
             </div>
@@ -1942,15 +2403,15 @@
                 <div class="dsa-page">
                     <div class="dsa-ph">
                         <div>
-                            <div class="dsa-pt">DSA <span>Questions</span></div>
-                            <div class="dsa-pm" id="dsa-pm">0 questions</div>
+                            <div class="dsa-pt">DSA <span>MATRIX</span></div>
+                            <div class="dsa-pm" id="dsa-pm">0 QUESTIONS LOADED</div>
                         </div>
-                        <button class="btn btn-primary" onclick="openDSAModal()">＋ Add Question</button>
+                        <button class="btn btn-primary" onclick="openDSAModal()">⊕ ADD QUESTION</button>
                     </div>
                     <div class="dsa-grid" id="dsa-grid">
                         <div class="empty-state">
-                            <div class="empty-icon">🎯</div>
-                            <p>Add your first DSA question!</p>
+                            <div class="empty-icon">⬡</div>
+                            <p>// NO QUESTIONS LOADED — ADD YOUR FIRST DSA CHALLENGE</p>
                         </div>
                     </div>
                 </div>
@@ -1961,47 +2422,45 @@
     <!-- FIREBASE MODAL -->
     <div class="modal-overlay" id="firebase-modal">
         <div class="modal">
-            <h2>🔥 Firebase Config</h2>
-            <p class="modal-sub">Connect to Firestore for cloud sync across devices.</p>
+            <h2>⚙ FIREBASE SYNC</h2>
+            <p class="modal-sub">// Connect to Firestore for cross-device neural sync</p>
             <div class="form-group">
-                <label>📂 Load Config from JSON File</label>
+                <label>📂 Load from JSON config file</label>
                 <div class="upload-area" id="fb-upload-area">
                     <input type="file" accept=".json,.txt" id="fb-file-input" onchange="loadFirebaseFromFile(this)">
-                    <div class="upload-area-text">Drop a <span>.json</span> file here or click to browse<br><small
-                            style="font-size:.65rem;color:var(--muted);margin-top:4px;display:block">File should contain
-                            Firebase config object</small></div>
+                    <div class="upload-area-text">Drop <span>.json</span> config here or click to browse</div>
                 </div>
                 <div class="fb-file-status" id="fb-file-status"></div>
             </div>
             <div class="modal-divider"></div>
-            <p class="modal-sub" style="margin-top:0;margin-bottom:12px">Or enter manually:</p>
-            <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIzaSy…"></div>
-            <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain"
+            <p class="modal-sub" style="margin-top:0;margin-bottom:14px">// Or enter credentials manually:</p>
+            <div class="form-group"><label>API KEY</label><input type="text" id="fb-apiKey" placeholder="AIzaSy…"></div>
+            <div class="form-group"><label>AUTH DOMAIN</label><input type="text" id="fb-authDomain"
                     placeholder="project.firebaseapp.com"></div>
-            <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId"
+            <div class="form-group"><label>PROJECT ID</label><input type="text" id="fb-projectId"
                     placeholder="my-project"></div>
-            <div class="form-group"><label>Storage Bucket</label><input type="text" id="fb-storageBucket"
+            <div class="form-group"><label>STORAGE BUCKET</label><input type="text" id="fb-storageBucket"
                     placeholder="my-project.appspot.com"></div>
-            <div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fb-messagingSenderId"
+            <div class="form-group"><label>MESSAGING SENDER ID</label><input type="text" id="fb-messagingSenderId"
                     placeholder="123456789"></div>
-            <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123…"></div>
+            <div class="form-group"><label>APP ID</label><input type="text" id="fb-appId" placeholder="1:123…"></div>
             <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closeModal('firebase-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="initFirebase()">Connect</button>
+                <button class="btn btn-ghost" onclick="closeModal('firebase-modal')">CANCEL</button>
+                <button class="btn btn-primary" onclick="initFirebase()">CONNECT</button>
             </div>
         </div>
     </div>
 
-    <!-- ADD/EDIT DSA MODAL -->
+    <!-- DSA MODAL -->
     <div class="modal-overlay" id="dsa-modal">
         <div class="modal">
-            <h2 id="dsa-modal-h">＋ Add Question</h2>
-            <p class="modal-sub">Track a question in your DSA practice list.</p>
+            <h2 id="dsa-modal-h">⊕ NEW QUESTION</h2>
+            <p class="modal-sub">// Add a challenge to your DSA training matrix</p>
             <input type="hidden" id="dsa-edit-id">
-            <div class="form-group"><label>Title *</label><input type="text" id="dq-title" placeholder="e.g. Two Sum">
+            <div class="form-group"><label>TITLE *</label><input type="text" id="dq-title" placeholder="e.g. Two Sum">
             </div>
             <div class="form-group">
-                <label>Category</label>
+                <label>CATEGORY</label>
                 <select id="dq-cat">
                     <option>Array</option>
                     <option>String</option>
@@ -2022,20 +2481,20 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Difficulty</label>
+                <label>DIFFICULTY TIER</label>
                 <div class="radio-group">
-                    <button class="radio-opt" id="rd-easy" onclick="pickDiff('easy')">Easy</button>
-                    <button class="radio-opt" id="rd-medium" onclick="pickDiff('medium')">Medium</button>
-                    <button class="radio-opt" id="rd-hard" onclick="pickDiff('hard')">Hard</button>
+                    <button class="radio-opt" id="rd-easy" onclick="pickDiff('easy')">EASY</button>
+                    <button class="radio-opt" id="rd-medium" onclick="pickDiff('medium')">MEDIUM</button>
+                    <button class="radio-opt" id="rd-hard" onclick="pickDiff('hard')">HARD</button>
                 </div>
             </div>
-            <div class="form-group"><label>Problem Description</label><textarea id="dq-desc"
-                    placeholder="Describe the problem, constraints, examples…" rows="4"></textarea></div>
-            <div class="form-group"><label>Source URL (LeetCode etc.)</label><input type="text" id="dq-url"
+            <div class="form-group"><label>PROBLEM DESCRIPTION</label><textarea id="dq-desc"
+                    placeholder="// Describe the problem, constraints, examples…" rows="4"></textarea></div>
+            <div class="form-group"><label>SOURCE URL</label><input type="text" id="dq-url"
                     placeholder="https://leetcode.com/problems/…"></div>
             <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closeModal('dsa-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveDSAQuestion()">Save</button>
+                <button class="btn btn-ghost" onclick="closeModal('dsa-modal')">CANCEL</button>
+                <button class="btn btn-primary" onclick="saveDSAQuestion()">SAVE</button>
             </div>
         </div>
     </div>
@@ -2045,199 +2504,132 @@
         <div class="modal modal-wide">
             <div class="qview-header">
                 <div class="qview-title" id="qv-title">—</div>
-                <button class="btn btn-ghost btn-sm" onclick="closeModal('qview-modal')">✕ Close</button>
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('qview-modal')">✕ CLOSE</button>
             </div>
             <div class="qview-badges" id="qv-badges"></div>
             <div class="qview-desc" id="qv-desc" style="display:none"></div>
-            <div id="qv-url-row" style="margin-bottom:12px;display:none">
+            <div id="qv-url-row" style="margin-bottom:14px;display:none">
                 <a id="qv-url" href="#" target="_blank"
-                    style="color:var(--accent2);font-size:.78rem;font-family:'Space Mono',monospace;">🔗 Open
-                    problem</a>
+                    style="color:var(--cyan);font-size:0.7rem;font-family:'Fira Code',monospace;letter-spacing:1px;">⇗
+                    OPEN PROBLEM</a>
             </div>
             <div
-                style="font-size:.68rem;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-                Linked Solution Cells</div>
+                style="font-size:0.5rem;color:var(--muted);font-family:'Fira Code',monospace;text-transform:uppercase;letter-spacing:3px;margin-bottom:10px">
+                // LINKED SOLUTION CELLS</div>
             <div class="qview-cells" id="qv-cells"></div>
-            <div class="modal-actions" style="margin-top:16px">
-                <button class="btn btn-success btn-sm" id="qv-solve-btn" onclick="toggleSolvedFromView()">✓ Mark
-                    Solved</button>
-                <button class="btn btn-ghost btn-sm" onclick="editFromView()">✏ Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteFromView()">🗑 Delete</button>
+            <div class="modal-actions" style="margin-top:18px">
+                <button class="btn btn-success btn-sm" id="qv-solve-btn" onclick="toggleSolvedFromView()">✓ MARK
+                    SOLVED</button>
+                <button class="btn btn-ghost btn-sm" onclick="editFromView()">✏ EDIT</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteFromView()">⊗ DELETE</button>
             </div>
         </div>
     </div>
 
     <!-- RENAME MODAL -->
     <div class="modal-overlay" id="rename-modal">
-        <div class="modal" style="width:380px">
-            <h2>✏ Rename Notebook</h2>
-            <p class="modal-sub">Enter a new name for this notebook.</p>
+        <div class="modal" style="width:400px">
+            <h2>✏ RENAME</h2>
+            <p class="modal-sub">// Enter a new identifier for this notebook</p>
             <input type="hidden" id="rename-nb-id">
-            <div class="form-group"><label>New Name</label><input type="text" id="rename-nb-title"
-                    placeholder="Notebook name…"></div>
+            <div class="form-group"><label>NEW NAME</label><input type="text" id="rename-nb-title"
+                    placeholder="notebook_name…"></div>
             <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closeModal('rename-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="doRenameNotebook()">Rename</button>
+                <button class="btn btn-ghost" onclick="closeModal('rename-modal')">CANCEL</button>
+                <button class="btn btn-primary" onclick="doRenameNotebook()">RENAME</button>
             </div>
         </div>
     </div>
 
     <div class="save-bar" id="save-bar">
         <div class="save-dot" id="save-dot"></div>
-        <span id="save-text">Saved</span>
+        <span id="save-text">SAVED</span>
     </div>
 
     <script>
         'use strict';
 
-        // ══════════════════════════════════════════════
-        // STATE
-        // ══════════════════════════════════════════════
-        let db = null;
-        let cells = [];
-        let cellEditors = {};
-        let dsaQuestions = [];
-        let currentNotebookId = null;
-        let autoSaveTimer = null;
-        let cellIdCounter = 0;
-        let dsaFilter = 'all';
-        let selDiff = 'medium';
-        let viewingQId = null;
+        let db = null, cells = [], cellEditors = {}, dsaQuestions = [];
+        let currentNotebookId = null, autoSaveTimer = null, cellIdCounter = 0;
+        let dsaFilter = 'all', selDiff = 'medium', viewingQId = null;
 
-        // Font size state (per-cell)
         const FONT_SIZES = [11, 12, 13, 14, 15, 16, 18, 20, 22, 24];
-        const DEFAULT_FONT_IDX = 2; // 13px
-        let cellFontSizeIdx = {}; // cellId -> index into FONT_SIZES
+        const DEFAULT_FONT_IDX = 2;
+        let cellFontSizeIdx = {};
 
-        // ── helpers to persist & restore notebook ID ──
-        function saveNotebookId(id) {
-            if (id) localStorage.setItem('current_notebook_id', id);
-            else localStorage.removeItem('current_notebook_id');
-        }
-        function loadNotebookId() {
-            return localStorage.getItem('current_notebook_id') || null;
-        }
+        function saveNotebookId(id) { if (id) localStorage.setItem('current_notebook_id', id); else localStorage.removeItem('current_notebook_id'); }
+        function loadNotebookId() { return localStorage.getItem('current_notebook_id') || null; }
 
-        // ══════════════════════════════════════════════
-        // FONT SIZE CONTROL
-        // ══════════════════════════════════════════════
-        function getFontIdx(cellId) {
-            return (cellFontSizeIdx[cellId] !== undefined) ? cellFontSizeIdx[cellId] : DEFAULT_FONT_IDX;
-        }
+        /* ── FONT SIZE ── */
+        function getFontIdx(id) { return cellFontSizeIdx[id] !== undefined ? cellFontSizeIdx[id] : DEFAULT_FONT_IDX; }
 
         function setFontSize(cellId, delta) {
-            let idx = getFontIdx(cellId) + delta;
-            idx = Math.max(0, Math.min(FONT_SIZES.length - 1, idx));
+            let idx = Math.max(0, Math.min(FONT_SIZES.length - 1, getFontIdx(cellId) + delta));
             cellFontSizeIdx[cellId] = idx;
-            const size = FONT_SIZES[idx];
-
-            applyFontSize(cellId, size);
-
-            // Update display
-            const disp = document.getElementById('fsize-' + cellId);
-            if (disp) disp.textContent = size + 'px';
-
+            applyFontSize(cellId, FONT_SIZES[idx]);
+            const d = document.getElementById('fsize-' + cellId);
+            if (d) d.textContent = FONT_SIZES[idx] + 'px';
             triggerAutoSave();
         }
 
         function applyFontSize(cellId, size) {
             const editor = cellEditors[cellId];
             if (!editor) return;
-            // Must target the inner CodeMirror div, not just the wrapper,
-            // because our CSS uses !important on .cell-editor-wrap .CodeMirror
             const cmEl = editor.getWrapperElement().querySelector('.CodeMirror');
             if (cmEl) cmEl.style.setProperty('font-size', size + 'px', 'important');
-            // Also update the wrapper so line-height / gutter scale together
             editor.getWrapperElement().style.fontSize = size + 'px';
-            // Recalculate layout after font change
             setTimeout(() => editor.refresh(), 0);
         }
 
-        // ══════════════════════════════════════════════
-        // CODE FORMATTING
-        // ══════════════════════════════════════════════
+        /* ── FORMAT ── */
         async function formatCell(cellId) {
             const editor = cellEditors[cellId];
             if (!editor) return;
-
             const btn = document.getElementById('fmtbtn-' + cellId);
             btn.classList.add('formatting');
-            btn.textContent = '⏳ Formatting…';
-
-            const originalCode = editor.getValue();
-
+            btn.textContent = '⏳';
+            const original = editor.getValue();
             try {
                 let formatted;
-
-                // Try prettier first (if loaded)
                 if (window.prettier && window.prettierPlugins && window.prettierPlugins.babel) {
-                    formatted = prettier.format(originalCode, {
-                        parser: 'babel',
-                        plugins: [prettierPlugins.babel],
-                        semi: true,
-                        singleQuote: true,
-                        tabWidth: 2,
-                        trailingComma: 'es5',
-                        printWidth: 80,
-                        arrowParens: 'avoid',
+                    formatted = prettier.format(original, {
+                        parser: 'babel', plugins: [prettierPlugins.babel],
+                        semi: true, singleQuote: true, tabWidth: 2,
+                        trailingComma: 'es5', printWidth: 80, arrowParens: 'avoid',
                     });
                 } else {
-                    // Fallback: basic JS formatter using Function trick + indentation fix
-                    formatted = basicFormat(originalCode);
+                    formatted = basicFormat(original);
                 }
-
-                if (formatted && formatted !== originalCode) {
-                    // Save cursor position
+                if (formatted && formatted !== original) {
                     const cursor = editor.getCursor();
                     editor.setValue(formatted);
                     editor.setCursor(cursor);
-
-                    // Flash the cell
                     const cellEl = document.getElementById('cell-' + cellId);
                     cellEl.classList.add('format-flash');
-                    setTimeout(() => cellEl.classList.remove('format-flash'), 600);
-
-                    showToast('✨ Code formatted!', 'success');
+                    setTimeout(() => cellEl.classList.remove('format-flash'), 700);
+                    showToast('✨ Code formatted', 'success');
                     triggerAutoSave();
-                } else {
-                    showToast('Already clean!', 'success');
-                }
-            } catch (err) {
-                showToast('Format error: ' + err.message.split('\n')[0], 'error');
-            }
-
+                } else { showToast('// Already clean', 'success'); }
+            } catch (err) { showToast('Format error: ' + err.message.split('\n')[0], 'error'); }
             btn.classList.remove('formatting');
-            btn.innerHTML = '✨ Format';
+            btn.innerHTML = '✦ FMT';
         }
 
         function basicFormat(code) {
-            // Simple regex-based formatter as fallback
-            let lines = code.split('\n');
-            let indent = 0;
-            const TAB = '  ';
-            const result = [];
-
+            let lines = code.split('\n'), indent = 0, result = [], TAB = '  ';
             for (let raw of lines) {
                 let line = raw.trim();
                 if (!line) { result.push(''); continue; }
-
-                // Decrease indent for closing braces/brackets
                 if (/^[}\])]/.test(line)) indent = Math.max(0, indent - 1);
-
                 result.push(TAB.repeat(indent) + line);
-
-                // Increase indent after opening braces
                 const opens = (line.match(/[{[(]/g) || []).length;
                 const closes = (line.match(/[}\])]/g) || []).length;
                 indent = Math.max(0, indent + opens - closes);
             }
-
             return result.join('\n');
         }
 
-        // ══════════════════════════════════════════════
-        // PAGE / SIDEBAR
-        // ══════════════════════════════════════════════
+        /* ── PAGE / SIDEBAR ── */
         function switchPage(n) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2252,26 +2644,21 @@
             document.getElementById('stab-' + n).classList.add('active');
         }
 
-        // ══════════════════════════════════════════════
-        // FIREBASE
-        // ══════════════════════════════════════════════
+        /* ── FIREBASE ── */
         function loadFirebaseFromFile(input) {
-            const file = input.files[0];
-            if (!file) return;
+            const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    let text = e.target.result.trim();
-                    text = text.replace(/^.*?=\s*/, '').replace(/;?\s*$/, '').trim();
+                    let text = e.target.result.trim().replace(/^.*?=\s*/, '').replace(/;?\s*$/, '').trim();
                     const cfg = JSON.parse(text);
                     const keys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
                     let found = 0;
                     keys.forEach(k => { if (cfg[k]) { const el = document.getElementById('fb-' + k); if (el) { el.value = cfg[k]; found++; } } });
                     const st = document.getElementById('fb-file-status');
-                    st.style.display = 'block';
-                    st.textContent = '✓ Loaded ' + found + ' fields from ' + file.name;
-                    showToast('Config loaded from file!', 'success');
-                } catch (err) { showToast('Could not parse file: ' + err.message, 'error'); }
+                    st.style.display = 'block'; st.textContent = '✓ Loaded ' + found + ' fields from ' + file.name;
+                    showToast('Config loaded', 'success');
+                } catch (err) { showToast('Parse error: ' + err.message, 'error'); }
             };
             reader.readAsText(file);
         }
@@ -2290,7 +2677,7 @@
             ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
                 config[k] = (document.getElementById('fb-' + k).value || '').trim();
             });
-            if (!config.apiKey || !config.projectId) { showToast('API Key & Project ID required!', 'error'); return; }
+            if (!config.apiKey || !config.projectId) { showToast('API Key & Project ID required', 'error'); return; }
             try {
                 try { await firebase.app().delete(); } catch (e) { }
                 firebase.initializeApp(config);
@@ -2299,31 +2686,25 @@
                 localStorage.setItem('fb_config', JSON.stringify(config));
                 setFirebaseStatus(true);
                 closeModal('firebase-modal');
-                showToast('Firebase connected!', 'success');
-                loadNotebooksList();
-                loadDSAFromFirebase();
+                showToast('Firebase connected', 'success');
+                loadNotebooksList(); loadDSAFromFirebase();
             } catch (e) { showToast('Failed: ' + e.message, 'error'); console.error(e); }
         }
 
         function setFirebaseStatus(on) {
             document.getElementById('fb-dot').className = 'fb-dot' + (on ? ' on' : '');
-            document.getElementById('fb-status').textContent = on ? 'synced' : 'offline';
+            document.getElementById('fb-status').textContent = on ? 'SYNCED' : 'OFFLINE';
         }
 
-        // ══════════════════════════════════════════════
-        // NOTEBOOKS LIST
-        // ══════════════════════════════════════════════
+        /* ── NOTEBOOKS ── */
         async function loadNotebooksList() {
             if (!db) return;
             const list = document.getElementById('nb-list');
-            list.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:.7rem;font-family:\'Space Mono\',monospace">Loading…</div>';
+            list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:0.6rem;font-family:\'Fira Code\',monospace;letter-spacing:1px">LOADING…</div>';
             try {
                 const snap = await db.collection('notebooks').orderBy('updatedAt', 'desc').limit(50).get();
                 list.innerHTML = '';
-                if (snap.empty) {
-                    list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No notebooks yet</div>';
-                    return;
-                }
+                if (snap.empty) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace;letter-spacing:1px">NO NOTEBOOKS FOUND</div>'; return; }
                 snap.forEach(doc => {
                     const d = doc.data();
                     const div = document.createElement('div');
@@ -2336,17 +2717,16 @@
                         '<div class="nb-item-actions">' +
                         '<button class="nb-act-btn duplicate" title="Duplicate" onclick="event.stopPropagation();duplicateNotebook(\'' + doc.id + '\',\'' + escH(d.title || 'Untitled') + '\')">📋</button>' +
                         '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '\',`' + escH(d.title || 'Untitled') + '`)">✏</button>' +
-                        '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">🗑</button>' +
+                        '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">⊗</button>' +
                         '</div>';
                     div.addEventListener('click', () => loadNotebook(doc.id, d));
                     list.appendChild(div);
                 });
-            } catch (e) { list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:.7rem">' + escH(e.message) + '</div>'; }
+            } catch (e) { list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:0.68rem">' + escH(e.message) + '</div>'; }
         }
 
         function loadNotebook(id, data) {
-            currentNotebookId = id;
-            saveNotebookId(id);
+            currentNotebookId = id; saveNotebookId(id);
             document.getElementById('nb-title').value = data.title || 'Untitled';
             document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
             cells = []; cellEditors = {}; cellFontSizeIdx = {};
@@ -2354,22 +2734,20 @@
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx));
             updateCellCount();
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
-            const el = document.getElementById('nb-item-' + id);
-            if (el) el.classList.add('active-nb');
+            const el = document.getElementById('nb-item-' + id); if (el) el.classList.add('active-nb');
             switchPage('notebook');
-            showToast('Notebook loaded!', 'success');
+            showToast('Notebook loaded', 'success');
         }
 
         function newNotebook() {
-            currentNotebookId = null;
-            saveNotebookId(null);
-            document.getElementById('nb-title').value = 'Untitled Notebook';
-            document.getElementById('nb-id').textContent = 'local';
+            currentNotebookId = null; saveNotebookId(null);
+            document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
+            document.getElementById('nb-id').textContent = 'LOCAL';
             cells = []; cellEditors = {}; cellFontSizeIdx = {};
             document.getElementById('cells-container').innerHTML = '';
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             addCell('javascript');
-            showToast('New notebook!', 'success');
+            showToast('New notebook created', 'success');
         }
 
         async function duplicateNotebook(id, title) {
@@ -2377,35 +2755,32 @@
                 let notebookData;
                 if (db) {
                     const doc = await db.collection('notebooks').doc(id).get();
-                    if (!doc.exists) { showToast('Notebook not found!', 'error'); return; }
+                    if (!doc.exists) { showToast('Notebook not found', 'error'); return; }
                     notebookData = doc.data();
                 } else {
                     const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
-                    if (!local) { showToast('No notebook to duplicate!', 'error'); return; }
+                    if (!local) { showToast('No notebook to duplicate', 'error'); return; }
                     notebookData = local;
                 }
-                currentNotebookId = null;
-                saveNotebookId(null);
-                document.getElementById('nb-title').value = title + ' (Copy)';
-                document.getElementById('nb-id').textContent = 'local';
+                currentNotebookId = null; saveNotebookId(null);
+                document.getElementById('nb-title').value = title + ' (COPY)';
+                document.getElementById('nb-id').textContent = 'LOCAL';
                 cells = []; cellEditors = {}; cellFontSizeIdx = {};
                 document.getElementById('cells-container').innerHTML = '';
                 (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx));
                 updateCellCount();
                 document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
-                switchPage('notebook');
-                triggerAutoSave();
-                showToast('Notebook duplicated!', 'success');
-            } catch (e) { showToast('Failed to duplicate: ' + e.message, 'error'); }
+                switchPage('notebook'); triggerAutoSave();
+                showToast('Notebook duplicated', 'success');
+            } catch (e) { showToast('Failed: ' + e.message, 'error'); }
         }
 
         async function deleteNotebook(id) {
-            if (!confirm('Delete this notebook permanently? This cannot be undone.')) return;
+            if (!confirm('Delete this notebook? This cannot be undone.')) return;
             if (id === currentNotebookId) {
-                currentNotebookId = null;
-                saveNotebookId(null);
-                document.getElementById('nb-title').value = 'Untitled Notebook';
-                document.getElementById('nb-id').textContent = 'local';
+                currentNotebookId = null; saveNotebookId(null);
+                document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
+                document.getElementById('nb-id').textContent = 'LOCAL';
                 cells = []; cellEditors = {}; cellFontSizeIdx = {};
                 document.getElementById('cells-container').innerHTML = '';
                 addCell('javascript');
@@ -2433,15 +2808,13 @@
             if (db) {
                 try {
                     await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    showToast('Renamed!', 'success'); loadNotebooksList();
+                    showToast('Renamed', 'success'); loadNotebooksList();
                 } catch (e) { showToast('Rename failed: ' + e.message, 'error'); }
             }
             closeModal('rename-modal');
         }
 
-        // ══════════════════════════════════════════════
-        // DSA
-        // ══════════════════════════════════════════════
+        /* ── DSA ── */
         function pickDiff(d) {
             selDiff = d;
             ['easy', 'medium', 'hard'].forEach(x => { document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : ''); });
@@ -2451,14 +2824,14 @@
             document.getElementById('dsa-edit-id').value = editId || '';
             if (editId) {
                 const q = dsaQuestions.find(q => q.id === editId); if (!q) return;
-                document.getElementById('dsa-modal-h').textContent = '✏ Edit Question';
+                document.getElementById('dsa-modal-h').textContent = '✏ EDIT QUESTION';
                 document.getElementById('dq-title').value = q.title;
                 document.getElementById('dq-cat').value = q.category || 'Array';
                 document.getElementById('dq-desc').value = q.description || '';
                 document.getElementById('dq-url').value = q.url || '';
                 pickDiff(q.difficulty || 'medium');
             } else {
-                document.getElementById('dsa-modal-h').textContent = '＋ Add Question';
+                document.getElementById('dsa-modal-h').textContent = '⊕ NEW QUESTION';
                 document.getElementById('dq-title').value = '';
                 document.getElementById('dq-desc').value = '';
                 document.getElementById('dq-url').value = '';
@@ -2469,7 +2842,7 @@
 
         function saveDSAQuestion() {
             const title = document.getElementById('dq-title').value.trim();
-            if (!title) { showToast('Title is required!', 'error'); return; }
+            if (!title) { showToast('Title is required', 'error'); return; }
             const editId = document.getElementById('dsa-edit-id').value;
             const existing = editId ? dsaQuestions.find(q => q.id === editId) : null;
             const q = {
@@ -2484,7 +2857,7 @@
             else dsaQuestions.push(q);
             closeModal('dsa-modal'); persistDSA(); refreshAllDSAUI();
             cells.forEach(c => { if (c.linkedQuestionId === q.id) refreshBanner(c.id); });
-            showToast(editId ? 'Updated!' : 'Question added!', 'success');
+            showToast(editId ? 'Updated' : 'Question added', 'success');
         }
 
         function deleteDSAQuestion(id) {
@@ -2505,21 +2878,21 @@
             viewingQId = id;
             document.getElementById('qv-title').textContent = q.title;
             let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
-            if (q.category) badges += '<span style="font-size:.7rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category) + '</span>';
-            if (q.solved) badges += '<span style="color:var(--success);font-size:.72rem;font-family:\'Space Mono\',monospace">✓ Solved</span>';
+            if (q.category) badges += '<span style="font-size:0.6rem;color:var(--muted);font-family:\'Fira Code\',monospace;letter-spacing:1px">' + escH(q.category) + '</span>';
+            if (q.solved) badges += '<span style="color:var(--plasma);font-size:0.65rem;font-family:\'Fira Code\',monospace">✓ SOLVED</span>';
             document.getElementById('qv-badges').innerHTML = badges;
             const descEl = document.getElementById('qv-desc');
             if (q.description) { descEl.textContent = q.description; descEl.style.display = 'block'; } else descEl.style.display = 'none';
             const urlRow = document.getElementById('qv-url-row');
             if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; } else urlRow.style.display = 'none';
-            document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ Reopen' : '✓ Mark Solved';
+            document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ REOPEN' : '✓ MARK SOLVED';
             document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
             const linkedCells = cells.filter(c => c.linkedQuestionId === id);
             const cellsEl = document.getElementById('qv-cells');
             if (linkedCells.length === 0) {
-                cellsEl.innerHTML = '<div class="qview-empty">No cells linked to this question yet.<br>Open a notebook cell and click "Link Question" to connect it.</div>';
+                cellsEl.innerHTML = '<div class="qview-empty">// No cells linked yet — open a cell and click "Link Question"</div>';
             } else {
-                cellsEl.innerHTML = linkedCells.map((c) => {
+                cellsEl.innerHTML = linkedCells.map(c => {
                     const editor = cellEditors[c.id];
                     const code = editor ? editor.getValue() : c.code || '';
                     const wrap = document.getElementById('cell-' + c.id);
@@ -2531,7 +2904,7 @@
                         '<span class="diff-badge diff-' + (c.lang === 'typescript' ? 'medium' : 'easy') + '">' + c.lang.toUpperCase().slice(0, 2) + '</span>' +
                         '<span>' + escH(document.getElementById('nb-title').value || 'Current Notebook') + '</span>' +
                         '</div>' +
-                        (desc ? '<div class="qview-cell-desc">📝 ' + escH(desc) + '</div>' : '') +
+                        (desc ? '<div class="qview-cell-desc">// ' + escH(desc) + '</div>' : '') +
                         '<div class="qview-cell-code">' + escH(code.slice(0, 600)) + (code.length > 600 ? '\n…' : '') + '</div>' +
                         '</div>';
                 }).join('');
@@ -2564,7 +2937,7 @@
                 if (search && !q.title.toLowerCase().includes(search) && !(q.category || '').toLowerCase().includes(search)) return false;
                 return true;
             });
-            if (filtered.length === 0) { list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:.7rem;text-align:center;font-family:\'Space Mono\',monospace">No questions found</div>'; return; }
+            if (filtered.length === 0) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace;letter-spacing:1px">NO RESULTS</div>'; return; }
             list.innerHTML = filtered.map(q => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
                 return '<div class="dsa-sb-item">' +
@@ -2585,8 +2958,8 @@
         function renderDSAGrid() {
             const grid = document.getElementById('dsa-grid');
             const meta = document.getElementById('dsa-pm');
-            meta.textContent = dsaQuestions.length + ' question' + (dsaQuestions.length !== 1 ? 's' : '') + ' · ' + dsaQuestions.filter(q => q.solved).length + ' solved';
-            if (dsaQuestions.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Add your first DSA question!</p></div>'; return; }
+            meta.textContent = dsaQuestions.length + ' QUESTION' + (dsaQuestions.length !== 1 ? 'S' : '') + ' LOADED · ' + dsaQuestions.filter(q => q.solved).length + ' SOLVED';
+            if (dsaQuestions.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">⬡</div><p>// NO QUESTIONS LOADED — ADD YOUR FIRST DSA CHALLENGE</p></div>'; return; }
             grid.innerHTML = dsaQuestions.map((q, i) => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
                 return '<div class="dsa-card' + (q.solved ? ' solved-card' : '') + '">' +
@@ -2594,15 +2967,15 @@
                     (q.description ? '<div class="dc-desc">' + escH(q.description) + '</div>' : '') +
                     '<div class="dc-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
-                    '<span style="font-size:.63rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
-                    (lc ? '<span class="dc-lc">⚡ ' + lc + ' cell' + (lc > 1 ? 's' : '') + '</span>' : '') +
+                    '<span style="font-size:0.55rem;color:var(--muted);font-family:\'Fira Code\',monospace;letter-spacing:0.5px">' + escH(q.category || '') + '</span>' +
+                    (lc ? '<span class="dc-lc">⚡ ' + lc + ' CELL' + (lc > 1 ? 'S' : '') + '</span>' : '') +
                     '</div>' +
                     '<div class="dc-actions">' +
-                    '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁 View</button>' +
-                    '<button class="btn btn-' + (q.solved ? 'ghost' : 'success') + ' btn-xs" onclick="toggleSolved(\'' + q.id + '\')">' + (q.solved ? '↩ Reopen' : '✓ Solved') + '</button>' +
-                    (q.url ? '<button class="btn btn-ghost btn-xs" onclick="window.open(\'' + escH(q.url) + '\',\'_blank\')">🔗</button>' : '') +
-                    '<button class="btn btn-ghost btn-xs" onclick="openDSAModal(\'' + q.id + '\')">✏</button>' +
-                    '<button class="btn btn-danger btn-xs" onclick="deleteDSAQuestion(\'' + q.id + '\')">🗑</button>' +
+                    '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁 VIEW</button>' +
+                    '<button class="btn btn-' + (q.solved ? 'ghost' : 'success') + ' btn-xs" onclick="toggleSolved(\'' + q.id + '\')">' + (q.solved ? '↩ REOPEN' : '✓ SOLVED') + '</button>' +
+                    (q.url ? '<button class="btn btn-ghost btn-xs" onclick="window.open(\'' + escH(q.url) + '\',\'_blank\')">⇗ LINK</button>' : '') +
+                    '<button class="btn btn-ghost btn-xs" onclick="openDSAModal(\'' + q.id + '\')">✏ EDIT</button>' +
+                    '<button class="btn btn-danger btn-xs" onclick="deleteDSAQuestion(\'' + q.id + '\')">⊗</button>' +
                     '</div></div>';
             }).join('');
         }
@@ -2634,57 +3007,48 @@
             } catch (e) { console.warn('DSA load err', e); }
         }
 
-        // ══════════════════════════════════════════════
-        // CELLS
-        // ══════════════════════════════════════════════
+        /* ── CELLS ── */
         function addCell(lang, code, description, savedOutput, linkedQId, savedFontSizeIdx) {
-            lang = lang || 'javascript';
-            code = code || '';
-            description = description || '';
-            linkedQId = linkedQId || null;
+            lang = lang || 'javascript'; code = code || ''; description = description || ''; linkedQId = linkedQId || null;
             const id = ++cellIdCounter;
             const cell = { id, lang, description, linkedQuestionId: linkedQId, lastOutput: savedOutput || null };
             cells.push(cell);
 
-            // Restore font size
             const fsi = (savedFontSizeIdx !== undefined && savedFontSizeIdx !== null) ? savedFontSizeIdx : DEFAULT_FONT_IDX;
             cellFontSizeIdx[id] = fsi;
             const fontSize = FONT_SIZES[fsi];
 
             const div = document.createElement('div');
-            div.className = 'cell';
-            div.id = 'cell-' + id;
+            div.className = 'cell'; div.id = 'cell-' + id;
 
             div.innerHTML =
                 buildBannerHTML(id, linkedQId) +
                 '<div class="cell-desc">' +
-                '<div class="desc-label"><span>📝</span>Solution Notes</div>' +
-                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
+                '<div class="desc-label"><span>▸</span> SOLUTION NOTES</div>' +
+                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
                 '</div>' +
                 '<div class="cell-toolbar">' +
                 '<div class="tl-left">' +
-                '<span class="cell-num" id="cnum-' + id + '">[1]</span>' +
+                '<span class="cell-num" id="cnum-' + id + '">[01]</span>' +
                 '<div class="lang-toggle">' +
                 '<button class="lang-btn ' + (lang === 'javascript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'javascript\')">JS</button>' +
                 '<button class="lang-btn ' + (lang === 'typescript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'typescript\')">TS</button>' +
                 '</div>' +
-                '<span class="hint">Ctrl+Enter run · Ctrl+/ comment</span>' +
+                '<span class="hint">CTRL+ENTER RUN · CTRL+/ COMMENT · ALT+SHIFT+F FORMAT</span>' +
                 '</div>' +
                 '<div class="tl-right">' +
-                // ── Font Size Controls ──
                 '<div class="font-size-ctrl" title="Adjust font size">' +
-                '<button class="fs-btn" onclick="setFontSize(' + id + ', -1)" title="Decrease font size">A−</button>' +
+                '<button class="fs-btn" onclick="setFontSize(' + id + ',-1)" title="Decrease">A−</button>' +
                 '<span class="fs-display" id="fsize-' + id + '">' + fontSize + 'px</span>' +
-                '<button class="fs-btn" onclick="setFontSize(' + id + ', +1)" title="Increase font size">A+</button>' +
+                '<button class="fs-btn" onclick="setFontSize(' + id + ',+1)" title="Increase">A+</button>' +
                 '</div>' +
-                // ── Format Button ──
-                '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format code (Prettier)">✨ Format</button>' +
-                '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ Run</button>' +
-                '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">✕</button>' +
+                '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format code">✦ FMT</button>' +
+                '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ RUN</button>' +
+                '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">⊗</button>' +
                 '</div></div>' +
                 '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
                 '<div class="cell-output" id="output-' + id + '" style="display:none">' +
-                '<div class="out-header">Output<span class="out-async-badge" id="oasync-' + id + '" style="display:none">async</span><span class="out-time" id="otime-' + id + '"></span></div>' +
+                '<div class="out-header">OUTPUT<span class="out-async-badge" id="oasync-' + id + '" style="display:none">ASYNC</span><span class="out-time" id="otime-' + id + '"></span></div>' +
                 '<div class="out-content" id="ocontent-' + id + '"></div>' +
                 '</div>';
 
@@ -2693,11 +3057,8 @@
 
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
                 value: code || getTemplate(lang),
-                mode: 'javascript',
-                theme: 'dracula',
-                lineNumbers: true,
-                matchBrackets: true,
-                autoCloseBrackets: true,
+                mode: 'javascript', theme: 'dracula',
+                lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
                 hintOptions: { completeSingle: false, hint: CodeMirror.hint.javascript },
                 extraKeys: {
                     'Ctrl-Enter': () => runCell(id),
@@ -2709,7 +3070,6 @@
                 indentUnit: 2, tabSize: 2, indentWithTabs: false,
             });
 
-            // Apply saved font size (deferred so CodeMirror has rendered)
             setTimeout(() => applyFontSize(id, fontSize), 0);
 
             let hintTimer = null;
@@ -2719,8 +3079,7 @@
                     hintTimer = setTimeout(() => {
                         if (!cm.state.completionActive) {
                             cm.showHint({
-                                completeSingle: false,
-                                hint: (cm) => {
+                                completeSingle: false, hint: (cm) => {
                                     const jsH = CodeMirror.hint.javascript(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
                                     const awH = CodeMirror.hint.anyword(cm) || { list: [], from: cm.getCursor(), to: cm.getCursor() };
                                     const seen = new Set(jsH.list.map(h => typeof h === 'string' ? h : h.text));
@@ -2743,10 +3102,8 @@
         }
 
         function getTemplate(lang) {
-            if (lang === 'typescript') {
-                return `// TypeScript — synchronous version\nfunction solve<T>(input: T[]): T[] {\n  return input.map(x => x); // your solution\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
-            }
-            return `// JavaScript — synchronous version\nfunction solve(nums) {\n  return nums.map(n => n * 2); // your solution\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
+            if (lang === 'typescript') return `// TypeScript solution\nfunction solve<T>(input: T[]): T[] {\n  return input.map(x => x);\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
+            return `// JavaScript solution\nfunction solve(nums) {\n  return nums.map(n => n * 2);\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
         }
 
         function setLang(id, lang) {
@@ -2760,41 +3117,34 @@
 
         function deleteCell(id) {
             const idx = cells.findIndex(c => c.id === id);
-            if (idx !== -1) {
-                cells.splice(idx, 1);
-                delete cellEditors[id];
-                delete cellFontSizeIdx[id];
-                document.getElementById('cell-' + id).remove();
-                updateCellCount();
-                triggerAutoSave();
-            }
+            if (idx !== -1) { cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
         }
 
         function updateCellCount() {
-            document.getElementById('cell-count').textContent = cells.length + ' cell' + (cells.length !== 1 ? 's' : '');
-            cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (i + 1) + ']'; });
+            document.getElementById('cell-count').textContent = cells.length + ' CELL' + (cells.length !== 1 ? 'S' : '');
+            cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (String(i + 1).padStart(2, '0')) + ']'; });
         }
 
-        // ── Banner ──
+        /* ── BANNER ── */
         function buildBannerHTML(cellId, linkedQId) {
             const q = linkedQId ? dsaQuestions.find(x => x.id === linkedQId) : null;
             return '<div class="cell-qbanner' + (q ? ' linked' : '') + '" id="qbanner-' + cellId + '">' +
-                '<span class="qb-icon">' + (q ? '🎯' : '❓') + '</span>' +
+                '<span class="qb-icon">' + (q ? '⬡' : '◇') + '</span>' +
                 '<div class="qb-info">' +
-                '<div class="qb-sublabel">Linked DSA Question</div>' +
+                '<div class="qb-sublabel">LINKED DSA CHALLENGE</div>' +
                 (q ? '<div class="qb-title">' + escH(q.title) + '</div>' +
                     '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
-                    '<span class="dsa-cat-tag" style="font-size:.58rem">' + escH(q.category || '') + '</span>' +
-                    (q.solved ? '<span style="color:var(--success);font-size:.6rem;font-family:\'Space Mono\',monospace">✓</span>' : '') +
+                    '<span class="dsa-cat-tag" style="font-size:0.52rem">' + escH(q.category || '') + '</span>' +
+                    (q.solved ? '<span style="color:var(--plasma);font-size:0.55rem;font-family:\'Fira Code\',monospace;letter-spacing:1px">✓ SOLVED</span>' : '') +
                     '</div>'
-                    : '<div class="qb-empty">No question linked</div>') +
+                    : '<div class="qb-empty">// No challenge linked</div>') +
                 '</div>' +
                 '<div class="qb-right">' +
                 (q ? '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' : '') +
                 '<div class="qb-drop-wrap" id="qbdrop-' + cellId + '">' +
-                '<button class="qb-link-btn' + (q ? ' linked' : '') + '" onclick="togglePicker(' + cellId + ')">' + (q ? '✎ Change' : '+ Link') + '</button>' +
+                '<button class="qb-link-btn' + (q ? ' linked' : '') + '" onclick="togglePicker(' + cellId + ')">' + (q ? '✎ CHANGE' : '⊕ LINK') + '</button>' +
                 '<div class="qb-picker" id="qbpicker-' + cellId + '" style="display:none">' +
-                '<div class="qb-psearch"><input type="text" placeholder="Search…" oninput="buildPickerList(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
+                '<div class="qb-psearch"><input type="text" placeholder="// Search…" oninput="buildPickerList(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
                 '<div class="qb-plist" id="qbplist-' + cellId + '"></div>' +
                 '</div></div>' +
                 (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') +
@@ -2826,12 +3176,12 @@
             const list = document.getElementById('qbplist-' + cellId); if (!list) return;
             const cell = cells.find(c => c.id === cellId);
             const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search));
-            if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">No questions</div>'; return; }
+            if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">// No questions found</div>'; return; }
             list.innerHTML = filtered.map(q =>
                 '<div class="qb-pitem' + (cell && cell.linkedQuestionId === q.id ? ' selected' : '') + '" onclick="linkQ(' + cellId + ',\'' + q.id + '\')">' +
                 '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty[0].toUpperCase() + '</span>' +
                 '<span class="qb-pname">' + escH(q.title) + '</span>' +
-                '<span style="font-size:.58rem;color:var(--muted);font-family:\'Space Mono\',monospace">' + escH(q.category || '') + '</span>' +
+                '<span style="font-size:0.52rem;color:var(--muted);font-family:\'Fira Code\',monospace">' + escH(q.category || '') + '</span>' +
                 '</div>'
             ).join('');
         }
@@ -2849,23 +3199,18 @@
             if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
         });
 
-        // ══════════════════════════════════════════════
-        // CODE EXECUTION
-        // ══════════════════════════════════════════════
+        /* ── CODE EXECUTION ── */
         async function runCell(id) {
             const cell = cells.find(c => c.id === id);
             const editor = cellEditors[id];
             if (!cell || !editor) return;
 
-            const code = editor.getValue();
-            const lang = cell.lang;
+            const code = editor.getValue(), lang = cell.lang;
             const runBtn = document.getElementById('runbtn-' + id);
-            runBtn.classList.add('running');
-            runBtn.textContent = '⏳ Running…';
+            runBtn.classList.add('running'); runBtn.textContent = '⏳ EXEC…';
             document.getElementById('output-' + id).style.display = 'none';
 
-            const logs = [];
-            const t0 = performance.now();
+            const logs = []; const t0 = performance.now();
             let hasError = false, isAsync = false;
 
             const savedConsole = {};
@@ -2879,20 +3224,15 @@
                         if (a === undefined) return 'undefined';
                         if (a instanceof Error) return a.name + ': ' + a.message + (a.stack ? '\n' + a.stack.split('\n').slice(1, 3).join('\n') : '');
                         if (a instanceof Promise) return '[Promise]';
-                        if (Array.isArray(a) || (a !== null && typeof a === 'object')) {
-                            try { return JSON.stringify(a, null, 2); } catch { return String(a); }
-                        }
+                        if (Array.isArray(a) || (a !== null && typeof a === 'object')) { try { return JSON.stringify(a, null, 2); } catch { return String(a); } }
                         return String(a);
                     }).join(' ');
                 } catch (e) { str = '[unprintable]'; }
-                logs.push({ type, str });
-                savedConsole[type](...args);
+                logs.push({ type, str }); savedConsole[type](...args);
             };
 
-            console.log = capture('log');
-            console.error = capture('error');
-            console.warn = capture('warn');
-            console.info = capture('info');
+            console.log = capture('log'); console.error = capture('error');
+            console.warn = capture('warn'); console.info = capture('info');
             console.table = (...a) => { try { capture('log')(JSON.stringify(a[0], null, 2)); } catch { capture('log')(...a); } };
             console.dir = capture('log');
 
@@ -2911,12 +3251,8 @@
                             });
                         }
                         jsCode = result.outputText;
-                    } catch (err) {
-                        logs.push({ type: 'error', str: '[TypeScript compile error] ' + err.message });
-                        hasError = true;
-                    }
+                    } catch (err) { logs.push({ type: 'error', str: '[TypeScript compile error] ' + err.message }); hasError = true; }
                 }
-
                 if (!hasError) {
                     isAsync = /\bawait\b|\bPromise\b|async\s+(function|\()/.test(jsCode);
                     const AsyncFn = (async function () { }).constructor;
@@ -2926,30 +3262,24 @@
                         try {
                             const s = ret instanceof Promise ? '[Promise]' : typeof ret === 'object' ? JSON.stringify(ret, null, 2) : String(ret);
                             logs.push({ type: 'return', str: '→ ' + s });
-                        } catch (e) { /* skip */ }
+                        } catch (e) { }
                     }
                 }
             } catch (err) {
                 hasError = true;
                 if (err instanceof Error) {
                     logs.push({ type: 'error', str: err.name + ': ' + err.message });
-                    if (err.stack) {
-                        const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4);
-                        frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() }));
-                    }
-                } else {
-                    logs.push({ type: 'error', str: 'Thrown value: ' + String(err) });
-                }
+                    if (err.stack) { const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4); frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() })); }
+                } else { logs.push({ type: 'error', str: 'Thrown: ' + String(err) }); }
             } finally {
                 ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = savedConsole[m]);
             }
 
             const elapsed = (performance.now() - t0).toFixed(1);
-            if (logs.length === 0) logs.push({ type: 'info', str: '(no output)' });
+            if (logs.length === 0) logs.push({ type: 'info', str: '// (no output)' });
 
             showOutput(id, logs, hasError, elapsed + 'ms', isAsync);
-            runBtn.classList.remove('running');
-            runBtn.innerHTML = '▶ Run';
+            runBtn.classList.remove('running'); runBtn.innerHTML = '▶ RUN';
             cell.lastOutput = { lines: logs, hasError, time: elapsed + 'ms', isAsync };
             triggerAutoSave();
         }
@@ -2973,20 +3303,17 @@
             });
         }
 
-        // ══════════════════════════════════════════════
-        // SAVE / LOAD
-        // ══════════════════════════════════════════════
+        /* ── SAVE / LOAD ── */
         function triggerAutoSave() {
             document.getElementById('save-dot').classList.remove('saved');
-            document.getElementById('save-text').textContent = 'Unsaved…';
+            document.getElementById('save-text').textContent = 'WRITING…';
             document.getElementById('save-bar').classList.add('visible');
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(saveAll, 2500);
         }
 
         async function saveAll() {
-            const title = document.getElementById('nb-title').value.trim() || 'Untitled Notebook';
-
+            const title = document.getElementById('nb-title').value.trim() || 'UNTITLED_NOTEBOOK';
             const cellsData = cells.map(c => {
                 const editor = cellEditors[c.id];
                 const descEl = document.getElementById('desc-' + c.id);
@@ -3008,8 +3335,8 @@
             const txt = document.getElementById('save-text');
 
             if (!db) {
-                dot.classList.add('saved'); txt.textContent = 'Saved locally';
-                document.getElementById('last-saved').textContent = 'saved locally';
+                dot.classList.add('saved'); txt.textContent = 'SAVED LOCALLY';
+                document.getElementById('last-saved').textContent = 'SAVED LOCALLY';
                 setTimeout(() => bar.classList.remove('visible'), 2500);
                 return;
             }
@@ -3020,43 +3347,34 @@
                     await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
                 } else {
                     const ref = await db.collection('notebooks').add(payload);
-                    currentNotebookId = ref.id;
-                    saveNotebookId(ref.id);
+                    currentNotebookId = ref.id; saveNotebookId(ref.id);
                     document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
                 }
                 dot.classList.add('saved');
-                txt.textContent = 'Saved to Firebase ✓';
-                document.getElementById('last-saved').textContent = 'saved ' + new Date().toLocaleTimeString();
+                txt.textContent = 'SYNCED ✓';
+                document.getElementById('last-saved').textContent = 'SAVED ' + new Date().toLocaleTimeString();
                 loadNotebooksList();
                 setTimeout(() => bar.classList.remove('visible'), 2500);
             } catch (e) {
-                txt.textContent = 'Save failed: ' + e.message;
+                txt.textContent = 'SAVE FAILED: ' + e.message;
                 setTimeout(() => bar.classList.remove('visible'), 3500);
                 console.error('Save error:', e);
             }
         }
 
-        // ══════════════════════════════════════════════
-        // MODALS
-        // ══════════════════════════════════════════════
+        /* ── MODALS ── */
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-        // ══════════════════════════════════════════════
-        // UTILITIES
-        // ══════════════════════════════════════════════
-        function escH(s) {
-            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+        /* ── UTILS ── */
+        function escH(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
         function showToast(msg, type) {
             const t = document.getElementById('toast');
             t.textContent = msg; t.className = 'toast show ' + (type || '');
             setTimeout(() => t.className = 'toast', 2800);
         }
 
-        // ══════════════════════════════════════════════
-        // KEYBOARD
-        // ══════════════════════════════════════════════
+        /* ── KEYBOARD ── */
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
             if (e.key === 'Escape') {
@@ -3065,26 +3383,23 @@
             }
         });
 
-        // ══════════════════════════════════════════════
-        // INIT
-        // ══════════════════════════════════════════════
+        /* ── INIT ── */
         window.addEventListener('load', () => {
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
             refreshAllDSAUI();
             pickDiff('medium');
-
             currentNotebookId = loadNotebookId();
 
             let loadedFromLocal = false;
             try {
                 const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
                 if (local && local.cells && local.cells.length > 0) {
-                    document.getElementById('nb-title').value = local.title || 'Untitled Notebook';
+                    document.getElementById('nb-title').value = local.title || 'UNTITLED_NOTEBOOK';
                     local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx));
                     if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…';
                     loadedFromLocal = true;
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) { }
 
             if (!loadedFromLocal) addCell('javascript');
 
