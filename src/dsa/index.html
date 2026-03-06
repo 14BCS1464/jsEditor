@@ -1253,7 +1253,7 @@
             align-items: center;
             gap: 12px;
             margin-top: 8px;
-            font-size: 0.6rem;
+            font-size: 0.72rem;
             color: var(--muted);
             font-family: 'Fira Code', monospace;
             letter-spacing: 1px;
@@ -1522,10 +1522,14 @@
 
         /* ─── CELL DESCRIPTION ─── */
         .cell-desc {
-            padding: 12px 16px;
             background: rgba(0, 212, 255, 0.02);
             border-bottom: 1px solid var(--border);
             position: relative;
+            transition: border-color 0.2s;
+        }
+
+        .cell-desc.collapsed {
+            border-bottom-color: transparent;
         }
 
         .cell-desc::before {
@@ -1537,19 +1541,58 @@
             width: 2px;
             background: linear-gradient(180deg, var(--cyan), var(--plasma));
             opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        .cell-desc.collapsed::before {
+            opacity: 0;
         }
 
         .desc-label {
-            font-size: 0.5rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 3px;
             color: var(--cyan);
             font-family: 'Fira Code', monospace;
-            margin-bottom: 6px;
             display: flex;
             align-items: center;
             gap: 6px;
             opacity: 0.8;
+            padding: 9px 16px;
+            cursor: pointer;
+            user-select: none;
+            transition: opacity 0.15s;
+        }
+
+        .desc-label:hover {
+            opacity: 1;
+        }
+
+        .desc-toggle-arrow {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: var(--muted);
+            transition: transform 0.22s ease;
+            display: inline-block;
+            line-height: 1;
+        }
+
+        .cell-desc.collapsed .desc-toggle-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .desc-body {
+            padding: 0 16px 12px;
+            overflow: hidden;
+            max-height: 2000px;
+            transition: max-height 0.3s ease, padding 0.25s ease, opacity 0.2s ease;
+            opacity: 1;
+        }
+
+        .cell-desc.collapsed .desc-body {
+            max-height: 0;
+            padding-bottom: 0;
+            opacity: 0;
         }
 
         .desc-ta {
@@ -1560,11 +1603,13 @@
             resize: none;
             color: var(--text);
             font-family: 'Exo 2', sans-serif;
-            font-size: 0.82rem;
-            line-height: 1.65;
-            height: 70px;
-            overflow-y: auto;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            height: auto;
+            min-height: 48px;
+            overflow-y: hidden;
             display: block;
+            field-sizing: content;
         }
 
         .desc-ta::placeholder {
@@ -1595,7 +1640,7 @@
 
         .cell-num {
             font-family: 'Fira Code', monospace;
-            font-size: 0.58rem;
+            font-size: 0.72rem;
             color: var(--cyan);
             background: rgba(0, 212, 255, 0.08);
             padding: 2px 8px;
@@ -1616,7 +1661,7 @@
 
         .lang-btn {
             padding: 3px 11px;
-            font-size: 0.57rem;
+            font-size: 0.7rem;
             font-family: 'Fira Code', monospace;
             font-weight: 600;
             cursor: pointer;
@@ -1634,7 +1679,7 @@
         }
 
         .hint {
-            font-size: 0.52rem;
+            font-size: 0.65rem;
             color: var(--muted);
             font-family: 'Fira Code', monospace;
             letter-spacing: 0.5px;
@@ -1645,13 +1690,13 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            padding: 5px 14px;
+            padding: 5px 16px;
             background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 255, 204, 0.1));
             color: var(--cyan);
             border: 1px solid var(--border3);
             border-radius: 4px;
             font-family: 'Orbitron', monospace;
-            font-size: 0.55rem;
+            font-size: 0.65rem;
             font-weight: 700;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -1708,13 +1753,13 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 5px 11px;
+            padding: 5px 12px;
             background: rgba(255, 184, 0, 0.06);
             color: var(--amber);
             border: 1px solid rgba(255, 184, 0, 0.25);
             border-radius: 4px;
             font-family: 'Fira Code', monospace;
-            font-size: 0.57rem;
+            font-size: 0.68rem;
             font-weight: 600;
             letter-spacing: 1px;
             cursor: pointer;
@@ -1751,7 +1796,7 @@
             background: transparent;
             color: var(--text2);
             cursor: pointer;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             font-weight: 700;
             font-family: 'Fira Code', monospace;
             transition: all .12s;
@@ -1765,10 +1810,10 @@
 
         .fs-display {
             padding: 3px 6px;
-            font-size: 0.52rem;
+            font-size: 0.62rem;
             font-family: 'Fira Code', monospace;
             color: var(--muted);
-            min-width: 34px;
+            min-width: 38px;
             text-align: center;
             border-left: 1px solid var(--border);
             border-right: 1px solid var(--border);
@@ -1858,7 +1903,7 @@
         }
 
         .out-header {
-            font-size: 0.5rem;
+            font-size: 0.62rem;
             text-transform: uppercase;
             letter-spacing: 3px;
             color: var(--muted);
@@ -1888,7 +1933,7 @@
         .out-content {
             padding: 10px 14px;
             font-family: 'Fira Code', monospace;
-            font-size: 0.78rem;
+            font-size: 0.88rem;
             line-height: 1.75;
             word-break: break-word;
         }
@@ -3103,7 +3148,6 @@
         }
 
         function deleteNotebook(id) {
-            // Gather info about this notebook for the warning
             const nbEl = document.getElementById('nb-item-' + id);
             const nbTitle = nbEl ? nbEl.querySelector('.nb-item-title').textContent : id.slice(0, 8) + '…';
             const nbMeta = nbEl ? nbEl.querySelector('.nb-item-meta').textContent : '';
@@ -3389,9 +3433,14 @@
 
             div.innerHTML =
                 buildBannerHTML(id, linkedQId) +
-                '<div class="cell-desc">' +
-                '<div class="desc-label"><span>▸</span> SOLUTION NOTES</div>' +
+                '<div class="cell-desc" id="celldesc-' + id + '">' +
+                '<div class="desc-label" onclick="toggleDesc(' + id + ')">' +
+                '<span>▸</span> SOLUTION NOTES' +
+                '<span class="desc-toggle-arrow">▾</span>' +
+                '</div>' +
+                '<div class="desc-body">' +
                 '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
+                '</div>' +
                 '</div>' +
                 '<div class="cell-toolbar">' +
                 '<div class="tl-left">' +
@@ -3419,7 +3468,10 @@
                 '</div>';
 
             document.getElementById('cells-container').appendChild(div);
-            div.querySelector('.desc-ta').addEventListener('input', () => triggerAutoSave());
+            const descTa = div.querySelector('.desc-ta');
+            const autoResizeDesc = (ta) => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+            descTa.addEventListener('input', () => { autoResizeDesc(descTa); triggerAutoSave(); });
+            setTimeout(() => autoResizeDesc(descTa), 0);
 
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
                 value: code || getTemplate(lang),
@@ -3513,6 +3565,13 @@
         function updateCellCount() {
             document.getElementById('cell-count').textContent = cells.length + ' CELL' + (cells.length !== 1 ? 'S' : '');
             cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (String(i + 1).padStart(2, '0')) + ']'; });
+        }
+
+        /* ── DESC TOGGLE ── */
+        function toggleDesc(cellId) {
+            const el = document.getElementById('celldesc-' + cellId);
+            if (!el) return;
+            el.classList.toggle('collapsed');
         }
 
         /* ── BANNER ── */
