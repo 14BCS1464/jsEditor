@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
     <link rel="stylesheet"
@@ -77,41 +78,29 @@
             cursor: default;
         }
 
-        /* ─── GRID BACKGROUND ─── */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background-image:
-                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
             background-size: 40px 40px;
             pointer-events: none;
             z-index: 0;
         }
 
-        /* ─── AMBIENT GLOW ─── */
         body::after {
             content: '';
             position: fixed;
             inset: 0;
-            background:
-                radial-gradient(ellipse 60% 40% at 10% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 50% at 90% 100%, rgba(0, 255, 204, 0.04) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 30% at 50% 50%, rgba(147, 51, 234, 0.03) 0%, transparent 70%);
+            background: radial-gradient(ellipse 60% 40% at 10% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 90% 100%, rgba(0, 255, 204, 0.04) 0%, transparent 60%), radial-gradient(ellipse 40% 30% at 50% 50%, rgba(147, 51, 234, 0.03) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
 
-        /* ─── SCANLINE ─── */
         .scanline-overlay {
             position: fixed;
             inset: 0;
-            background: repeating-linear-gradient(0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0, 0, 0, 0.03) 2px,
-                    rgba(0, 0, 0, 0.03) 4px);
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
             pointer-events: none;
             z-index: 999;
             animation: scanMove 8s linear infinite;
@@ -127,7 +116,6 @@
             }
         }
 
-        /* ─── HUD CORNERS ─── */
         .hud-corner {
             position: fixed;
             width: 28px;
@@ -179,7 +167,6 @@
             transform: scale(-1);
         }
 
-        /* ─── HEADER ─── */
         header {
             position: sticky;
             top: 0;
@@ -230,7 +217,6 @@
             text-transform: uppercase;
             color: var(--cyan);
             text-shadow: var(--glow-cyan);
-            position: relative;
         }
 
         .logo-icon {
@@ -243,8 +229,6 @@
             justify-content: center;
             font-size: 14px;
             box-shadow: var(--glow-cyan);
-            position: relative;
-            overflow: hidden;
             animation: logoPulse 3s ease-in-out infinite;
         }
 
@@ -289,26 +273,11 @@
             color: var(--text2);
             background: transparent;
             transition: all .2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .tab-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, transparent, rgba(0, 212, 255, 0.05));
-            opacity: 0;
-            transition: opacity .2s;
         }
 
         .tab-btn:hover {
             color: var(--cyan);
             border-color: var(--border2);
-        }
-
-        .tab-btn:hover::before {
-            opacity: 1;
         }
 
         .tab-btn.active {
@@ -365,7 +334,6 @@
             }
         }
 
-        /* ─── BUTTONS ─── */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -460,7 +428,6 @@
             font-size: 0.48rem;
         }
 
-        /* ─── LAYOUT ─── */
         .app-layout {
             display: grid;
             grid-template-columns: 270px 1fr;
@@ -469,7 +436,6 @@
             z-index: 1;
         }
 
-        /* ─── SIDEBAR ─── */
         .sidebar {
             border-right: 1px solid var(--border);
             background: rgba(7, 18, 32, 0.97);
@@ -479,7 +445,6 @@
             top: 58px;
             height: calc(100vh - 58px);
             overflow: hidden;
-            box-shadow: inset -1px 0 0 rgba(0, 212, 255, 0.06);
         }
 
         .sidebar-tabs {
@@ -574,7 +539,6 @@
         .nb-item.active-nb {
             background: rgba(0, 212, 255, 0.1);
             border-color: var(--border2);
-            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.04);
         }
 
         .nb-item.active-nb::before {
@@ -596,7 +560,6 @@
             font-size: 0.58rem;
             color: var(--muted);
             font-family: 'Fira Code', monospace;
-            letter-spacing: 0.5px;
         }
 
         .nb-item-actions {
@@ -647,7 +610,6 @@
             border-color: rgba(0, 255, 204, 0.3);
         }
 
-        /* DSA sidebar */
         .dsa-toolbar {
             padding: 10px 12px;
             border-bottom: 1px solid var(--border);
@@ -675,7 +637,6 @@
 
         .dsa-search:focus {
             border-color: var(--border3);
-            box-shadow: 0 0 15px rgba(0, 212, 255, 0.08);
         }
 
         .dsa-filters {
@@ -702,7 +663,6 @@
             border-color: var(--border3);
             color: var(--cyan);
             background: rgba(0, 212, 255, 0.08);
-            text-shadow: var(--glow-cyan);
         }
 
         .fchip.fe {
@@ -859,7 +819,6 @@
             color: var(--cyan);
             font-family: 'Fira Code', monospace;
             margin-left: auto;
-            letter-spacing: 1px;
         }
 
         .dsa-solved-mark {
@@ -872,7 +831,7 @@
             border-top: 1px solid var(--border);
         }
 
-        /* ─── MODALS ─── */
+        /* ── MODALS ── */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -923,7 +882,7 @@
         }
 
         .modal-wide {
-            width: 740px;
+            width: 820px;
         }
 
         .modal h2 {
@@ -978,7 +937,7 @@
         .form-group select:focus,
         .form-group textarea:focus {
             border-color: var(--border3);
-            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1), inset 0 0 20px rgba(0, 212, 255, 0.03);
+            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1);
         }
 
         .form-group input::placeholder,
@@ -1023,21 +982,18 @@
             border-color: rgba(0, 255, 204, 0.5);
             color: var(--plasma);
             background: rgba(0, 255, 204, 0.08);
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.1);
         }
 
         .radio-opt.sel-medium {
             border-color: rgba(255, 184, 0, 0.5);
             color: var(--amber);
             background: rgba(255, 184, 0, 0.08);
-            box-shadow: 0 0 15px rgba(255, 184, 0, 0.1);
         }
 
         .radio-opt.sel-hard {
             border-color: rgba(255, 51, 102, 0.5);
             color: var(--error);
             background: rgba(255, 51, 102, 0.08);
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.1);
         }
 
         .modal-actions {
@@ -1067,7 +1023,6 @@
         .upload-area:hover {
             border-color: var(--border3);
             background: rgba(0, 212, 255, 0.05);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.06);
         }
 
         .upload-area input[type=file] {
@@ -1099,7 +1054,7 @@
             margin-top: 10px;
         }
 
-        /* Question view modal */
+        /* ── QUESTION VIEW MODAL ── */
         .qview-header {
             display: flex;
             align-items: flex-start;
@@ -1128,13 +1083,77 @@
             font-size: 0.8rem;
             color: var(--text2);
             line-height: 1.8;
-            white-space: pre-wrap;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 6px;
             padding: 14px 16px;
             margin-bottom: 16px;
             border: 1px solid var(--border);
             font-family: 'Fira Code', monospace;
+        }
+
+        .qview-desc.md-rendered {
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .qview-desc.md-rendered h1,
+        .qview-desc.md-rendered h2,
+        .qview-desc.md-rendered h3 {
+            color: var(--cyan);
+            font-family: 'Orbitron', monospace;
+            margin: 12px 0 6px;
+        }
+
+        .qview-desc.md-rendered p {
+            margin-bottom: 8px;
+        }
+
+        .qview-desc.md-rendered code {
+            background: rgba(0, 212, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+            color: var(--plasma);
+            font-size: 0.85em;
+        }
+
+        .qview-desc.md-rendered pre {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px 14px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .qview-desc.md-rendered pre code {
+            background: none;
+            padding: 0;
+            color: var(--text);
+        }
+
+        .qview-desc.md-rendered ul,
+        .qview-desc.md-rendered ol {
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+
+        .qview-desc.md-rendered li {
+            margin-bottom: 3px;
+        }
+
+        .qview-desc.md-rendered strong {
+            color: var(--amber);
+        }
+
+        .qview-desc.md-rendered em {
+            color: var(--neon);
+        }
+
+        .qview-desc.md-rendered blockquote {
+            border-left: 3px solid var(--cyan);
+            padding-left: 12px;
+            color: var(--text2);
+            margin: 8px 0;
         }
 
         .qview-cells {
@@ -1188,7 +1207,7 @@
             font-family: 'Fira Code', monospace;
         }
 
-        /* ─── MAIN ─── */
+        /* ── MAIN LAYOUT ── */
         .main-content {
             min-height: calc(100vh - 58px);
             display: flex;
@@ -1205,7 +1224,6 @@
             display: flex;
         }
 
-        /* ─── NOTEBOOK PAGE ─── */
         .nb-page {
             width: 100%;
             padding: 28px 32px;
@@ -1241,7 +1259,6 @@
 
         .nb-title-input:focus {
             border-bottom-color: var(--cyan);
-            text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
         }
 
         .nb-title-input::placeholder {
@@ -1263,7 +1280,7 @@
             color: var(--border3);
         }
 
-        /* ─── CELLS ─── */
+        /* ── CELLS ── */
         #cells-container {
             display: flex;
             flex-direction: column;
@@ -1292,12 +1309,12 @@
             transition: opacity .3s;
         }
 
-        .cell:hover::before {
+        .cell:hover::before,
+        .cell.focused::before {
             opacity: 1;
         }
 
         .cell.focused::before {
-            opacity: 1;
             background: linear-gradient(90deg, transparent, var(--cyan), var(--plasma), transparent);
         }
 
@@ -1323,7 +1340,6 @@
             box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15), 0 8px 40px rgba(0, 0, 0, 0.5);
         }
 
-        /* Question banner */
         .cell-qbanner {
             display: flex;
             align-items: center;
@@ -1520,7 +1536,7 @@
             border-color: var(--error);
         }
 
-        /* ─── CELL DESCRIPTION ─── */
+        /* ── CELL DESCRIPTION with MARKDOWN support ── */
         .cell-desc {
             background: rgba(0, 212, 255, 0.02);
             border-bottom: 1px solid var(--border);
@@ -1561,7 +1577,6 @@
             padding: 9px 16px;
             cursor: pointer;
             user-select: none;
-            transition: opacity 0.15s;
         }
 
         .desc-label:hover {
@@ -1574,7 +1589,6 @@
             color: var(--muted);
             transition: transform 0.22s ease;
             display: inline-block;
-            line-height: 1;
         }
 
         .cell-desc.collapsed .desc-toggle-arrow {
@@ -1595,6 +1609,41 @@
             opacity: 0;
         }
 
+        .desc-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .desc-mode-btn {
+            padding: 3px 9px;
+            border-radius: 3px;
+            font-size: 0.52rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 1px;
+            transition: all .15s;
+        }
+
+        .desc-mode-btn.active {
+            border-color: var(--border3);
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        .desc-mode-hint {
+            font-size: 0.5rem;
+            color: var(--muted);
+            font-family: 'Fira Code', monospace;
+            margin-left: auto;
+            letter-spacing: 0.5px;
+        }
+
         .desc-ta {
             width: 100%;
             background: transparent;
@@ -1602,8 +1651,8 @@
             outline: none;
             resize: none;
             color: var(--text);
-            font-family: 'Exo 2', sans-serif;
-            font-size: 0.95rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
             line-height: 1.7;
             height: auto;
             min-height: 48px;
@@ -1616,7 +1665,93 @@
             color: var(--muted);
         }
 
-        /* ─── CELL TOOLBAR ─── */
+        .desc-preview {
+            min-height: 48px;
+            color: var(--text);
+            font-size: 0.85rem;
+            line-height: 1.7;
+        }
+
+        .desc-preview h1,
+        .desc-preview h2,
+        .desc-preview h3 {
+            color: var(--cyan);
+            font-family: 'Orbitron', monospace;
+            margin: 10px 0 5px;
+        }
+
+        .desc-preview p {
+            margin-bottom: 8px;
+        }
+
+        .desc-preview code {
+            background: rgba(0, 212, 255, 0.08);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+            color: var(--plasma);
+            font-size: 0.85em;
+        }
+
+        .desc-preview pre {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px 14px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .desc-preview pre code {
+            background: none;
+            padding: 0;
+            color: var(--text);
+        }
+
+        .desc-preview ul,
+        .desc-preview ol {
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+
+        .desc-preview li {
+            margin-bottom: 3px;
+        }
+
+        .desc-preview strong {
+            color: var(--amber);
+        }
+
+        .desc-preview em {
+            color: var(--neon);
+        }
+
+        .desc-preview blockquote {
+            border-left: 3px solid var(--cyan);
+            padding-left: 12px;
+            color: var(--text2);
+            margin: 8px 0;
+        }
+
+        .desc-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 0.8rem;
+        }
+
+        .desc-preview th {
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid var(--border2);
+            padding: 6px 10px;
+            color: var(--cyan);
+        }
+
+        .desc-preview td {
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+        }
+
         .cell-toolbar {
             display: flex;
             align-items: center;
@@ -1685,7 +1820,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* ─── RUN BUTTON ─── */
         .run-btn {
             display: flex;
             align-items: center;
@@ -1706,21 +1840,6 @@
             overflow: hidden;
         }
 
-        .run-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.15), transparent);
-            transition: left 0.5s;
-        }
-
-        .run-btn:hover::before {
-            left: 100%;
-        }
-
         .run-btn:hover {
             box-shadow: var(--glow-cyan);
             transform: translateY(-1px);
@@ -1739,16 +1858,13 @@
             0%,
             100% {
                 opacity: 1;
-                box-shadow: none;
             }
 
             50% {
                 opacity: 0.6;
-                box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
             }
         }
 
-        /* ─── FORMAT BUTTON ─── */
         .format-btn {
             display: flex;
             align-items: center;
@@ -1764,26 +1880,17 @@
             letter-spacing: 1px;
             cursor: pointer;
             transition: all .2s;
-            white-space: nowrap;
         }
 
         .format-btn:hover {
             background: rgba(255, 184, 0, 0.12);
             border-color: var(--amber);
             box-shadow: var(--glow-amber);
-            transform: translateY(-1px);
         }
 
-        .format-btn.formatting {
-            animation: runPulse 0.8s infinite;
-            cursor: not-allowed;
-        }
-
-        /* ─── FONT SIZE CONTROL ─── */
         .font-size-ctrl {
             display: flex;
             align-items: center;
-            gap: 0;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border);
             border-radius: 4px;
@@ -1800,7 +1907,6 @@
             font-weight: 700;
             font-family: 'Fira Code', monospace;
             transition: all .12s;
-            line-height: 1;
         }
 
         .fs-btn:hover {
@@ -1817,7 +1923,6 @@
             text-align: center;
             border-left: 1px solid var(--border);
             border-right: 1px solid var(--border);
-            letter-spacing: 1px;
         }
 
         .icon-btn {
@@ -1841,7 +1946,6 @@
             background: rgba(255, 51, 102, 0.06);
         }
 
-        /* ─── EDITOR ─── */
         .cell-editor-wrap {
             position: relative;
             overflow: hidden;
@@ -1856,7 +1960,6 @@
             background: rgba(2, 4, 8, 0.9) !important;
             color: var(--text) !important;
             border: none !important;
-            border-radius: 0 !important;
         }
 
         .cell-editor-wrap .CodeMirror-scroll {
@@ -1868,7 +1971,6 @@
         .cell-editor-wrap .CodeMirror-gutters {
             background: rgba(4, 12, 20, 0.9) !important;
             border-right: 1px solid var(--border) !important;
-            min-height: 100% !important;
         }
 
         .cell-editor-wrap .CodeMirror-linenumber {
@@ -1896,7 +1998,6 @@
             background: rgba(0, 212, 255, 0.1) !important;
         }
 
-        /* ─── OUTPUT ─── */
         .cell-output {
             border-top: 1px solid var(--border);
             background: rgba(0, 0, 0, 0.5);
@@ -1940,12 +2041,10 @@
 
         .out-content.has-error {
             border-left: 2px solid var(--error);
-            box-shadow: inset 3px 0 15px rgba(255, 51, 102, 0.05);
         }
 
         .out-content.has-success {
             border-left: 2px solid var(--plasma);
-            box-shadow: inset 3px 0 15px rgba(0, 255, 204, 0.05);
         }
 
         .log-line {
@@ -1958,7 +2057,6 @@
             color: var(--error);
             display: block;
             white-space: pre-wrap;
-            text-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
         }
 
         .warn-line {
@@ -1977,10 +2075,8 @@
             color: var(--plasma);
             display: block;
             white-space: pre-wrap;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
         }
 
-        /* ─── ADD CELL ─── */
         .add-cell-row {
             display: flex;
             gap: 12px;
@@ -2006,17 +2102,6 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .add-cell-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.03), transparent);
-            opacity: 0;
-            transition: opacity .25s;
         }
 
         .add-cell-btn:hover {
@@ -2025,16 +2110,12 @@
             border-style: solid;
         }
 
-        .add-cell-btn:hover::before {
-            opacity: 1;
-        }
-
         .add-cell-btn.ts:hover {
             border-color: rgba(0, 255, 204, 0.5);
             color: var(--plasma);
         }
 
-        /* ─── DSA PAGE ─── */
+        /* ── DSA PAGE ── */
         .dsa-page {
             width: 100%;
             padding: 28px 32px;
@@ -2067,7 +2148,6 @@
             color: var(--muted);
             font-family: 'Fira Code', monospace;
             margin-top: 4px;
-            letter-spacing: 1px;
         }
 
         .dsa-grid {
@@ -2087,21 +2167,10 @@
             overflow: hidden;
         }
 
-        .dsa-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 60px;
-            height: 60px;
-            background: radial-gradient(circle, rgba(0, 212, 255, 0.05), transparent 70%);
-            border-radius: 0 8px 0 0;
-        }
-
         .dsa-card:hover {
             border-color: var(--border2);
             transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 255, 0.06);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
         }
 
         .dsa-card.solved-card {
@@ -2122,7 +2191,6 @@
             color: var(--muted);
             flex-shrink: 0;
             margin-top: 2px;
-            letter-spacing: 1px;
         }
 
         .dc-title {
@@ -2136,7 +2204,6 @@
             color: var(--plasma);
             font-size: 12px;
             flex-shrink: 0;
-            text-shadow: var(--glow-plasma);
         }
 
         .dc-desc {
@@ -2193,7 +2260,226 @@
             font-family: 'Fira Code', monospace;
         }
 
-        /* ─── SAVE BAR ─── */
+        /* ── TEST CASES ── */
+        .tc-section {
+            margin-top: 18px;
+        }
+
+        .tc-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tc-section-title {
+            font-size: 0.6rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .tc-summary {
+            font-size: 0.58rem;
+            font-family: 'Fira Code', monospace;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .tc-summary.all-pass {
+            background: rgba(0, 255, 204, 0.12);
+            color: var(--plasma);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+        }
+
+        .tc-summary.some-fail {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.25);
+        }
+
+        .tc-summary.not-run {
+            background: rgba(0, 212, 255, 0.06);
+            color: var(--text2);
+            border: 1px solid var(--border);
+        }
+
+        .tc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tc-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            transition: border-color .2s;
+        }
+
+        .tc-item.tc-pass {
+            border-color: rgba(0, 255, 204, 0.25);
+        }
+
+        .tc-item.tc-fail {
+            border-color: rgba(255, 51, 102, 0.25);
+        }
+
+        .tc-item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        .tc-status-icon {
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .tc-name {
+            flex: 1;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .tc-badge {
+            font-size: 0.48rem;
+            padding: 2px 7px;
+            border-radius: 2px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .tc-badge.pass {
+            background: rgba(0, 255, 204, 0.12);
+            color: var(--plasma);
+        }
+
+        .tc-badge.fail {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--error);
+        }
+
+        .tc-badge.pending {
+            background: rgba(0, 212, 255, 0.06);
+            color: var(--text2);
+        }
+
+        .tc-item-body {
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .tc-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tc-field {
+            flex: 1;
+        }
+
+        .tc-field-label {
+            font-size: 0.48rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 3px;
+        }
+
+        .tc-field-val {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.74rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 5px 9px;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .tc-field-val.actual-pass {
+            border-color: rgba(0, 255, 204, 0.3);
+            color: var(--plasma);
+            background: rgba(0, 255, 204, 0.04);
+        }
+
+        .tc-field-val.actual-fail {
+            border-color: rgba(255, 51, 102, 0.3);
+            color: var(--error);
+            background: rgba(255, 51, 102, 0.04);
+        }
+
+        .tc-desc-text {
+            font-size: 0.7rem;
+            color: var(--text2);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .tc-item-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 2px;
+            justify-content: flex-end;
+        }
+
+        .tc-add-row {
+            margin-top: 8px;
+        }
+
+        .tc-run-all-btn {
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: 1px solid rgba(0, 255, 204, 0.35);
+            background: rgba(0, 255, 204, 0.06);
+            color: var(--plasma);
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tc-run-all-btn:hover {
+            background: rgba(0, 255, 204, 0.14);
+            border-color: var(--plasma);
+            box-shadow: var(--glow-plasma);
+        }
+
+        .tc-run-all-btn.running {
+            animation: runPulse 1s infinite;
+            cursor: not-allowed;
+        }
+
+        /* ── TEST CASE ADD MODAL ── */
+        #tc-modal .modal {
+            width: 560px;
+            border-color: rgba(0, 255, 204, 0.3);
+        }
+
+        #tc-modal .modal::before {
+            background: linear-gradient(90deg, transparent, var(--plasma), var(--cyan), transparent);
+        }
+
+        /* ── SAVE BAR ── */
         .save-bar {
             position: fixed;
             bottom: 20px;
@@ -2233,7 +2519,6 @@
             box-shadow: 0 0 10px var(--plasma);
         }
 
-        /* ─── TOAST ─── */
         .toast {
             position: fixed;
             top: 70px;
@@ -2261,16 +2546,13 @@
         .toast.success {
             border-color: rgba(0, 255, 204, 0.4);
             color: var(--plasma);
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
         }
 
         .toast.error {
             border-color: rgba(255, 51, 102, 0.4);
             color: var(--error);
-            box-shadow: 0 0 20px rgba(255, 51, 102, 0.1);
         }
 
-        /* ─── FORMAT FLASH ─── */
         @keyframes formatFlash {
             0% {
                 background: transparent;
@@ -2289,14 +2571,9 @@
             animation: formatFlash 0.7s ease;
         }
 
-        /* ─── SCROLLBAR ─── */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
@@ -2308,7 +2585,6 @@
             background: rgba(0, 212, 255, 0.3);
         }
 
-        /* CodeMirror hints */
         .CodeMirror-hints {
             background: var(--panel) !important;
             border: 1px solid var(--border2) !important;
@@ -2324,7 +2600,6 @@
             color: var(--text) !important;
             border-radius: 4px !important;
             padding: 5px 10px !important;
-            line-height: 1.5 !important;
         }
 
         .CodeMirror-hint-active {
@@ -2332,17 +2607,12 @@
             color: var(--cyan) !important;
         }
 
-        li.CodeMirror-hint:hover {
-            background: rgba(0, 212, 255, 0.1) !important;
-        }
-
-        /* ─── SELECTION HIGHLIGHT in input ─── */
         ::selection {
             background: rgba(0, 212, 255, 0.2);
             color: var(--cyan2);
         }
 
-        /* ─── DELETE CONFIRMATION MODAL ─── */
+        /* ── DELETE MODAL ── */
         #delete-modal .modal {
             width: 460px;
             border-color: rgba(255, 51, 102, 0.35);
@@ -2365,18 +2635,17 @@
             font-size: 22px;
             margin: 0 auto 18px;
             animation: delIconPulse 2s ease-in-out infinite;
-            box-shadow: 0 0 20px rgba(255, 51, 102, 0.15), inset 0 0 20px rgba(255, 51, 102, 0.05);
         }
 
         @keyframes delIconPulse {
 
             0%,
             100% {
-                box-shadow: 0 0 20px rgba(255, 51, 102, 0.15), inset 0 0 20px rgba(255, 51, 102, 0.05);
+                box-shadow: 0 0 20px rgba(255, 51, 102, 0.15);
             }
 
             50% {
-                box-shadow: 0 0 35px rgba(255, 51, 102, 0.3), inset 0 0 20px rgba(255, 51, 102, 0.1);
+                box-shadow: 0 0 35px rgba(255, 51, 102, 0.3);
             }
         }
 
@@ -2388,7 +2657,6 @@
             text-align: center;
             letter-spacing: 3px;
             text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
             margin-bottom: 6px;
         }
 
@@ -2397,7 +2665,6 @@
             color: var(--text2);
             text-align: center;
             font-family: 'Fira Code', monospace;
-            letter-spacing: 0.5px;
             margin-bottom: 20px;
         }
 
@@ -2428,16 +2695,6 @@
             letter-spacing: 3px;
             text-transform: uppercase;
             margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .del-warning-label::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, rgba(255, 51, 102, 0.3), transparent);
         }
 
         .del-warning-items {
@@ -2454,14 +2711,12 @@
             display: flex;
             align-items: flex-start;
             gap: 8px;
-            line-height: 1.5;
         }
 
         .del-warning-items li::before {
             content: '▸';
             color: var(--amber);
             flex-shrink: 0;
-            margin-top: 1px;
         }
 
         .del-target-name {
@@ -2475,7 +2730,6 @@
             text-align: center;
             margin-bottom: 16px;
             word-break: break-all;
-            letter-spacing: 0.5px;
         }
 
         .del-confirm-input-wrap {
@@ -2514,19 +2768,16 @@
 
         .del-confirm-input:focus {
             border-color: rgba(255, 51, 102, 0.5);
-            box-shadow: 0 0 0 1px rgba(255, 51, 102, 0.1), inset 0 0 20px rgba(255, 51, 102, 0.03);
         }
 
         .del-confirm-input.valid {
             border-color: var(--error);
-            color: var(--error);
             box-shadow: 0 0 15px rgba(255, 51, 102, 0.15);
         }
 
         .del-modal-actions {
             display: flex;
             gap: 10px;
-            margin-top: 4px;
         }
 
         .btn-delete-confirm {
@@ -2555,14 +2806,13 @@
         .btn-delete-confirm.armed:hover {
             background: rgba(255, 51, 102, 0.2);
             box-shadow: 0 0 20px rgba(255, 51, 102, 0.25);
-            transform: translateY(-1px);
         }
 
         @keyframes armPulse {
 
             0%,
             100% {
-                box-shadow: 0 0 0 rgba(255, 51, 102, 0);
+                box-shadow: none;
             }
 
             50% {
@@ -2589,7 +2839,46 @@
         .btn-cancel-delete:hover {
             border-color: var(--cyan);
             color: var(--cyan);
-            background: rgba(0, 212, 255, 0.08);
+        }
+
+        /* ── VIEW MODAL TABS ── */
+        .qv-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .qv-tab {
+            padding: 8px 18px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.52rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            border-bottom: 2px solid transparent;
+            transition: all .2s;
+        }
+
+        .qv-tab:hover {
+            color: var(--text2);
+        }
+
+        .qv-tab.active {
+            color: var(--cyan);
+            border-bottom-color: var(--cyan);
+        }
+
+        .qv-panel {
+            display: none;
+        }
+
+        .qv-panel.active {
+            display: block;
         }
     </style>
 </head>
@@ -2605,10 +2894,7 @@
     <header>
         <div class="logo">
             <div class="logo-icon">⚡</div>
-            <div>
-                CODEBOOK
-                <span class="logo-sub">NEURAL IDE v2.035</span>
-            </div>
+            <div>CODEBOOK<span class="logo-sub">NEURAL IDE v3.0</span></div>
         </div>
         <div class="header-center">
             <button class="tab-btn active" id="tab-notebook" onclick="switchPage('notebook')">▸ Notebook</button>
@@ -2638,7 +2924,7 @@
                 </div>
                 <div class="nb-list" id="nb-list">
                     <div
-                        style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:'Fira Code',monospace;letter-spacing:1px">
+                        style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:'Fira Code',monospace">
                         CONNECT FIREBASE TO SYNC</div>
                 </div>
             </div>
@@ -2706,7 +2992,7 @@
                     <div class="dsa-grid" id="dsa-grid">
                         <div class="empty-state">
                             <div class="empty-icon">⬡</div>
-                            <p>// NO QUESTIONS LOADED — ADD YOUR FIRST DSA CHALLENGE</p>
+                            <p>// NO QUESTIONS LOADED</p>
                         </div>
                     </div>
                 </div>
@@ -2721,7 +3007,7 @@
             <p class="modal-sub">// Connect to Firestore for cross-device neural sync</p>
             <div class="form-group">
                 <label>📂 Load from JSON config file</label>
-                <div class="upload-area" id="fb-upload-area">
+                <div class="upload-area">
                     <input type="file" accept=".json,.txt" id="fb-file-input" onchange="loadFirebaseFromFile(this)">
                     <div class="upload-area-text">Drop <span>.json</span> config here or click to browse</div>
                 </div>
@@ -2783,10 +3069,19 @@
                     <button class="radio-opt" id="rd-hard" onclick="pickDiff('hard')">HARD</button>
                 </div>
             </div>
-            <div class="form-group"><label>PROBLEM DESCRIPTION</label><textarea id="dq-desc"
-                    placeholder="// Describe the problem, constraints, examples…" rows="4"></textarea></div>
+            <div class="form-group">
+                <label>PROBLEM DESCRIPTION <span style="color:var(--plasma);font-size:0.5rem">MARKDOWN
+                        SUPPORTED</span></label>
+                <textarea id="dq-desc" placeholder="// Supports **bold**, `code`, ```blocks```, lists…"
+                    rows="5"></textarea>
+            </div>
             <div class="form-group"><label>SOURCE URL</label><input type="text" id="dq-url"
                     placeholder="https://leetcode.com/problems/…"></div>
+            <div class="form-group">
+                <label>FUNCTION SIGNATURE <span style="color:var(--muted);font-size:0.47rem">— what to call in test
+                        cases</span></label>
+                <input type="text" id="dq-fn" placeholder="e.g. twoSum or solve">
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeModal('dsa-modal')">CANCEL</button>
                 <button class="btn btn-primary" onclick="saveDSAQuestion()">SAVE</button>
@@ -2802,21 +3097,92 @@
                 <button class="btn btn-ghost btn-sm" onclick="closeModal('qview-modal')">✕ CLOSE</button>
             </div>
             <div class="qview-badges" id="qv-badges"></div>
-            <div class="qview-desc" id="qv-desc" style="display:none"></div>
-            <div id="qv-url-row" style="margin-bottom:14px;display:none">
-                <a id="qv-url" href="#" target="_blank"
-                    style="color:var(--cyan);font-size:0.7rem;font-family:'Fira Code',monospace;letter-spacing:1px;">⇗
-                    OPEN PROBLEM</a>
+
+            <div class="qv-tabs">
+                <button class="qv-tab active" onclick="switchQVTab('overview')">📋 OVERVIEW</button>
+                <button class="qv-tab" id="qv-tab-tests" onclick="switchQVTab('tests')">🧪 TEST CASES <span
+                        id="qv-test-count" style="margin-left:4px"></span></button>
+                <button class="qv-tab" onclick="switchQVTab('cells')">⚡ LINKED CELLS</button>
             </div>
-            <div
-                style="font-size:0.5rem;color:var(--muted);font-family:'Fira Code',monospace;text-transform:uppercase;letter-spacing:3px;margin-bottom:10px">
-                // LINKED SOLUTION CELLS</div>
-            <div class="qview-cells" id="qv-cells"></div>
+
+            <div class="qv-panel active" id="qv-panel-overview">
+                <div class="qview-desc" id="qv-desc" style="display:none"></div>
+                <div id="qv-url-row" style="margin-bottom:14px;display:none">
+                    <a id="qv-url" href="#" target="_blank"
+                        style="color:var(--cyan);font-size:0.7rem;font-family:'Fira Code',monospace;">⇗ OPEN PROBLEM</a>
+                </div>
+            </div>
+
+            <div class="qv-panel" id="qv-panel-tests">
+                <div class="tc-section">
+                    <div class="tc-section-header">
+                        <span class="tc-section-title">// Test Cases</span>
+                        <span class="tc-summary not-run" id="qv-tc-summary">NO TESTS</span>
+                        <button class="tc-run-all-btn" id="qv-run-all-btn" onclick="runAllTestCases()">▶ RUN
+                            ALL</button>
+                        <button class="btn btn-primary btn-xs" onclick="openTCModal(null)">⊕ ADD TEST</button>
+                    </div>
+                    <div
+                        style="font-size:0.6rem;color:var(--muted);font-family:'Fira Code',monospace;margin-bottom:10px;line-height:1.6">
+                        // Tests run against the <strong style="color:var(--cyan)">first linked cell</strong> in the
+                        current notebook.
+                        Define your function in the cell, set the function name above, then add test cases with inputs
+                        and expected outputs.
+                    </div>
+                    <div class="tc-list" id="qv-tc-list"></div>
+                    <div class="tc-add-row">
+                        <button class="btn btn-ghost btn-sm"
+                            style="width:100%;justify-content:center;border-style:dashed" onclick="openTCModal(null)">⊕
+                            ADD TEST CASE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="qv-panel" id="qv-panel-cells">
+                <div
+                    style="font-size:0.5rem;color:var(--muted);font-family:'Fira Code',monospace;text-transform:uppercase;letter-spacing:3px;margin-bottom:10px">
+                    // LINKED SOLUTION CELLS</div>
+                <div class="qview-cells" id="qv-cells"></div>
+            </div>
+
             <div class="modal-actions" style="margin-top:18px">
                 <button class="btn btn-success btn-sm" id="qv-solve-btn" onclick="toggleSolvedFromView()">✓ MARK
                     SOLVED</button>
                 <button class="btn btn-ghost btn-sm" onclick="editFromView()">✏ EDIT</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteFromView()">⊗ DELETE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEST CASE MODAL -->
+    <div class="modal-overlay" id="tc-modal">
+        <div class="modal" style="width:560px">
+            <h2 id="tc-modal-h">⊕ ADD TEST CASE</h2>
+            <p class="modal-sub">// Define input, expected output and an optional description</p>
+            <input type="hidden" id="tc-edit-idx">
+            <div class="form-group">
+                <label>TEST NAME</label>
+                <input type="text" id="tc-name" placeholder="e.g. Basic case, Edge case, Large input…">
+            </div>
+            <div class="form-group">
+                <label>INPUT ARGUMENTS <span style="color:var(--muted);font-size:0.47rem">— comma-separated JS
+                        expressions</span></label>
+                <textarea id="tc-input" rows="3"
+                    placeholder="e.g. [2,7,11,15], 9&#10;or&#10;&quot;hello&quot;, 3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>EXPECTED OUTPUT <span style="color:var(--muted);font-size:0.47rem">— JS expression</span></label>
+                <textarea id="tc-expected" rows="2"
+                    placeholder="e.g. [0,1]&#10;or&#10;&quot;lll&quot;&#10;or&#10;true"></textarea>
+            </div>
+            <div class="form-group">
+                <label>DESCRIPTION <span style="color:var(--plasma);font-size:0.47rem">MARKDOWN SUPPORTED</span></label>
+                <textarea id="tc-desc" rows="3"
+                    placeholder="// Explain this test case, constraints, or edge cases…&#10;**Input:** nums=[2,7,11,15], target=9&#10;**Why:** First and second elements sum to target."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('tc-modal')">CANCEL</button>
+                <button class="btn btn-success" onclick="saveTCModal()">SAVE TEST CASE</button>
             </div>
         </div>
     </div>
@@ -2836,26 +3202,22 @@
         </div>
     </div>
 
-    <!-- DELETE CONFIRMATION MODAL -->
+    <!-- DELETE MODAL -->
     <div class="modal-overlay" id="delete-modal">
         <div class="modal">
             <div class="del-modal-icon">⊗</div>
             <div class="del-modal-title">CONFIRM DELETION</div>
             <div class="del-modal-subtitle" id="del-modal-subtitle">// This action cannot be undone</div>
-
             <div class="del-target-name" id="del-target-name">—</div>
-
             <div class="del-warning-box">
                 <div class="del-warning-label">⚠ WARNING — DATA LOSS</div>
                 <ul class="del-warning-items" id="del-warning-items"></ul>
             </div>
-
-            <div class="del-confirm-input-wrap" id="del-confirm-wrap">
+            <div class="del-confirm-input-wrap">
                 <label>Type <span id="del-keyword-label">DELETE</span> to confirm</label>
                 <input class="del-confirm-input" id="del-confirm-input" type="text" placeholder="TYPE HERE TO CONFIRM…"
                     oninput="checkDeleteConfirm()" autocomplete="off" spellcheck="false">
             </div>
-
             <div class="del-modal-actions">
                 <button class="btn-cancel-delete" onclick="closeDeleteModal()">✕ ABORT</button>
                 <button class="btn-delete-confirm" id="del-confirm-btn" onclick="executeDelete()" disabled>⊗ EXECUTE
@@ -2875,78 +3237,72 @@
         let db = null, cells = [], cellEditors = {}, dsaQuestions = [];
         let currentNotebookId = null, autoSaveTimer = null, cellIdCounter = 0;
         let dsaFilter = 'all', selDiff = 'medium', viewingQId = null;
+        let activeQVTab = 'overview';
 
         const FONT_SIZES = [11, 12, 13, 14, 15, 16, 18, 20, 22, 24];
         const DEFAULT_FONT_IDX = 2;
         let cellFontSizeIdx = {};
+        let cellDescMode = {}; // 'edit' | 'preview'
 
-        // Delete modal state
-        let pendingDeleteFn = null;
-        let deleteConfirmKeyword = 'DELETE';
+        let pendingDeleteFn = null, deleteConfirmKeyword = 'DELETE';
+
+        /* ── MARKED SETUP ── */
+        if (window.marked) {
+            marked.setOptions({ breaks: true, gfm: true });
+        }
+        function renderMD(src) {
+            if (!window.marked) return escH(src).replace(/\n/g, '<br>');
+            try { return marked.parse(src || ''); } catch (e) { return escH(src); }
+        }
 
         function saveNotebookId(id) { if (id) localStorage.setItem('current_notebook_id', id); else localStorage.removeItem('current_notebook_id'); }
         function loadNotebookId() { return localStorage.getItem('current_notebook_id') || null; }
 
-        /* ── CUSTOM DELETE CONFIRMATION MODAL ── */
+        /* ── DELETE MODAL ── */
         function openDeleteModal({ title, subtitle, targetName, warningItems, keyword, onConfirm }) {
             deleteConfirmKeyword = (keyword || 'DELETE').toUpperCase();
             pendingDeleteFn = onConfirm;
-
             document.getElementById('del-modal-subtitle').textContent = subtitle || '// This action cannot be undone';
             document.getElementById('del-target-name').textContent = targetName || '—';
             document.getElementById('del-keyword-label').textContent = deleteConfirmKeyword;
             document.getElementById('del-confirm-input').value = '';
             document.getElementById('del-confirm-input').classList.remove('valid');
-
             const btn = document.getElementById('del-confirm-btn');
-            btn.disabled = true;
-            btn.classList.remove('armed');
-
+            btn.disabled = true; btn.classList.remove('armed');
             const warnEl = document.getElementById('del-warning-items');
             warnEl.innerHTML = (warningItems || []).map(w => `<li>${escH(w)}</li>`).join('');
-
             document.getElementById('delete-modal').classList.add('open');
             setTimeout(() => document.getElementById('del-confirm-input').focus(), 200);
         }
-
         function closeDeleteModal() {
             document.getElementById('delete-modal').classList.remove('open');
             document.getElementById('del-confirm-input').value = '';
             pendingDeleteFn = null;
         }
-
         function checkDeleteConfirm() {
             const val = (document.getElementById('del-confirm-input').value || '').trim().toUpperCase();
             const match = val === deleteConfirmKeyword;
             const btn = document.getElementById('del-confirm-btn');
-            const inp = document.getElementById('del-confirm-input');
-            inp.classList.toggle('valid', match);
-            btn.disabled = !match;
-            btn.classList.toggle('armed', match);
+            document.getElementById('del-confirm-input').classList.toggle('valid', match);
+            btn.disabled = !match; btn.classList.toggle('armed', match);
         }
-
         function executeDelete() {
-            const btn = document.getElementById('del-confirm-btn');
-            if (btn.disabled) return;
+            if (document.getElementById('del-confirm-btn').disabled) return;
             closeDeleteModal();
             if (pendingDeleteFn) pendingDeleteFn();
         }
 
         /* ── FONT SIZE ── */
         function getFontIdx(id) { return cellFontSizeIdx[id] !== undefined ? cellFontSizeIdx[id] : DEFAULT_FONT_IDX; }
-
         function setFontSize(cellId, delta) {
             let idx = Math.max(0, Math.min(FONT_SIZES.length - 1, getFontIdx(cellId) + delta));
             cellFontSizeIdx[cellId] = idx;
             applyFontSize(cellId, FONT_SIZES[idx]);
-            const d = document.getElementById('fsize-' + cellId);
-            if (d) d.textContent = FONT_SIZES[idx] + 'px';
+            const d = document.getElementById('fsize-' + cellId); if (d) d.textContent = FONT_SIZES[idx] + 'px';
             triggerAutoSave();
         }
-
         function applyFontSize(cellId, size) {
-            const editor = cellEditors[cellId];
-            if (!editor) return;
+            const editor = cellEditors[cellId]; if (!editor) return;
             const cmEl = editor.getWrapperElement().querySelector('.CodeMirror');
             if (cmEl) cmEl.style.setProperty('font-size', size + 'px', 'important');
             editor.getWrapperElement().style.fontSize = size + 'px';
@@ -2955,48 +3311,33 @@
 
         /* ── FORMAT ── */
         async function formatCell(cellId) {
-            const editor = cellEditors[cellId];
-            if (!editor) return;
+            const editor = cellEditors[cellId]; if (!editor) return;
             const btn = document.getElementById('fmtbtn-' + cellId);
-            btn.classList.add('formatting');
-            btn.textContent = '⏳';
+            btn.classList.add('formatting'); btn.textContent = '⏳';
             const original = editor.getValue();
             try {
                 let formatted;
                 if (window.prettier && window.prettierPlugins && window.prettierPlugins.babel) {
-                    formatted = prettier.format(original, {
-                        parser: 'babel', plugins: [prettierPlugins.babel],
-                        semi: true, singleQuote: true, tabWidth: 2,
-                        trailingComma: 'es5', printWidth: 80, arrowParens: 'avoid',
-                    });
-                } else {
-                    formatted = basicFormat(original);
-                }
+                    formatted = prettier.format(original, { parser: 'babel', plugins: [prettierPlugins.babel], semi: true, singleQuote: true, tabWidth: 2, trailingComma: 'es5', printWidth: 80, arrowParens: 'avoid' });
+                } else { formatted = basicFormat(original); }
                 if (formatted && formatted !== original) {
                     const cursor = editor.getCursor();
-                    editor.setValue(formatted);
-                    editor.setCursor(cursor);
+                    editor.setValue(formatted); editor.setCursor(cursor);
                     const cellEl = document.getElementById('cell-' + cellId);
                     cellEl.classList.add('format-flash');
                     setTimeout(() => cellEl.classList.remove('format-flash'), 700);
-                    showToast('✨ Code formatted', 'success');
-                    triggerAutoSave();
+                    showToast('✨ Code formatted', 'success'); triggerAutoSave();
                 } else { showToast('// Already clean', 'success'); }
             } catch (err) { showToast('Format error: ' + err.message.split('\n')[0], 'error'); }
-            btn.classList.remove('formatting');
-            btn.innerHTML = '✦ FMT';
+            btn.classList.remove('formatting'); btn.innerHTML = '✦ FMT';
         }
-
         function basicFormat(code) {
             let lines = code.split('\n'), indent = 0, result = [], TAB = '  ';
             for (let raw of lines) {
-                let line = raw.trim();
-                if (!line) { result.push(''); continue; }
+                let line = raw.trim(); if (!line) { result.push(''); continue; }
                 if (/^[}\])]/.test(line)) indent = Math.max(0, indent - 1);
                 result.push(TAB.repeat(indent) + line);
-                const opens = (line.match(/[{[(]/g) || []).length;
-                const closes = (line.match(/[}\])]/g) || []).length;
-                indent = Math.max(0, indent + opens - closes);
+                indent = Math.max(0, indent + (line.match(/[{[(]/g) || []).length - (line.match(/[}\])]/g) || []).length);
             }
             return result.join('\n');
         }
@@ -3014,6 +3355,15 @@
             document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
             document.getElementById('spanel-' + n).classList.add('active');
             document.getElementById('stab-' + n).classList.add('active');
+        }
+        function switchQVTab(tab) {
+            activeQVTab = tab;
+            document.querySelectorAll('.qv-tab').forEach((b, i) => {
+                b.classList.toggle('active', ['overview', 'tests', 'cells'][i] === tab);
+            });
+            document.querySelectorAll('.qv-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('qv-panel-' + tab).classList.add('active');
+            if (tab === 'tests' && viewingQId) renderTestCaseList(viewingQId);
         }
 
         /* ── FIREBASE ── */
@@ -3034,7 +3384,6 @@
             };
             reader.readAsText(file);
         }
-
         function openFirebaseModal() {
             const saved = JSON.parse(localStorage.getItem('fb_config') || '{}');
             ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
@@ -3043,7 +3392,6 @@
             document.getElementById('fb-file-status').style.display = 'none';
             openModal('firebase-modal');
         }
-
         async function initFirebase() {
             const config = {};
             ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
@@ -3056,13 +3404,10 @@
                 db = firebase.firestore();
                 await db.collection('notebooks').limit(1).get();
                 localStorage.setItem('fb_config', JSON.stringify(config));
-                setFirebaseStatus(true);
-                closeModal('firebase-modal');
-                showToast('Firebase connected', 'success');
+                setFirebaseStatus(true); closeModal('firebase-modal'); showToast('Firebase connected', 'success');
                 loadNotebooksList(); loadDSAFromFirebase();
-            } catch (e) { showToast('Failed: ' + e.message, 'error'); console.error(e); }
+            } catch (e) { showToast('Failed: ' + e.message, 'error'); }
         }
-
         function setFirebaseStatus(on) {
             document.getElementById('fb-dot').className = 'fb-dot' + (on ? ' on' : '');
             document.getElementById('fb-status').textContent = on ? 'SYNCED' : 'OFFLINE';
@@ -3072,11 +3417,11 @@
         async function loadNotebooksList() {
             if (!db) return;
             const list = document.getElementById('nb-list');
-            list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:0.6rem;font-family:\'Fira Code\',monospace;letter-spacing:1px">LOADING…</div>';
+            list.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:0.6rem;font-family:\'Fira Code\',monospace">LOADING…</div>';
             try {
                 const snap = await db.collection('notebooks').orderBy('updatedAt', 'desc').limit(50).get();
                 list.innerHTML = '';
-                if (snap.empty) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace;letter-spacing:1px">NO NOTEBOOKS FOUND</div>'; return; }
+                if (snap.empty) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace">NO NOTEBOOKS FOUND</div>'; return; }
                 snap.forEach(doc => {
                     const d = doc.data();
                     const div = document.createElement('div');
@@ -3088,7 +3433,7 @@
                         '<div class="nb-item-meta">' + (d.cells || []).length + ' cells · ' + date + '</div>' +
                         '<div class="nb-item-actions">' +
                         '<button class="nb-act-btn duplicate" title="Duplicate" onclick="event.stopPropagation();duplicateNotebook(\'' + doc.id + '\',\'' + escH(d.title || 'Untitled') + '\')">📋</button>' +
-                        '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '\',`' + escH(d.title || 'Untitled') + '`)">✏</button>' +
+                        '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '`,`' + escH(d.title || 'Untitled') + '\')">✏</button>' +
                         '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">⊗</button>' +
                         '</div>';
                     div.addEventListener('click', () => loadNotebook(doc.id, d));
@@ -3101,85 +3446,52 @@
             currentNotebookId = id; saveNotebookId(id);
             document.getElementById('nb-title').value = data.title || 'Untitled';
             document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
-            cells = []; cellEditors = {}; cellFontSizeIdx = {};
+            cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
             document.getElementById('cells-container').innerHTML = '';
-            (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx));
+            (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode));
             updateCellCount();
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id); if (el) el.classList.add('active-nb');
-            switchPage('notebook');
-            showToast('Notebook loaded', 'success');
+            switchPage('notebook'); showToast('Notebook loaded', 'success');
         }
 
         function newNotebook() {
             currentNotebookId = null; saveNotebookId(null);
             document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
             document.getElementById('nb-id').textContent = 'LOCAL';
-            cells = []; cellEditors = {}; cellFontSizeIdx = {};
+            cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
             document.getElementById('cells-container').innerHTML = '';
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
-            addCell('javascript');
-            showToast('New notebook created', 'success');
+            addCell('javascript'); showToast('New notebook created', 'success');
         }
 
         async function duplicateNotebook(id, title) {
             try {
                 let notebookData;
-                if (db) {
-                    const doc = await db.collection('notebooks').doc(id).get();
-                    if (!doc.exists) { showToast('Notebook not found', 'error'); return; }
-                    notebookData = doc.data();
-                } else {
-                    const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
-                    if (!local) { showToast('No notebook to duplicate', 'error'); return; }
-                    notebookData = local;
-                }
+                if (db) { const doc = await db.collection('notebooks').doc(id).get(); if (!doc.exists) { showToast('Not found', 'error'); return; } notebookData = doc.data(); }
+                else { const local = JSON.parse(localStorage.getItem('current_notebook') || 'null'); if (!local) { showToast('No notebook', 'error'); return; } notebookData = local; }
                 currentNotebookId = null; saveNotebookId(null);
                 document.getElementById('nb-title').value = title + ' (COPY)';
                 document.getElementById('nb-id').textContent = 'LOCAL';
-                cells = []; cellEditors = {}; cellFontSizeIdx = {};
+                cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
                 document.getElementById('cells-container').innerHTML = '';
-                (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx));
-                updateCellCount();
-                document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
-                switchPage('notebook'); triggerAutoSave();
-                showToast('Notebook duplicated', 'success');
+                (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode));
+                updateCellCount(); switchPage('notebook'); triggerAutoSave(); showToast('Duplicated', 'success');
             } catch (e) { showToast('Failed: ' + e.message, 'error'); }
         }
 
         function deleteNotebook(id) {
             const nbEl = document.getElementById('nb-item-' + id);
             const nbTitle = nbEl ? nbEl.querySelector('.nb-item-title').textContent : id.slice(0, 8) + '…';
-            const nbMeta = nbEl ? nbEl.querySelector('.nb-item-meta').textContent : '';
-            const linkedCells = cells.filter(c => c.linkedQuestionId).length;
-
             openDeleteModal({
                 subtitle: '// Permanently deletes notebook from all storage',
                 targetName: nbTitle,
-                warningItems: [
-                    nbMeta || 'All code cells and their execution outputs will be erased',
-                    'All solution notes written inside cells will be lost',
-                    linkedCells > 0 ? `${linkedCells} cell(s) linked to DSA questions — links will be broken` : 'Any linked DSA question connections will be removed',
-                    db ? 'Will be deleted from Firebase cloud storage permanently' : 'Will be removed from local storage',
-                    id === currentNotebookId ? 'This is your CURRENTLY OPEN notebook — editor will reset' : 'Notebook will be removed from the sidebar list',
-                ],
+                warningItems: ['All code cells and outputs will be erased', 'All solution notes will be lost', db ? 'Will be deleted from Firebase' : 'Will be removed from local storage'],
                 keyword: 'DELETE',
                 onConfirm: async () => {
-                    if (id === currentNotebookId) {
-                        currentNotebookId = null; saveNotebookId(null);
-                        document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
-                        document.getElementById('nb-id').textContent = 'LOCAL';
-                        cells = []; cellEditors = {}; cellFontSizeIdx = {};
-                        document.getElementById('cells-container').innerHTML = '';
-                        addCell('javascript');
-                    }
-                    if (db) {
-                        try { await db.collection('notebooks').doc(id).delete(); showToast('Notebook deleted', 'success'); loadNotebooksList(); }
-                        catch (e) { showToast('Delete failed: ' + e.message, 'error'); }
-                    } else {
-                        const el = document.getElementById('nb-item-' + id); if (el) el.remove();
-                        showToast('Notebook deleted', 'success');
-                    }
+                    if (id === currentNotebookId) { currentNotebookId = null; saveNotebookId(null); document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK'; document.getElementById('nb-id').textContent = 'LOCAL'; cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {}; document.getElementById('cells-container').innerHTML = ''; addCell('javascript'); }
+                    if (db) { try { await db.collection('notebooks').doc(id).delete(); showToast('Deleted', 'success'); loadNotebooksList(); } catch (e) { showToast('Failed: ' + e.message, 'error'); } }
+                    else { const el = document.getElementById('nb-item-' + id); if (el) el.remove(); showToast('Deleted', 'success'); }
                 }
             });
         }
@@ -3189,18 +3501,12 @@
             document.getElementById('rename-nb-title').value = currentTitle;
             openModal('rename-modal');
         }
-
         async function doRenameNotebook() {
             const id = document.getElementById('rename-nb-id').value;
             const newTitle = document.getElementById('rename-nb-title').value.trim();
             if (!newTitle) { showToast('Title cannot be empty', 'error'); return; }
             if (id === currentNotebookId) document.getElementById('nb-title').value = newTitle;
-            if (db) {
-                try {
-                    await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    showToast('Renamed', 'success'); loadNotebooksList();
-                } catch (e) { showToast('Rename failed: ' + e.message, 'error'); }
-            }
+            if (db) { try { await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); showToast('Renamed', 'success'); loadNotebooksList(); } catch (e) { showToast('Failed: ' + e.message, 'error'); } }
             closeModal('rename-modal');
         }
 
@@ -3219,12 +3525,11 @@
                 document.getElementById('dq-cat').value = q.category || 'Array';
                 document.getElementById('dq-desc').value = q.description || '';
                 document.getElementById('dq-url').value = q.url || '';
+                document.getElementById('dq-fn').value = q.fnName || '';
                 pickDiff(q.difficulty || 'medium');
             } else {
                 document.getElementById('dsa-modal-h').textContent = '⊕ NEW QUESTION';
-                document.getElementById('dq-title').value = '';
-                document.getElementById('dq-desc').value = '';
-                document.getElementById('dq-url').value = '';
+                ['dq-title', 'dq-desc', 'dq-url', 'dq-fn'].forEach(id => document.getElementById(id).value = '');
                 pickDiff('medium');
             }
             openModal('dsa-modal');
@@ -3240,7 +3545,9 @@
                 title, category: document.getElementById('dq-cat').value, difficulty: selDiff,
                 description: document.getElementById('dq-desc').value.trim(),
                 url: document.getElementById('dq-url').value.trim(),
+                fnName: document.getElementById('dq-fn').value.trim(),
                 solved: existing ? existing.solved : false,
+                testCases: existing ? existing.testCases : [],
                 createdAt: existing ? existing.createdAt : Date.now(),
             };
             if (editId) { const idx = dsaQuestions.findIndex(x => x.id === editId); if (idx !== -1) dsaQuestions[idx] = q; }
@@ -3251,28 +3558,22 @@
         }
 
         function deleteDSAQuestion(id) {
-            const q = dsaQuestions.find(q => q.id === id);
-            if (!q) return;
+            const q = dsaQuestions.find(q => q.id === id); if (!q) return;
             const linkedCount = cells.filter(c => c.linkedQuestionId === id).length;
-
             openDeleteModal({
                 subtitle: '// Removes question from DSA training matrix',
                 targetName: q.title,
                 warningItems: [
                     `Difficulty: ${q.difficulty.toUpperCase()} · Category: ${q.category || 'Uncategorized'}`,
-                    linkedCount > 0
-                        ? `${linkedCount} notebook cell(s) are linked to this question — all links will be severed`
-                        : 'No cells are currently linked to this question',
-                    q.solved ? 'This question is marked SOLVED — your progress record will be lost' : 'Question has not been solved yet',
-                    q.url ? `External problem link will no longer be tracked: ${q.url}` : 'No external URL attached',
-                    q.description ? 'Problem description and notes will be permanently erased' : '',
-                ].filter(Boolean),
+                    linkedCount > 0 ? `${linkedCount} cell(s) linked — links will be severed` : 'No cells linked',
+                    (q.testCases || []).length > 0 ? `${q.testCases.length} test case(s) will be deleted` : 'No test cases to lose',
+                    q.solved ? 'This question is marked SOLVED — progress will be lost' : 'Question not solved yet',
+                ],
                 keyword: 'DELETE',
                 onConfirm: () => {
                     cells.forEach(c => { if (c.linkedQuestionId === id) { c.linkedQuestionId = null; refreshBanner(c.id); } });
                     dsaQuestions = dsaQuestions.filter(q => q.id !== id);
-                    persistDSA(); refreshAllDSAUI(); triggerAutoSave();
-                    showToast('Question deleted', 'success');
+                    persistDSA(); refreshAllDSAUI(); triggerAutoSave(); showToast('Question deleted', 'success');
                 }
             });
         }
@@ -3283,24 +3584,280 @@
             cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); });
         }
 
+        /* ── TEST CASES ── */
+        function openTCModal(idx) {
+            document.getElementById('tc-edit-idx').value = idx !== null ? String(idx) : '';
+            const q = dsaQuestions.find(q => q.id === viewingQId);
+            if (idx !== null && q && q.testCases && q.testCases[idx]) {
+                const tc = q.testCases[idx];
+                document.getElementById('tc-modal-h').textContent = '✏ EDIT TEST CASE';
+                document.getElementById('tc-name').value = tc.name || '';
+                document.getElementById('tc-input').value = tc.input || '';
+                document.getElementById('tc-expected').value = tc.expected || '';
+                document.getElementById('tc-desc').value = tc.description || '';
+            } else {
+                document.getElementById('tc-modal-h').textContent = '⊕ ADD TEST CASE';
+                ['tc-name', 'tc-input', 'tc-expected', 'tc-desc'].forEach(id => document.getElementById(id).value = '');
+            }
+            openModal('tc-modal');
+        }
+
+        function saveTCModal() {
+            const name = document.getElementById('tc-name').value.trim() || 'Test Case';
+            const input = document.getElementById('tc-input').value.trim();
+            const expected = document.getElementById('tc-expected').value.trim();
+            const description = document.getElementById('tc-desc').value.trim();
+            if (!expected) { showToast('Expected output is required', 'error'); return; }
+
+            const q = dsaQuestions.find(q => q.id === viewingQId);
+            if (!q) { showToast('No question selected', 'error'); return; }
+            if (!q.testCases) q.testCases = [];
+
+            const tc = { name, input, expected, description, lastResult: null };
+            const editIdxStr = document.getElementById('tc-edit-idx').value;
+            if (editIdxStr !== '') {
+                q.testCases[parseInt(editIdxStr)] = tc;
+            } else {
+                q.testCases.push(tc);
+            }
+            persistDSA(); closeModal('tc-modal');
+            renderTestCaseList(viewingQId);
+            updateTCCountBadge(q);
+            showToast('Test case saved', 'success');
+        }
+
+        function deleteTCAtIdx(qId, idx) {
+            const q = dsaQuestions.find(q => q.id === qId); if (!q) return;
+            q.testCases.splice(idx, 1);
+            persistDSA(); renderTestCaseList(qId); updateTCCountBadge(q);
+            showToast('Test case deleted', 'success');
+        }
+
+        function updateTCCountBadge(q) {
+            const tcCount = (q.testCases || []).length;
+            const badge = document.getElementById('qv-test-count');
+            if (badge) badge.textContent = tcCount > 0 ? `(${tcCount})` : '';
+        }
+
+        function renderTestCaseList(qId) {
+            const q = dsaQuestions.find(q => q.id === qId);
+            if (!q) return;
+            const list = document.getElementById('qv-tc-list');
+            if (!list) return;
+            const tcs = q.testCases || [];
+            updateTCCountBadge(q);
+
+            if (tcs.length === 0) {
+                list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;font-family:\'Fira Code\',monospace">// No test cases yet — click ADD TEST CASE</div>';
+                updateTCSummary(qId);
+                return;
+            }
+
+            list.innerHTML = tcs.map((tc, idx) => {
+                const res = tc.lastResult;
+                const statusClass = !res ? '' : res.pass ? ' tc-pass' : ' tc-fail';
+                const statusIcon = !res ? '◇' : res.pass ? '✓' : '✗';
+                const badgeClass = !res ? 'pending' : res.pass ? 'pass' : 'fail';
+                const badgeText = !res ? 'PENDING' : res.pass ? 'PASS' : 'FAIL';
+
+                return `<div class="tc-item${statusClass}" id="tc-item-${qId}-${idx}">
+                <div class="tc-item-header" onclick="toggleTCBody('${qId}',${idx})">
+                    <span class="tc-status-icon" style="color:${!res ? 'var(--muted)' : res.pass ? 'var(--plasma)' : 'var(--error)'}">${statusIcon}</span>
+                    <span class="tc-name">${escH(tc.name || 'Test Case ' + (idx + 1))}</span>
+                    <span class="tc-badge ${badgeClass}">${badgeText}</span>
+                    ${res && res.time ? `<span style="font-size:0.5rem;color:var(--muted);font-family:'Fira Code',monospace">${res.time}</span>` : ''}
+                </div>
+                <div class="tc-item-body" id="tc-body-${qId}-${idx}" style="display:none">
+                    ${tc.description ? `<div class="tc-desc-text desc-preview">${renderMD(tc.description)}</div>` : ''}
+                    <div class="tc-row">
+                        <div class="tc-field">
+                            <div class="tc-field-label">Input Args</div>
+                            <div class="tc-field-val">${escH(tc.input || '(none)')}</div>
+                        </div>
+                        <div class="tc-field">
+                            <div class="tc-field-label">Expected</div>
+                            <div class="tc-field-val">${escH(tc.expected)}</div>
+                        </div>
+                    </div>
+                    ${res ? `<div class="tc-row">
+                        <div class="tc-field" style="flex:2">
+                            <div class="tc-field-label">Actual Output</div>
+                            <div class="tc-field-val ${res.pass ? 'actual-pass' : 'actual-fail'}">${escH(String(res.actual))}</div>
+                        </div>
+                    </div>` : ''}
+                    ${res && res.error ? `<div class="tc-field-val actual-fail" style="margin-top:4px">⚠ ${escH(res.error)}</div>` : ''}
+                    <div class="tc-item-actions">
+                        <button class="btn btn-success btn-xs" onclick="runSingleTestCase('${qId}',${idx})">▶ RUN</button>
+                        <button class="btn btn-ghost btn-xs" onclick="openTCModal(${idx})">✏ EDIT</button>
+                        <button class="btn btn-danger btn-xs" onclick="deleteTCAtIdx('${qId}',${idx})">⊗</button>
+                    </div>
+                </div>
+            </div>`;
+            }).join('');
+
+            // auto-expand failed tests
+            tcs.forEach((tc, idx) => {
+                if (tc.lastResult && !tc.lastResult.pass) {
+                    const body = document.getElementById(`tc-body-${qId}-${idx}`);
+                    if (body) body.style.display = 'block';
+                }
+            });
+
+            updateTCSummary(qId);
+        }
+
+        function toggleTCBody(qId, idx) {
+            const body = document.getElementById(`tc-body-${qId}-${idx}`);
+            if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function updateTCSummary(qId) {
+            const q = dsaQuestions.find(q => q.id === qId);
+            const summaryEl = document.getElementById('qv-tc-summary');
+            if (!q || !summaryEl) return;
+            const tcs = q.testCases || [];
+            const ran = tcs.filter(t => t.lastResult !== null && t.lastResult !== undefined);
+            if (ran.length === 0) {
+                summaryEl.textContent = tcs.length > 0 ? `${tcs.length} TEST${tcs.length !== 1 ? 'S' : ''} — NOT RUN` : 'NO TESTS';
+                summaryEl.className = 'tc-summary not-run';
+            } else {
+                const passed = ran.filter(t => t.lastResult.pass).length;
+                summaryEl.textContent = `${passed}/${tcs.length} PASSED`;
+                summaryEl.className = 'tc-summary ' + (passed === tcs.length ? 'all-pass' : 'some-fail');
+            }
+        }
+
+        /* ── GET CODE FOR TEST EXECUTION ── */
+        function getLinkedCellCode(qId) {
+            const linkedCell = cells.find(c => c.linkedQuestionId === qId);
+            if (!linkedCell) return null;
+            const editor = cellEditors[linkedCell.id];
+            return editor ? editor.getValue() : linkedCell.code || '';
+        }
+
+        async function transpileIfNeeded(code, qId) {
+            const linkedCell = cells.find(c => c.linkedQuestionId === qId);
+            const lang = linkedCell ? linkedCell.lang : 'javascript';
+            if (lang === 'typescript' && window.ts) {
+                try {
+                    const result = ts.transpileModule(code, {
+                        compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict: false },
+                    });
+                    return result.outputText;
+                } catch (e) { return code; }
+            }
+            return code;
+        }
+
+        function deepEqual(a, b) {
+            if (a === b) return true;
+            if (a === null || b === null) return false;
+            if (typeof a !== typeof b) return false;
+            if (Array.isArray(a) && Array.isArray(b)) {
+                if (a.length !== b.length) return false;
+                return a.every((v, i) => deepEqual(v, b[i]));
+            }
+            if (typeof a === 'object' && typeof b === 'object') {
+                const aKeys = Object.keys(a).sort(), bKeys = Object.keys(b).sort();
+                if (aKeys.join(',') !== bKeys.join(',')) return false;
+                return aKeys.every(k => deepEqual(a[k], b[k]));
+            }
+            return false;
+        }
+
+        function safeStringify(val) {
+            if (val === undefined) return 'undefined';
+            if (val === null) return 'null';
+            try { return JSON.stringify(val); } catch (e) { return String(val); }
+        }
+
+        async function runSingleTestCase(qId, idx) {
+            const q = dsaQuestions.find(q => q.id === qId);
+            if (!q || !q.testCases || !q.testCases[idx]) return;
+            const tc = q.testCases[idx];
+
+            const code = getLinkedCellCode(qId);
+            if (code === null) { showToast('No linked cell found — link a cell first', 'error'); return; }
+
+            const fnName = q.fnName || '';
+            const jsCode = await transpileIfNeeded(code, qId);
+
+            const t0 = performance.now();
+            try {
+                let expectedVal;
+                try { expectedVal = new Function('return (' + tc.expected + ')')(); } catch (e) { expectedVal = tc.expected; }
+
+                const inputStr = tc.input ? tc.input : '';
+                const runCode = `${jsCode}\n\n` + (fnName
+                    ? `return (typeof ${fnName}==='function') ? ${fnName}(${inputStr}) : (()=>{throw new Error('Function "${fnName}" not found — check the function name in question settings')})();`
+                    : `return (typeof solve==='function') ? solve(${inputStr}) : (()=>{throw new Error('No fnName set — add function name in question settings')})();`);
+
+                const AsyncFn = (async function () { }).constructor;
+                const fn = new AsyncFn('"use strict";\n' + runCode);
+                const actualVal = await fn();
+                const elapsed = (performance.now() - t0).toFixed(1) + 'ms';
+
+                const pass = deepEqual(actualVal, expectedVal);
+                tc.lastResult = { pass, actual: safeStringify(actualVal), time: elapsed, error: null };
+            } catch (err) {
+                tc.lastResult = { pass: false, actual: '', time: (performance.now() - t0).toFixed(1) + 'ms', error: err.message };
+            }
+
+            persistDSA();
+            renderTestCaseList(qId);
+            const body = document.getElementById(`tc-body-${qId}-${idx}`);
+            if (body) body.style.display = 'block';
+        }
+
+        async function runAllTestCases() {
+            const q = dsaQuestions.find(q => q.id === viewingQId);
+            if (!q || !q.testCases || q.testCases.length === 0) { showToast('No test cases to run', 'error'); return; }
+
+            const code = getLinkedCellCode(viewingQId);
+            if (code === null) { showToast('No linked cell — link a notebook cell first', 'error'); return; }
+
+            const btn = document.getElementById('qv-run-all-btn');
+            btn.classList.add('running'); btn.textContent = '⏳ RUNNING…';
+
+            for (let i = 0; i < q.testCases.length; i++) {
+                await runSingleTestCase(viewingQId, i);
+            }
+
+            btn.classList.remove('running'); btn.innerHTML = '▶ RUN ALL';
+            const passed = q.testCases.filter(t => t.lastResult && t.lastResult.pass).length;
+            showToast(`${passed}/${q.testCases.length} test cases passed`, passed === q.testCases.length ? 'success' : 'error');
+        }
+
+        /* ── QUESTION VIEW ── */
         function openQuestionView(id) {
             const q = dsaQuestions.find(q => q.id === id); if (!q) return;
             viewingQId = id;
             document.getElementById('qv-title').textContent = q.title;
             let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
-            if (q.category) badges += '<span style="font-size:0.6rem;color:var(--muted);font-family:\'Fira Code\',monospace;letter-spacing:1px">' + escH(q.category) + '</span>';
+            if (q.category) badges += '<span style="font-size:0.6rem;color:var(--muted);font-family:\'Fira Code\',monospace">' + escH(q.category) + '</span>';
             if (q.solved) badges += '<span style="color:var(--plasma);font-size:0.65rem;font-family:\'Fira Code\',monospace">✓ SOLVED</span>';
+            if (q.fnName) badges += '<span style="font-size:0.55rem;color:var(--amber);font-family:\'Fira Code\',monospace;background:rgba(255,184,0,0.08);padding:2px 7px;border-radius:3px;border:1px solid rgba(255,184,0,0.2)">fn: ' + escH(q.fnName) + '</span>';
             document.getElementById('qv-badges').innerHTML = badges;
+
+            // Description with markdown
             const descEl = document.getElementById('qv-desc');
-            if (q.description) { descEl.textContent = q.description; descEl.style.display = 'block'; } else descEl.style.display = 'none';
+            if (q.description) {
+                descEl.innerHTML = renderMD(q.description);
+                descEl.className = 'qview-desc md-rendered';
+                descEl.style.display = 'block';
+            } else { descEl.style.display = 'none'; }
+
             const urlRow = document.getElementById('qv-url-row');
             if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; } else urlRow.style.display = 'none';
+
             document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ REOPEN' : '✓ MARK SOLVED';
             document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
+
+            // Linked cells panel
             const linkedCells = cells.filter(c => c.linkedQuestionId === id);
             const cellsEl = document.getElementById('qv-cells');
             if (linkedCells.length === 0) {
-                cellsEl.innerHTML = '<div class="qview-empty">// No cells linked yet — open a cell and click "Link Question"</div>';
+                cellsEl.innerHTML = '<div class="qview-empty">// No cells linked yet</div>';
             } else {
                 cellsEl.innerHTML = linkedCells.map(c => {
                     const editor = cellEditors[c.id];
@@ -3319,6 +3876,12 @@
                         '</div>';
                 }).join('');
             }
+
+            // TC badge
+            updateTCCountBadge(q);
+
+            // Reset to overview tab
+            switchQVTab('overview');
             openModal('qview-modal');
         }
 
@@ -3326,6 +3889,7 @@
         function editFromView() { closeModal('qview-modal'); openDSAModal(viewingQId); }
         function deleteFromView() { closeModal('qview-modal'); deleteDSAQuestion(viewingQId); }
 
+        /* ── DSA FILTERS / RENDER ── */
         function setFilter(f) {
             dsaFilter = f;
             ['all', 'easy', 'medium', 'hard', 'unsolved'].forEach(x => {
@@ -3347,9 +3911,11 @@
                 if (search && !q.title.toLowerCase().includes(search) && !(q.category || '').toLowerCase().includes(search)) return false;
                 return true;
             });
-            if (filtered.length === 0) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace;letter-spacing:1px">NO RESULTS</div>'; return; }
+            if (filtered.length === 0) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace">NO RESULTS</div>'; return; }
             list.innerHTML = filtered.map(q => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
+                const tcCount = (q.testCases || []).length;
+                const allPassed = tcCount > 0 && (q.testCases || []).filter(t => t.lastResult && t.lastResult.pass).length === tcCount;
                 return '<div class="dsa-sb-item">' +
                     '<div class="dsa-sb-header">' +
                     '<div class="dsa-sb-title">' + (q.solved ? '<span class="dsa-solved-mark">✓ </span>' : '') + escH(q.title) + '</div>' +
@@ -3360,6 +3926,7 @@
                     '<div class="dsa-sb-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
                     '<span class="dsa-cat-tag">' + escH(q.category || '') + '</span>' +
+                    (tcCount ? '<span style="font-size:0.5rem;font-family:\'Fira Code\',monospace;color:' + (allPassed ? 'var(--plasma)' : 'var(--muted)') + '">🧪' + tcCount + '</span>' : '') +
                     (lc ? '<span class="dsa-lc">⚡' + lc + '</span>' : '') +
                     '</div></div>';
             }).join('');
@@ -3369,15 +3936,19 @@
             const grid = document.getElementById('dsa-grid');
             const meta = document.getElementById('dsa-pm');
             meta.textContent = dsaQuestions.length + ' QUESTION' + (dsaQuestions.length !== 1 ? 'S' : '') + ' LOADED · ' + dsaQuestions.filter(q => q.solved).length + ' SOLVED';
-            if (dsaQuestions.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">⬡</div><p>// NO QUESTIONS LOADED — ADD YOUR FIRST DSA CHALLENGE</p></div>'; return; }
+            if (dsaQuestions.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="empty-icon">⬡</div><p>// NO QUESTIONS LOADED</p></div>'; return; }
             grid.innerHTML = dsaQuestions.map((q, i) => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
+                const tcs = q.testCases || [];
+                const passedTCs = tcs.filter(t => t.lastResult && t.lastResult.pass).length;
+                const tcBadge = tcs.length ? `<span style="font-size:0.55rem;font-family:'Fira Code',monospace;color:${passedTCs === tcs.length ? 'var(--plasma)' : 'var(--amber)'};background:rgba(0,255,204,0.06);padding:2px 7px;border-radius:3px;border:1px solid rgba(0,255,204,0.15)">🧪 ${passedTCs}/${tcs.length}</span>` : '';
                 return '<div class="dsa-card' + (q.solved ? ' solved-card' : '') + '">' +
                     '<div class="dc-header"><span class="dc-num">#' + (i + 1) + '</span><span class="dc-title">' + escH(q.title) + '</span>' + (q.solved ? '<span class="dc-check">✓</span>' : '') + '</div>' +
-                    (q.description ? '<div class="dc-desc">' + escH(q.description) + '</div>' : '') +
+                    (q.description ? '<div class="dc-desc">' + escH(q.description.replace(/[#*`_\[\]]/g, '')) + '</div>' : '') +
                     '<div class="dc-footer">' +
                     '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
-                    '<span style="font-size:0.55rem;color:var(--muted);font-family:\'Fira Code\',monospace;letter-spacing:0.5px">' + escH(q.category || '') + '</span>' +
+                    '<span style="font-size:0.55rem;color:var(--muted);font-family:\'Fira Code\',monospace">' + escH(q.category || '') + '</span>' +
+                    tcBadge +
                     (lc ? '<span class="dc-lc">⚡ ' + lc + ' CELL' + (lc > 1 ? 'S' : '') + '</span>' : '') +
                     '</div>' +
                     '<div class="dc-actions">' +
@@ -3411,14 +3982,13 @@
                 if (doc.exists && doc.data().questions) {
                     dsaQuestions = doc.data().questions;
                     localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
-                    refreshAllDSAUI();
-                    cells.forEach(c => refreshBanner(c.id));
+                    refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id));
                 }
             } catch (e) { console.warn('DSA load err', e); }
         }
 
         /* ── CELLS ── */
-        function addCell(lang, code, description, savedOutput, linkedQId, savedFontSizeIdx) {
+        function addCell(lang, code, description, savedOutput, linkedQId, savedFontSizeIdx, savedDescMode) {
             lang = lang || 'javascript'; code = code || ''; description = description || ''; linkedQId = linkedQId || null;
             const id = ++cellIdCounter;
             const cell = { id, lang, description, linkedQuestionId: linkedQId, lastOutput: savedOutput || null };
@@ -3426,6 +3996,7 @@
 
             const fsi = (savedFontSizeIdx !== undefined && savedFontSizeIdx !== null) ? savedFontSizeIdx : DEFAULT_FONT_IDX;
             cellFontSizeIdx[id] = fsi;
+            cellDescMode[id] = savedDescMode || 'edit';
             const fontSize = FONT_SIZES[fsi];
 
             const div = document.createElement('div');
@@ -3435,11 +4006,17 @@
                 buildBannerHTML(id, linkedQId) +
                 '<div class="cell-desc" id="celldesc-' + id + '">' +
                 '<div class="desc-label" onclick="toggleDesc(' + id + ')">' +
-                '<span>▸</span> SOLUTION NOTES' +
+                '<span>▸</span> SOLUTION NOTES <span style="font-size:0.45rem;color:var(--plasma);margin-left:6px">MD</span>' +
                 '<span class="desc-toggle-arrow">▾</span>' +
                 '</div>' +
                 '<div class="desc-body">' +
-                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, time/space complexity, edge cases…">' + escH(description) + '</textarea>' +
+                '<div class="desc-toolbar">' +
+                '<button class="desc-mode-btn ' + (cellDescMode[id] === 'edit' ? 'active' : '') + '" id="dmode-edit-' + id + '" onclick="setDescMode(' + id + ',\'edit\')">✎ EDIT</button>' +
+                '<button class="desc-mode-btn ' + (cellDescMode[id] === 'preview' ? 'active' : '') + '" id="dmode-prev-' + id + '" onclick="setDescMode(' + id + ',\'preview\')">👁 PREVIEW</button>' +
+                '<span class="desc-mode-hint">Markdown supported</span>' +
+                '</div>' +
+                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, complexity, edge cases…&#10;Supports **bold**, `code`, ## headings, lists and more" style="display:' + (cellDescMode[id] === 'edit' ? 'block' : 'none') + '">' + (description || '') + '</textarea>' +
+                '<div class="desc-preview" id="descprev-' + id + '" style="display:' + (cellDescMode[id] === 'preview' ? 'block' : 'none') + '">' + (description ? renderMD(description) : '<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>') + '</div>' +
                 '</div>' +
                 '</div>' +
                 '<div class="cell-toolbar">' +
@@ -3452,10 +4029,10 @@
                 '<span class="hint">CTRL+ENTER RUN · CTRL+/ COMMENT · ALT+SHIFT+F FORMAT</span>' +
                 '</div>' +
                 '<div class="tl-right">' +
-                '<div class="font-size-ctrl" title="Adjust font size">' +
-                '<button class="fs-btn" onclick="setFontSize(' + id + ',-1)" title="Decrease">A−</button>' +
+                '<div class="font-size-ctrl">' +
+                '<button class="fs-btn" onclick="setFontSize(' + id + ',-1)">A−</button>' +
                 '<span class="fs-display" id="fsize-' + id + '">' + fontSize + 'px</span>' +
-                '<button class="fs-btn" onclick="setFontSize(' + id + ',+1)" title="Increase">A+</button>' +
+                '<button class="fs-btn" onclick="setFontSize(' + id + ',+1)">A+</button>' +
                 '</div>' +
                 '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format code">✦ FMT</button>' +
                 '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ RUN</button>' +
@@ -3468,19 +4045,25 @@
                 '</div>';
 
             document.getElementById('cells-container').appendChild(div);
+
+            // Desc textarea auto-resize + save
             const descTa = div.querySelector('.desc-ta');
             const autoResizeDesc = (ta) => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
-            descTa.addEventListener('input', () => { autoResizeDesc(descTa); triggerAutoSave(); });
+            descTa.addEventListener('input', () => {
+                autoResizeDesc(descTa);
+                // live update preview if in preview mode
+                const prevEl = document.getElementById('descprev-' + id);
+                if (prevEl) prevEl.innerHTML = descTa.value ? renderMD(descTa.value) : '<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>';
+                triggerAutoSave();
+            });
             setTimeout(() => autoResizeDesc(descTa), 0);
 
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
-                value: code || getTemplate(lang),
-                mode: 'javascript', theme: 'dracula',
+                value: code || getTemplate(lang), mode: 'javascript', theme: 'dracula',
                 lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
                 hintOptions: { completeSingle: false, hint: CodeMirror.hint.javascript },
                 extraKeys: {
-                    'Ctrl-Enter': () => runCell(id),
-                    'Cmd-Enter': () => runCell(id),
+                    'Ctrl-Enter': () => runCell(id), 'Cmd-Enter': () => runCell(id),
                     'Ctrl-/': cm => cm.execCommand('toggleComment'),
                     'Ctrl-Space': cm => cm.showHint({ completeSingle: false }),
                     'Alt-Shift-F': () => formatCell(id),
@@ -3519,6 +4102,25 @@
             return id;
         }
 
+        /* ── DESC MODE TOGGLE ── */
+        function setDescMode(cellId, mode) {
+            cellDescMode[cellId] = mode;
+            const ta = document.getElementById('desc-' + cellId);
+            const prev = document.getElementById('descprev-' + cellId);
+            const editBtn = document.getElementById('dmode-edit-' + cellId);
+            const prevBtn = document.getElementById('dmode-prev-' + cellId);
+            if (mode === 'edit') {
+                ta.style.display = 'block'; prev.style.display = 'none';
+                editBtn.classList.add('active'); prevBtn.classList.remove('active');
+                ta.focus();
+            } else {
+                ta.style.display = 'none'; prev.style.display = 'block';
+                editBtn.classList.remove('active'); prevBtn.classList.add('active');
+                prev.innerHTML = ta.value ? renderMD(ta.value) : '<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>';
+            }
+            triggerAutoSave();
+        }
+
         function getTemplate(lang) {
             if (lang === 'typescript') return `// TypeScript solution\nfunction solve<T>(input: T[]): T[] {\n  return input.map(x => x);\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
             return `// JavaScript solution\nfunction solve(nums) {\n  return nums.map(n => n * 2);\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
@@ -3534,30 +4136,22 @@
         }
 
         function deleteCell(id) {
-            const cell = cells.find(c => c.id === id);
-            if (!cell) return;
+            const cell = cells.find(c => c.id === id); if (!cell) return;
             const cellIdx = cells.findIndex(c => c.id === id);
             const editor = cellEditors[id];
-            const descEl = document.getElementById('desc-' + id);
             const codeLines = editor ? editor.getValue().split('\n').length : 0;
-            const hasDesc = descEl && descEl.value.trim().length > 0;
-            const linkedQ = cell.linkedQuestionId ? dsaQuestions.find(q => q.id === cell.linkedQuestionId) : null;
-            const hasOutput = cell.lastOutput && cell.lastOutput.lines && cell.lastOutput.lines.length > 0;
-
             openDeleteModal({
                 subtitle: `// Removes Cell [${String(cellIdx + 1).padStart(2, '0')}] from this notebook`,
                 targetName: `Cell [${String(cellIdx + 1).padStart(2, '0')}] — ${cell.lang.toUpperCase()}`,
                 warningItems: [
-                    `${codeLines} line(s) of ${cell.lang.toUpperCase()} code will be permanently erased`,
-                    hasDesc ? 'Solution notes written in this cell will be lost' : 'No solution notes to lose',
-                    linkedQ ? `Linked DSA question "${linkedQ.title}" — the link will be severed (question is kept)` : 'No DSA question linked',
-                    hasOutput ? 'Saved execution output and run history will be cleared' : 'No execution output to lose',
-                    cells.length === 1 ? '⚠ This is your ONLY cell — notebook will be left empty' : `${cells.length - 1} other cell(s) will remain`,
+                    `${codeLines} line(s) of ${cell.lang.toUpperCase()} code will be erased`,
+                    cell.linkedQuestionId ? 'DSA question link will be severed (question kept)' : 'No DSA question linked',
+                    cells.length === 1 ? '⚠ This is your ONLY cell' : `${cells.length - 1} other cell(s) will remain`,
                 ],
                 keyword: 'DELETE',
                 onConfirm: () => {
                     const idx = cells.findIndex(c => c.id === id);
-                    if (idx !== -1) { cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
+                    if (idx !== -1) { cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; delete cellDescMode[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
                 }
             });
         }
@@ -3567,10 +4161,8 @@
             cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (String(i + 1).padStart(2, '0')) + ']'; });
         }
 
-        /* ── DESC TOGGLE ── */
         function toggleDesc(cellId) {
-            const el = document.getElementById('celldesc-' + cellId);
-            if (!el) return;
+            const el = document.getElementById('celldesc-' + cellId); if (!el) return;
             el.classList.toggle('collapsed');
         }
 
@@ -3584,7 +4176,7 @@
                 (q ? '<div class="qb-title">' + escH(q.title) + '</div>' +
                     '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
                     '<span class="dsa-cat-tag" style="font-size:0.52rem">' + escH(q.category || '') + '</span>' +
-                    (q.solved ? '<span style="color:var(--plasma);font-size:0.55rem;font-family:\'Fira Code\',monospace;letter-spacing:1px">✓ SOLVED</span>' : '') +
+                    (q.solved ? '<span style="color:var(--plasma);font-size:0.55rem;font-family:\'Fira Code\',monospace">✓ SOLVED</span>' : '') +
                     '</div>'
                     : '<div class="qb-empty">// No challenge linked</div>') +
                 '</div>' +
@@ -3635,14 +4227,8 @@
             ).join('');
         }
 
-        function linkQ(cellId, qId) {
-            const cell = cells.find(c => c.id === cellId); if (!cell) return;
-            cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave();
-        }
-        function unlinkQ(cellId) {
-            const cell = cells.find(c => c.id === cellId); if (!cell) return;
-            cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave();
-        }
+        function linkQ(cellId, qId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave(); }
+        function unlinkQ(cellId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave(); }
 
         document.addEventListener('click', e => {
             if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
@@ -3653,25 +4239,20 @@
             const cell = cells.find(c => c.id === id);
             const editor = cellEditors[id];
             if (!cell || !editor) return;
-
             const code = editor.getValue(), lang = cell.lang;
             const runBtn = document.getElementById('runbtn-' + id);
             runBtn.classList.add('running'); runBtn.textContent = '⏳ EXEC…';
             document.getElementById('output-' + id).style.display = 'none';
-
-            const logs = []; const t0 = performance.now();
+            const logs = [], t0 = performance.now();
             let hasError = false, isAsync = false;
-
             const savedConsole = {};
             ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => savedConsole[m] = console[m]);
-
             const capture = (type) => (...args) => {
                 let str;
                 try {
                     str = args.map(a => {
-                        if (a === null) return 'null';
-                        if (a === undefined) return 'undefined';
-                        if (a instanceof Error) return a.name + ': ' + a.message + (a.stack ? '\n' + a.stack.split('\n').slice(1, 3).join('\n') : '');
+                        if (a === null) return 'null'; if (a === undefined) return 'undefined';
+                        if (a instanceof Error) return a.name + ': ' + a.message;
                         if (a instanceof Promise) return '[Promise]';
                         if (Array.isArray(a) || (a !== null && typeof a === 'object')) { try { return JSON.stringify(a, null, 2); } catch { return String(a); } }
                         return String(a);
@@ -3679,26 +4260,14 @@
                 } catch (e) { str = '[unprintable]'; }
                 logs.push({ type, str }); savedConsole[type](...args);
             };
-
-            console.log = capture('log'); console.error = capture('error');
-            console.warn = capture('warn'); console.info = capture('info');
+            console.log = capture('log'); console.error = capture('error'); console.warn = capture('warn'); console.info = capture('info');
             console.table = (...a) => { try { capture('log')(JSON.stringify(a[0], null, 2)); } catch { capture('log')(...a); } };
             console.dir = capture('log');
-
             try {
                 let jsCode = code;
                 if (lang === 'typescript') {
                     try {
-                        const result = ts.transpileModule(code, {
-                            compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict: false, experimentalDecorators: true },
-                            reportDiagnostics: true,
-                        });
-                        if (result.diagnostics && result.diagnostics.length) {
-                            result.diagnostics.forEach(d => {
-                                const msg = typeof d.messageText === 'string' ? d.messageText : d.messageText.messageText;
-                                logs.push({ type: 'warn', str: '[TS] ' + msg });
-                            });
-                        }
+                        const result = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict: false } });
                         jsCode = result.outputText;
                     } catch (err) { logs.push({ type: 'error', str: '[TypeScript compile error] ' + err.message }); hasError = true; }
                 }
@@ -3708,25 +4277,18 @@
                     const fn = new AsyncFn('"use strict";\n' + jsCode);
                     const ret = await fn();
                     if (ret !== undefined && ret !== null) {
-                        try {
-                            const s = ret instanceof Promise ? '[Promise]' : typeof ret === 'object' ? JSON.stringify(ret, null, 2) : String(ret);
-                            logs.push({ type: 'return', str: '→ ' + s });
-                        } catch (e) { }
+                        try { const s = ret instanceof Promise ? '[Promise]' : typeof ret === 'object' ? JSON.stringify(ret, null, 2) : String(ret); logs.push({ type: 'return', str: '→ ' + s }); } catch (e) { }
                     }
                 }
             } catch (err) {
                 hasError = true;
-                if (err instanceof Error) {
-                    logs.push({ type: 'error', str: err.name + ': ' + err.message });
-                    if (err.stack) { const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4); frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() })); }
-                } else { logs.push({ type: 'error', str: 'Thrown: ' + String(err) }); }
+                if (err instanceof Error) { logs.push({ type: 'error', str: err.name + ': ' + err.message }); if (err.stack) { const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4); frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() })); } }
+                else { logs.push({ type: 'error', str: 'Thrown: ' + String(err) }); }
             } finally {
                 ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = savedConsole[m]);
             }
-
             const elapsed = (performance.now() - t0).toFixed(1);
             if (logs.length === 0) logs.push({ type: 'info', str: '// (no output)' });
-
             showOutput(id, logs, hasError, elapsed + 'ms', isAsync);
             runBtn.classList.remove('running'); runBtn.innerHTML = '▶ RUN';
             cell.lastOutput = { lines: logs, hasError, time: elapsed + 'ms', isAsync };
@@ -3767,48 +4329,24 @@
                 const editor = cellEditors[c.id];
                 const descEl = document.getElementById('desc-' + c.id);
                 return {
-                    lang: c.lang,
-                    code: editor ? editor.getValue() : '',
+                    lang: c.lang, code: editor ? editor.getValue() : '',
                     description: descEl ? descEl.value : c.description || '',
-                    output: c.lastOutput || null,
-                    linkedQuestionId: c.linkedQuestionId || null,
+                    output: c.lastOutput || null, linkedQuestionId: c.linkedQuestionId || null,
                     fontSizeIdx: cellFontSizeIdx[c.id] !== undefined ? cellFontSizeIdx[c.id] : DEFAULT_FONT_IDX,
+                    descMode: cellDescMode[c.id] || 'edit',
                 };
             });
-
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() }));
             persistDSA();
-
-            const bar = document.getElementById('save-bar');
-            const dot = document.getElementById('save-dot');
-            const txt = document.getElementById('save-text');
-
-            if (!db) {
-                dot.classList.add('saved'); txt.textContent = 'SAVED LOCALLY';
-                document.getElementById('last-saved').textContent = 'SAVED LOCALLY';
-                setTimeout(() => bar.classList.remove('visible'), 2500);
-                return;
-            }
-
+            const bar = document.getElementById('save-bar'), dot = document.getElementById('save-dot'), txt = document.getElementById('save-text');
+            if (!db) { dot.classList.add('saved'); txt.textContent = 'SAVED LOCALLY'; document.getElementById('last-saved').textContent = 'SAVED LOCALLY'; setTimeout(() => bar.classList.remove('visible'), 2500); return; }
             try {
                 const payload = { title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-                if (currentNotebookId) {
-                    await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
-                } else {
-                    const ref = await db.collection('notebooks').add(payload);
-                    currentNotebookId = ref.id; saveNotebookId(ref.id);
-                    document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
-                }
-                dot.classList.add('saved');
-                txt.textContent = 'SYNCED ✓';
-                document.getElementById('last-saved').textContent = 'SAVED ' + new Date().toLocaleTimeString();
-                loadNotebooksList();
-                setTimeout(() => bar.classList.remove('visible'), 2500);
-            } catch (e) {
-                txt.textContent = 'SAVE FAILED: ' + e.message;
-                setTimeout(() => bar.classList.remove('visible'), 3500);
-                console.error('Save error:', e);
-            }
+                if (currentNotebookId) { await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true }); }
+                else { const ref = await db.collection('notebooks').add(payload); currentNotebookId = ref.id; saveNotebookId(ref.id); document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…'; }
+                dot.classList.add('saved'); txt.textContent = 'SYNCED ✓'; document.getElementById('last-saved').textContent = 'SAVED ' + new Date().toLocaleTimeString();
+                loadNotebooksList(); setTimeout(() => bar.classList.remove('visible'), 2500);
+            } catch (e) { txt.textContent = 'SAVE FAILED: ' + e.message; setTimeout(() => bar.classList.remove('visible'), 3500); }
         }
 
         /* ── MODALS ── */
@@ -3827,8 +4365,7 @@
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
             if (e.key === 'Escape') {
-                closeAllPickers();
-                closeDeleteModal();
+                closeAllPickers(); closeDeleteModal();
                 document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
             }
         });
@@ -3836,43 +4373,37 @@
         /* ── INIT ── */
         window.addEventListener('load', () => {
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
-            refreshAllDSAUI();
-            pickDiff('medium');
+            // migrate old data: ensure testCases field exists
+            dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
+            refreshAllDSAUI(); pickDiff('medium');
             currentNotebookId = loadNotebookId();
-
             let loadedFromLocal = false;
             try {
                 const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
                 if (local && local.cells && local.cells.length > 0) {
                     document.getElementById('nb-title').value = local.title || 'UNTITLED_NOTEBOOK';
-                    local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx));
+                    local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode));
                     if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…';
                     loadedFromLocal = true;
                 }
             } catch (e) { }
-
             if (!loadedFromLocal) addCell('javascript');
-
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
             if (fc.apiKey && fc.projectId) {
-                ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => {
-                    const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || '';
-                });
+                ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => { const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || ''; });
                 (async () => {
                     try {
                         try { await firebase.app().delete(); } catch (e) { }
-                        firebase.initializeApp(fc);
-                        db = firebase.firestore();
+                        firebase.initializeApp(fc); db = firebase.firestore();
                         await db.collection('notebooks').limit(1).get();
-                        setFirebaseStatus(true);
-                        loadNotebooksList();
+                        setFirebaseStatus(true); loadNotebooksList();
                         try {
                             const doc = await db.collection('dsa').doc('questions').get();
                             if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
                                 dsaQuestions = doc.data().questions;
+                                dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
                                 localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
-                                refreshAllDSAUI();
-                                cells.forEach(c => refreshBanner(c.id));
+                                refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id));
                             }
                         } catch (e) { console.warn('DSA sync err', e); }
                     } catch (e) { console.warn('Firebase auto-connect failed:', e); }
