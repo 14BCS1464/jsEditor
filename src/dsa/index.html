@@ -836,7 +836,6 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
             z-index: 1000;
             display: flex;
             align-items: center;
@@ -849,6 +848,14 @@
         .modal-overlay.open {
             opacity: 1;
             pointer-events: all;
+        }
+
+        #tc-modal {
+            z-index: 1200;
+        }
+
+        #delete-modal {
+            z-index: 1200;
         }
 
         .modal {
@@ -1287,11 +1294,12 @@
             gap: 20px;
         }
 
+        /* FIX #1: Removed overflow:hidden from .cell — it was clipping the DSA question picker dropdown */
         .cell {
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 8px;
-            overflow: hidden;
+            /* overflow: hidden; <-- REMOVED: was clipping .qb-picker dropdown */
             transition: border-color .25s, box-shadow .25s;
             animation: cellSlideIn .3s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
@@ -1307,6 +1315,9 @@
             background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
             opacity: 0;
             transition: opacity .3s;
+            border-radius: 8px 8px 0 0;
+            z-index: 1;
+            pointer-events: none;
         }
 
         .cell:hover::before,
@@ -1349,6 +1360,9 @@
             background: rgba(0, 0, 0, 0.3);
             border-bottom: 1px solid var(--border);
             transition: background .25s;
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            /* needed for z-index stacking of child picker */
         }
 
         .cell-qbanner.linked {
@@ -1434,14 +1448,15 @@
             color: var(--cyan);
         }
 
+        /* FIX #2: .qb-picker now uses position:fixed so it escapes any parent overflow/clip context */
         .qb-picker {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
+            position: fixed;
+            /* was: absolute — fixed escapes overflow:hidden on any ancestor */
             background: var(--panel);
             border: 1px solid var(--border2);
             border-radius: 6px;
-            z-index: 200;
+            z-index: 500;
+            /* above cells, below modals */
             overflow: hidden;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), var(--glow-cyan);
             width: 300px;
@@ -1536,7 +1551,7 @@
             border-color: var(--error);
         }
 
-        /* ── CELL DESCRIPTION with MARKDOWN support ── */
+        /* ── CELL DESCRIPTION ── */
         .cell-desc {
             background: rgba(0, 212, 255, 0.02);
             border-bottom: 1px solid var(--border);
@@ -1949,6 +1964,8 @@
         .cell-editor-wrap {
             position: relative;
             overflow: hidden;
+            /* overflow hidden stays here for CodeMirror clipping */
+            border-radius: 0 0 8px 8px;
         }
 
         .cell-editor-wrap .CodeMirror {
@@ -2467,16 +2484,6 @@
         .tc-run-all-btn.running {
             animation: runPulse 1s infinite;
             cursor: not-allowed;
-        }
-
-        /* ── TEST CASE ADD MODAL ── */
-        #tc-modal .modal {
-            width: 560px;
-            border-color: rgba(0, 255, 204, 0.3);
-        }
-
-        #tc-modal .modal::before {
-            background: linear-gradient(90deg, transparent, var(--plasma), var(--cyan), transparent);
         }
 
         /* ── SAVE BAR ── */
@@ -3125,9 +3132,8 @@
                     <div
                         style="font-size:0.6rem;color:var(--muted);font-family:'Fira Code',monospace;margin-bottom:10px;line-height:1.6">
                         // Tests run against the <strong style="color:var(--cyan)">first linked cell</strong> in the
-                        current notebook.
-                        Define your function in the cell, set the function name above, then add test cases with inputs
-                        and expected outputs.
+                        current notebook. Define your function in the cell, set the function name above, then add test
+                        cases with inputs and expected outputs.
                     </div>
                     <div class="tc-list" id="qv-tc-list"></div>
                     <div class="tc-add-row">
@@ -3177,8 +3183,7 @@
             </div>
             <div class="form-group">
                 <label>DESCRIPTION <span style="color:var(--plasma);font-size:0.47rem">MARKDOWN SUPPORTED</span></label>
-                <textarea id="tc-desc" rows="3"
-                    placeholder="// Explain this test case, constraints, or edge cases…&#10;**Input:** nums=[2,7,11,15], target=9&#10;**Why:** First and second elements sum to target."></textarea>
+                <textarea id="tc-desc" rows="3" placeholder="// Explain this test case…"></textarea>
             </div>
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeModal('tc-modal')">CANCEL</button>
@@ -3242,7 +3247,7 @@
         const FONT_SIZES = [11, 12, 13, 14, 15, 16, 18, 20, 22, 24];
         const DEFAULT_FONT_IDX = 2;
         let cellFontSizeIdx = {};
-        let cellDescMode = {}; // 'edit' | 'preview'
+        let cellDescMode = {};
 
         let pendingDeleteFn = null, deleteConfirmKeyword = 'DELETE';
 
@@ -3421,25 +3426,34 @@
             try {
                 const snap = await db.collection('notebooks').orderBy('updatedAt', 'desc').limit(50).get();
                 list.innerHTML = '';
-                if (snap.empty) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace">NO NOTEBOOKS FOUND</div>'; return; }
+                if (snap.empty) {
+                    list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace">NO NOTEBOOKS FOUND</div>';
+                    return;
+                }
                 snap.forEach(doc => {
                     const d = doc.data();
                     const div = document.createElement('div');
                     div.className = 'nb-item' + (doc.id === currentNotebookId ? ' active-nb' : '');
                     div.id = 'nb-item-' + doc.id;
                     const date = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate().toLocaleDateString() : '';
+                    const safeTitle = escH(d.title || 'Untitled');
+                    const safeId = doc.id;
+
                     div.innerHTML =
-                        '<div class="nb-item-title">' + escH(d.title || 'Untitled') + '</div>' +
+                        '<div class="nb-item-title">' + safeTitle + '</div>' +
                         '<div class="nb-item-meta">' + (d.cells || []).length + ' cells · ' + date + '</div>' +
                         '<div class="nb-item-actions">' +
-                        '<button class="nb-act-btn duplicate" title="Duplicate" onclick="event.stopPropagation();duplicateNotebook(\'' + doc.id + '\',\'' + escH(d.title || 'Untitled') + '\')">📋</button>' +
-                        '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + doc.id + '`,`' + escH(d.title || 'Untitled') + '\')">✏</button>' +
-                        '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + doc.id + '\')">⊗</button>' +
+                        '<button class="nb-act-btn duplicate" title="Duplicate" onclick="event.stopPropagation();duplicateNotebook(\'' + safeId + '\',\'' + safeTitle.replace(/'/g, "\\'") + '\')">📋</button>' +
+                        // FIX: was '`,`' — now correctly uses \',\' to pass two separate string args
+                        '<button class="nb-act-btn rename" title="Rename" onclick="event.stopPropagation();openRenameModal(\'' + safeId + '\',\'' + safeTitle.replace(/'/g, "\\'") + '\')">✏</button>' +
+                        '<button class="nb-act-btn" title="Delete" onclick="event.stopPropagation();deleteNotebook(\'' + safeId + '\')">⊗</button>' +
                         '</div>';
                     div.addEventListener('click', () => loadNotebook(doc.id, d));
                     list.appendChild(div);
                 });
-            } catch (e) { list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:0.68rem">' + escH(e.message) + '</div>'; }
+            } catch (e) {
+                list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:0.68rem">' + escH(e.message) + '</div>';
+            }
         }
 
         function loadNotebook(id, data) {
@@ -3468,8 +3482,15 @@
         async function duplicateNotebook(id, title) {
             try {
                 let notebookData;
-                if (db) { const doc = await db.collection('notebooks').doc(id).get(); if (!doc.exists) { showToast('Not found', 'error'); return; } notebookData = doc.data(); }
-                else { const local = JSON.parse(localStorage.getItem('current_notebook') || 'null'); if (!local) { showToast('No notebook', 'error'); return; } notebookData = local; }
+                if (db) {
+                    const doc = await db.collection('notebooks').doc(id).get();
+                    if (!doc.exists) { showToast('Not found', 'error'); return; }
+                    notebookData = doc.data();
+                } else {
+                    const local = JSON.parse(localStorage.getItem('current_notebook') || 'null');
+                    if (!local) { showToast('No notebook', 'error'); return; }
+                    notebookData = local;
+                }
                 currentNotebookId = null; saveNotebookId(null);
                 document.getElementById('nb-title').value = title + ' (COPY)';
                 document.getElementById('nb-id').textContent = 'LOCAL';
@@ -3486,34 +3507,73 @@
             openDeleteModal({
                 subtitle: '// Permanently deletes notebook from all storage',
                 targetName: nbTitle,
-                warningItems: ['All code cells and outputs will be erased', 'All solution notes will be lost', db ? 'Will be deleted from Firebase' : 'Will be removed from local storage'],
+                warningItems: [
+                    'All code cells and outputs will be erased',
+                    'All solution notes will be lost',
+                    db ? 'Will be deleted from Firebase' : 'Will be removed from local storage'
+                ],
                 keyword: 'DELETE',
                 onConfirm: async () => {
-                    if (id === currentNotebookId) { currentNotebookId = null; saveNotebookId(null); document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK'; document.getElementById('nb-id').textContent = 'LOCAL'; cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {}; document.getElementById('cells-container').innerHTML = ''; addCell('javascript'); }
-                    if (db) { try { await db.collection('notebooks').doc(id).delete(); showToast('Deleted', 'success'); loadNotebooksList(); } catch (e) { showToast('Failed: ' + e.message, 'error'); } }
-                    else { const el = document.getElementById('nb-item-' + id); if (el) el.remove(); showToast('Deleted', 'success'); }
+                    if (id === currentNotebookId) {
+                        currentNotebookId = null; saveNotebookId(null);
+                        document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
+                        document.getElementById('nb-id').textContent = 'LOCAL';
+                        cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
+                        document.getElementById('cells-container').innerHTML = '';
+                        addCell('javascript');
+                    }
+                    if (db) {
+                        try {
+                            await db.collection('notebooks').doc(id).delete();
+                            showToast('Deleted', 'success');
+                            loadNotebooksList();
+                        } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+                    } else {
+                        const el = document.getElementById('nb-item-' + id);
+                        if (el) el.remove();
+                        showToast('Deleted', 'success');
+                    }
                 }
             });
         }
 
+        /* FIX: openRenameModal now correctly receives id and currentTitle as separate args */
         function openRenameModal(id, currentTitle) {
             document.getElementById('rename-nb-id').value = id;
             document.getElementById('rename-nb-title').value = currentTitle;
             openModal('rename-modal');
+            setTimeout(() => document.getElementById('rename-nb-title').select(), 150);
         }
+
         async function doRenameNotebook() {
             const id = document.getElementById('rename-nb-id').value;
             const newTitle = document.getElementById('rename-nb-title').value.trim();
             if (!newTitle) { showToast('Title cannot be empty', 'error'); return; }
             if (id === currentNotebookId) document.getElementById('nb-title').value = newTitle;
-            if (db) { try { await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); showToast('Renamed', 'success'); loadNotebooksList(); } catch (e) { showToast('Failed: ' + e.message, 'error'); } }
+            if (db) {
+                try {
+                    await db.collection('notebooks').doc(id).update({ title: newTitle, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    showToast('Renamed', 'success');
+                    loadNotebooksList();
+                } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+            } else {
+                // Update local list item
+                const nbEl = document.getElementById('nb-item-' + id);
+                if (nbEl) {
+                    const titleEl = nbEl.querySelector('.nb-item-title');
+                    if (titleEl) titleEl.textContent = newTitle;
+                }
+                showToast('Renamed locally', 'success');
+            }
             closeModal('rename-modal');
         }
 
         /* ── DSA ── */
         function pickDiff(d) {
             selDiff = d;
-            ['easy', 'medium', 'hard'].forEach(x => { document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : ''); });
+            ['easy', 'medium', 'hard'].forEach(x => {
+                document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : '');
+            });
         }
 
         function openDSAModal(editId) {
@@ -3585,11 +3645,15 @@
         }
 
         /* ── TEST CASES ── */
+        let tcModalQId = null;
+
         function openTCModal(idx) {
-            document.getElementById('tc-edit-idx').value = idx !== null ? String(idx) : '';
-            const q = dsaQuestions.find(q => q.id === viewingQId);
-            if (idx !== null && q && q.testCases && q.testCases[idx]) {
-                const tc = q.testCases[idx];
+            tcModalQId = viewingQId;
+            const idxVal = (idx !== null && idx !== undefined) ? String(idx) : '';
+            document.getElementById('tc-edit-idx').value = idxVal;
+            const q = dsaQuestions.find(q => q.id === tcModalQId);
+            if (idxVal !== '' && q && q.testCases && q.testCases[parseInt(idxVal)]) {
+                const tc = q.testCases[parseInt(idxVal)];
                 document.getElementById('tc-modal-h').textContent = '✏ EDIT TEST CASE';
                 document.getElementById('tc-name').value = tc.name || '';
                 document.getElementById('tc-input').value = tc.input || '';
@@ -3597,9 +3661,13 @@
                 document.getElementById('tc-desc').value = tc.description || '';
             } else {
                 document.getElementById('tc-modal-h').textContent = '⊕ ADD TEST CASE';
-                ['tc-name', 'tc-input', 'tc-expected', 'tc-desc'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('tc-name').value = '';
+                document.getElementById('tc-input').value = '';
+                document.getElementById('tc-expected').value = '';
+                document.getElementById('tc-desc').value = '';
             }
             openModal('tc-modal');
+            setTimeout(() => document.getElementById('tc-name').focus(), 220);
         }
 
         function saveTCModal() {
@@ -3609,21 +3677,29 @@
             const description = document.getElementById('tc-desc').value.trim();
             if (!expected) { showToast('Expected output is required', 'error'); return; }
 
-            const q = dsaQuestions.find(q => q.id === viewingQId);
-            if (!q) { showToast('No question selected', 'error'); return; }
-            if (!q.testCases) q.testCases = [];
+            const targetQId = tcModalQId || viewingQId;
+            if (!targetQId) { showToast('No question selected — open a question first', 'error'); return; }
+
+            const q = dsaQuestions.find(q => q.id === targetQId);
+            if (!q) { showToast('Question not found', 'error'); return; }
+            if (!Array.isArray(q.testCases)) q.testCases = [];
 
             const tc = { name, input, expected, description, lastResult: null };
             const editIdxStr = document.getElementById('tc-edit-idx').value;
             if (editIdxStr !== '') {
-                q.testCases[parseInt(editIdxStr)] = tc;
-            } else {
-                q.testCases.push(tc);
+                const idx = parseInt(editIdxStr);
+                if (!isNaN(idx) && idx >= 0 && idx < q.testCases.length) {
+                    q.testCases[idx] = tc;
+                } else { q.testCases.push(tc); }
+            } else { q.testCases.push(tc); }
+
+            persistDSA();
+            closeModal('tc-modal');
+            if (viewingQId === targetQId) {
+                renderTestCaseList(targetQId);
+                updateTCCountBadge(q);
             }
-            persistDSA(); closeModal('tc-modal');
-            renderTestCaseList(viewingQId);
-            updateTCCountBadge(q);
-            showToast('Test case saved', 'success');
+            showToast('Test case saved ✓', 'success');
         }
 
         function deleteTCAtIdx(qId, idx) {
@@ -3695,7 +3771,6 @@
             </div>`;
             }).join('');
 
-            // auto-expand failed tests
             tcs.forEach((tc, idx) => {
                 if (tc.lastResult && !tc.lastResult.pass) {
                     const body = document.getElementById(`tc-body-${qId}-${idx}`);
@@ -3727,7 +3802,6 @@
             }
         }
 
-        /* ── GET CODE FOR TEST EXECUTION ── */
         function getLinkedCellCode(qId) {
             const linkedCell = cells.find(c => c.linkedQuestionId === qId);
             if (!linkedCell) return null;
@@ -3775,34 +3849,27 @@
             const q = dsaQuestions.find(q => q.id === qId);
             if (!q || !q.testCases || !q.testCases[idx]) return;
             const tc = q.testCases[idx];
-
             const code = getLinkedCellCode(qId);
             if (code === null) { showToast('No linked cell found — link a cell first', 'error'); return; }
-
             const fnName = q.fnName || '';
             const jsCode = await transpileIfNeeded(code, qId);
-
             const t0 = performance.now();
             try {
                 let expectedVal;
                 try { expectedVal = new Function('return (' + tc.expected + ')')(); } catch (e) { expectedVal = tc.expected; }
-
                 const inputStr = tc.input ? tc.input : '';
                 const runCode = `${jsCode}\n\n` + (fnName
                     ? `return (typeof ${fnName}==='function') ? ${fnName}(${inputStr}) : (()=>{throw new Error('Function "${fnName}" not found — check the function name in question settings')})();`
                     : `return (typeof solve==='function') ? solve(${inputStr}) : (()=>{throw new Error('No fnName set — add function name in question settings')})();`);
-
                 const AsyncFn = (async function () { }).constructor;
                 const fn = new AsyncFn('"use strict";\n' + runCode);
                 const actualVal = await fn();
                 const elapsed = (performance.now() - t0).toFixed(1) + 'ms';
-
                 const pass = deepEqual(actualVal, expectedVal);
                 tc.lastResult = { pass, actual: safeStringify(actualVal), time: elapsed, error: null };
             } catch (err) {
                 tc.lastResult = { pass: false, actual: '', time: (performance.now() - t0).toFixed(1) + 'ms', error: err.message };
             }
-
             persistDSA();
             renderTestCaseList(qId);
             const body = document.getElementById(`tc-body-${qId}-${idx}`);
@@ -3812,17 +3879,13 @@
         async function runAllTestCases() {
             const q = dsaQuestions.find(q => q.id === viewingQId);
             if (!q || !q.testCases || q.testCases.length === 0) { showToast('No test cases to run', 'error'); return; }
-
             const code = getLinkedCellCode(viewingQId);
             if (code === null) { showToast('No linked cell — link a notebook cell first', 'error'); return; }
-
             const btn = document.getElementById('qv-run-all-btn');
             btn.classList.add('running'); btn.textContent = '⏳ RUNNING…';
-
             for (let i = 0; i < q.testCases.length; i++) {
                 await runSingleTestCase(viewingQId, i);
             }
-
             btn.classList.remove('running'); btn.innerHTML = '▶ RUN ALL';
             const passed = q.testCases.filter(t => t.lastResult && t.lastResult.pass).length;
             showToast(`${passed}/${q.testCases.length} test cases passed`, passed === q.testCases.length ? 'success' : 'error');
@@ -3839,7 +3902,6 @@
             if (q.fnName) badges += '<span style="font-size:0.55rem;color:var(--amber);font-family:\'Fira Code\',monospace;background:rgba(255,184,0,0.08);padding:2px 7px;border-radius:3px;border:1px solid rgba(255,184,0,0.2)">fn: ' + escH(q.fnName) + '</span>';
             document.getElementById('qv-badges').innerHTML = badges;
 
-            // Description with markdown
             const descEl = document.getElementById('qv-desc');
             if (q.description) {
                 descEl.innerHTML = renderMD(q.description);
@@ -3853,7 +3915,6 @@
             document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ REOPEN' : '✓ MARK SOLVED';
             document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
 
-            // Linked cells panel
             const linkedCells = cells.filter(c => c.linkedQuestionId === id);
             const cellsEl = document.getElementById('qv-cells');
             if (linkedCells.length === 0) {
@@ -3877,10 +3938,7 @@
                 }).join('');
             }
 
-            // TC badge
             updateTCCountBadge(q);
-
-            // Reset to overview tab
             switchQVTab('overview');
             openModal('qview-modal');
         }
@@ -3911,7 +3969,10 @@
                 if (search && !q.title.toLowerCase().includes(search) && !(q.category || '').toLowerCase().includes(search)) return false;
                 return true;
             });
-            if (filtered.length === 0) { list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace">NO RESULTS</div>'; return; }
+            if (filtered.length === 0) {
+                list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:0.6rem;text-align:center;font-family:\'Fira Code\',monospace">NO RESULTS</div>';
+                return;
+            }
             list.innerHTML = filtered.map(q => {
                 const lc = cells.filter(c => c.linkedQuestionId === q.id).length;
                 const tcCount = (q.testCases || []).length;
@@ -3981,8 +4042,10 @@
                 const doc = await db.collection('dsa').doc('questions').get();
                 if (doc.exists && doc.data().questions) {
                     dsaQuestions = doc.data().questions;
+                    dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
                     localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
-                    refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id));
+                    refreshAllDSAUI();
+                    cells.forEach(c => refreshBanner(c.id));
                 }
             } catch (e) { console.warn('DSA load err', e); }
         }
@@ -4015,7 +4078,7 @@
                 '<button class="desc-mode-btn ' + (cellDescMode[id] === 'preview' ? 'active' : '') + '" id="dmode-prev-' + id + '" onclick="setDescMode(' + id + ',\'preview\')">👁 PREVIEW</button>' +
                 '<span class="desc-mode-hint">Markdown supported</span>' +
                 '</div>' +
-                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, complexity, edge cases…&#10;Supports **bold**, `code`, ## headings, lists and more" style="display:' + (cellDescMode[id] === 'edit' ? 'block' : 'none') + '">' + (description || '') + '</textarea>' +
+                '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, complexity, edge cases…" style="display:' + (cellDescMode[id] === 'edit' ? 'block' : 'none') + '">' + (description || '') + '</textarea>' +
                 '<div class="desc-preview" id="descprev-' + id + '" style="display:' + (cellDescMode[id] === 'preview' ? 'block' : 'none') + '">' + (description ? renderMD(description) : '<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>') + '</div>' +
                 '</div>' +
                 '</div>' +
@@ -4046,12 +4109,10 @@
 
             document.getElementById('cells-container').appendChild(div);
 
-            // Desc textarea auto-resize + save
             const descTa = div.querySelector('.desc-ta');
             const autoResizeDesc = (ta) => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
             descTa.addEventListener('input', () => {
                 autoResizeDesc(descTa);
-                // live update preview if in preview mode
                 const prevEl = document.getElementById('descprev-' + id);
                 if (prevEl) prevEl.innerHTML = descTa.value ? renderMD(descTa.value) : '<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>';
                 triggerAutoSave();
@@ -4151,7 +4212,12 @@
                 keyword: 'DELETE',
                 onConfirm: () => {
                     const idx = cells.findIndex(c => c.id === id);
-                    if (idx !== -1) { cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; delete cellDescMode[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); }
+                    if (idx !== -1) {
+                        cells.splice(idx, 1);
+                        delete cellEditors[id]; delete cellFontSizeIdx[id]; delete cellDescMode[id];
+                        document.getElementById('cell-' + id).remove();
+                        updateCellCount(); triggerAutoSave();
+                    }
                 }
             });
         }
@@ -4200,17 +4266,32 @@
             old.parentNode.replaceChild(tmp.firstChild, old);
         }
 
+        /* FIX: Picker positioning — uses fixed positioning and computes coords from button rect */
         function togglePicker(cellId) {
             const picker = document.getElementById('qbpicker-' + cellId);
             const isOpen = picker.style.display !== 'none';
             closeAllPickers();
             if (!isOpen) {
                 picker.style.display = 'block';
+                // Position picker below the LINK button using fixed coords
+                const btn = document.querySelector('#qbdrop-' + cellId + ' .qb-link-btn');
+                if (btn) {
+                    const rect = btn.getBoundingClientRect();
+                    picker.style.top = (rect.bottom + 6) + 'px';
+                    picker.style.left = Math.max(8, rect.right - 300) + 'px';
+                }
                 buildPickerList(cellId, '');
                 setTimeout(() => { const s = document.getElementById('qbsearch-' + cellId); if (s) s.focus(); }, 50);
             }
         }
-        function closeAllPickers() { document.querySelectorAll('[id^="qbpicker-"]').forEach(el => el.style.display = 'none'); }
+
+        function closeAllPickers() {
+            document.querySelectorAll('[id^="qbpicker-"]').forEach(el => {
+                el.style.display = 'none';
+                el.style.top = '';
+                el.style.left = '';
+            });
+        }
 
         function buildPickerList(cellId, search) {
             search = (search || '').toLowerCase();
@@ -4227,8 +4308,22 @@
             ).join('');
         }
 
-        function linkQ(cellId, qId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave(); }
-        function unlinkQ(cellId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave(); }
+        function linkQ(cellId, qId) {
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+            cell.linkedQuestionId = qId;
+            closeAllPickers();
+            refreshBanner(cellId);
+            refreshAllDSAUI();
+            triggerAutoSave();
+        }
+
+        function unlinkQ(cellId) {
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+            cell.linkedQuestionId = null;
+            refreshBanner(cellId);
+            refreshAllDSAUI();
+            triggerAutoSave();
+        }
 
         document.addEventListener('click', e => {
             if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
@@ -4282,8 +4377,10 @@
                 }
             } catch (err) {
                 hasError = true;
-                if (err instanceof Error) { logs.push({ type: 'error', str: err.name + ': ' + err.message }); if (err.stack) { const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4); frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() })); } }
-                else { logs.push({ type: 'error', str: 'Thrown: ' + String(err) }); }
+                if (err instanceof Error) {
+                    logs.push({ type: 'error', str: err.name + ': ' + err.message });
+                    if (err.stack) { const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4); frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() })); }
+                } else { logs.push({ type: 'error', str: 'Thrown: ' + String(err) }); }
             } finally {
                 ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = savedConsole[m]);
             }
@@ -4339,13 +4436,26 @@
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() }));
             persistDSA();
             const bar = document.getElementById('save-bar'), dot = document.getElementById('save-dot'), txt = document.getElementById('save-text');
-            if (!db) { dot.classList.add('saved'); txt.textContent = 'SAVED LOCALLY'; document.getElementById('last-saved').textContent = 'SAVED LOCALLY'; setTimeout(() => bar.classList.remove('visible'), 2500); return; }
+            if (!db) {
+                dot.classList.add('saved'); txt.textContent = 'SAVED LOCALLY';
+                document.getElementById('last-saved').textContent = 'SAVED LOCALLY';
+                setTimeout(() => bar.classList.remove('visible'), 2500);
+                return;
+            }
             try {
                 const payload = { title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-                if (currentNotebookId) { await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true }); }
-                else { const ref = await db.collection('notebooks').add(payload); currentNotebookId = ref.id; saveNotebookId(ref.id); document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…'; }
-                dot.classList.add('saved'); txt.textContent = 'SYNCED ✓'; document.getElementById('last-saved').textContent = 'SAVED ' + new Date().toLocaleTimeString();
-                loadNotebooksList(); setTimeout(() => bar.classList.remove('visible'), 2500);
+                if (currentNotebookId) {
+                    await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
+                } else {
+                    const ref = await db.collection('notebooks').add(payload);
+                    currentNotebookId = ref.id;
+                    saveNotebookId(ref.id);
+                    document.getElementById('nb-id').textContent = ref.id.slice(0, 8) + '…';
+                }
+                dot.classList.add('saved'); txt.textContent = 'SYNCED ✓';
+                document.getElementById('last-saved').textContent = 'SAVED ' + new Date().toLocaleTimeString();
+                loadNotebooksList();
+                setTimeout(() => bar.classList.remove('visible'), 2500);
             } catch (e) { txt.textContent = 'SAVE FAILED: ' + e.message; setTimeout(() => bar.classList.remove('visible'), 3500); }
         }
 
@@ -4365,15 +4475,19 @@
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
             if (e.key === 'Escape') {
-                closeAllPickers(); closeDeleteModal();
-                document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+                closeAllPickers();
+                const openModals = [...document.querySelectorAll('.modal-overlay.open')];
+                if (openModals.length > 0) {
+                    const top = openModals.sort((a, b) => (parseInt(getComputedStyle(b).zIndex) || 1000) - (parseInt(getComputedStyle(a).zIndex) || 1000))[0];
+                    if (top.id === 'delete-modal') { closeDeleteModal(); }
+                    else { top.classList.remove('open'); }
+                }
             }
         });
 
         /* ── INIT ── */
         window.addEventListener('load', () => {
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
-            // migrate old data: ensure testCases field exists
             dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
             refreshAllDSAUI(); pickDiff('medium');
             currentNotebookId = loadNotebookId();
@@ -4403,7 +4517,8 @@
                                 dsaQuestions = doc.data().questions;
                                 dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
                                 localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions));
-                                refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id));
+                                refreshAllDSAUI();
+                                cells.forEach(c => refreshBanner(c.id));
                             }
                         } catch (e) { console.warn('DSA sync err', e); }
                     } catch (e) { console.warn('Firebase auto-connect failed:', e); }
