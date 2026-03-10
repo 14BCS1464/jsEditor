@@ -1934,6 +1934,356 @@
             box-shadow: var(--glow-plasma);
         }
 
+        /* ── OUTPUT LINE TYPES ── */
+        .timer-line {
+            color: #60a5fa;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.72rem;
+        }
+
+        .group-line {
+            color: var(--amber);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .cell-output {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        /* ── STOP CELL BTN ── */
+        .stop-btn {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            background: rgba(255, 51, 102, 0.08);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .stop-btn.visible {
+            display: flex;
+        }
+
+        .stop-btn:hover {
+            background: rgba(255, 51, 102, 0.18);
+            border-color: var(--error);
+        }
+
+        /* ── MOVE BUTTONS ── */
+        .move-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: rgba(0, 212, 255, 0.04);
+            color: var(--text2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .move-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .move-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        /* ── COLLAPSE CELL ── */
+        .collapse-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: rgba(0, 212, 255, 0.04);
+            color: var(--text2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .collapse-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .cell.collapsed .cell-editor-wrap {
+            display: none;
+        }
+
+        .cell.collapsed .cell-output {
+            display: none !important;
+        }
+
+        .cell.collapsed .cell-desc {
+            display: none;
+        }
+
+        /* ── LINE COUNT BADGE ── */
+        .line-count-badge {
+            font-size: 0.55rem;
+            color: var(--muted);
+            font-family: 'Fira Code', monospace;
+            padding: 2px 7px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            white-space: nowrap;
+            transition: color .2s;
+        }
+
+        /* ── RUN COUNT BADGE ── */
+        .run-count {
+            font-size: 0.52rem;
+            color: var(--muted);
+            font-family: 'Fira Code', monospace;
+            padding: 2px 6px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+        }
+
+        /* ── CLEAR OUTPUT BTN ── */
+        .clear-out-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 0.6rem;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            padding: 0 6px;
+            letter-spacing: 1px;
+            transition: color .2s;
+        }
+
+        .clear-out-btn:hover {
+            color: var(--error);
+        }
+
+        /* ── COPY OUTPUT BTN ── */
+        .copy-out-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 0.6rem;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            padding: 0 6px;
+            letter-spacing: 1px;
+            transition: color .2s;
+        }
+
+        .copy-out-btn:hover {
+            color: var(--cyan);
+        }
+
+        /* ── FOCUS MODE ── */
+        body.focus-mode .sidebar {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+            padding: 0;
+            border: none;
+        }
+
+        body.focus-mode .focus-toggle-btn {
+            color: var(--cyan);
+            border-color: var(--border2);
+        }
+
+        /* ── SHORTCUTS MODAL ── */
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 20px;
+            margin-top: 10px;
+        }
+
+        .sc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sc-key {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.6rem;
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.07);
+            padding: 2px 8px;
+            border-radius: 3px;
+            border: 1px solid var(--border2);
+            white-space: nowrap;
+        }
+
+        .sc-label {
+            font-size: 0.62rem;
+            color: var(--text2);
+        }
+
+        /* ── EXPORT BTN ── */
+        .export-btn {
+            padding: 5px 12px;
+            background: rgba(147, 51, 234, 0.08);
+            color: #c084fc;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .export-btn:hover {
+            background: rgba(147, 51, 234, 0.18);
+            border-color: #c084fc;
+            box-shadow: 0 0 16px rgba(147, 51, 234, 0.3);
+        }
+
+        /* ── RUN ALL BTN (header) ── */
+        .run-all-hdr-btn {
+            padding: 5px 14px;
+            background: rgba(0, 255, 204, 0.06);
+            color: var(--plasma);
+            border: 1px solid rgba(0, 255, 204, 0.25);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .run-all-hdr-btn:hover {
+            background: rgba(0, 255, 204, 0.14);
+            border-color: var(--plasma);
+            box-shadow: var(--glow-plasma);
+        }
+
+        /* ── SEARCH BAR (notebook) ── */
+        .nb-search-wrap {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .nb-search-input {
+            width: 100%;
+            background: rgba(0, 212, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 7px 32px 7px 12px;
+            color: var(--text);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .nb-search-input:focus {
+            border-color: var(--border2);
+        }
+
+        .nb-search-input::placeholder {
+            color: var(--muted);
+        }
+
+        .nb-search-clear {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .nb-search-clear.visible {
+            display: block;
+        }
+
+        .cell.search-hidden {
+            display: none;
+        }
+
+        .cell.search-match .CodeMirror {
+            outline: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        /* ── UNDO TOAST ── */
+        .undo-toast {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card2);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
+            color: var(--text);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .undo-toast.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .undo-btn {
+            background: none;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 3px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            transition: all .2s;
+        }
+
+        .undo-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
         .font-size-ctrl {
             display: flex;
             align-items: center;
@@ -2943,7 +3293,10 @@
                 <div class="fb-dot" id="fb-dot"></div>
                 <span id="fb-status">OFFLINE</span>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="openFirebaseModal()">⚙ SYNC</button>
+            <button class="btn btn-ghost btn-sm focus-toggle-btn" id="focus-toggle" onclick="toggleFocusMode()"
+                title="Focus mode (hide sidebar)">⊟ FOCUS</button><button class="btn btn-ghost btn-sm"
+                onclick="openModal('shortcuts-modal')" title="Keyboard shortcuts">? KEYS</button><button
+                class="btn btn-ghost btn-sm" onclick="openFirebaseModal()">⚙ SYNC</button>
             <button class="btn btn-primary btn-sm" onclick="saveAll()">↯ SAVE</button>
         </div>
     </header>
@@ -3010,8 +3363,14 @@
                             </div>
                         </div>
                     </div>
+                    <div class="nb-search-wrap"><input class="nb-search-input" id="nb-search"
+                            placeholder="// Search cells…" oninput="searchCells(this.value)"><button
+                            class="nb-search-clear" id="nb-search-clear" onclick="clearSearch()">✕</button></div>
                     <div id="cells-container"></div>
-                    <div class="add-cell-row">
+                    <div style="display:flex;gap:8px;margin:6px 0 0 0;padding:0 2px"><button class="run-all-hdr-btn"
+                            onclick="runAllCells()">▶▶ RUN ALL</button><button class="export-btn"
+                            onclick="exportNotebook()">⬇ EXPORT .JS</button></div>
+                    <div class="add-cell-row" style="margin-bottom:0">
                         <button class="add-cell-btn" onclick="addCell('javascript')">⊕ JS CELL</button>
                         <button class="add-cell-btn ts" onclick="addCell('typescript')">⊕ TS CELL</button>
                     </div>
@@ -3238,6 +3597,50 @@
         </div>
     </div>
 
+
+    <!-- SHORTCUTS MODAL -->
+    <div class="modal-overlay" id="shortcuts-modal">
+        <div class="modal" style="width:560px;max-height:80vh;overflow-y:auto">
+            <h2>? KEYBOARD SHORTCUTS</h2>
+            <p class="modal-sub">// Neural IDE command reference</p>
+            <div class="shortcuts-grid">
+                <div>
+                    <div
+                        style="font-size:0.5rem;color:var(--cyan);font-family:'Fira Code',monospace;letter-spacing:3px;margin-bottom:8px;text-transform:uppercase">
+                        Cell Execution</div>
+                    <div class="sc-row"><span class="sc-label">Run current cell</span><span class="sc-key">Ctrl +
+                            Enter</span></div>
+                    <div class="sc-row"><span class="sc-label">Run all cells</span><span class="sc-key">Ctrl + Shift +
+                            Enter</span></div>
+                    <div class="sc-row"><span class="sc-label">Format code</span><span class="sc-key">Alt + Shift +
+                            F</span></div>
+                    <div class="sc-row"><span class="sc-label">Toggle comment</span><span class="sc-key">Ctrl + /</span>
+                    </div>
+                    <div class="sc-row"><span class="sc-label">Autocomplete</span><span class="sc-key">Ctrl +
+                            Space</span></div>
+                </div>
+                <div>
+                    <div
+                        style="font-size:0.5rem;color:var(--cyan);font-family:'Fira Code',monospace;letter-spacing:3px;margin-bottom:8px;text-transform:uppercase">
+                        Navigation</div>
+                    <div class="sc-row"><span class="sc-label">Save notebook</span><span class="sc-key">Ctrl + S</span>
+                    </div>
+                    <div class="sc-row"><span class="sc-label">Close modal</span><span class="sc-key">Escape</span>
+                    </div>
+                    <div class="sc-row"><span class="sc-label">Focus mode</span><span class="sc-key">Ctrl + \</span>
+                    </div>
+                    <div class="sc-row"><span class="sc-label">Search cells</span><span class="sc-key">Ctrl + F</span>
+                    </div>
+                    <div class="sc-row"><span class="sc-label">This dialog</span><span class="sc-key">Ctrl + K</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top:18px">
+                <button class="btn btn-ghost" onclick="closeModal('shortcuts-modal')">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
     <!-- DELETE MODAL -->
     <div class="modal-overlay" id="delete-modal">
         <div class="modal">
@@ -3262,6 +3665,10 @@
         </div>
     </div>
 
+    <div class="undo-toast" id="undo-toast">
+        <span id="undo-msg">Cell deleted</span>
+        <button class="undo-btn" onclick="undoDeleteCell()">↩ UNDO</button>
+    </div>
     <div class="save-bar" id="save-bar">
         <div class="save-dot" id="save-dot"></div>
         <span id="save-text">SAVED</span>
@@ -4136,7 +4543,7 @@
                 '<button class="lang-btn ' + (lang === 'javascript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'javascript\')">JS</button>' +
                 '<button class="lang-btn ' + (lang === 'typescript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'typescript\')">TS</button>' +
                 '</div>' +
-                '<span class="hint">CTRL+ENTER RUN · CTRL+/ COMMENT · ALT+SHIFT+F FORMAT</span>' +
+                '<span class="line-count-badge" id="lcbadge-' + id + '">0 L</span>' + '<span class="run-count" id="rcbadge-' + id + '">✦0</span>' + '<span class="hint">CTRL+ENTER RUN · CTRL+/ COMMENT · ALT+SHIFT+F FORMAT</span>' +
                 '</div>' +
                 '<div class="tl-right">' +
                 '<div class="font-size-ctrl">' +
@@ -4146,12 +4553,12 @@
                 '</div>' +
                 '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format code">✦ FMT</button>' +
                 '<button class="copy-btn" id="copybtn-' + id + '" onclick="copyCell(' + id + ')" title="Copy code">⎘ COPY</button>' +
-                '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ RUN</button>' +
-                '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">⊗</button>' +
+                '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ RUN</button>' + '<button class="stop-btn" id="stopbtn-' + id + '" onclick="stopCell(' + id + ')" title="Stop execution">■ STOP</button>' +
+                '<div class="move-btns"><button class="move-btn" title="Move up" onclick="moveCell(' + id + ',-1)">▲</button><button class="move-btn" title="Move down" onclick="moveCell(' + id + ',1)">▼</button></div>' + '<button class="collapse-btn" id="collbtn-' + id + '" onclick="toggleCollapseCell(' + id + ')" title="Collapse cell">▾ MIN</button>' + '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">⊗</button>' +
                 '</div></div>' +
                 '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
                 '<div class="cell-output" id="output-' + id + '" style="display:none">' +
-                '<div class="out-header">OUTPUT<span class="out-async-badge" id="oasync-' + id + '" style="display:none">ASYNC</span><span class="out-time" id="otime-' + id + '"></span></div>' +
+                '<div class="out-header" style="display:flex;align-items:center;justify-content:space-between">' + '<span>OUTPUT<span class="out-async-badge" id="oasync-' + id + '" style="display:none">ASYNC</span><span class="out-time" id="otime-' + id + '"></span></span>' + '<span style="display:flex;gap:2px"><button class="copy-out-btn" onclick="copyOutput(' + id + ')" title="Copy output">⎘</button><button class="clear-out-btn" onclick="clearOutput(' + id + ')" title="Clear output">✕ CLEAR</button></span></div>' +
                 '<div class="out-content" id="ocontent-' + id + '"></div>' +
                 '</div>';
 
@@ -4180,7 +4587,7 @@
                 indentUnit: 2, tabSize: 2, indentWithTabs: false,
             });
 
-            setTimeout(() => applyFontSize(id, fontSize), 0);
+            setTimeout(() => { applyFontSize(id, fontSize); updateLineCount(id); }, 0);
 
             let hintTimer = null;
             editor.on('inputRead', (cm, change) => {
@@ -4203,7 +4610,7 @@
             });
             editor.on('focus', () => { div.classList.add('focused'); closeAllPickers(); });
             editor.on('blur', () => div.classList.remove('focused'));
-            editor.on('change', () => triggerAutoSave());
+            editor.on('change', () => { triggerAutoSave(); updateLineCount(id); });
             cellEditors[id] = editor;
 
             if (savedOutput && savedOutput.lines) showOutput(id, savedOutput.lines, savedOutput.hasError, savedOutput.time, savedOutput.isAsync);
@@ -4261,10 +4668,12 @@
                 onConfirm: () => {
                     const idx = cells.findIndex(c => c.id === id);
                     if (idx !== -1) {
+                        stashDeletedCell(id);
                         cells.splice(idx, 1);
                         delete cellEditors[id]; delete cellFontSizeIdx[id]; delete cellDescMode[id];
                         document.getElementById('cell-' + id).remove();
                         updateCellCount(); triggerAutoSave();
+                        showUndoToast('Cell deleted — click UNDO to restore');
                     }
                 }
             });
@@ -4377,67 +4786,323 @@
             if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
         });
 
-        /* ── CODE EXECUTION ── */
+        /* ══════════════════════════════════════
+           EXECUTION ENGINE v2 — Full async/timer support
+           ══════════════════════════════════════ */
+
+        // Active cell execution contexts (for cleanup)
+        const cellExecContexts = {};
+
+        /* ── SMART VALUE SERIALISER ── */
+        function serializeVal(a) {
+            if (a === null) return 'null';
+            if (a === undefined) return 'undefined';
+            if (typeof a === 'function') return '[Function: ' + (a.name || 'anonymous') + ']';
+            if (a instanceof Error) return a.name + ': ' + a.message;
+            if (a instanceof Promise) return '[Promise (pending)]';
+            if (a instanceof Map) {
+                try { return 'Map(' + a.size + ') {' + [...a.entries()].map(([k, v]) => serializeVal(k) + ' => ' + serializeVal(v)).join(', ') + '}'; } catch { return '[Map]'; }
+            }
+            if (a instanceof Set) {
+                try { return 'Set(' + a.size + ') {' + [...a.values()].map(serializeVal).join(', ') + '}'; } catch { return '[Set]'; }
+            }
+            if (Array.isArray(a) || (a !== null && typeof a === 'object')) {
+                try { return JSON.stringify(a, (_, v) => typeof v === 'function' ? '[Function]' : typeof v === 'bigint' ? v.toString() + 'n' : v, 2); }
+                catch (e) { try { return String(a); } catch { return '[object]'; } }
+            }
+            if (typeof a === 'bigint') return a.toString() + 'n';
+            return String(a);
+        }
+
+        /* ── LIVE OUTPUT APPEND (streaming) ── */
+        function appendOutputLine(id, type, str) {
+            const content = document.getElementById('ocontent-' + id);
+            const el = document.getElementById('output-' + id);
+            if (!content || !el) return;
+            el.style.display = 'block';
+            const div = document.createElement('div');
+            const clsMap = { error: 'error-line', warn: 'warn-line', info: 'info-line', return: 'return-line', timer: 'timer-line', group: 'group-line' };
+            div.className = clsMap[type] || 'log-line';
+            const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : type === 'timer' ? '⏱ ' : '';
+            div.textContent = prefix + (str || '');
+            content.appendChild(div);
+            // Auto-scroll output to bottom
+            el.scrollTop = el.scrollHeight;
+        }
+
+        /* ══════════════════════════════════════
+           EXECUTION ENGINE v3
+           — Full fetch/Promise/.then chain capture
+           — Console stays live until all async settles
+           — fetch intercept so network calls show output
+           ══════════════════════════════════════ */
         async function runCell(id) {
             const cell = cells.find(c => c.id === id);
             const editor = cellEditors[id];
             if (!cell || !editor) return;
+
+            // Kill any previous execution context for this cell
+            const prev = cellExecContexts[id];
+            if (prev) {
+                prev.killed = true;
+                prev.finalize && prev.finalize();
+                prev.timers.forEach(t => { try { clearTimeout(t); clearInterval(t); } catch (e) { } });
+            }
+
+            // ── Execution context ──
+            const ctx = {
+                killed: false,
+                timers: [],
+                hasError: false,
+                logs: [],
+                pendingCount: 0,   // tracks live async operations
+                finalize: null,    // called when execution fully settles
+            };
+            cellExecContexts[id] = ctx;
+
             const code = editor.getValue(), lang = cell.lang;
             const runBtn = document.getElementById('runbtn-' + id);
+            const stopBtn = document.getElementById('stopbtn-' + id);
             runBtn.classList.add('running'); runBtn.textContent = '⏳ EXEC…';
-            document.getElementById('output-' + id).style.display = 'none';
-            const logs = [], t0 = performance.now();
-            let hasError = false, isAsync = false;
-            const savedConsole = {};
-            ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => savedConsole[m] = console[m]);
-            const capture = (type) => (...args) => {
-                let str;
-                try {
-                    str = args.map(a => {
-                        if (a === null) return 'null'; if (a === undefined) return 'undefined';
-                        if (a instanceof Error) return a.name + ': ' + a.message;
-                        if (a instanceof Promise) return '[Promise]';
-                        if (Array.isArray(a) || (a !== null && typeof a === 'object')) { try { return JSON.stringify(a, null, 2); } catch { return String(a); } }
-                        return String(a);
-                    }).join(' ');
-                } catch (e) { str = '[unprintable]'; }
-                logs.push({ type, str }); savedConsole[type](...args);
+            if (stopBtn) stopBtn.classList.add('visible');
+
+            // Prepare output panel
+            const outEl = document.getElementById('output-' + id);
+            const contentEl = document.getElementById('ocontent-' + id);
+            const timeEl = document.getElementById('otime-' + id);
+            const asyncBadge = document.getElementById('oasync-' + id);
+            contentEl.innerHTML = '';
+            contentEl.className = 'out-content';
+            outEl.style.display = 'block';
+            if (asyncBadge) asyncBadge.style.display = 'none';
+
+            const t0 = performance.now();
+            const updateTime = (suffix = '') => { if (timeEl) timeEl.textContent = (performance.now() - t0).toFixed(1) + 'ms' + suffix; };
+
+            // ── emit — always live, never gated by killed on console path ──
+            const emit = (type, str) => {
+                if (ctx.killed) return;
+                ctx.logs.push({ type, str });
+                appendOutputLine(id, type, str);
+                if (type === 'error') ctx.hasError = true;
+                updateTime(ctx.pendingCount > 0 ? ' ⟳' : '');
+                cell.lastOutput = { lines: ctx.logs, hasError: ctx.hasError, time: timeEl?.textContent || '', isAsync: true };
             };
-            console.log = capture('log'); console.error = capture('error'); console.warn = capture('warn'); console.info = capture('info');
-            console.table = (...a) => { try { capture('log')(JSON.stringify(a[0], null, 2)); } catch { capture('log')(...a); } };
-            console.dir = capture('log');
+
+            // ── Finalizer — called when everything settles ──
+            let finalizeTimer = null;
+            const schedulefinalize = () => {
+                clearTimeout(finalizeTimer);
+                if (ctx.pendingCount > 0) return; // still waiting
+                finalizeTimer = _origSetTimeout(() => {
+                    if (ctx.pendingCount > 0) return;
+                    if (ctx.killed) return;
+                    if (ctx.logs.length === 0) emit('info', '// (no output)');
+                    contentEl.className = 'out-content ' + (ctx.hasError ? 'has-error' : 'has-success');
+                    runBtn.classList.remove('running'); runBtn.innerHTML = '▶ RUN';
+                    if (stopBtn) stopBtn.classList.remove('visible');
+                    bumpRunCount(id);
+                    updateTime();
+                    triggerAutoSave();
+                    restoreAll();
+                }, 120); // 120ms settle window — catches microtask chains
+            };
+
+            ctx.finalize = () => { ctx.killed = true; clearTimeout(finalizeTimer); restoreAll(); };
+
+            // track pending async ops
+            const trackBegin = () => { ctx.pendingCount++; if (asyncBadge) asyncBadge.style.display = 'inline'; };
+            const trackEnd = () => { ctx.pendingCount = Math.max(0, ctx.pendingCount - 1); schedulefinalize(); };
+
+            // ── Save originals before any interception ──
+            const _origSetTimeout = window.setTimeout.bind(window);
+            const _origSetInterval = window.setInterval.bind(window);
+            const _origClearTimeout = window.clearTimeout.bind(window);
+            const _origClearInterval = window.clearInterval.bind(window);
+            const _origFetch = window.fetch ? window.fetch.bind(window) : null;
+
+            // ── Console interception ──
+            const savedConsole = {};
+            const CONSOLE_METHODS = ['log', 'error', 'warn', 'info', 'debug', 'dir', 'group', 'groupEnd', 'groupCollapsed', 'table', 'count', 'time', 'timeEnd', 'timeLog', 'assert', 'clear', 'trace'];
+            CONSOLE_METHODS.forEach(m => savedConsole[m] = console[m]);
+
+            const captureConsole = (type) => (...args) => {
+                const str = args.map(serializeVal).join(' ');
+                const mapped = type === 'debug' ? 'info' : type === 'group' || type === 'groupCollapsed' ? 'group' : type === 'groupEnd' ? 'info' : type;
+                emit(mapped, str);
+                savedConsole[type]?.(...args);
+            };
+            console.log = captureConsole('log');
+            console.error = captureConsole('error');
+            console.warn = captureConsole('warn');
+            console.info = captureConsole('info');
+            console.debug = captureConsole('debug');
+            console.dir = (...a) => emit('log', a.map(serializeVal).join(' '));
+            console.group = console.groupCollapsed = (l) => emit('group', '▸ ' + (l || ''));
+            console.groupEnd = () => { };
+            console.trace = (...a) => emit('info', '(trace) ' + a.map(serializeVal).join(' '));
+            console.assert = (ok, ...a) => { if (!ok) emit('error', 'Assertion failed: ' + a.map(serializeVal).join(' ')); };
+            console.clear = () => { if (contentEl) contentEl.innerHTML = ''; ctx.logs = []; };
+            console.table = (data, cols) => {
+                try {
+                    if (Array.isArray(data) && data.length && typeof data[0] === 'object') {
+                        const keys = cols || Object.keys(data[0]);
+                        const rows = data.map((r, i) => '  [' + i + '] ' + keys.map(k => serializeVal(r[k])).join('  \t'));
+                        emit('log', '  ' + keys.join('  \t') + '\n' + rows.join('\n'));
+                    } else { emit('log', serializeVal(data)); }
+                } catch (e) { emit('log', serializeVal(data)); }
+            };
+            // console.time / timeEnd share a closure so they pair correctly
+            const _timers = {};
+            console.time = (l = 'default') => { _timers[l] = performance.now(); };
+            console.timeEnd = console.timeLog = (l = 'default') => {
+                const t = _timers[l];
+                emit('timer', l + ': ' + (t !== undefined ? (performance.now() - t).toFixed(3) + 'ms' : 'timer not started'));
+                delete _timers[l];
+            };
+            const _counts = {};
+            console.count = (l = 'default') => { _counts[l] = (_counts[l] || 0) + 1; emit('log', l + ': ' + _counts[l]); };
+            console.countReset = (l = 'default') => { _counts[l] = 0; };
+
+            // ── fetch interception — wraps Promises so .then callbacks are captured ──
+            if (_origFetch) {
+                window.fetch = (input, init) => {
+                    trackBegin();
+                    const url = typeof input === 'string' ? input : (input?.url || String(input));
+                    emit('info', '⬆ fetch → ' + url);
+                    return _origFetch(input, init).then(
+                        (res) => {
+                            if (ctx.killed) { trackEnd(); return res; }
+                            const statusStr = res.ok ? '✓' : '✗';
+                            emit('info', '⬇ ' + statusStr + ' ' + res.status + ' ' + res.statusText + ' ← ' + url);
+                            // Wrap response so .json()/.text()/.blob() are also tracked
+                            const wrapBodyMethod = (orig) => function (...a) {
+                                trackBegin();
+                                return orig.apply(this, a).then(
+                                    v => { trackEnd(); return v; },
+                                    e => { if (!ctx.killed) emit('error', 'Response body error: ' + serializeVal(e)); trackEnd(); throw e; }
+                                );
+                            };
+                            try { res.json = wrapBodyMethod(res.json.bind(res)); } catch (e) { }
+                            try { res.text = wrapBodyMethod(res.text.bind(res)); } catch (e) { }
+                            try { res.blob = wrapBodyMethod(res.blob.bind(res)); } catch (e) { }
+                            try { res.arrayBuffer = wrapBodyMethod(res.arrayBuffer.bind(res)); } catch (e) { }
+                            trackEnd();
+                            return res;
+                        },
+                        (err) => {
+                            if (!ctx.killed) emit('error', '⬇ fetch failed: ' + serializeVal(err));
+                            trackEnd();
+                            throw err;
+                        }
+                    );
+                };
+            }
+
+            // ── setTimeout / setInterval interception ──
+            window.setTimeout = (fn, delay, ...args) => {
+                if (ctx.killed) return -1;
+                trackBegin();
+                const wrapped = (...a) => {
+                    if (ctx.killed) { trackEnd(); return; }
+                    try { fn(...a); }
+                    catch (e) { emit('error', e instanceof Error ? e.name + ': ' + e.message : String(e)); }
+                    finally { trackEnd(); }
+                };
+                const tid = _origSetTimeout(wrapped, delay, ...args);
+                ctx.timers.push(tid);
+                return tid;
+            };
+            window.setInterval = (fn, delay, ...args) => {
+                if (ctx.killed) return -1;
+                const wrapped = (...a) => {
+                    if (ctx.killed) { _origClearInterval(iid); return; }
+                    try { fn(...a); }
+                    catch (e) { emit('error', e instanceof Error ? e.name + ': ' + e.message : String(e)); _origClearInterval(iid); }
+                };
+                const iid = _origSetInterval(wrapped, delay, ...args);
+                ctx.timers.push(iid);
+                return iid;
+            };
+            window.clearTimeout = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearTimeout(tid); };
+            window.clearInterval = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearInterval(tid); };
+
+            // ── Unhandled rejection catcher ──
+            const onUnhandledRejection = (e) => {
+                if (ctx.killed) return;
+                emit('error', 'Unhandled Promise rejection: ' + serializeVal(e.reason));
+                e.preventDefault?.();
+            };
+            window.addEventListener('unhandledrejection', onUnhandledRejection);
+
+            const restoreAll = () => {
+                CONSOLE_METHODS.forEach(m => { if (savedConsole[m] !== undefined) console[m] = savedConsole[m]; });
+                window.setTimeout = _origSetTimeout;
+                window.setInterval = _origSetInterval;
+                window.clearTimeout = _origClearTimeout;
+                window.clearInterval = _origClearInterval;
+                if (_origFetch) window.fetch = _origFetch;
+                window.removeEventListener('unhandledrejection', onUnhandledRejection);
+            };
+
+            // ── Execute user code ──
             try {
                 let jsCode = code;
                 if (lang === 'typescript') {
-                    try {
-                        const result = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict: false } });
-                        jsCode = result.outputText;
-                    } catch (err) { logs.push({ type: 'error', str: '[TypeScript compile error] ' + err.message }); hasError = true; }
-                }
-                if (!hasError) {
-                    isAsync = /\bawait\b|\bPromise\b|async\s+(function|\()/.test(jsCode);
-                    const AsyncFn = (async function () { }).constructor;
-                    const fn = new AsyncFn('"use strict";\n' + jsCode);
-                    const ret = await fn();
-                    if (ret !== undefined && ret !== null) {
-                        try { const s = ret instanceof Promise ? '[Promise]' : typeof ret === 'object' ? JSON.stringify(ret, null, 2) : String(ret); logs.push({ type: 'return', str: '→ ' + s }); } catch (e) { }
+                    if (!window.ts) { emit('error', '[TypeScript] compiler not loaded'); }
+                    else {
+                        try {
+                            jsCode = ts.transpileModule(code, {
+                                compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict: false, experimentalDecorators: true }
+                            }).outputText;
+                        } catch (err) { emit('error', '[TypeScript] ' + err.message); ctx.hasError = true; }
                     }
                 }
+
+                if (!ctx.hasError) {
+                    const looksAsync = /\bfetch\b|\bawait\b|\bPromise\b|async\s*(function|\(|[a-z_$])|\bthen\s*\(|\bsetTimeout\b|\bsetInterval\b/.test(jsCode);
+                    if (asyncBadge && looksAsync) asyncBadge.style.display = 'inline';
+
+                    trackBegin(); // hold finalize open during synchronous execution
+                    const AsyncFn = Object.getPrototypeOf(async function () { }).constructor;
+                    const fn = new AsyncFn('"use strict";\n' + jsCode);
+                    let ret;
+                    try {
+                        ret = await fn();
+                    } finally {
+                        trackEnd(); // release synchronous execution hold
+                    }
+
+                    if (ret !== undefined && ret !== null) {
+                        if (ret instanceof Promise) {
+                            // user returned a naked Promise — track it
+                            trackBegin();
+                            ret.then(
+                                v => { if (!ctx.killed) emit('return', '→ ' + serializeVal(v)); trackEnd(); },
+                                e => { if (!ctx.killed) emit('error', serializeVal(e)); trackEnd(); }
+                            );
+                        } else {
+                            emit('return', '→ ' + serializeVal(ret));
+                        }
+                    }
+                } else {
+                    schedulefinalize();
+                }
             } catch (err) {
-                hasError = true;
+                ctx.hasError = true;
                 if (err instanceof Error) {
-                    logs.push({ type: 'error', str: err.name + ': ' + err.message });
-                    if (err.stack) { const frames = err.stack.split('\n').slice(1).filter(l => l.trim()).slice(0, 4); frames.forEach(line => logs.push({ type: 'error', str: '  ' + line.trim() })); }
-                } else { logs.push({ type: 'error', str: 'Thrown: ' + String(err) }); }
-            } finally {
-                ['log', 'error', 'warn', 'info', 'table', 'dir'].forEach(m => console[m] = savedConsole[m]);
+                    emit('error', err.name + ': ' + err.message);
+                    if (err.stack) {
+                        err.stack.split('\n').slice(1)
+                            .filter(l => l.trim() && !l.includes('runCell') && !l.includes('<anonymous>:1:'))
+                            .slice(0, 4)
+                            .forEach(l => emit('error', '  ' + l.trim()));
+                    }
+                } else { emit('error', 'Thrown: ' + serializeVal(err)); }
+                schedulefinalize();
             }
-            const elapsed = (performance.now() - t0).toFixed(1);
-            if (logs.length === 0) logs.push({ type: 'info', str: '// (no output)' });
-            showOutput(id, logs, hasError, elapsed + 'ms', isAsync);
-            runBtn.classList.remove('running'); runBtn.innerHTML = '▶ RUN';
-            cell.lastOutput = { lines: logs, hasError, time: elapsed + 'ms', isAsync };
-            triggerAutoSave();
+            // note: restoreAll() is called inside schedulefinalize() → finalizeTimer callback
+            // so console stays live until all .then / fetch / setTimeout chains complete
         }
 
         function showOutput(id, logs, hasError, time, isAsync) {
@@ -4452,8 +5117,9 @@
             content.innerHTML = '';
             (logs || []).forEach(({ type, str }) => {
                 const div = document.createElement('div');
-                div.className = type === 'error' ? 'error-line' : type === 'warn' ? 'warn-line' : type === 'info' ? 'info-line' : type === 'return' ? 'return-line' : 'log-line';
-                const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : '';
+                const clsMap = { error: 'error-line', warn: 'warn-line', info: 'info-line', return: 'return-line', timer: 'timer-line', group: 'group-line' };
+                div.className = clsMap[type] || 'log-line';
+                const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : type === 'timer' ? '⏱ ' : '';
                 div.textContent = prefix + (str || '');
                 content.appendChild(div);
             });
@@ -4522,6 +5188,10 @@
         /* ── KEYBOARD ── */
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') { e.preventDefault(); runAllCells(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === '\\') { e.preventDefault(); toggleFocusMode(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal('shortcuts-modal'); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f' && !e.target.closest('.CodeMirror')) { e.preventDefault(); const s = document.getElementById('nb-search'); if (s) { s.focus(); s.select(); } }
             if (e.key === 'Escape') {
                 closeAllPickers();
                 const openModals = [...document.querySelectorAll('.modal-overlay.open')];
@@ -4573,6 +5243,208 @@
                 })();
             }
         });
+
+        /* ══════════════════════════════════════
+           NEW FEATURES — ADDED ENHANCEMENTS
+           ══════════════════════════════════════ */
+
+        /* ── STOP CELL EXECUTION ── */
+        function stopCell(id) {
+            const ctx = cellExecContexts[id];
+            if (ctx) {
+                ctx.killed = true;
+                ctx.pendingCount = 0;
+                ctx.timers.forEach(t => { try { clearTimeout(t); clearInterval(t); } catch (e) { } });
+                ctx.timers = [];
+                if (ctx.finalize) ctx.finalize();
+            }
+            const runBtn = document.getElementById('runbtn-' + id);
+            const stopBtn = document.getElementById('stopbtn-' + id);
+            const contentEl = document.getElementById('ocontent-' + id);
+            if (runBtn) { runBtn.classList.remove('running'); runBtn.innerHTML = '▶ RUN'; }
+            if (stopBtn) stopBtn.classList.remove('visible');
+            if (contentEl) contentEl.className = 'out-content has-error';
+            appendOutputLine(id, 'warn', '■ Execution stopped by user');
+        }
+
+        /* ── UNDO DELETE ── */
+        let lastDeletedCell = null, undoTimer = null;
+        function stashDeletedCell(cellId) {
+            const editor = cellEditors[cellId];
+            const descEl = document.getElementById('desc-' + cellId);
+            const cell = cells.find(c => c.id === cellId);
+            if (!cell || !editor) return;
+            const cellEl = document.getElementById('cell-' + cellId);
+            lastDeletedCell = {
+                lang: cell.lang,
+                code: editor.getValue(),
+                description: descEl ? descEl.value : '',
+                output: cell.lastOutput || null,
+                linkedQuestionId: cell.linkedQuestionId || null,
+                fontSizeIdx: cellFontSizeIdx[cellId],
+                descMode: cellDescMode[cellId] || 'edit',
+                index: cells.findIndex(c => c.id === cellId),
+            };
+        }
+        function showUndoToast(msg) {
+            clearTimeout(undoTimer);
+            const t = document.getElementById('undo-toast');
+            document.getElementById('undo-msg').textContent = msg || 'Cell deleted';
+            t.classList.add('show');
+            undoTimer = setTimeout(() => { t.classList.remove('show'); lastDeletedCell = null; }, 5000);
+        }
+        function undoDeleteCell() {
+            if (!lastDeletedCell) return;
+            const { lang, code, description, output, linkedQuestionId, fontSizeIdx, descMode, index } = lastDeletedCell;
+            const newId = addCell(lang, code, description, output, linkedQuestionId, fontSizeIdx, descMode);
+            // Move newly added cell to original position
+            const container = document.getElementById('cells-container');
+            const newEl = document.getElementById('cell-' + newId);
+            const allCells = [...container.children];
+            const targetIdx = Math.min(index, allCells.length - 1);
+            if (targetIdx < allCells.length - 1) container.insertBefore(newEl, allCells[targetIdx]);
+            // Sync cells array order
+            const cellIdx = cells.findIndex(c => c.id === newId);
+            const removed = cells.splice(cellIdx, 1)[0];
+            cells.splice(Math.min(index, cells.length), 0, removed);
+            updateCellCount();
+            document.getElementById('undo-toast').classList.remove('show');
+            lastDeletedCell = null;
+            showToast('↩ Cell restored', 'success');
+            triggerAutoSave();
+        }
+
+        /* ── MOVE CELL ── */
+        function moveCell(cellId, dir) {
+            const idx = cells.findIndex(c => c.id === cellId);
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= cells.length) return;
+            // Swap in array
+            [cells[idx], cells[newIdx]] = [cells[newIdx], cells[idx]];
+            // Swap in DOM
+            const container = document.getElementById('cells-container');
+            const els = [...container.children];
+            const elA = document.getElementById('cell-' + cellId);
+            const elB = document.getElementById('cell-' + cells[idx].id);
+            if (dir === -1) container.insertBefore(elA, elB);
+            else container.insertBefore(elB, elA);
+            updateCellCount();
+            triggerAutoSave();
+        }
+
+        /* ── COLLAPSE CELL ── */
+        function toggleCollapseCell(cellId) {
+            const el = document.getElementById('cell-' + cellId);
+            const btn = document.getElementById('collbtn-' + cellId);
+            if (!el) return;
+            const collapsed = el.classList.toggle('collapsed');
+            btn.innerHTML = collapsed ? '▸ MAX' : '▾ MIN';
+            btn.title = collapsed ? 'Expand cell' : 'Collapse cell';
+        }
+
+        /* ── LINE COUNT ── */
+        function updateLineCount(cellId) {
+            const editor = cellEditors[cellId]; if (!editor) return;
+            const lines = editor.lineCount();
+            const el = document.getElementById('lcbadge-' + cellId);
+            if (el) el.textContent = lines + ' L';
+        }
+
+        /* ── RUN COUNT ── */
+        let cellRunCount = {};
+        function bumpRunCount(cellId) {
+            cellRunCount[cellId] = (cellRunCount[cellId] || 0) + 1;
+            const el = document.getElementById('rcbadge-' + cellId);
+            if (el) el.textContent = '✦' + cellRunCount[cellId];
+        }
+
+        /* ── CLEAR OUTPUT ── */
+        function clearOutput(cellId) {
+            const el = document.getElementById('output-' + cellId);
+            if (el) el.style.display = 'none';
+            const cell = cells.find(c => c.id === cellId);
+            if (cell) cell.lastOutput = null;
+        }
+
+        /* ── COPY OUTPUT ── */
+        async function copyOutput(cellId) {
+            const content = document.getElementById('ocontent-' + cellId);
+            if (!content) return;
+            const text = [...content.querySelectorAll('div')].map(d => d.textContent).join('\n');
+            try { await navigator.clipboard.writeText(text); } catch (e) {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+            }
+            showToast('Output copied', 'success');
+        }
+
+        /* ── RUN ALL CELLS ── */
+        async function runAllCells() {
+            showToast('▶▶ Running all cells…', 'success');
+            for (const cell of cells) {
+                await runCell(cell.id);
+                await new Promise(r => setTimeout(r, 80));
+            }
+            showToast('✓ All cells executed', 'success');
+        }
+
+        /* ── EXPORT NOTEBOOK AS .JS ── */
+        function exportNotebook() {
+            const title = (document.getElementById('nb-title').value || 'notebook').replace(/[^a-z0-9_-]/gi, '_');
+            const lines = [];
+            lines.push('// ═══════════════════════════════════════════');
+            lines.push('// CodeBook Export: ' + document.getElementById('nb-title').value);
+            lines.push('// Exported: ' + new Date().toLocaleString());
+            lines.push('// ═══════════════════════════════════════════');
+            cells.forEach((cell, i) => {
+                const editor = cellEditors[cell.id];
+                const descEl = document.getElementById('desc-' + cell.id);
+                const code = editor ? editor.getValue() : '';
+                const desc = descEl ? descEl.value.trim() : '';
+                lines.push('\n');
+                lines.push('// ─── Cell [' + String(i + 1).padStart(2, '0') + '] — ' + cell.lang.toUpperCase() + (cell.linkedQuestionId ? ' · DSA: ' + (dsaQuestions.find(q => q.id === cell.linkedQuestionId) || {}).title || '' : '') + ' ───');
+                if (desc) desc.split('\n').forEach(l => lines.push('// ' + l));
+                lines.push(code);
+            });
+            const blob = new Blob([lines.join('\n')], { type: 'text/javascript' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = title + '.js';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('⬇ Exported as ' + title + '.js', 'success');
+        }
+
+        /* ── FOCUS MODE ── */
+        function toggleFocusMode() {
+            document.body.classList.toggle('focus-mode');
+            const btn = document.getElementById('focus-toggle');
+            const on = document.body.classList.contains('focus-mode');
+            btn.textContent = on ? '⊞ UNFOCUS' : '⊟ FOCUS';
+        }
+
+        /* ── SEARCH CELLS ── */
+        function searchCells(query) {
+            const clearBtn = document.getElementById('nb-search-clear');
+            clearBtn.classList.toggle('visible', query.length > 0);
+            const q = query.toLowerCase().trim();
+            cells.forEach(cell => {
+                const el = document.getElementById('cell-' + cell.id); if (!el) return;
+                if (!q) { el.classList.remove('search-hidden', 'search-match'); return; }
+                const editor = cellEditors[cell.id];
+                const code = editor ? editor.getValue().toLowerCase() : '';
+                const desc = (document.getElementById('desc-' + cell.id) || {}).value || '';
+                const match = code.includes(q) || desc.toLowerCase().includes(q);
+                el.classList.toggle('search-hidden', !match);
+                el.classList.toggle('search-match', match);
+            });
+        }
+        function clearSearch() {
+            document.getElementById('nb-search').value = '';
+            searchCells('');
+        }
+
     </script>
 </body>
 
