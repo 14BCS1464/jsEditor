@@ -2100,18 +2100,158 @@
             color: var(--cyan);
         }
 
-        /* ── FOCUS MODE ── */
-        body.focus-mode .sidebar {
-            width: 0;
-            min-width: 0;
-            overflow: hidden;
-            padding: 0;
-            border: none;
-        }
-
+        /* ══════════════════════════════════════
+           FOCUS MODE — true single-cell fullscreen
+           ══════════════════════════════════════ */
         body.focus-mode .focus-toggle-btn {
             color: var(--cyan);
             border-color: var(--border2);
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        /* Focus overlay backdrop */
+        #focus-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 4, 8, 0.97);
+            z-index: 800;
+            backdrop-filter: blur(12px);
+            flex-direction: column;
+        }
+
+        #focus-overlay.active {
+            display: flex;
+        }
+
+        /* Focus overlay header bar */
+        #focus-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border2);
+            background: rgba(4, 12, 20, 0.98);
+            flex-shrink: 0;
+            gap: 16px;
+        }
+
+        #focus-cell-label {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.7rem;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+
+        #focus-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .focus-nav-btn {
+            padding: 5px 14px;
+            background: rgba(0, 212, 255, 0.04);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            color: var(--text2);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all .2s;
+            letter-spacing: 1px;
+        }
+
+        .focus-nav-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .focus-nav-btn:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+        }
+
+        #focus-counter {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            padding: 0 8px;
+        }
+
+        #focus-close-btn {
+            padding: 5px 14px;
+            background: rgba(255, 51, 102, 0.06);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: 4px;
+            color: var(--error);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all .2s;
+            letter-spacing: 1px;
+        }
+
+        #focus-close-btn:hover {
+            background: rgba(255, 51, 102, 0.15);
+            border-color: var(--error);
+        }
+
+        /* Focus cell content area */
+        #focus-cell-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Clone rendered inside focus overlay */
+        #focus-cell-wrap .cell {
+            animation: none;
+            border-color: var(--border2);
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.08), 0 20px 80px rgba(0, 0, 0, 0.6);
+        }
+
+        #focus-cell-wrap .cell.focused {
+            border-color: var(--border3);
+        }
+
+        /* Focus bottom bar */
+        #focus-footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 10px 24px;
+            border-top: 1px solid var(--border);
+            background: rgba(4, 12, 20, 0.98);
+            flex-shrink: 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.58rem;
+            color: var(--muted);
+            letter-spacing: 1px;
+        }
+
+        #focus-footer span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fkey {
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid var(--border2);
+            border-radius: 3px;
+            padding: 1px 7px;
+            color: var(--cyan);
+            font-size: 0.56rem;
         }
 
         /* ── SHORTCUTS MODAL ── */
@@ -3268,6 +3408,300 @@
         .qv-panel.active {
             display: block;
         }
+
+        /* ═══════════════════════════════════════
+           MODERN UI UPLIFT
+           ═══════════════════════════════════════ */
+
+        /* ── Improved header ── */
+        header {
+            height: 56px !important;
+            background: rgba(2, 6, 14, 0.98) !important;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.15) !important;
+            padding: 0 20px !important;
+        }
+
+        .logo {
+            gap: 12px;
+        }
+
+        .logo-icon {
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
+        }
+
+        /* ── Sidebar improvements ── */
+        .sidebar {
+            width: 260px;
+            background: rgba(4, 10, 20, 0.99) !important;
+            border-right: 1px solid rgba(0, 212, 255, 0.1) !important;
+            transition: width .35s cubic-bezier(0.4, 0, 0.2, 1), opacity .3s;
+        }
+
+        .sidebar-tabs {
+            padding: 0 6px;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stab {
+            border-radius: 0;
+            padding: 11px 6px;
+        }
+
+        /* ── Improved cells ── */
+        .cell {
+            border-radius: 10px !important;
+            border: 1px solid rgba(0, 212, 255, 0.1) !important;
+            background: rgba(10, 20, 36, 0.95) !important;
+            transition: border-color .2s, box-shadow .2s, transform .15s !important;
+        }
+
+        .cell:hover {
+            border-color: rgba(0, 212, 255, 0.22) !important;
+            box-shadow: 0 6px 32px rgba(0, 0, 0, 0.5) !important;
+            transform: translateY(-1px);
+        }
+
+        .cell.focused {
+            border-color: rgba(0, 212, 255, 0.45) !important;
+            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.12), 0 10px 50px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        #cells-container {
+            gap: 16px !important;
+        }
+
+        /* ── Cell toolbar modern ── */
+        .cell-toolbar {
+            background: rgba(4, 12, 22, 0.98) !important;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.08) !important;
+            padding: 6px 12px !important;
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .cell.collapsed .cell-toolbar {
+            border-radius: 10px !important;
+            border-bottom: none !important;
+        }
+
+        /* ── Run button ── */
+        .run-btn {
+            background: linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 212, 255, 0.08)) !important;
+            border-color: rgba(0, 255, 204, 0.35) !important;
+            color: var(--plasma) !important;
+            font-weight: 700 !important;
+        }
+
+        .run-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 204, 0.25), rgba(0, 212, 255, 0.15)) !important;
+            box-shadow: 0 0 18px rgba(0, 255, 204, 0.3) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        /* ── Output panel ── */
+        .cell-output {
+            border-top: 1px solid rgba(0, 212, 255, 0.08) !important;
+            background: rgba(1, 4, 10, 0.97) !important;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .out-header {
+            background: rgba(4, 12, 22, 0.95) !important;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.08) !important;
+            padding: 6px 14px !important;
+        }
+
+        .out-content {
+            font-size: 0.84rem !important;
+            padding: 12px 16px !important;
+        }
+
+        /* ── Modals modern ── */
+        .modal {
+            border-radius: 12px !important;
+            border: 1px solid rgba(0, 212, 255, 0.18) !important;
+            background: rgba(6, 16, 30, 0.99) !important;
+            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 212, 255, 0.08) !important;
+            backdrop-filter: blur(40px) !important;
+        }
+
+        .modal h2 {
+            font-size: 1rem !important;
+            letter-spacing: 3px !important;
+        }
+
+        .modal-overlay {
+            backdrop-filter: blur(8px) !important;
+            background: rgba(0, 0, 0, 0.75) !important;
+        }
+
+        /* ── DSA cards modern ── */
+        .dsa-card {
+            border-radius: 10px !important;
+            background: rgba(10, 20, 36, 0.95) !important;
+            border-color: rgba(0, 212, 255, 0.1) !important;
+        }
+
+        .dsa-card:hover {
+            border-color: rgba(0, 212, 255, 0.25) !important;
+            box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        /* ── Improved add cell buttons ── */
+        .add-cell-btn {
+            border-radius: 8px !important;
+            padding: 14px !important;
+            border-color: rgba(0, 212, 255, 0.15) !important;
+            transition: all .25s !important;
+        }
+
+        .add-cell-btn:hover {
+            background: rgba(0, 212, 255, 0.05) !important;
+            border-color: rgba(0, 212, 255, 0.4) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        /* ── Better scrollbars ── */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        /* ── Toast improvement ── */
+        #toast {
+            border-radius: 8px !important;
+            backdrop-filter: blur(20px) !important;
+            font-size: 0.72rem !important;
+            padding: 10px 18px !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        /* ── Cell number badge ── */
+        .cell-num {
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 3px;
+            padding: 2px 7px;
+            font-size: 0.58rem !important;
+            color: var(--cyan) !important;
+        }
+
+        /* ── Lang toggle pills ── */
+        .lang-toggle {
+            background: rgba(0, 0, 0, 0.4) !important;
+            border-radius: 6px !important;
+            overflow: hidden !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .lang-btn {
+            border-radius: 0 !important;
+            font-size: 0.6rem !important;
+            padding: 4px 10px !important;
+            font-weight: 700 !important;
+            letter-spacing: 1px !important;
+        }
+
+        .lang-btn.active {
+            background: rgba(0, 212, 255, 0.15) !important;
+            color: var(--cyan) !important;
+            box-shadow: none !important;
+        }
+
+        /* ── Hint text ── */
+        .hint {
+            font-size: 0.5rem !important;
+            color: rgba(42, 74, 106, 0.8) !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        /* ── nb-page max width for readability ── */
+        .nb-page {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ── App layout transition for focus toggle ── */
+        .app-layout {
+            transition: grid-template-columns .35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.focus-mode-sidebar .app-layout {
+            grid-template-columns: 0 1fr;
+        }
+
+        body.focus-mode-sidebar .sidebar {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+            padding: 0;
+            border: none;
+            opacity: 0;
+        }
+
+        /* ── Line between output type indicators ── */
+        .log-line {
+            padding: 1px 0;
+        }
+
+        .error-line {
+            padding: 1px 0;
+            border-left: 2px solid rgba(255, 51, 102, 0.4);
+            padding-left: 8px;
+            margin-left: -2px;
+        }
+
+        .warn-line {
+            padding: 1px 0;
+            border-left: 2px solid rgba(255, 184, 0, 0.4);
+            padding-left: 8px;
+            margin-left: -2px;
+        }
+
+        .info-line {
+            padding: 1px 0;
+            border-left: 2px solid rgba(0, 212, 255, 0.3);
+            padding-left: 8px;
+            margin-left: -2px;
+        }
+
+        .return-line {
+            padding: 1px 0;
+            border-left: 2px solid rgba(0, 255, 204, 0.5);
+            padding-left: 8px;
+            margin-left: -2px;
+            font-weight: 600;
+        }
+
+        .timer-line {
+            padding: 1px 0;
+            border-left: 2px solid rgba(96, 165, 250, 0.4);
+            padding-left: 8px;
+            margin-left: -2px;
+        }
+
+        .group-line {
+            padding: 1px 0;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 
@@ -3665,6 +4099,31 @@
         </div>
     </div>
 
+
+    <!-- FOCUS MODE OVERLAY -->
+    <div id="focus-overlay">
+        <div id="focus-header">
+            <span id="focus-cell-label">◈ FOCUS MODE</span>
+            <div id="focus-nav">
+                <button class="focus-nav-btn" id="focus-prev-btn" onclick="focusNav(-1)" title="Previous cell (←)">←
+                    PREV</button>
+                <span id="focus-counter">1 / 1</span>
+                <button class="focus-nav-btn" id="focus-next-btn" onclick="focusNav(+1)" title="Next cell (→)">NEXT
+                    →</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-family:'Fira Code',monospace;font-size:0.58rem;color:var(--muted)">ESC to exit</span>
+                <button id="focus-close-btn" onclick="exitFocusMode()">✕ EXIT FOCUS</button>
+            </div>
+        </div>
+        <div id="focus-cell-wrap"></div>
+        <div id="focus-footer">
+            <span><span class="fkey">←</span><span class="fkey">→</span> Navigate cells</span>
+            <span><span class="fkey">Ctrl+Enter</span> Run</span>
+            <span><span class="fkey">Alt+Shift+F</span> Format</span>
+            <span><span class="fkey">ESC</span> Exit focus</span>
+        </div>
+    </div>
     <div class="undo-toast" id="undo-toast">
         <span id="undo-msg">Cell deleted</span>
         <button class="undo-btn" onclick="undoDeleteCell()">↩ UNDO</button>
@@ -5192,7 +5651,12 @@
             if ((e.ctrlKey || e.metaKey) && e.key === '\\') { e.preventDefault(); toggleFocusMode(); }
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal('shortcuts-modal'); }
             if ((e.ctrlKey || e.metaKey) && e.key === 'f' && !e.target.closest('.CodeMirror')) { e.preventDefault(); const s = document.getElementById('nb-search'); if (s) { s.focus(); s.select(); } }
+            if (document.getElementById('focus-overlay')?.classList.contains('active')) {
+                if (e.key === 'ArrowLeft' && !e.target.closest('.CodeMirror')) { e.preventDefault(); focusNav(-1); }
+                if (e.key === 'ArrowRight' && !e.target.closest('.CodeMirror')) { e.preventDefault(); focusNav(+1); }
+            }
             if (e.key === 'Escape') {
+                if (document.getElementById('focus-overlay')?.classList.contains('active')) { exitFocusMode(); return; }
                 closeAllPickers();
                 const openModals = [...document.querySelectorAll('.modal-overlay.open')];
                 if (openModals.length > 0) {
@@ -5416,12 +5880,205 @@
             showToast('⬇ Exported as ' + title + '.js', 'success');
         }
 
-        /* ── FOCUS MODE ── */
+        /* ══════════════════════════════════════
+           FOCUS MODE — real fullscreen single-cell overlay
+           ══════════════════════════════════════ */
+        let focusCellIdx = 0;  // index into cells[] of currently focused cell
+        let focusMirrors = {}; // cellId → cloned CodeMirror editor inside overlay
+
         function toggleFocusMode() {
-            document.body.classList.toggle('focus-mode');
+            const overlay = document.getElementById('focus-overlay');
+            if (overlay.classList.contains('active')) {
+                exitFocusMode();
+            } else {
+                // Find which cell is currently focused/active, or default to 0
+                const activeCells = cells.filter(c => !document.getElementById('cell-' + c.id)?.classList.contains('search-hidden'));
+                if (activeCells.length === 0) { showToast('No cells to focus', 'warn'); return; }
+                // Find last focused cell
+                let startIdx = 0;
+                activeCells.forEach((c, i) => {
+                    if (document.getElementById('cell-' + c.id)?.classList.contains('focused')) startIdx = i;
+                });
+                focusCellIdx = startIdx;
+                enterFocusMode();
+            }
+        }
+
+        function getVisibleCells() {
+            return cells.filter(c => {
+                const el = document.getElementById('cell-' + c.id);
+                return el && !el.classList.contains('search-hidden');
+            });
+        }
+
+        function enterFocusMode() {
+            const overlay = document.getElementById('focus-overlay');
+            overlay.classList.add('active');
+            document.body.classList.add('focus-mode');
             const btn = document.getElementById('focus-toggle');
-            const on = document.body.classList.contains('focus-mode');
-            btn.textContent = on ? '⊞ UNFOCUS' : '⊟ FOCUS';
+            if (btn) btn.textContent = '⊞ FOCUS';
+            renderFocusCell();
+        }
+
+        function exitFocusMode() {
+            const overlay = document.getElementById('focus-overlay');
+            overlay.classList.remove('active');
+            document.body.classList.remove('focus-mode');
+            const btn = document.getElementById('focus-toggle');
+            if (btn) btn.textContent = '⊟ FOCUS';
+            // Sync any edits made in focus mode back to originals
+            syncFocusEdits();
+            // Detach real editors back to original cells
+            cells.forEach(cell => {
+                const realEditor = cellEditors[cell.id];
+                if (!realEditor) return;
+                const origWrap = document.getElementById('edwrap-' + cell.id);
+                if (origWrap && !origWrap.contains(realEditor.getWrapperElement())) {
+                    origWrap.innerHTML = '';
+                    origWrap.appendChild(realEditor.getWrapperElement());
+                    realEditor.refresh();
+                }
+            });
+            focusMirrors = {};
+            document.getElementById('focus-cell-wrap').innerHTML = '';
+        }
+
+        function syncFocusEdits() {
+            // Mirror editors inside the overlay write directly to the real editors
+            // because we reuse the same cellEditors map — no sync needed
+        }
+
+        function focusNav(dir) {
+            const vis = getVisibleCells();
+            const newIdx = Math.max(0, Math.min(vis.length - 1, focusCellIdx + dir));
+            if (newIdx === focusCellIdx) return;
+            focusCellIdx = newIdx;
+            renderFocusCell();
+        }
+
+        function renderFocusCell() {
+            const vis = getVisibleCells();
+            const wrap = document.getElementById('focus-cell-wrap');
+            const counter = document.getElementById('focus-counter');
+            const label = document.getElementById('focus-cell-label');
+            const prevBtn = document.getElementById('focus-prev-btn');
+            const nextBtn = document.getElementById('focus-next-btn');
+            if (!vis.length) { exitFocusMode(); return; }
+
+            focusCellIdx = Math.max(0, Math.min(vis.length - 1, focusCellIdx));
+            const cell = vis[focusCellIdx];
+            const cellEl = document.getElementById('cell-' + cell.id);
+            if (!cellEl) return;
+
+            // Update nav state
+            counter.textContent = (focusCellIdx + 1) + ' / ' + vis.length;
+            prevBtn.disabled = (focusCellIdx === 0);
+            nextBtn.disabled = (focusCellIdx === vis.length - 1);
+
+            // Show DSA question info in label
+            const q = cell.linkedQuestionId ? dsaQuestions.find(x => x.id === cell.linkedQuestionId) : null;
+            label.textContent = '◈ ' + (q ? q.title + ' · ' : '') + 'Cell [' + String(vis.indexOf(cell) + 1).padStart(2, '0') + '] · ' + cell.lang.toUpperCase();
+
+            // Clone the real cell DOM into the focus wrap
+            wrap.innerHTML = '';
+            const clone = cellEl.cloneNode(true);
+            // Remove collapsed state so editor shows
+            clone.classList.remove('collapsed', 'search-hidden');
+            // Fix IDs to avoid duplicates — prefix with 'f-'
+            clone.querySelectorAll('[id]').forEach(el => {
+                el.id = 'f-' + el.id;
+            });
+            // Redirect all onclick attributes to use the real cell id
+            // (buttons in clone are decorative — we render a fresh real editor)
+            clone.querySelectorAll('button').forEach(btn => {
+                const orig = btn.getAttribute('onclick') || '';
+                // strip onclick — we'll set up the real editor below
+                btn.removeAttribute('onclick');
+            });
+            wrap.appendChild(clone);
+
+            // Mount the REAL CodeMirror editor into the clone's editor wrap
+            const edWrap = document.getElementById('f-edwrap-' + cell.id);
+            if (edWrap) {
+                edWrap.innerHTML = '';
+                const realEditor = cellEditors[cell.id];
+                if (realEditor) {
+                    // Detach from original DOM, attach to focus overlay
+                    edWrap.appendChild(realEditor.getWrapperElement());
+                    realEditor.refresh();
+                    setTimeout(() => { realEditor.refresh(); realEditor.focus(); }, 60);
+                }
+            }
+
+            // Re-wire toolbar buttons to real cell functions
+            const tb = clone.querySelector('.cell-toolbar');
+            if (tb) {
+                // RUN
+                const runBtn = clone.querySelector('[id^="f-runbtn-"]');
+                if (runBtn) { runBtn.onclick = () => runCell(cell.id); }
+                // STOP
+                const stopBtn = clone.querySelector('[id^="f-stopbtn-"]');
+                if (stopBtn) { stopBtn.onclick = () => stopCell(cell.id); }
+                // FORMAT
+                const fmtBtn = clone.querySelector('[id^="f-fmtbtn-"]');
+                if (fmtBtn) { fmtBtn.onclick = () => formatCell(cell.id); }
+                // COPY
+                const copyBtn = clone.querySelector('[id^="f-copybtn-"]');
+                if (copyBtn) { copyBtn.onclick = () => copyCell(cell.id); }
+                // FONT SIZE
+                const fsBtns = clone.querySelectorAll('.fs-btn');
+                fsBtns.forEach((b, i) => { b.onclick = () => setFontSize(cell.id, i === 0 ? -1 : +1); });
+                // LANG
+                clone.querySelectorAll('.lang-btn').forEach(b => {
+                    const l = b.textContent.trim().toLowerCase();
+                    b.onclick = () => setLang(cell.id, l === 'ts' ? 'typescript' : 'javascript');
+                });
+                // COLLAPSE
+                const collBtn = clone.querySelector('[id^="f-collbtn-"]');
+                if (collBtn) { collBtn.onclick = () => toggleCollapseCell(cell.id); }
+                // DELETE — disabled in focus mode
+                clone.querySelectorAll('.icon-btn').forEach(b => { b.onclick = () => showToast('Exit focus mode to delete', 'warn'); });
+            }
+
+            // Wire output clear/copy buttons
+            const clrBtn = clone.querySelector('.clear-out-btn');
+            if (clrBtn) clrBtn.onclick = () => clearOutput(cell.id);
+            const cpyBtn = clone.querySelector('.copy-out-btn');
+            if (cpyBtn) cpyBtn.onclick = () => copyOutput(cell.id);
+
+            // Mirror output updates — watch for changes on the real output el
+            const realOut = document.getElementById('output-' + cell.id);
+            const focusOut = document.getElementById('f-output-' + cell.id);
+            if (realOut && focusOut) {
+                // Initial sync
+                focusOut.innerHTML = realOut.innerHTML;
+                focusOut.style.display = realOut.style.display;
+                focusOut.className = realOut.className;
+                // Observe changes
+                const observer = new MutationObserver(() => {
+                    focusOut.innerHTML = realOut.innerHTML;
+                    focusOut.style.display = realOut.style.display;
+                    focusOut.className = realOut.className;
+                });
+                observer.observe(realOut, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+                // Cleanup when focus cell changes
+                wrap._observer = observer;
+            }
+        }
+
+        // Re-render focus view when output changes (run button etc.)
+        function onFocusCellChange() {
+            if (!document.getElementById('focus-overlay')?.classList.contains('active')) return;
+            const vis = getVisibleCells();
+            const cell = vis[focusCellIdx];
+            if (!cell) return;
+            // Sync run/stop button states
+            const realRunBtn = document.getElementById('runbtn-' + cell.id);
+            const focusRunBtn = document.getElementById('f-runbtn-' + cell.id);
+            if (realRunBtn && focusRunBtn) {
+                focusRunBtn.className = realRunBtn.className;
+                focusRunBtn.textContent = realRunBtn.textContent;
+            }
         }
 
         /* ── SEARCH CELLS ── */
