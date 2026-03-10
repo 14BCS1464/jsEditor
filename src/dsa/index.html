@@ -1903,6 +1903,37 @@
             box-shadow: var(--glow-amber);
         }
 
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            background: rgba(0, 212, 255, 0.04);
+            color: var(--text2);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .copy-btn.copied {
+            background: rgba(0, 255, 204, 0.1);
+            border-color: var(--plasma);
+            color: var(--plasma);
+            box-shadow: var(--glow-plasma);
+        }
+
         .font-size-ctrl {
             display: flex;
             align-items: center;
@@ -3336,6 +3367,22 @@
             } catch (err) { showToast('Format error: ' + err.message.split('\n')[0], 'error'); }
             btn.classList.remove('formatting'); btn.innerHTML = '✦ FMT';
         }
+        async function copyCell(cellId) {
+            const editor = cellEditors[cellId]; if (!editor) return;
+            const code = editor.getValue();
+            const btn = document.getElementById('copybtn-' + cellId);
+            try {
+                await navigator.clipboard.writeText(code);
+            } catch (e) {
+                const ta = document.createElement('textarea');
+                ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+            btn.classList.add('copied'); btn.innerHTML = '✓ COPIED';
+            setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '⎘ COPY'; }, 1800);
+        }
         function basicFormat(code) {
             let lines = code.split('\n'), indent = 0, result = [], TAB = '  ';
             for (let raw of lines) {
@@ -4098,6 +4145,7 @@
                 '<button class="fs-btn" onclick="setFontSize(' + id + ',+1)">A+</button>' +
                 '</div>' +
                 '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format code">✦ FMT</button>' +
+                '<button class="copy-btn" id="copybtn-' + id + '" onclick="copyCell(' + id + ')" title="Copy code">⎘ COPY</button>' +
                 '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ RUN</button>' +
                 '<button class="icon-btn" title="Delete cell" onclick="deleteCell(' + id + ')">⊗</button>' +
                 '</div></div>' +
