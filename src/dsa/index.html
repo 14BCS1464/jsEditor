@@ -5188,15 +5188,35 @@
             const isOpen = picker.style.display !== 'none';
             closeAllPickers();
             if (!isOpen) {
+                // Show picker hidden first so we can measure its size
+                picker.style.visibility = 'hidden';
                 picker.style.display = 'block';
-                // Position picker below the LINK button using fixed coords
+                buildPickerList(cellId, '');
+
+                // Get button position — read AFTER display:block so transforms are resolved
                 const btn = document.querySelector('#qbdrop-' + cellId + ' .qb-link-btn');
                 if (btn) {
+                    // Force layout reflow to get accurate rect after any CSS transforms
+                    picker.getBoundingClientRect();
                     const rect = btn.getBoundingClientRect();
-                    picker.style.top = (rect.bottom + 6) + 'px';
-                    picker.style.left = Math.max(8, rect.right - 300) + 'px';
+                    const pickerW = picker.offsetWidth || 300;
+                    const pickerH = picker.offsetHeight || 260;
+                    const vw = window.innerWidth;
+                    const vh = window.innerHeight;
+
+                    // Prefer below the button; flip above if not enough room
+                    let top = rect.bottom + 6;
+                    if (top + pickerH > vh - 12) top = Math.max(8, rect.top - pickerH - 6);
+
+                    // Align right edge of picker with right edge of button; clamp to viewport
+                    let left = rect.right - pickerW;
+                    if (left < 8) left = 8;
+                    if (left + pickerW > vw - 8) left = vw - pickerW - 8;
+
+                    picker.style.top = top + 'px';
+                    picker.style.left = left + 'px';
                 }
-                buildPickerList(cellId, '');
+                picker.style.visibility = '';
                 setTimeout(() => { const s = document.getElementById('qbsearch-' + cellId); if (s) s.focus(); }, 50);
             }
         }
@@ -5380,22 +5400,32 @@
             const _origClearInterval = window.clearInterval.bind(window);
             const _origFetch = window.fetch ? window.fetch.bind(window) : null;
 
+            // ── Store emit on context so async callbacks always route to the right cell ──
+            ctx.emit = emit;   // <── KEY FIX: callbacks look up ctx.emit, not a captured closure
+
             // ── Console interception ──
+            // We only replace console once globally; a dispatcher routes each call
+            // to whichever cell's ctx is currently "active" (most recently started).
+            // For truly concurrent async cells we track the originating cell via ctx.emit.
             const savedConsole = {};
             const CONSOLE_METHODS = ['log', 'error', 'warn', 'info', 'debug', 'dir', 'group', 'groupEnd', 'groupCollapsed', 'table', 'count', 'time', 'timeEnd', 'timeLog', 'assert', 'clear', 'trace'];
             CONSOLE_METHODS.forEach(m => savedConsole[m] = console[m]);
 
-            const captureConsole = (type) => (...args) => {
+            // Dispatcher: uses THIS cell's emit (captured in closure at setup time).
+            // Even if another cell runs later and replaces console.log, the closure
+            // here already captured the correct `emit` for THIS cell id.
+            const makeCapture = (type) => (...args) => {
+                // Route to the ctx that owns this emit — always correct cell
                 const str = args.map(serializeVal).join(' ');
                 const mapped = type === 'debug' ? 'info' : type === 'group' || type === 'groupCollapsed' ? 'group' : type === 'groupEnd' ? 'info' : type;
-                emit(mapped, str);
+                emit(mapped, str);          // `emit` is closed over from THIS cell's runCell call
                 savedConsole[type]?.(...args);
             };
-            console.log = captureConsole('log');
-            console.error = captureConsole('error');
-            console.warn = captureConsole('warn');
-            console.info = captureConsole('info');
-            console.debug = captureConsole('debug');
+            console.log = makeCapture('log');
+            console.error = makeCapture('error');
+            console.warn = makeCapture('warn');
+            console.info = makeCapture('info');
+            console.debug = makeCapture('debug');
             console.dir = (...a) => emit('log', a.map(serializeVal).join(' '));
             console.group = console.groupCollapsed = (l) => emit('group', '▸ ' + (l || ''));
             console.groupEnd = () => { };
@@ -5411,7 +5441,6 @@
                     } else { emit('log', serializeVal(data)); }
                 } catch (e) { emit('log', serializeVal(data)); }
             };
-            // console.time / timeEnd share a closure so they pair correctly
             const _timers = {};
             console.time = (l = 'default') => { _timers[l] = performance.now(); };
             console.timeEnd = console.timeLog = (l = 'default') => {
@@ -5481,9 +5510,15 @@
                 };
 
                 xhr.send = function (body) {
-                    if (ctx.killed) return origSend(body);
+                    // Capture emit/ctx/trackBegin/trackEnd at send() time, not load() time
+                    // This ensures the XHR always routes back to the cell that created it
+                    const _emit = emit;
+                    const _ctx = ctx;
+                    const _trackBegin = trackBegin;
+                    const _trackEnd = trackEnd;
+                    if (_ctx.killed) return origSend(body);
                     _t0 = performance.now();
-                    trackBegin();
+                    _trackBegin();
 
                     // Classify URL — Firebase vs regular
                     const isFirestore = _url.includes('firestore.googleapis.com') || _url.includes('google.firestore');
@@ -5505,55 +5540,55 @@
                         displayUrl = _url.length > 80 ? _url.slice(0, 77) + '…' : _url;
                     }
 
-                    emit('info', '⬆ XHR ' + _method + ' ' + displayUrl);
+                    _emit('info', '⬆ XHR ' + _method + ' ' + displayUrl);
 
                     const origOnLoad = xhr.onload;
                     const origOnError = xhr.onerror;
                     const origOnTimeout = xhr.ontimeout;
 
                     xhr.addEventListener('load', function () {
-                        if (ctx.killed) { trackEnd(); return; }
+                        // Use locally-captured _emit/_ctx/_trackEnd — never the global closure
+                        if (_ctx.killed) { _trackEnd(); return; }
                         const ms = (performance.now() - _t0).toFixed(0);
                         const ok = xhr.status >= 200 && xhr.status < 300;
                         const icon = ok ? '✓' : '✗';
                         const statusText = xhr.statusText || (ok ? 'OK' : 'Error');
 
                         if (isFirestore) {
-                            // Parse Firestore response body for readable output
                             try {
                                 const resp = JSON.parse(xhr.responseText);
                                 if (resp.documents) {
-                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.documents.length + ' doc(s) [' + ms + 'ms]');
+                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.documents.length + ' doc(s) [' + ms + 'ms]');
                                 } else if (resp.fields || resp.name) {
                                     const docPath = (resp.name || '').split('/documents/')[1] || 'doc';
-                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + decodeURIComponent(docPath) + ' [' + ms + 'ms]');
+                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + decodeURIComponent(docPath) + ' [' + ms + 'ms]');
                                 } else if (Array.isArray(resp)) {
-                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.length + ' result(s) [' + ms + 'ms]');
+                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.length + ' result(s) [' + ms + 'ms]');
                                 } else if (resp.error) {
-                                    emit('error', '⬇ ✗ firestore error: ' + (resp.error.message || serializeVal(resp.error)) + ' [' + ms + 'ms]');
+                                    _emit('error', '⬇ ✗ firestore error: ' + (resp.error.message || serializeVal(resp.error)) + ' [' + ms + 'ms]');
                                 } else {
-                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + ' ' + displayUrl + ' [' + ms + 'ms]');
+                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + ' ' + displayUrl + ' [' + ms + 'ms]');
                                 }
                             } catch (e) {
-                                emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + displayUrl + ' [' + ms + 'ms]');
+                                _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + displayUrl + ' [' + ms + 'ms]');
                             }
                         } else {
-                            emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + '  [' + ms + 'ms]  ← ' + displayUrl);
+                            _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + '  [' + ms + 'ms]  ← ' + displayUrl);
                         }
-                        trackEnd();
+                        _trackEnd();
                     });
 
                     xhr.addEventListener('error', function () {
-                        if (ctx.killed) { trackEnd(); return; }
+                        if (_ctx.killed) { _trackEnd(); return; }
                         const ms = (performance.now() - _t0).toFixed(0);
-                        emit('error', '⬇ ✗ XHR failed [' + ms + 'ms]: ' + displayUrl);
-                        trackEnd();
+                        _emit('error', '⬇ ✗ XHR failed [' + ms + 'ms]: ' + displayUrl);
+                        _trackEnd();
                     });
 
                     xhr.addEventListener('timeout', function () {
-                        if (ctx.killed) { trackEnd(); return; }
-                        emit('error', '⬇ ✗ XHR timeout: ' + displayUrl);
-                        trackEnd();
+                        if (_ctx.killed) { _trackEnd(); return; }
+                        _emit('error', '⬇ ✗ XHR timeout: ' + displayUrl);
+                        _trackEnd();
                     });
 
                     return origSend(body);
