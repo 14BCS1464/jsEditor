@@ -5423,23 +5423,30 @@
             console.count = (l = 'default') => { _counts[l] = (_counts[l] || 0) + 1; emit('log', l + ': ' + _counts[l]); };
             console.countReset = (l = 'default') => { _counts[l] = 0; };
 
-            // ── fetch interception — wraps Promises so .then callbacks are captured ──
+            // ══════════════════════════════════════════════════════
+            // NETWORK INTERCEPTION — fetch + XHR + Firebase SDK
+            // ══════════════════════════════════════════════════════
+
+            // ── 1. window.fetch interception ──
             if (_origFetch) {
                 window.fetch = (input, init) => {
                     trackBegin();
                     const url = typeof input === 'string' ? input : (input?.url || String(input));
-                    emit('info', '⬆ fetch → ' + url);
+                    const method = (init?.method || 'GET').toUpperCase();
+                    const shortUrl = url.length > 80 ? url.slice(0, 77) + '…' : url;
+                    emit('info', '⬆ ' + method + ' ' + shortUrl);
+                    const t = performance.now();
                     return _origFetch(input, init).then(
                         (res) => {
                             if (ctx.killed) { trackEnd(); return res; }
-                            const statusStr = res.ok ? '✓' : '✗';
-                            emit('info', '⬇ ' + statusStr + ' ' + res.status + ' ' + res.statusText + ' ← ' + url);
-                            // Wrap response so .json()/.text()/.blob() are also tracked
+                            const ms = (performance.now() - t).toFixed(0);
+                            const icon = res.ok ? '✓' : '✗';
+                            emit(res.ok ? 'info' : 'error', '⬇ ' + icon + ' ' + res.status + ' ' + res.statusText + '  [' + ms + 'ms]  ← ' + shortUrl);
                             const wrapBodyMethod = (orig) => function (...a) {
                                 trackBegin();
                                 return orig.apply(this, a).then(
                                     v => { trackEnd(); return v; },
-                                    e => { if (!ctx.killed) emit('error', 'Response body error: ' + serializeVal(e)); trackEnd(); throw e; }
+                                    e => { if (!ctx.killed) emit('error', 'Body parse error: ' + serializeVal(e)); trackEnd(); throw e; }
                                 );
                             };
                             try { res.json = wrapBodyMethod(res.json.bind(res)); } catch (e) { }
@@ -5450,12 +5457,184 @@
                             return res;
                         },
                         (err) => {
-                            if (!ctx.killed) emit('error', '⬇ fetch failed: ' + serializeVal(err));
-                            trackEnd();
-                            throw err;
+                            const ms = (performance.now() - t).toFixed(0);
+                            if (!ctx.killed) emit('error', '⬇ ✗ fetch failed [' + ms + 'ms]: ' + serializeVal(err));
+                            trackEnd(); throw err;
                         }
                     );
                 };
+            }
+
+            // ── 2. XMLHttpRequest interception (Firebase uses XHR internally) ──
+            const _OrigXHR = window.XMLHttpRequest;
+            function PatchedXHR() {
+                const xhr = new _OrigXHR();
+                let _method = '', _url = '', _t0 = 0;
+
+                const origOpen = xhr.open.bind(xhr);
+                const origSend = xhr.send.bind(xhr);
+
+                xhr.open = function (method, url, ...rest) {
+                    _method = (method || 'GET').toUpperCase();
+                    _url = typeof url === 'string' ? url : String(url);
+                    return origOpen(method, url, ...rest);
+                };
+
+                xhr.send = function (body) {
+                    if (ctx.killed) return origSend(body);
+                    _t0 = performance.now();
+                    trackBegin();
+
+                    // Classify URL — Firebase vs regular
+                    const isFirestore = _url.includes('firestore.googleapis.com') || _url.includes('google.firestore');
+                    const isFirebaseAuth = _url.includes('identitytoolkit') || _url.includes('securetoken');
+                    const isFirebaseStorage = _url.includes('firebasestorage.googleapis.com');
+                    const isFirebase = isFirestore || isFirebaseAuth || isFirebaseStorage;
+
+                    // Shorten Firestore URLs to show collection/doc path
+                    let displayUrl = _url;
+                    if (isFirestore) {
+                        const m = _url.match(/\/documents\/(.+?)(?:\?|$)/);
+                        displayUrl = m ? '🔥 firestore: /' + decodeURIComponent(m[1].replace(/%2F/g, '/').split('?')[0]) : '🔥 firestore';
+                    } else if (isFirebaseAuth) {
+                        displayUrl = '🔥 firebase-auth: ' + (_url.split('/').pop() || 'auth');
+                    } else if (isFirebaseStorage) {
+                        const m = _url.match(/\/o\/(.+?)(?:\?|$)/);
+                        displayUrl = '🔥 storage: ' + (m ? decodeURIComponent(m[1]) : 'file');
+                    } else {
+                        displayUrl = _url.length > 80 ? _url.slice(0, 77) + '…' : _url;
+                    }
+
+                    emit('info', '⬆ XHR ' + _method + ' ' + displayUrl);
+
+                    const origOnLoad = xhr.onload;
+                    const origOnError = xhr.onerror;
+                    const origOnTimeout = xhr.ontimeout;
+
+                    xhr.addEventListener('load', function () {
+                        if (ctx.killed) { trackEnd(); return; }
+                        const ms = (performance.now() - _t0).toFixed(0);
+                        const ok = xhr.status >= 200 && xhr.status < 300;
+                        const icon = ok ? '✓' : '✗';
+                        const statusText = xhr.statusText || (ok ? 'OK' : 'Error');
+
+                        if (isFirestore) {
+                            // Parse Firestore response body for readable output
+                            try {
+                                const resp = JSON.parse(xhr.responseText);
+                                if (resp.documents) {
+                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.documents.length + ' doc(s) [' + ms + 'ms]');
+                                } else if (resp.fields || resp.name) {
+                                    const docPath = (resp.name || '').split('/documents/')[1] || 'doc';
+                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + decodeURIComponent(docPath) + ' [' + ms + 'ms]');
+                                } else if (Array.isArray(resp)) {
+                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.length + ' result(s) [' + ms + 'ms]');
+                                } else if (resp.error) {
+                                    emit('error', '⬇ ✗ firestore error: ' + (resp.error.message || serializeVal(resp.error)) + ' [' + ms + 'ms]');
+                                } else {
+                                    emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + ' ' + displayUrl + ' [' + ms + 'ms]');
+                                }
+                            } catch (e) {
+                                emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + displayUrl + ' [' + ms + 'ms]');
+                            }
+                        } else {
+                            emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + '  [' + ms + 'ms]  ← ' + displayUrl);
+                        }
+                        trackEnd();
+                    });
+
+                    xhr.addEventListener('error', function () {
+                        if (ctx.killed) { trackEnd(); return; }
+                        const ms = (performance.now() - _t0).toFixed(0);
+                        emit('error', '⬇ ✗ XHR failed [' + ms + 'ms]: ' + displayUrl);
+                        trackEnd();
+                    });
+
+                    xhr.addEventListener('timeout', function () {
+                        if (ctx.killed) { trackEnd(); return; }
+                        emit('error', '⬇ ✗ XHR timeout: ' + displayUrl);
+                        trackEnd();
+                    });
+
+                    return origSend(body);
+                };
+
+                return xhr;
+            }
+            // Copy static props from original XHR
+            Object.keys(_OrigXHR).forEach(k => { try { PatchedXHR[k] = _OrigXHR[k]; } catch (e) { } });
+            PatchedXHR.prototype = _OrigXHR.prototype;
+            PatchedXHR.DONE = _OrigXHR.DONE;
+            PatchedXHR.HEADERS_RECEIVED = _OrigXHR.HEADERS_RECEIVED;
+            PatchedXHR.LOADING = _OrigXHR.LOADING;
+            PatchedXHR.OPENED = _OrigXHR.OPENED;
+            PatchedXHR.UNSENT = _OrigXHR.UNSENT;
+            window.XMLHttpRequest = PatchedXHR;
+
+            // ── 3. Firebase db operation logger (wraps Firestore calls in user code) ──
+            // Makes db.collection('x').get() / .add() / .set() / .update() / .delete() show in output
+            const _origDb = window.db;
+            if (_origDb) {
+                const wrapRef = (ref, path) => {
+                    const wrapQuery = (q, qPath) => {
+                        const origGet = q.get?.bind(q);
+                        const origAdd = q.add?.bind(q);
+                        if (origGet) q.get = (...a) => {
+                            trackBegin();
+                            emit('info', '🔥 db.get(' + qPath + ')');
+                            const t = performance.now();
+                            return origGet(...a).then(
+                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ got ' + (r.docs ? r.docs.length + ' doc(s)' : (r.exists ? '1 doc' : 'empty')) + ' [' + ms + 'ms]'); trackEnd(); return r; },
+                                e => { emit('error', '🔥 ✗ get failed: ' + serializeVal(e)); trackEnd(); throw e; }
+                            );
+                        };
+                        if (origAdd) q.add = (data, ...a) => {
+                            trackBegin();
+                            emit('info', '🔥 db.add(' + qPath + ') ' + JSON.stringify(Object.keys(data || {})));
+                            const t = performance.now();
+                            return origAdd(data, ...a).then(
+                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ added id:' + r.id + ' [' + ms + 'ms]'); trackEnd(); return r; },
+                                e => { emit('error', '🔥 ✗ add failed: ' + serializeVal(e)); trackEnd(); throw e; }
+                            );
+                        };
+                        return q;
+                    };
+                    const wrapDocRef = (docRef, docPath) => {
+                        const methods = ['get', 'set', 'update', 'delete'];
+                        methods.forEach(m => {
+                            const orig = docRef[m]?.bind(docRef);
+                            if (!orig) return;
+                            docRef[m] = (...a) => {
+                                trackBegin();
+                                const label = m === 'set' || m === 'update' ? m + '(' + JSON.stringify(Object.keys(a[0] || {})) + ')' : m + '()';
+                                emit('info', '🔥 db.' + label + ' → ' + docPath);
+                                const t = performance.now();
+                                return orig(...a).then(
+                                    r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ ' + m + ' ok [' + ms + 'ms]'); trackEnd(); return r; },
+                                    e => { emit('error', '🔥 ✗ ' + m + ' failed: ' + serializeVal(e)); trackEnd(); throw e; }
+                                );
+                            };
+                        });
+                        // wrap doc's collection()
+                        const origDocColl = docRef.collection?.bind(docRef);
+                        if (origDocColl) docRef.collection = (subCol) => wrapRef(origDocColl(subCol), docPath + '/' + subCol);
+                        return docRef;
+                    };
+                    const origDoc = ref.doc?.bind(ref);
+                    const origWhere = ref.where?.bind(ref);
+                    const origOrderBy = ref.orderBy?.bind(ref);
+                    const origLimit = ref.limit?.bind(ref);
+                    if (origDoc) ref.doc = (id) => wrapDocRef(origDoc(id), path + (id ? '/' + id : '/{new}'));
+                    if (origWhere) ref.where = (...a) => wrapQuery(origWhere(...a), path + '.where(…)');
+                    if (origOrderBy) ref.orderBy = (...a) => wrapQuery(origOrderBy(...a), path + '.orderBy(…)');
+                    if (origLimit) ref.limit = (...a) => wrapQuery(origLimit(...a), path + '.limit(…)');
+                    return wrapQuery(ref, path);
+                };
+                const origCollection = _origDb.collection?.bind(_origDb);
+                if (origCollection) {
+                    window.db = Object.create(_origDb);
+                    window.db.collection = (name) => wrapRef(origCollection(name), name);
+                }
             }
 
             // ── setTimeout / setInterval interception ──
@@ -5501,6 +5680,8 @@
                 window.clearTimeout = _origClearTimeout;
                 window.clearInterval = _origClearInterval;
                 if (_origFetch) window.fetch = _origFetch;
+                window.XMLHttpRequest = _OrigXHR;
+                if (_origDb && window.db !== _origDb) window.db = _origDb;
                 window.removeEventListener('unhandledrejection', onUnhandledRejection);
             };
 
