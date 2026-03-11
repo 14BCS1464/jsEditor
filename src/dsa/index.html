@@ -3744,6 +3744,33 @@
             padding: 1px 0;
             letter-spacing: 0.5px;
         }
+
+
+        /* ── Link Question Modal items ── */
+        .link-q-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: rgba(0, 212, 255, 0.02);
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .link-q-item:hover {
+            background: rgba(0, 212, 255, 0.07);
+            border-color: var(--border2);
+            transform: translateX(2px);
+        }
+
+        .link-q-item-active {
+            background: rgba(0, 212, 255, 0.1) !important;
+            border-color: var(--border3) !important;
+            box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1);
+        }
     </style>
 </head>
 
@@ -4167,6 +4194,39 @@
         </div>
     </div>
 
+
+    <!-- LINK QUESTION MODAL -->
+    <div class="modal-overlay" id="link-q-modal">
+        <div class="modal" style="width:560px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;">
+            <div class="modal-header" style="flex-shrink:0">
+                <div>
+                    <h2>⊕ LINK DSA CHALLENGE</h2>
+                    <p class="modal-sub" id="link-q-modal-sub">// Select a question to link to this cell</p>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="closeModal('link-q-modal')">✕ CLOSE</button>
+            </div>
+            <div style="padding:14px 24px 10px;flex-shrink:0;border-bottom:1px solid var(--border)">
+                <input type="text" id="link-q-search" placeholder="// Search by title, category, difficulty…"
+                    oninput="filterLinkModal(this.value)" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border2);border-radius:5px;
+                           padding:9px 14px;color:var(--text);font-family:'Fira Code',monospace;font-size:0.75rem;
+                           outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--border3)'"
+                    onblur="this.style.borderColor='var(--border2)'">
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" id="link-q-filters">
+                    <button class="fchip fa" onclick="setLinkFilter('all',this)">ALL</button>
+                    <button class="fchip" onclick="setLinkFilter('easy',this)">EASY</button>
+                    <button class="fchip" onclick="setLinkFilter('medium',this)">MEDIUM</button>
+                    <button class="fchip" onclick="setLinkFilter('hard',this)">HARD</button>
+                </div>
+            </div>
+            <div id="link-q-list"
+                style="flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:6px;min-height:200px">
+            </div>
+            <div
+                style="padding:12px 24px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;gap:8px">
+                <button class="btn btn-ghost" onclick="closeModal('link-q-modal')">CANCEL</button>
+            </div>
+        </div>
+    </div>
     <!-- SHARED DSA PICKER — lives at body level, no transform ancestor -->
     <div class="qb-picker" id="shared-qbpicker" style="display:none">
         <div class="qb-psearch">
@@ -5233,64 +5293,118 @@
             old.parentNode.replaceChild(tmp.firstChild, old);
         }
 
-        /* ── Shared DSA picker — single element at body, no transform-ancestor problem ── */
-        let _pickerCellId = null;
+        /* ── Link Question Modal ── */
+        let _linkModalCellId = null;
+        let _linkModalFilter = 'all';
 
         function togglePicker(cellId) {
-            const picker = document.getElementById('shared-qbpicker');
-            const alreadyOpen = picker.style.display !== 'none' && _pickerCellId === cellId;
-            closeAllPickers();
-            if (alreadyOpen) return;
+            // Open the link modal instead of a popup picker
+            _linkModalCellId = cellId;
+            _linkModalFilter = 'all';
+            const search = document.getElementById('link-q-search');
+            if (search) search.value = '';
+            // Update filter chips
+            document.querySelectorAll('#link-q-filters .fchip').forEach(c => c.classList.remove('fa'));
+            const allChip = document.querySelector('#link-q-filters .fchip');
+            if (allChip) allChip.classList.add('fa');
+            // Update subtitle
+            const sub = document.getElementById('link-q-modal-sub');
+            const cell = cells.find(c => c.id === cellId);
+            if (sub && cell) sub.textContent = '// Cell [' + (cells.indexOf(cell) + 1) + '] — ' + (cell.linkedQuestionId ? 'change linked question' : 'select a question to link');
+            renderLinkModalList('');
+            openModal('link-q-modal');
+            setTimeout(() => { const s = document.getElementById('link-q-search'); if (s) s.focus(); }, 80);
+        }
 
-            _pickerCellId = cellId;
+        function setLinkFilter(diff, el) {
+            _linkModalFilter = diff;
+            document.querySelectorAll('#link-q-filters .fchip').forEach(c => c.classList.remove('fa'));
+            if (el) el.classList.add('fa');
+            const search = document.getElementById('link-q-search');
+            renderLinkModalList(search ? search.value : '');
+        }
 
-            // Populate list before measuring so picker has real height
-            const searchEl = document.getElementById('shared-qbsearch');
-            if (searchEl) searchEl.value = '';
-            buildPickerList(cellId, '');
+        function filterLinkModal(val) {
+            renderLinkModalList(val);
+        }
 
-            // Measure button BEFORE showing picker to get clean rect
-            // (picker is still display:none so it doesn't affect layout)
-            const btn = document.querySelector('#qbdrop-' + cellId + ' .qb-link-btn');
-            if (!btn) { picker.style.display = 'block'; return; }
+        function renderLinkModalList(search) {
+            const list = document.getElementById('link-q-list');
+            if (!list) return;
+            const q = (search || '').toLowerCase().trim();
+            const cell = cells.find(c => c.id === _linkModalCellId);
+            const linkedId = cell ? cell.linkedQuestionId : null;
+            const items = dsaQuestions.filter(x => {
+                const matchDiff = _linkModalFilter === 'all' || x.difficulty === _linkModalFilter;
+                const matchQ = !q || x.title.toLowerCase().includes(q) || (x.category || '').toLowerCase().includes(q) || (x.difficulty || '').toLowerCase().includes(q);
+                return matchDiff && matchQ;
+            });
+            if (!items.length) {
+                list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:monospace;font-size:0.75rem">// No questions match</div>';
+                return;
+            }
+            // Use DOM construction — no innerHTML string escaping issues
+            list.innerHTML = '';
+            items.forEach(x => {
+                const isLinked = x.id === linkedId;
+                const row = document.createElement('div');
+                row.className = 'link-q-item' + (isLinked ? ' link-q-item-active' : '');
+                row.onclick = () => selectLinkQuestion(x.id);
 
-            // Get the button rect. At this point .cell may have transform:translateY(-1px)
-            // on hover — getBoundingClientRect() already returns post-transform coords,
-            // so we don't need to compensate. The key is the picker is at body level
-            // so position:fixed works relative to the real viewport, not the cell.
-            const rect = btn.getBoundingClientRect();
+                const left = document.createElement('div');
+                left.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0';
 
-            // Show hidden to measure picker dimensions
-            picker.style.visibility = 'hidden';
-            picker.style.display = 'block';
-            const pickerW = picker.offsetWidth || 300;
-            const pickerH = picker.offsetHeight || 260;
-            picker.style.display = 'none';
-            picker.style.visibility = '';
+                const badge = document.createElement('span');
+                badge.className = 'diff-badge diff-' + x.difficulty;
+                badge.style.flexShrink = '0';
+                badge.textContent = x.difficulty;
 
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
+                const title = document.createElement('span');
+                title.style.cssText = 'font-size:0.8rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+                title.textContent = x.title;
 
-            // Prefer below the button; flip above if not enough room below
-            let top = rect.bottom + 6;
-            if (top + pickerH > vh - 12) top = Math.max(8, rect.top - pickerH - 6);
+                left.appendChild(badge);
+                left.appendChild(title);
 
-            // Right-align to button right edge; clamp to viewport
-            let left = rect.right - pickerW;
-            if (left < 8) left = 8;
-            if (left + pickerW > vw - 8) left = vw - pickerW - 8;
+                if (x.category) {
+                    const cat = document.createElement('span');
+                    cat.style.cssText = 'font-size:0.58rem;color:var(--muted);font-family:monospace;flex-shrink:0';
+                    cat.textContent = x.category;
+                    left.appendChild(cat);
+                }
 
-            picker.style.top = top + 'px';
-            picker.style.left = left + 'px';
-            picker.style.display = 'block';
+                const right = document.createElement('div');
+                right.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0';
 
-            setTimeout(() => { const s = document.getElementById('shared-qbsearch'); if (s) s.focus(); }, 40);
+                if (x.solved) {
+                    const sv = document.createElement('span');
+                    sv.style.cssText = 'color:var(--plasma);font-size:0.6rem;font-family:monospace';
+                    sv.textContent = '✓ SOLVED';
+                    right.appendChild(sv);
+                }
+                if (isLinked) {
+                    const lk = document.createElement('span');
+                    lk.style.cssText = 'color:var(--cyan);font-size:0.6rem;font-family:monospace;border:1px solid var(--border2);padding:1px 6px;border-radius:3px';
+                    lk.textContent = 'LINKED';
+                    right.appendChild(lk);
+                }
+
+                row.appendChild(left);
+                row.appendChild(right);
+                list.appendChild(row);
+            });
+        }
+
+        function selectLinkQuestion(qId) {
+            if (!_linkModalCellId) return;
+            linkQ(_linkModalCellId, qId);  // linkQ is the real function
+            closeModal('link-q-modal');
         }
 
         function closeAllPickers() {
+            // Legacy — shared picker no longer used but kept for safety
             const picker = document.getElementById('shared-qbpicker');
-            if (picker) { picker.style.display = 'none'; picker.style.top = ''; picker.style.left = ''; }
-            _pickerCellId = null;
+            if (picker) picker.style.display = 'none';
         }
 
         function buildPickerList(cellId, search) {
