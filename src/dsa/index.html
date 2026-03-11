@@ -5694,9 +5694,10 @@
             CellXHR.prototype = _realXHR.prototype;
             CellXHR.DONE = 4; CellXHR.HEADERS_RECEIVED = 2; CellXHR.LOADING = 3; CellXHR.OPENED = 1; CellXHR.UNSENT = 0;
 
-            // Patch window.XMLHttpRequest ONLY for the duration of fn() — for Firebase SDK
-            window.XMLHttpRequest = function () { return makePatchedXHR(emit, ctx, trackBegin, trackEnd); };
-            window.XMLHttpRequest.prototype = _realXHR.prototype;
+            // NOTE: window.XMLHttpRequest is NOT patched globally.
+            // Firebase's background WebChannel listener runs continuously and would
+            // immediately use any global XHR patch — polluting cell output.
+            // User code receives CellXHR as an injected parameter instead.
 
             // ── Firebase db logger — wraps db.collection() calls in user code ──
             const _origDb = window.db;
@@ -5753,10 +5754,7 @@
             window.addEventListener('unhandledrejection', onUnhandledRejection);
 
             const restoreAll = () => {
-                // Restore XHR — the only global we patched (for Firebase SDK during fn())
-                window.XMLHttpRequest = _realXHR;
-                // No window.fetch, setTimeout, setInterval mutations to undo —
-                // user code received isolated cellFetch/cellSetTimeout as parameters
+                // Nothing global to restore — all interception is via injected parameters
                 window.removeEventListener('unhandledrejection', onUnhandledRejection);
             };
 
@@ -5788,11 +5786,8 @@
                     );
                     let ret;
                     try {
-                        // Restore XHR right after fn() returns (before any .then callbacks)
-                        // XHR instances created inside fn() already closed over correct emit
                         ret = await fn(cellConsole, cellFetch, cellSetTimeout, cellSetInterval, cellClearTimeout, cellClearInterval, CellXHR, cellDb);
                     } finally {
-                        window.XMLHttpRequest = _realXHR; // restore immediately
                         trackEnd(); // release synchronous execution hold
                     }
 
