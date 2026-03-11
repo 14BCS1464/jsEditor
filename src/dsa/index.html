@@ -1397,6 +1397,48 @@
             color: var(--cyan);
         }
 
+        .qb-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .qb-title-link {
+            cursor: pointer;
+            transition: color .15s;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .qb-title-link:hover {
+            color: var(--cyan2);
+            text-decoration: underline;
+        }
+
+        .qb-view-btn {
+            flex-shrink: 0;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.52rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid var(--border2);
+            color: var(--cyan);
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+
+        .qb-view-btn:hover {
+            background: rgba(0, 212, 255, 0.18);
+            border-color: var(--cyan);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+        }
+
         .qb-meta {
             display: flex;
             align-items: center;
@@ -4124,6 +4166,15 @@
             <span><span class="fkey">ESC</span> Exit focus</span>
         </div>
     </div>
+
+    <!-- SHARED DSA PICKER — lives at body level, no transform ancestor -->
+    <div class="qb-picker" id="shared-qbpicker" style="display:none">
+        <div class="qb-psearch">
+            <input type="text" placeholder="// Search questions…" id="shared-qbsearch"
+                oninput="buildPickerList(_pickerCellId, this.value)">
+        </div>
+        <div class="qb-plist" id="shared-qbplist"></div>
+    </div>
     <div class="undo-toast" id="undo-toast">
         <span id="undo-msg">Cell deleted</span>
         <button class="undo-btn" onclick="undoDeleteCell()">↩ UNDO</button>
@@ -5155,21 +5206,21 @@
                 '<span class="qb-icon">' + (q ? '⬡' : '◇') + '</span>' +
                 '<div class="qb-info">' +
                 '<div class="qb-sublabel">LINKED DSA CHALLENGE</div>' +
-                (q ? '<div class="qb-title">' + escH(q.title) + '</div>' +
+                (q ?
+                    '<div class="qb-title-row">' +
+                    '<span class="qb-title qb-title-link" onclick="openQuestionView(\'' + q.id + '\')">' + escH(q.title) + '</span>' +
+                    '<button class="qb-view-btn" onclick="openQuestionView(\'' + q.id + '\')">↗ VIEW</button>' +
+                    '</div>' +
                     '<div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>' +
                     '<span class="dsa-cat-tag" style="font-size:0.52rem">' + escH(q.category || '') + '</span>' +
-                    (q.solved ? '<span style="color:var(--plasma);font-size:0.55rem;font-family:\'Fira Code\',monospace">✓ SOLVED</span>' : '') +
+                    (q.solved ? '<span style="color:var(--plasma);font-size:0.55rem;font-family:\'Fira Code\',monospace;margin-left:4px">✓ SOLVED</span>' : '') +
                     '</div>'
                     : '<div class="qb-empty">// No challenge linked</div>') +
                 '</div>' +
                 '<div class="qb-right">' +
-                (q ? '<button class="btn btn-ghost btn-xs" onclick="openQuestionView(\'' + q.id + '\')">👁</button>' : '') +
                 '<div class="qb-drop-wrap" id="qbdrop-' + cellId + '">' +
                 '<button class="qb-link-btn' + (q ? ' linked' : '') + '" onclick="togglePicker(' + cellId + ')">' + (q ? '✎ CHANGE' : '⊕ LINK') + '</button>' +
-                '<div class="qb-picker" id="qbpicker-' + cellId + '" style="display:none">' +
-                '<div class="qb-psearch"><input type="text" placeholder="// Search…" oninput="buildPickerList(' + cellId + ',this.value)" id="qbsearch-' + cellId + '"></div>' +
-                '<div class="qb-plist" id="qbplist-' + cellId + '"></div>' +
-                '</div></div>' +
+                '</div>' +
                 (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') +
                 '</div></div>';
         }
@@ -5182,56 +5233,69 @@
             old.parentNode.replaceChild(tmp.firstChild, old);
         }
 
-        /* FIX: Picker positioning — uses fixed positioning and computes coords from button rect */
+        /* ── Shared DSA picker — single element at body, no transform-ancestor problem ── */
+        let _pickerCellId = null;
+
         function togglePicker(cellId) {
-            const picker = document.getElementById('qbpicker-' + cellId);
-            const isOpen = picker.style.display !== 'none';
+            const picker = document.getElementById('shared-qbpicker');
+            const alreadyOpen = picker.style.display !== 'none' && _pickerCellId === cellId;
             closeAllPickers();
-            if (!isOpen) {
-                // Show picker hidden first so we can measure its size
-                picker.style.visibility = 'hidden';
-                picker.style.display = 'block';
-                buildPickerList(cellId, '');
+            if (alreadyOpen) return;
 
-                // Get button position — read AFTER display:block so transforms are resolved
-                const btn = document.querySelector('#qbdrop-' + cellId + ' .qb-link-btn');
-                if (btn) {
-                    // Force layout reflow to get accurate rect after any CSS transforms
-                    picker.getBoundingClientRect();
-                    const rect = btn.getBoundingClientRect();
-                    const pickerW = picker.offsetWidth || 300;
-                    const pickerH = picker.offsetHeight || 260;
-                    const vw = window.innerWidth;
-                    const vh = window.innerHeight;
+            _pickerCellId = cellId;
 
-                    // Prefer below the button; flip above if not enough room
-                    let top = rect.bottom + 6;
-                    if (top + pickerH > vh - 12) top = Math.max(8, rect.top - pickerH - 6);
+            // Populate list before measuring so picker has real height
+            const searchEl = document.getElementById('shared-qbsearch');
+            if (searchEl) searchEl.value = '';
+            buildPickerList(cellId, '');
 
-                    // Align right edge of picker with right edge of button; clamp to viewport
-                    let left = rect.right - pickerW;
-                    if (left < 8) left = 8;
-                    if (left + pickerW > vw - 8) left = vw - pickerW - 8;
+            // Measure button BEFORE showing picker to get clean rect
+            // (picker is still display:none so it doesn't affect layout)
+            const btn = document.querySelector('#qbdrop-' + cellId + ' .qb-link-btn');
+            if (!btn) { picker.style.display = 'block'; return; }
 
-                    picker.style.top = top + 'px';
-                    picker.style.left = left + 'px';
-                }
-                picker.style.visibility = '';
-                setTimeout(() => { const s = document.getElementById('qbsearch-' + cellId); if (s) s.focus(); }, 50);
-            }
+            // Get the button rect. At this point .cell may have transform:translateY(-1px)
+            // on hover — getBoundingClientRect() already returns post-transform coords,
+            // so we don't need to compensate. The key is the picker is at body level
+            // so position:fixed works relative to the real viewport, not the cell.
+            const rect = btn.getBoundingClientRect();
+
+            // Show hidden to measure picker dimensions
+            picker.style.visibility = 'hidden';
+            picker.style.display = 'block';
+            const pickerW = picker.offsetWidth || 300;
+            const pickerH = picker.offsetHeight || 260;
+            picker.style.display = 'none';
+            picker.style.visibility = '';
+
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            // Prefer below the button; flip above if not enough room below
+            let top = rect.bottom + 6;
+            if (top + pickerH > vh - 12) top = Math.max(8, rect.top - pickerH - 6);
+
+            // Right-align to button right edge; clamp to viewport
+            let left = rect.right - pickerW;
+            if (left < 8) left = 8;
+            if (left + pickerW > vw - 8) left = vw - pickerW - 8;
+
+            picker.style.top = top + 'px';
+            picker.style.left = left + 'px';
+            picker.style.display = 'block';
+
+            setTimeout(() => { const s = document.getElementById('shared-qbsearch'); if (s) s.focus(); }, 40);
         }
 
         function closeAllPickers() {
-            document.querySelectorAll('[id^="qbpicker-"]').forEach(el => {
-                el.style.display = 'none';
-                el.style.top = '';
-                el.style.left = '';
-            });
+            const picker = document.getElementById('shared-qbpicker');
+            if (picker) { picker.style.display = 'none'; picker.style.top = ''; picker.style.left = ''; }
+            _pickerCellId = null;
         }
 
         function buildPickerList(cellId, search) {
             search = (search || '').toLowerCase();
-            const list = document.getElementById('qbplist-' + cellId); if (!list) return;
+            const list = document.getElementById('shared-qbplist'); if (!list) return;
             const cell = cells.find(c => c.id === cellId);
             const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search));
             if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">// No questions found</div>'; return; }
@@ -5262,7 +5326,7 @@
         }
 
         document.addEventListener('click', e => {
-            if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn')) closeAllPickers();
+            if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn') && !e.target.closest('#shared-qbpicker')) closeAllPickers();
         });
 
         /* ══════════════════════════════════════
@@ -5308,6 +5372,14 @@
             // Auto-scroll output to bottom
             el.scrollTop = el.scrollHeight;
         }
+
+        // ── Real browser globals captured ONCE at startup — never overwritten ──
+        const _realSetTimeout = window.setTimeout.bind(window);
+        const _realSetInterval = window.setInterval.bind(window);
+        const _realClearTimeout = window.clearTimeout.bind(window);
+        const _realClearInterval = window.clearInterval.bind(window);
+        const _realFetch = window.fetch ? window.fetch.bind(window) : null;
+        const _realXHR = window.XMLHttpRequest;
 
         /* ══════════════════════════════════════
            EXECUTION ENGINE v3
@@ -5393,287 +5465,101 @@
             const trackBegin = () => { ctx.pendingCount++; if (asyncBadge) asyncBadge.style.display = 'inline'; };
             const trackEnd = () => { ctx.pendingCount = Math.max(0, ctx.pendingCount - 1); schedulefinalize(); };
 
-            // ── Save originals before any interception ──
-            const _origSetTimeout = window.setTimeout.bind(window);
-            const _origSetInterval = window.setInterval.bind(window);
-            const _origClearTimeout = window.clearTimeout.bind(window);
-            const _origClearInterval = window.clearInterval.bind(window);
-            const _origFetch = window.fetch ? window.fetch.bind(window) : null;
+            // ── Use real globals captured at startup (never the potentially-patched window.*) ──
+            const _origSetTimeout = _realSetTimeout;
+            const _origSetInterval = _realSetInterval;
+            const _origClearTimeout = _realClearTimeout;
+            const _origClearInterval = _realClearInterval;
+            const _origFetch = _realFetch;
 
-            // ── Store emit on context so async callbacks always route to the right cell ──
-            ctx.emit = emit;   // <── KEY FIX: callbacks look up ctx.emit, not a captured closure
-
-            // ── Console interception ──
-            // We only replace console once globally; a dispatcher routes each call
-            // to whichever cell's ctx is currently "active" (most recently started).
-            // For truly concurrent async cells we track the originating cell via ctx.emit.
-            const savedConsole = {};
-            const CONSOLE_METHODS = ['log', 'error', 'warn', 'info', 'debug', 'dir', 'group', 'groupEnd', 'groupCollapsed', 'table', 'count', 'time', 'timeEnd', 'timeLog', 'assert', 'clear', 'trace'];
-            CONSOLE_METHODS.forEach(m => savedConsole[m] = console[m]);
-
-            // Dispatcher: uses THIS cell's emit (captured in closure at setup time).
-            // Even if another cell runs later and replaces console.log, the closure
-            // here already captured the correct `emit` for THIS cell id.
-            const makeCapture = (type) => (...args) => {
-                // Route to the ctx that owns this emit — always correct cell
-                const str = args.map(serializeVal).join(' ');
-                const mapped = type === 'debug' ? 'info' : type === 'group' || type === 'groupCollapsed' ? 'group' : type === 'groupEnd' ? 'info' : type;
-                emit(mapped, str);          // `emit` is closed over from THIS cell's runCell call
-                savedConsole[type]?.(...args);
+            // ── Per-cell console object — injected as parameter, never touches window.console ──
+            // This is the ONLY correct way to isolate concurrent async cells.
+            // We pass cellConsole as a named arg to AsyncFn so user code uses it directly.
+            const _timers = {}, _counts = {};
+            const cellConsole = {
+                log: (...a) => emit('log', a.map(serializeVal).join(' ')),
+                error: (...a) => emit('error', a.map(serializeVal).join(' ')),
+                warn: (...a) => emit('warn', a.map(serializeVal).join(' ')),
+                info: (...a) => emit('info', a.map(serializeVal).join(' ')),
+                debug: (...a) => emit('info', a.map(serializeVal).join(' ')),
+                dir: (...a) => emit('log', a.map(serializeVal).join(' ')),
+                group: (l) => emit('group', '▸ ' + (l || '')),
+                groupCollapsed: (l) => emit('group', '▸ ' + (l || '')),
+                groupEnd: () => { },
+                trace: (...a) => emit('info', '(trace) ' + a.map(serializeVal).join(' ')),
+                assert: (ok, ...a) => { if (!ok) emit('error', 'Assertion failed: ' + a.map(serializeVal).join(' ')); },
+                clear: () => { if (contentEl) contentEl.innerHTML = ''; ctx.logs = []; },
+                table: (data, cols) => {
+                    try {
+                        if (Array.isArray(data) && data.length && typeof data[0] === 'object') {
+                            const keys = cols || Object.keys(data[0]);
+                            const rows = data.map((r, i) => '  [' + i + '] ' + keys.map(k => serializeVal(r[k])).join('  \t'));
+                            emit('log', '  ' + keys.join('  \t') + '\n' + rows.join('\n'));
+                        } else { emit('log', serializeVal(data)); }
+                    } catch (e) { emit('log', serializeVal(data)); }
+                },
+                time: (l = 'default') => { _timers[l] = performance.now(); },
+                timeEnd: (l = 'default') => {
+                    const t = _timers[l];
+                    emit('timer', l + ': ' + (t !== undefined ? (performance.now() - t).toFixed(3) + 'ms' : 'timer not started'));
+                    delete _timers[l];
+                },
+                timeLog: (l = 'default') => {
+                    const t = _timers[l];
+                    if (t !== undefined) emit('timer', l + ': ' + (performance.now() - t).toFixed(3) + 'ms (running)');
+                },
+                count: (l = 'default') => { _counts[l] = (_counts[l] || 0) + 1; emit('log', l + ': ' + _counts[l]); },
+                countReset: (l = 'default') => { _counts[l] = 0; },
             };
-            console.log = makeCapture('log');
-            console.error = makeCapture('error');
-            console.warn = makeCapture('warn');
-            console.info = makeCapture('info');
-            console.debug = makeCapture('debug');
-            console.dir = (...a) => emit('log', a.map(serializeVal).join(' '));
-            console.group = console.groupCollapsed = (l) => emit('group', '▸ ' + (l || ''));
-            console.groupEnd = () => { };
-            console.trace = (...a) => emit('info', '(trace) ' + a.map(serializeVal).join(' '));
-            console.assert = (ok, ...a) => { if (!ok) emit('error', 'Assertion failed: ' + a.map(serializeVal).join(' ')); };
-            console.clear = () => { if (contentEl) contentEl.innerHTML = ''; ctx.logs = []; };
-            console.table = (data, cols) => {
-                try {
-                    if (Array.isArray(data) && data.length && typeof data[0] === 'object') {
-                        const keys = cols || Object.keys(data[0]);
-                        const rows = data.map((r, i) => '  [' + i + '] ' + keys.map(k => serializeVal(r[k])).join('  \t'));
-                        emit('log', '  ' + keys.join('  \t') + '\n' + rows.join('\n'));
-                    } else { emit('log', serializeVal(data)); }
-                } catch (e) { emit('log', serializeVal(data)); }
-            };
-            const _timers = {};
-            console.time = (l = 'default') => { _timers[l] = performance.now(); };
-            console.timeEnd = console.timeLog = (l = 'default') => {
-                const t = _timers[l];
-                emit('timer', l + ': ' + (t !== undefined ? (performance.now() - t).toFixed(3) + 'ms' : 'timer not started'));
-                delete _timers[l];
-            };
-            const _counts = {};
-            console.count = (l = 'default') => { _counts[l] = (_counts[l] || 0) + 1; emit('log', l + ': ' + _counts[l]); };
-            console.countReset = (l = 'default') => { _counts[l] = 0; };
 
             // ══════════════════════════════════════════════════════
-            // NETWORK INTERCEPTION — fetch + XHR + Firebase SDK
+            // PER-CELL ISOLATED WRAPPERS — no global mutation
+            // All wrappers close over THIS cell's emit/ctx/trackBegin/trackEnd.
+            // They are passed as parameters into AsyncFn so user code gets them
+            // instead of the real globals. Zero cross-cell contamination.
             // ══════════════════════════════════════════════════════
 
-            // ── 1. window.fetch interception ──
-            if (_origFetch) {
-                window.fetch = (input, init) => {
-                    trackBegin();
-                    const url = typeof input === 'string' ? input : (input?.url || String(input));
-                    const method = (init?.method || 'GET').toUpperCase();
-                    const shortUrl = url.length > 80 ? url.slice(0, 77) + '…' : url;
-                    emit('info', '⬆ ' + method + ' ' + shortUrl);
-                    const t = performance.now();
-                    return _origFetch(input, init).then(
-                        (res) => {
-                            if (ctx.killed) { trackEnd(); return res; }
-                            const ms = (performance.now() - t).toFixed(0);
-                            const icon = res.ok ? '✓' : '✗';
-                            emit(res.ok ? 'info' : 'error', '⬇ ' + icon + ' ' + res.status + ' ' + res.statusText + '  [' + ms + 'ms]  ← ' + shortUrl);
-                            const wrapBodyMethod = (orig) => function (...a) {
-                                trackBegin();
-                                return orig.apply(this, a).then(
-                                    v => { trackEnd(); return v; },
-                                    e => { if (!ctx.killed) emit('error', 'Body parse error: ' + serializeVal(e)); trackEnd(); throw e; }
-                                );
-                            };
-                            try { res.json = wrapBodyMethod(res.json.bind(res)); } catch (e) { }
-                            try { res.text = wrapBodyMethod(res.text.bind(res)); } catch (e) { }
-                            try { res.blob = wrapBodyMethod(res.blob.bind(res)); } catch (e) { }
-                            try { res.arrayBuffer = wrapBodyMethod(res.arrayBuffer.bind(res)); } catch (e) { }
-                            trackEnd();
-                            return res;
-                        },
-                        (err) => {
-                            const ms = (performance.now() - t).toFixed(0);
-                            if (!ctx.killed) emit('error', '⬇ ✗ fetch failed [' + ms + 'ms]: ' + serializeVal(err));
-                            trackEnd(); throw err;
-                        }
-                    );
-                };
-            }
-
-            // ── 2. XMLHttpRequest interception (Firebase uses XHR internally) ──
-            const _OrigXHR = window.XMLHttpRequest;
-            function PatchedXHR() {
-                const xhr = new _OrigXHR();
-                let _method = '', _url = '', _t0 = 0;
-
-                const origOpen = xhr.open.bind(xhr);
-                const origSend = xhr.send.bind(xhr);
-
-                xhr.open = function (method, url, ...rest) {
-                    _method = (method || 'GET').toUpperCase();
-                    _url = typeof url === 'string' ? url : String(url);
-                    return origOpen(method, url, ...rest);
-                };
-
-                xhr.send = function (body) {
-                    // Capture emit/ctx/trackBegin/trackEnd at send() time, not load() time
-                    // This ensures the XHR always routes back to the cell that created it
-                    const _emit = emit;
-                    const _ctx = ctx;
-                    const _trackBegin = trackBegin;
-                    const _trackEnd = trackEnd;
-                    if (_ctx.killed) return origSend(body);
-                    _t0 = performance.now();
-                    _trackBegin();
-
-                    // Classify URL — Firebase vs regular
-                    const isFirestore = _url.includes('firestore.googleapis.com') || _url.includes('google.firestore');
-                    const isFirebaseAuth = _url.includes('identitytoolkit') || _url.includes('securetoken');
-                    const isFirebaseStorage = _url.includes('firebasestorage.googleapis.com');
-                    const isFirebase = isFirestore || isFirebaseAuth || isFirebaseStorage;
-
-                    // Shorten Firestore URLs to show collection/doc path
-                    let displayUrl = _url;
-                    if (isFirestore) {
-                        const m = _url.match(/\/documents\/(.+?)(?:\?|$)/);
-                        displayUrl = m ? '🔥 firestore: /' + decodeURIComponent(m[1].replace(/%2F/g, '/').split('?')[0]) : '🔥 firestore';
-                    } else if (isFirebaseAuth) {
-                        displayUrl = '🔥 firebase-auth: ' + (_url.split('/').pop() || 'auth');
-                    } else if (isFirebaseStorage) {
-                        const m = _url.match(/\/o\/(.+?)(?:\?|$)/);
-                        displayUrl = '🔥 storage: ' + (m ? decodeURIComponent(m[1]) : 'file');
-                    } else {
-                        displayUrl = _url.length > 80 ? _url.slice(0, 77) + '…' : _url;
+            // ── cellFetch — wraps fetch, fully isolated ──
+            const cellFetch = _origFetch ? (input, init) => {
+                if (ctx.killed) return Promise.reject(new Error('Cell stopped'));
+                const url = typeof input === 'string' ? input : (input?.url || String(input));
+                // Skip Firebase background infrastructure from fetch output too
+                const isBgFB = url.includes('Listen/channel') || url.includes('Write/channel') || url.includes('google.firestore.v1.Firestore') || url.includes('gsessionid') || url.includes('VER=8');
+                if (isBgFB) return _origFetch(input, init);
+                trackBegin();
+                const method = (init?.method || 'GET').toUpperCase();
+                let shortUrl; try { const u = new URL(url); shortUrl = u.hostname + u.pathname + (u.search.length > 30 ? u.search.slice(0, 28) + '…' : u.search); } catch { shortUrl = url.length > 70 ? url.slice(0, 68) + '…' : url; }
+                emit('info', '⬆ ' + method + ' ' + shortUrl);
+                const t0f = performance.now();
+                return _origFetch(input, init).then(
+                    (res) => {
+                        if (ctx.killed) { trackEnd(); return res; }
+                        const ms = (performance.now() - t0f).toFixed(0);
+                        emit(res.ok ? 'info' : 'error',
+                            '⬇ ' + (res.ok ? '✓' : '✗') + ' ' + res.status + (res.statusText ? ' ' + res.statusText : '') + ' [' + ms + 'ms] ' + shortUrl);
+                        const wrapBody = (orig) => function (...a) {
+                            trackBegin();
+                            return orig.apply(this, a).then(
+                                v => { trackEnd(); return v; },
+                                e => { if (!ctx.killed) emit('error', 'Body error: ' + serializeVal(e)); trackEnd(); throw e; }
+                            );
+                        };
+                        try { res.json = wrapBody(res.json.bind(res)); } catch (e) { }
+                        try { res.text = wrapBody(res.text.bind(res)); } catch (e) { }
+                        try { res.blob = wrapBody(res.blob.bind(res)); } catch (e) { }
+                        try { res.arrayBuffer = wrapBody(res.arrayBuffer.bind(res)); } catch (e) { }
+                        trackEnd(); return res;
+                    },
+                    (err) => {
+                        const ms = (performance.now() - t0f).toFixed(0);
+                        if (!ctx.killed) emit('error', '⬇ ✗ fetch failed [' + ms + 'ms]: ' + serializeVal(err));
+                        trackEnd(); throw err;
                     }
+                );
+            } : undefined;
 
-                    _emit('info', '⬆ XHR ' + _method + ' ' + displayUrl);
-
-                    const origOnLoad = xhr.onload;
-                    const origOnError = xhr.onerror;
-                    const origOnTimeout = xhr.ontimeout;
-
-                    xhr.addEventListener('load', function () {
-                        // Use locally-captured _emit/_ctx/_trackEnd — never the global closure
-                        if (_ctx.killed) { _trackEnd(); return; }
-                        const ms = (performance.now() - _t0).toFixed(0);
-                        const ok = xhr.status >= 200 && xhr.status < 300;
-                        const icon = ok ? '✓' : '✗';
-                        const statusText = xhr.statusText || (ok ? 'OK' : 'Error');
-
-                        if (isFirestore) {
-                            try {
-                                const resp = JSON.parse(xhr.responseText);
-                                if (resp.documents) {
-                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.documents.length + ' doc(s) [' + ms + 'ms]');
-                                } else if (resp.fields || resp.name) {
-                                    const docPath = (resp.name || '').split('/documents/')[1] || 'doc';
-                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + decodeURIComponent(docPath) + ' [' + ms + 'ms]');
-                                } else if (Array.isArray(resp)) {
-                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + resp.length + ' result(s) [' + ms + 'ms]');
-                                } else if (resp.error) {
-                                    _emit('error', '⬇ ✗ firestore error: ' + (resp.error.message || serializeVal(resp.error)) + ' [' + ms + 'ms]');
-                                } else {
-                                    _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + ' ' + displayUrl + ' [' + ms + 'ms]');
-                                }
-                            } catch (e) {
-                                _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + displayUrl + ' [' + ms + 'ms]');
-                            }
-                        } else {
-                            _emit(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' ' + statusText + '  [' + ms + 'ms]  ← ' + displayUrl);
-                        }
-                        _trackEnd();
-                    });
-
-                    xhr.addEventListener('error', function () {
-                        if (_ctx.killed) { _trackEnd(); return; }
-                        const ms = (performance.now() - _t0).toFixed(0);
-                        _emit('error', '⬇ ✗ XHR failed [' + ms + 'ms]: ' + displayUrl);
-                        _trackEnd();
-                    });
-
-                    xhr.addEventListener('timeout', function () {
-                        if (_ctx.killed) { _trackEnd(); return; }
-                        _emit('error', '⬇ ✗ XHR timeout: ' + displayUrl);
-                        _trackEnd();
-                    });
-
-                    return origSend(body);
-                };
-
-                return xhr;
-            }
-            // Copy static props from original XHR
-            Object.keys(_OrigXHR).forEach(k => { try { PatchedXHR[k] = _OrigXHR[k]; } catch (e) { } });
-            PatchedXHR.prototype = _OrigXHR.prototype;
-            PatchedXHR.DONE = _OrigXHR.DONE;
-            PatchedXHR.HEADERS_RECEIVED = _OrigXHR.HEADERS_RECEIVED;
-            PatchedXHR.LOADING = _OrigXHR.LOADING;
-            PatchedXHR.OPENED = _OrigXHR.OPENED;
-            PatchedXHR.UNSENT = _OrigXHR.UNSENT;
-            window.XMLHttpRequest = PatchedXHR;
-
-            // ── 3. Firebase db operation logger (wraps Firestore calls in user code) ──
-            // Makes db.collection('x').get() / .add() / .set() / .update() / .delete() show in output
-            const _origDb = window.db;
-            if (_origDb) {
-                const wrapRef = (ref, path) => {
-                    const wrapQuery = (q, qPath) => {
-                        const origGet = q.get?.bind(q);
-                        const origAdd = q.add?.bind(q);
-                        if (origGet) q.get = (...a) => {
-                            trackBegin();
-                            emit('info', '🔥 db.get(' + qPath + ')');
-                            const t = performance.now();
-                            return origGet(...a).then(
-                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ got ' + (r.docs ? r.docs.length + ' doc(s)' : (r.exists ? '1 doc' : 'empty')) + ' [' + ms + 'ms]'); trackEnd(); return r; },
-                                e => { emit('error', '🔥 ✗ get failed: ' + serializeVal(e)); trackEnd(); throw e; }
-                            );
-                        };
-                        if (origAdd) q.add = (data, ...a) => {
-                            trackBegin();
-                            emit('info', '🔥 db.add(' + qPath + ') ' + JSON.stringify(Object.keys(data || {})));
-                            const t = performance.now();
-                            return origAdd(data, ...a).then(
-                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ added id:' + r.id + ' [' + ms + 'ms]'); trackEnd(); return r; },
-                                e => { emit('error', '🔥 ✗ add failed: ' + serializeVal(e)); trackEnd(); throw e; }
-                            );
-                        };
-                        return q;
-                    };
-                    const wrapDocRef = (docRef, docPath) => {
-                        const methods = ['get', 'set', 'update', 'delete'];
-                        methods.forEach(m => {
-                            const orig = docRef[m]?.bind(docRef);
-                            if (!orig) return;
-                            docRef[m] = (...a) => {
-                                trackBegin();
-                                const label = m === 'set' || m === 'update' ? m + '(' + JSON.stringify(Object.keys(a[0] || {})) + ')' : m + '()';
-                                emit('info', '🔥 db.' + label + ' → ' + docPath);
-                                const t = performance.now();
-                                return orig(...a).then(
-                                    r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ ' + m + ' ok [' + ms + 'ms]'); trackEnd(); return r; },
-                                    e => { emit('error', '🔥 ✗ ' + m + ' failed: ' + serializeVal(e)); trackEnd(); throw e; }
-                                );
-                            };
-                        });
-                        // wrap doc's collection()
-                        const origDocColl = docRef.collection?.bind(docRef);
-                        if (origDocColl) docRef.collection = (subCol) => wrapRef(origDocColl(subCol), docPath + '/' + subCol);
-                        return docRef;
-                    };
-                    const origDoc = ref.doc?.bind(ref);
-                    const origWhere = ref.where?.bind(ref);
-                    const origOrderBy = ref.orderBy?.bind(ref);
-                    const origLimit = ref.limit?.bind(ref);
-                    if (origDoc) ref.doc = (id) => wrapDocRef(origDoc(id), path + (id ? '/' + id : '/{new}'));
-                    if (origWhere) ref.where = (...a) => wrapQuery(origWhere(...a), path + '.where(…)');
-                    if (origOrderBy) ref.orderBy = (...a) => wrapQuery(origOrderBy(...a), path + '.orderBy(…)');
-                    if (origLimit) ref.limit = (...a) => wrapQuery(origLimit(...a), path + '.limit(…)');
-                    return wrapQuery(ref, path);
-                };
-                const origCollection = _origDb.collection?.bind(_origDb);
-                if (origCollection) {
-                    window.db = Object.create(_origDb);
-                    window.db.collection = (name) => wrapRef(origCollection(name), name);
-                }
-            }
-
-            // ── setTimeout / setInterval interception ──
-            window.setTimeout = (fn, delay, ...args) => {
+            // ── cellSetTimeout / cellSetInterval — isolated, no window mutation ──
+            const cellSetTimeout = (fn, delay, ...args) => {
                 if (ctx.killed) return -1;
                 trackBegin();
                 const wrapped = (...a) => {
@@ -5683,22 +5569,180 @@
                     finally { trackEnd(); }
                 };
                 const tid = _origSetTimeout(wrapped, delay, ...args);
-                ctx.timers.push(tid);
-                return tid;
+                ctx.timers.push(tid); return tid;
             };
-            window.setInterval = (fn, delay, ...args) => {
+            const cellSetInterval = (fn, delay, ...args) => {
                 if (ctx.killed) return -1;
+                let iid;
                 const wrapped = (...a) => {
                     if (ctx.killed) { _origClearInterval(iid); return; }
                     try { fn(...a); }
                     catch (e) { emit('error', e instanceof Error ? e.name + ': ' + e.message : String(e)); _origClearInterval(iid); }
                 };
-                const iid = _origSetInterval(wrapped, delay, ...args);
-                ctx.timers.push(iid);
-                return iid;
+                iid = _origSetInterval(wrapped, delay, ...args);
+                ctx.timers.push(iid); return iid;
             };
-            window.clearTimeout = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearTimeout(tid); };
-            window.clearInterval = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearInterval(tid); };
+            const cellClearTimeout = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearTimeout(tid); };
+            const cellClearInterval = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearInterval(tid); };
+
+            // ── XHR factory — returns a real XHR that reports to THIS cell ──
+            // We pass cellXHR as a class-like constructor into user code.
+            // Firebase SDK uses window.XMLHttpRequest directly — we patch it
+            // just during fn() execution and restore it immediately after.
+            function makePatchedXHR(emitFn, ctxRef, tbFn, teFn) {
+                const xhr = new _realXHR();
+                let _method = '', _url = '', _t0 = 0, _tracked = false;
+                const oOpen = xhr.open.bind(xhr), oSend = xhr.send.bind(xhr);
+                xhr.open = (m, u, ...r) => { _method = (m || 'GET').toUpperCase(); _url = typeof u === 'string' ? u : String(u); return oOpen(m, u, ...r); };
+                xhr.send = function (body) {
+                    if (ctxRef.killed) return oSend(body);
+
+                    // ── Classify the URL ──────────────────────────────────────────
+                    // Firebase background infrastructure URLs — WebChannel long-polling,
+                    // Listen/channel, Write/channel — are constant background traffic.
+                    // They are NOT triggered by user code; silently pass them through.
+                    const isBackgroundFB = (
+                        _url.includes('Listen/channel') ||
+                        _url.includes('Write/channel') ||
+                        _url.includes('google.firestore.v1.Firestore') ||
+                        _url.includes('/channel?') ||
+                        _url.includes('VER=8') ||
+                        _url.includes('gsessionid')
+                    );
+                    if (isBackgroundFB) {
+                        // Completely transparent — no tracking, no output
+                        return oSend(body);
+                    }
+
+                    const isDocOp = _url.includes('firestore.googleapis.com') && _url.includes('/documents/');
+                    const isAuth = _url.includes('identitytoolkit') || _url.includes('securetoken');
+                    const isSto = _url.includes('firebasestorage.googleapis.com');
+                    const isFS = isDocOp || (_url.includes('firestore.googleapis.com') && !isBackgroundFB);
+
+                    // Build a short display URL
+                    let durl;
+                    if (isDocOp) {
+                        const m2 = _url.match(/\/documents\/([^?]+)/);
+                        durl = '🔥 firestore: ' + (m2 ? decodeURIComponent(m2[1]) : 'document');
+                    } else if (isAuth) {
+                        durl = '🔥 firebase-auth: ' + (_url.split('/v1/accounts/')[1] || _url.split('/').pop() || 'auth');
+                    } else if (isSto) {
+                        const m2 = _url.match(/\/o\/([^?]+)/);
+                        durl = '🔥 storage: ' + (m2 ? decodeURIComponent(m2[1]) : 'file');
+                    } else {
+                        // Regular HTTP — truncate long URLs cleanly
+                        try {
+                            const u = new URL(_url);
+                            durl = u.hostname + u.pathname + (u.search.length > 30 ? u.search.slice(0, 28) + '…' : u.search);
+                        } catch { durl = _url.length > 70 ? _url.slice(0, 68) + '…' : _url; }
+                    }
+
+                    _t0 = performance.now();
+                    _tracked = true;
+                    tbFn();
+                    emitFn('info', '⬆ ' + _method + ' ' + durl);
+
+                    xhr.addEventListener('load', () => {
+                        if (!_tracked) return;
+                        if (ctxRef.killed) { teFn(); return; }
+                        const ms = (performance.now() - _t0).toFixed(0);
+                        const ok = xhr.status >= 200 && xhr.status < 300;
+                        const icon = ok ? '✓' : '✗';
+
+                        if (isDocOp) {
+                            try {
+                                const r = JSON.parse(xhr.responseText);
+                                if (Array.isArray(r)) {
+                                    // Batch response
+                                    const docs = r.filter(x => x.found || x.missing);
+                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + docs.length + ' doc(s) [' + ms + 'ms]');
+                                } else if (r.documents) {
+                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + r.documents.length + ' doc(s) [' + ms + 'ms]');
+                                } else if (r.fields || r.name) {
+                                    const dp = (r.name || '').split('/documents/')[1] || 'doc';
+                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: saved ' + decodeURIComponent(dp.split('/').slice(-2).join('/')) + ' [' + ms + 'ms]');
+                                } else if (r.error) {
+                                    emitFn('error', '⬇ ✗ firestore error: ' + (r.error.message || String(r.error)) + ' [' + ms + 'ms]');
+                                } else {
+                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' firestore [' + ms + 'ms]');
+                                }
+                            } catch (e) {
+                                emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' firestore [' + ms + 'ms]');
+                            }
+                        } else {
+                            emitFn(ok ? 'info' : 'error',
+                                '⬇ ' + icon + ' ' + xhr.status + (xhr.statusText ? ' ' + xhr.statusText : '') + ' [' + ms + 'ms] ' + durl);
+                        }
+                        teFn();
+                    });
+                    xhr.addEventListener('error', () => {
+                        if (!_tracked) return;
+                        if (!ctxRef.killed) emitFn('error', '⬇ ✗ network error: ' + durl);
+                        teFn();
+                    });
+                    xhr.addEventListener('timeout', () => {
+                        if (!_tracked) return;
+                        if (!ctxRef.killed) emitFn('error', '⬇ ✗ timeout: ' + durl);
+                        teFn();
+                    });
+                    return oSend(body);
+                };
+                return xhr;
+            }
+            // CellXHR constructor — used by user code instead of XMLHttpRequest
+            function CellXHR() { return makePatchedXHR(emit, ctx, trackBegin, trackEnd); }
+            CellXHR.prototype = _realXHR.prototype;
+            CellXHR.DONE = 4; CellXHR.HEADERS_RECEIVED = 2; CellXHR.LOADING = 3; CellXHR.OPENED = 1; CellXHR.UNSENT = 0;
+
+            // Patch window.XMLHttpRequest ONLY for the duration of fn() — for Firebase SDK
+            window.XMLHttpRequest = function () { return makePatchedXHR(emit, ctx, trackBegin, trackEnd); };
+            window.XMLHttpRequest.prototype = _realXHR.prototype;
+
+            // ── Firebase db logger — wraps db.collection() calls in user code ──
+            const _origDb = window.db;
+            let cellDb = _origDb;
+            if (_origDb) {
+                const wrapRef = (ref, path) => {
+                    const wrapQuery = (q, qPath) => {
+                        const oGet = q.get?.bind(q), oAdd = q.add?.bind(q);
+                        if (oGet) q.get = (...a) => {
+                            trackBegin(); emit('info', '🔥 db.get(' + qPath + ')'); const t = performance.now();
+                            return oGet(...a).then(
+                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ got ' + (r.docs ? r.docs.length + ' doc(s)' : (r.exists ? '1 doc' : 'empty')) + ' [' + ms + 'ms]'); trackEnd(); return r; },
+                                e => { emit('error', '🔥 ✗ get: ' + serializeVal(e)); trackEnd(); throw e; }
+                            );
+                        };
+                        if (oAdd) q.add = (data, ...a) => {
+                            trackBegin(); emit('info', '🔥 db.add(' + qPath + ') ' + JSON.stringify(Object.keys(data || {}))); const t = performance.now();
+                            return oAdd(data, ...a).then(
+                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ added id:' + r.id + ' [' + ms + 'ms]'); trackEnd(); return r; },
+                                e => { emit('error', '🔥 ✗ add: ' + serializeVal(e)); trackEnd(); throw e; }
+                            );
+                        };
+                        return q;
+                    };
+                    const wrapDoc = (docRef, docPath) => {
+                        ['get', 'set', 'update', 'delete'].forEach(m => {
+                            const o = docRef[m]?.bind(docRef); if (!o) return;
+                            docRef[m] = (...a) => {
+                                trackBegin(); const lbl = m === 'set' || m === 'update' ? m + '(' + JSON.stringify(Object.keys(a[0] || {})) + '()' : m + '()'; emit('info', '🔥 db.' + lbl + ' → ' + docPath); const t = performance.now();
+                                return o(...a).then(r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ ' + m + ' ok [' + ms + 'ms]'); trackEnd(); return r; }, e => { emit('error', '🔥 ✗ ' + m + ': ' + serializeVal(e)); trackEnd(); throw e; });
+                            };
+                        });
+                        const oDC = docRef.collection?.bind(docRef);
+                        if (oDC) docRef.collection = (s) => wrapRef(oDC(s), docPath + '/' + s);
+                        return docRef;
+                    };
+                    const oDoc = ref.doc?.bind(ref), oWh = ref.where?.bind(ref), oOrd = ref.orderBy?.bind(ref), oLim = ref.limit?.bind(ref);
+                    if (oDoc) ref.doc = (i) => wrapDoc(oDoc(i), path + (i ? '/' + i : '/{new}'));
+                    if (oWh) ref.where = (...a) => wrapQuery(oWh(...a), path + '.where(…)');
+                    if (oOrd) ref.orderBy = (...a) => wrapQuery(oOrd(...a), path + '.orderBy(…)');
+                    if (oLim) ref.limit = (...a) => wrapQuery(oLim(...a), path + '.limit(…)');
+                    return wrapQuery(ref, path);
+                };
+                const oCol = _origDb.collection?.bind(_origDb);
+                if (oCol) { cellDb = Object.create(_origDb); cellDb.collection = (n) => wrapRef(oCol(n), n); }
+            }
 
             // ── Unhandled rejection catcher ──
             const onUnhandledRejection = (e) => {
@@ -5709,14 +5753,10 @@
             window.addEventListener('unhandledrejection', onUnhandledRejection);
 
             const restoreAll = () => {
-                CONSOLE_METHODS.forEach(m => { if (savedConsole[m] !== undefined) console[m] = savedConsole[m]; });
-                window.setTimeout = _origSetTimeout;
-                window.setInterval = _origSetInterval;
-                window.clearTimeout = _origClearTimeout;
-                window.clearInterval = _origClearInterval;
-                if (_origFetch) window.fetch = _origFetch;
-                window.XMLHttpRequest = _OrigXHR;
-                if (_origDb && window.db !== _origDb) window.db = _origDb;
+                // Restore XHR — the only global we patched (for Firebase SDK during fn())
+                window.XMLHttpRequest = _realXHR;
+                // No window.fetch, setTimeout, setInterval mutations to undo —
+                // user code received isolated cellFetch/cellSetTimeout as parameters
                 window.removeEventListener('unhandledrejection', onUnhandledRejection);
             };
 
@@ -5740,11 +5780,19 @@
 
                     trackBegin(); // hold finalize open during synchronous execution
                     const AsyncFn = Object.getPrototypeOf(async function () { }).constructor;
-                    const fn = new AsyncFn('"use strict";\n' + jsCode);
+                    // Inject all per-cell wrappers as parameters — zero global mutation
+                    // User code receives these directly; concurrent cells never interfere
+                    const fn = new AsyncFn(
+                        'console', 'fetch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'XMLHttpRequest', 'db',
+                        '"use strict";\n' + jsCode
+                    );
                     let ret;
                     try {
-                        ret = await fn();
+                        // Restore XHR right after fn() returns (before any .then callbacks)
+                        // XHR instances created inside fn() already closed over correct emit
+                        ret = await fn(cellConsole, cellFetch, cellSetTimeout, cellSetInterval, cellClearTimeout, cellClearInterval, CellXHR, cellDb);
                     } finally {
+                        window.XMLHttpRequest = _realXHR; // restore immediately
                         trackEnd(); // release synchronous execution hold
                     }
 
