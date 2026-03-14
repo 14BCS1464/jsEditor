@@ -5942,6 +5942,7 @@
                     descMode: cellDescMode[c.id] || 'edit',
                 };
             });
+            // Save full data (including output) to localStorage only
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() }));
             persistDSA();
             const bar = document.getElementById('save-bar'), dot = document.getElementById('save-dot'), txt = document.getElementById('save-text');
@@ -5952,7 +5953,9 @@
                 return;
             }
             try {
-                const payload = { title, cells: cellsData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+                // Strip output before pushing to Firebase — output is local-only
+                const cellsForFirebase = cellsData.map(({ output, ...rest }) => rest);
+                const payload = { title, cells: cellsForFirebase, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
                 if (currentNotebookId) {
                     await db.collection('notebooks').doc(currentNotebookId).set(payload, { merge: true });
                 } else {
