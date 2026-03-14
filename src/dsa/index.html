@@ -23,6 +23,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/lint.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/lint.min.js"></script>
+
+    <!-- lint helper registered after DOM loads -->
+    </script>
+
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Fira+Code:wght@300;400;500;600&family=Exo+2:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
@@ -3771,6 +3777,118 @@
             border-color: var(--border3) !important;
             box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1);
         }
+
+
+        /* ── Inline lint error styling — neural theme ── */
+        .CodeMirror-lint-marker-error {
+            display: block;
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle, #ff3366 40%, rgba(255, 51, 102, 0.3) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: 3px;
+            box-shadow: 0 0 6px rgba(255, 51, 102, 0.7);
+            background-image: none !important;
+        }
+
+        .CodeMirror-lint-marker-warning {
+            display: block;
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle, #ffb700 40%, rgba(255, 183, 0, 0.3) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: 3px;
+            box-shadow: 0 0 6px rgba(255, 183, 0, 0.5);
+            background-image: none !important;
+        }
+
+        .CodeMirror-lint-tooltip {
+            background: rgba(8, 16, 28, 0.97) !important;
+            border: 1px solid rgba(255, 51, 102, 0.5) !important;
+            border-radius: 6px !important;
+            color: #ff6b8a !important;
+            font-family: 'Fira Code', monospace !important;
+            font-size: 0.72rem !important;
+            padding: 7px 14px !important;
+            box-shadow: 0 4px 20px rgba(255, 51, 102, 0.25) !important;
+            max-width: 460px !important;
+            z-index: 9999 !important;
+            line-height: 1.5 !important;
+        }
+
+        .CodeMirror-lint-mark-error {
+            border-bottom: 2px wavy rgba(255, 51, 102, 0.9) !important;
+            background: rgba(255, 51, 102, 0.05) !important;
+        }
+
+        .CodeMirror-lint-mark-warning {
+            border-bottom: 2px wavy rgba(255, 183, 0, 0.75) !important;
+            background: rgba(255, 183, 0, 0.03) !important;
+        }
+
+
+        /* ── Inline lint error bar ── */
+        .lint-error-bar {
+            display: none;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 5px 10px 6px;
+            background: rgba(15, 2, 5, 0.85);
+            border-top: 1px solid rgba(255, 51, 102, 0.2);
+            border-radius: 0 0 6px 6px;
+        }
+
+        .lbe {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.63rem;
+            white-space: nowrap;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lbe-error {
+            color: var(--error);
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        .lbe-warn {
+            color: var(--amber);
+            background: rgba(255, 170, 0, 0.08);
+            border: 1px solid rgba(255, 170, 0, 0.25);
+        }
+
+        .lbe-more {
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+        }
+
+        .CodeMirror-lint-mark-error {
+            background: rgba(255, 51, 102, 0.1) !important;
+            border-bottom: 2px solid var(--error) !important;
+            text-decoration: none !important;
+        }
+
+        .CodeMirror-lint-mark-warning {
+            border-bottom: 2px dotted var(--amber) !important;
+            text-decoration: none !important;
+        }
+
+        .CodeMirror-lint-marker-error {
+            color: var(--error) !important;
+        }
+
+        .CodeMirror-lint-marker-warning {
+            color: var(--amber) !important;
+        }
     </style>
 </head>
 
@@ -5147,6 +5265,8 @@
             const editor = CodeMirror(document.getElementById('edwrap-' + id), {
                 value: code || getTemplate(lang), mode: 'javascript', theme: 'dracula',
                 lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+                lint: { lintOnChange: true, delay: 200 },
+                gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers'],
                 hintOptions: { completeSingle: false, hint: CodeMirror.hint.javascript },
                 extraKeys: {
                     'Ctrl-Enter': () => runCell(id), 'Cmd-Enter': () => runCell(id),
@@ -5493,7 +5613,6 @@
         const _realClearTimeout = window.clearTimeout.bind(window);
         const _realClearInterval = window.clearInterval.bind(window);
         const _realFetch = window.fetch ? window.fetch.bind(window) : null;
-        const _realXHR = window.XMLHttpRequest;
 
         /* ══════════════════════════════════════
            EXECUTION ENGINE v3
@@ -5699,165 +5818,9 @@
             const cellClearTimeout = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearTimeout(tid); };
             const cellClearInterval = (tid) => { const i = ctx.timers.indexOf(tid); if (i !== -1) ctx.timers.splice(i, 1); _origClearInterval(tid); };
 
-            // ── XHR factory — returns a real XHR that reports to THIS cell ──
-            // We pass cellXHR as a class-like constructor into user code.
-            // Firebase SDK uses window.XMLHttpRequest directly — we patch it
-            // just during fn() execution and restore it immediately after.
-            function makePatchedXHR(emitFn, ctxRef, tbFn, teFn) {
-                const xhr = new _realXHR();
-                let _method = '', _url = '', _t0 = 0, _tracked = false;
-                const oOpen = xhr.open.bind(xhr), oSend = xhr.send.bind(xhr);
-                xhr.open = (m, u, ...r) => { _method = (m || 'GET').toUpperCase(); _url = typeof u === 'string' ? u : String(u); return oOpen(m, u, ...r); };
-                xhr.send = function (body) {
-                    if (ctxRef.killed) return oSend(body);
-
-                    // ── Classify the URL ──────────────────────────────────────────
-                    // Firebase background infrastructure URLs — WebChannel long-polling,
-                    // Listen/channel, Write/channel — are constant background traffic.
-                    // They are NOT triggered by user code; silently pass them through.
-                    const isBackgroundFB = (
-                        _url.includes('Listen/channel') ||
-                        _url.includes('Write/channel') ||
-                        _url.includes('google.firestore.v1.Firestore') ||
-                        _url.includes('/channel?') ||
-                        _url.includes('VER=8') ||
-                        _url.includes('gsessionid')
-                    );
-                    if (isBackgroundFB) {
-                        // Completely transparent — no tracking, no output
-                        return oSend(body);
-                    }
-
-                    const isDocOp = _url.includes('firestore.googleapis.com') && _url.includes('/documents/');
-                    const isAuth = _url.includes('identitytoolkit') || _url.includes('securetoken');
-                    const isSto = _url.includes('firebasestorage.googleapis.com');
-                    const isFS = isDocOp || (_url.includes('firestore.googleapis.com') && !isBackgroundFB);
-
-                    // Build a short display URL
-                    let durl;
-                    if (isDocOp) {
-                        const m2 = _url.match(/\/documents\/([^?]+)/);
-                        durl = '🔥 firestore: ' + (m2 ? decodeURIComponent(m2[1]) : 'document');
-                    } else if (isAuth) {
-                        durl = '🔥 firebase-auth: ' + (_url.split('/v1/accounts/')[1] || _url.split('/').pop() || 'auth');
-                    } else if (isSto) {
-                        const m2 = _url.match(/\/o\/([^?]+)/);
-                        durl = '🔥 storage: ' + (m2 ? decodeURIComponent(m2[1]) : 'file');
-                    } else {
-                        // Regular HTTP — truncate long URLs cleanly
-                        try {
-                            const u = new URL(_url);
-                            durl = u.hostname + u.pathname + (u.search.length > 30 ? u.search.slice(0, 28) + '…' : u.search);
-                        } catch { durl = _url.length > 70 ? _url.slice(0, 68) + '…' : _url; }
-                    }
-
-                    _t0 = performance.now();
-                    _tracked = true;
-                    tbFn();
-                    emitFn('info', '⬆ ' + _method + ' ' + durl);
-
-                    xhr.addEventListener('load', () => {
-                        if (!_tracked) return;
-                        if (ctxRef.killed) { teFn(); return; }
-                        const ms = (performance.now() - _t0).toFixed(0);
-                        const ok = xhr.status >= 200 && xhr.status < 300;
-                        const icon = ok ? '✓' : '✗';
-
-                        if (isDocOp) {
-                            try {
-                                const r = JSON.parse(xhr.responseText);
-                                if (Array.isArray(r)) {
-                                    // Batch response
-                                    const docs = r.filter(x => x.found || x.missing);
-                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + docs.length + ' doc(s) [' + ms + 'ms]');
-                                } else if (r.documents) {
-                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: ' + r.documents.length + ' doc(s) [' + ms + 'ms]');
-                                } else if (r.fields || r.name) {
-                                    const dp = (r.name || '').split('/documents/')[1] || 'doc';
-                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' firestore: saved ' + decodeURIComponent(dp.split('/').slice(-2).join('/')) + ' [' + ms + 'ms]');
-                                } else if (r.error) {
-                                    emitFn('error', '⬇ ✗ firestore error: ' + (r.error.message || String(r.error)) + ' [' + ms + 'ms]');
-                                } else {
-                                    emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' firestore [' + ms + 'ms]');
-                                }
-                            } catch (e) {
-                                emitFn(ok ? 'info' : 'error', '⬇ ' + icon + ' ' + xhr.status + ' firestore [' + ms + 'ms]');
-                            }
-                        } else {
-                            emitFn(ok ? 'info' : 'error',
-                                '⬇ ' + icon + ' ' + xhr.status + (xhr.statusText ? ' ' + xhr.statusText : '') + ' [' + ms + 'ms] ' + durl);
-                        }
-                        teFn();
-                    });
-                    xhr.addEventListener('error', () => {
-                        if (!_tracked) return;
-                        if (!ctxRef.killed) emitFn('error', '⬇ ✗ network error: ' + durl);
-                        teFn();
-                    });
-                    xhr.addEventListener('timeout', () => {
-                        if (!_tracked) return;
-                        if (!ctxRef.killed) emitFn('error', '⬇ ✗ timeout: ' + durl);
-                        teFn();
-                    });
-                    return oSend(body);
-                };
-                return xhr;
-            }
-            // CellXHR constructor — used by user code instead of XMLHttpRequest
-            function CellXHR() { return makePatchedXHR(emit, ctx, trackBegin, trackEnd); }
-            CellXHR.prototype = _realXHR.prototype;
-            CellXHR.DONE = 4; CellXHR.HEADERS_RECEIVED = 2; CellXHR.LOADING = 3; CellXHR.OPENED = 1; CellXHR.UNSENT = 0;
-
-            // NOTE: window.XMLHttpRequest is NOT patched globally.
-            // Firebase's background WebChannel listener runs continuously and would
-            // immediately use any global XHR patch — polluting cell output.
-            // User code receives CellXHR as an injected parameter instead.
-
-            // ── Firebase db logger — wraps db.collection() calls in user code ──
-            const _origDb = window.db;
-            let cellDb = _origDb;
-            if (_origDb) {
-                const wrapRef = (ref, path) => {
-                    const wrapQuery = (q, qPath) => {
-                        const oGet = q.get?.bind(q), oAdd = q.add?.bind(q);
-                        if (oGet) q.get = (...a) => {
-                            trackBegin(); emit('info', '🔥 db.get(' + qPath + ')'); const t = performance.now();
-                            return oGet(...a).then(
-                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ got ' + (r.docs ? r.docs.length + ' doc(s)' : (r.exists ? '1 doc' : 'empty')) + ' [' + ms + 'ms]'); trackEnd(); return r; },
-                                e => { emit('error', '🔥 ✗ get: ' + serializeVal(e)); trackEnd(); throw e; }
-                            );
-                        };
-                        if (oAdd) q.add = (data, ...a) => {
-                            trackBegin(); emit('info', '🔥 db.add(' + qPath + ') ' + JSON.stringify(Object.keys(data || {}))); const t = performance.now();
-                            return oAdd(data, ...a).then(
-                                r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ added id:' + r.id + ' [' + ms + 'ms]'); trackEnd(); return r; },
-                                e => { emit('error', '🔥 ✗ add: ' + serializeVal(e)); trackEnd(); throw e; }
-                            );
-                        };
-                        return q;
-                    };
-                    const wrapDoc = (docRef, docPath) => {
-                        ['get', 'set', 'update', 'delete'].forEach(m => {
-                            const o = docRef[m]?.bind(docRef); if (!o) return;
-                            docRef[m] = (...a) => {
-                                trackBegin(); const lbl = m === 'set' || m === 'update' ? m + '(' + JSON.stringify(Object.keys(a[0] || {})) + '()' : m + '()'; emit('info', '🔥 db.' + lbl + ' → ' + docPath); const t = performance.now();
-                                return o(...a).then(r => { const ms = (performance.now() - t).toFixed(0); emit('info', '🔥 ✓ ' + m + ' ok [' + ms + 'ms]'); trackEnd(); return r; }, e => { emit('error', '🔥 ✗ ' + m + ': ' + serializeVal(e)); trackEnd(); throw e; });
-                            };
-                        });
-                        const oDC = docRef.collection?.bind(docRef);
-                        if (oDC) docRef.collection = (s) => wrapRef(oDC(s), docPath + '/' + s);
-                        return docRef;
-                    };
-                    const oDoc = ref.doc?.bind(ref), oWh = ref.where?.bind(ref), oOrd = ref.orderBy?.bind(ref), oLim = ref.limit?.bind(ref);
-                    if (oDoc) ref.doc = (i) => wrapDoc(oDoc(i), path + (i ? '/' + i : '/{new}'));
-                    if (oWh) ref.where = (...a) => wrapQuery(oWh(...a), path + '.where(…)');
-                    if (oOrd) ref.orderBy = (...a) => wrapQuery(oOrd(...a), path + '.orderBy(…)');
-                    if (oLim) ref.limit = (...a) => wrapQuery(oLim(...a), path + '.limit(…)');
-                    return wrapQuery(ref, path);
-                };
-                const oCol = _origDb.collection?.bind(_origDb);
-                if (oCol) { cellDb = Object.create(_origDb); cellDb.collection = (n) => wrapRef(oCol(n), n); }
-            }
+            // XHR and db are NOT intercepted — Firebase background sync runs
+            // continuously; any wrapping leaks its traffic into cell output.
+            // User code accesses window.db directly with no wrapper.
 
             // ── Unhandled rejection catcher ──
             const onUnhandledRejection = (e) => {
@@ -5895,12 +5858,12 @@
                     // Inject all per-cell wrappers as parameters — zero global mutation
                     // User code receives these directly; concurrent cells never interfere
                     const fn = new AsyncFn(
-                        'console', 'fetch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'XMLHttpRequest', 'db',
+                        'console', 'fetch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
                         '"use strict";\n' + jsCode
                     );
                     let ret;
                     try {
-                        ret = await fn(cellConsole, cellFetch, cellSetTimeout, cellSetInterval, cellClearTimeout, cellClearInterval, CellXHR, cellDb);
+                        ret = await fn(cellConsole, cellFetch, cellSetTimeout, cellSetInterval, cellClearTimeout, cellClearInterval);
                     } finally {
                         trackEnd(); // release synchronous execution hold
                     }
@@ -6006,6 +5969,145 @@
         }
 
         /* ── MODALS ── */
+
+        /* ── Real-time JS linter — inline error bar + gutter markers ── */
+        (function () {
+
+            const TYPOS = [
+                [/\bcnst\b/, 'Did you mean "const"?'],
+                [/\bcosnt\b/, 'Did you mean "const"?'],
+                [/\bconts\b/, 'Did you mean "const"?'],
+                [/\bcont\b(?!ains|ext|rol|ent|act|rib|in)/, 'Did you mean "const"?'],
+                [/\blett\b/, 'Did you mean "let"?'],
+                [/\bvarr\b/, 'Did you mean "var"?'],
+                [/\bfunciton\b/, 'Did you mean "function"?'],
+                [/\bfuncion\b/, 'Did you mean "function"?'],
+                [/\bfnction\b/, 'Did you mean "function"?'],
+                [/\bfucntion\b/, 'Did you mean "function"?'],
+                [/\bretrun\b/, 'Did you mean "return"?'],
+                [/\bretunr\b/, 'Did you mean "return"?'],
+                [/\bretun\b/, 'Did you mean "return"?'],
+                [/\breutrn\b/, 'Did you mean "return"?'],
+                [/\bconsloe\b/, 'Did you mean "console"?'],
+                [/\bconsoel\b/, 'Did you mean "console"?'],
+                [/\bconole\b/, 'Did you mean "console"?'],
+                [/\bconsolle\b/, 'Did you mean "console"?'],
+                [/\bawiat\b/, 'Did you mean "await"?'],
+                [/\basnyc\b/, 'Did you mean "async"?'],
+                [/\basnc\b/, 'Did you mean "async"?'],
+                [/\bswithc\b/, 'Did you mean "switch"?'],
+                [/\bswicth\b/, 'Did you mean "switch"?'],
+                [/\bclasss\b/, 'Did you mean "class"?'],
+                [/\bextneds\b/, 'Did you mean "extends"?'],
+                [/\bimpotr\b/, 'Did you mean "import"?'],
+                [/\bexpotr\b/, 'Did you mean "export"?'],
+                [/\bthros\b/, 'Did you mean "throw"?'],
+                [/\bcatcch\b/, 'Did you mean "catch"?'],
+                [/\bwhlie\b/, 'Did you mean "while"?'],
+                [/\belese\b/, 'Did you mean "else"?'],
+                [/\bdelte\b/, 'Did you mean "delete"?'],
+                [/\btpyeof\b/, 'Did you mean "typeof"?'],
+                [/\binstceof\b/, 'Did you mean "instanceof"?'],
+            ];
+
+            function lintCode(code) {
+                if (!code || !code.trim()) return [];
+                const results = [];
+
+                // 1. Syntax check using AsyncFn (supports top-level await)
+                try {
+                    const AsyncFn = Object.getPrototypeOf(async function () { }).constructor;
+                    new AsyncFn('"use strict";\n' + code);
+                } catch (e) {
+                    if (e instanceof SyntaxError) {
+                        let line = 0, col = 0;
+                        // Chrome/Edge stack: "<anonymous>:N:M"
+                        const sm = (e.stack || '').match(/<anonymous>:(\d+):(\d+)/);
+                        if (sm) {
+                            // AsyncFn body starts at line 3: line1=async fn sig, line2="use strict", line3+=user code
+                            line = Math.max(0, parseInt(sm[1]) - 3);
+                            col = Math.max(0, parseInt(sm[2]) - 1);
+                        } else if (typeof e.lineNumber === 'number') {
+                            line = Math.max(0, e.lineNumber - 2); // Firefox
+                        }
+                        const codeLines = code.split('\n');
+                        line = Math.min(line, codeLines.length - 1);
+                        const lineText = codeLines[line] || '';
+                        results.push({
+                            from: CodeMirror.Pos(line, col),
+                            to: CodeMirror.Pos(line, col > 0 ? Math.min(col + 1, lineText.length) : (lineText.trimEnd().length || 1)),
+                            message: e.message || 'Syntax error',
+                            severity: 'error'
+                        });
+                        return results;
+                    }
+                }
+
+                // 2. Typo + style checks
+                code.split('\n').forEach((lineText, i) => {
+                    const trimmed = lineText.trim();
+                    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('*')) return;
+                    const stripped = lineText
+                        .replace(/`[^`]*`/g, '``')
+                        .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+                        .replace(/'(?:[^'\\]|\\.)*'/g, "''")
+                        .replace(/\/\/.*$/, '');
+
+                    TYPOS.forEach(([rx, msg]) => {
+                        const m = stripped.match(rx);
+                        if (m) results.push({
+                            from: CodeMirror.Pos(i, m.index),
+                            to: CodeMirror.Pos(i, m.index + m[0].length),
+                            message: msg, severity: 'warning'
+                        });
+                    });
+
+                    // == not ===
+                    const eq = stripped.match(/(?<![=!<>])={2}(?!=)/);
+                    if (eq) results.push({ from: CodeMirror.Pos(i, eq.index), to: CodeMirror.Pos(i, eq.index + 2), message: 'Use === instead of ==', severity: 'warning' });
+
+                    // Empty loop/if: if(...);
+                    const eb = stripped.match(/\b(if|for|while)\s*\([^)]*\)\s*;/);
+                    if (eb) results.push({ from: CodeMirror.Pos(i, eb.index), to: CodeMirror.Pos(i, eb.index + eb[0].length), message: 'Empty ' + eb[1] + ' body — stray semicolon?', severity: 'warning' });
+                });
+
+                return results;
+            }
+
+            function updateErrorBar(cm, annotations) {
+                const wrap = cm.getWrapperElement();
+                const cellEl = wrap.closest('[id^="cell-"]');
+                if (!cellEl) return;
+                const cellId = cellEl.id.replace('cell-', '');
+                let bar = document.getElementById('lint-bar-' + cellId);
+                if (!bar) {
+                    bar = document.createElement('div');
+                    bar.id = 'lint-bar-' + cellId;
+                    bar.className = 'lint-error-bar';
+                    wrap.parentElement.appendChild(bar);
+                }
+                if (!annotations || !annotations.length) {
+                    bar.style.display = 'none'; return;
+                }
+                bar.style.display = 'flex';
+                bar.innerHTML = annotations.slice(0, 4).map(a => {
+                    const icon = a.severity === 'error' ? '✖' : '⚠';
+                    const cls = a.severity === 'error' ? 'lbe-error' : 'lbe-warn';
+                    const ln = a.from ? a.from.line + 1 : '?';
+                    return '<span class="lbe ' + cls + '">' + icon + ' Ln ' + ln + ': ' + escH(a.message) + '</span>';
+                }).join('') + (annotations.length > 4 ? '<span class="lbe lbe-more">+' + (annotations.length - 4) + ' more</span>' : '');
+            }
+
+            CodeMirror.registerHelper('lint', 'javascript', function (text, options, cm) {
+                try {
+                    const res = lintCode(text);
+                    if (cm) setTimeout(() => updateErrorBar(cm, res), 0);
+                    return res;
+                } catch (e) { return []; }
+            });
+
+        })();
+
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
