@@ -3286,6 +3286,262 @@
         .cell.format-flash .cell-editor-wrap {
             animation: formatFlash .7s ease;
         }
+
+        /* IMPORTANT / REVIEW BUTTON */
+        .imp-wrap {
+            position: relative;
+        }
+
+        .important-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .18s;
+        }
+
+        .important-btn:hover {
+            background: rgba(184, 84, 80, 0.07);
+            border-color: rgba(184, 84, 80, 0.35);
+            color: #8A3030;
+        }
+
+        .important-btn.flagged-high {
+            background: rgba(184, 84, 80, 0.1);
+            color: #8A3030;
+            border-color: rgba(184, 84, 80, 0.5);
+        }
+
+        .important-btn.flagged-medium {
+            background: rgba(160, 112, 32, 0.1);
+            color: #7A5010;
+            border-color: rgba(160, 112, 32, 0.5);
+        }
+
+        .important-btn.flagged-low {
+            background: rgba(61, 122, 107, 0.1);
+            color: #2A5A50;
+            border-color: rgba(61, 122, 107, 0.5);
+        }
+
+        /* cell highlight states */
+        .cell.important-high {
+            border-color: rgba(184, 84, 80, 0.4) !important;
+            background: rgba(255, 247, 246, 0.9) !important;
+        }
+
+        .cell.important-medium {
+            border-color: rgba(160, 112, 32, 0.4) !important;
+            background: rgba(255, 252, 240, 0.9) !important;
+        }
+
+        .cell.important-low {
+            border-color: rgba(61, 122, 107, 0.4) !important;
+            background: rgba(241, 250, 247, 0.9) !important;
+        }
+
+        .cell.important-high .cell-toolbar {
+            background: rgba(255, 238, 236, 0.9) !important;
+        }
+
+        .cell.important-medium .cell-toolbar {
+            background: rgba(255, 249, 228, 0.9) !important;
+        }
+
+        .cell.important-low .cell-toolbar {
+            background: rgba(233, 247, 242, 0.9) !important;
+        }
+
+        .cell.important-high:hover {
+            box-shadow: 0 4px 20px rgba(184, 84, 80, 0.12) !important;
+        }
+
+        .cell.important-medium:hover {
+            box-shadow: 0 4px 20px rgba(160, 112, 32, 0.12) !important;
+        }
+
+        .cell.important-low:hover {
+            box-shadow: 0 4px 20px rgba(61, 122, 107, 0.1) !important;
+        }
+
+        /* badge inside toolbar */
+        .imp-label-badge {
+            font-size: 0.52rem;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: none;
+        }
+
+        .cell.important-high .imp-label-badge {
+            display: inline;
+            background: rgba(184, 84, 80, 0.12);
+            color: #8A3030;
+            border: 1px solid rgba(184, 84, 80, 0.28);
+        }
+
+        .cell.important-medium .imp-label-badge {
+            display: inline;
+            background: rgba(160, 112, 32, 0.12);
+            color: #7A5010;
+            border: 1px solid rgba(160, 112, 32, 0.28);
+        }
+
+        .cell.important-low .imp-label-badge {
+            display: inline;
+            background: rgba(61, 122, 107, 0.1);
+            color: #2A5A50;
+            border: 1px solid rgba(61, 122, 107, 0.25);
+        }
+
+        /* dropdown picker */
+        .imp-picker {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            z-index: 700;
+            box-shadow: 0 10px 32px rgba(44, 35, 24, 0.16);
+            padding: 5px;
+            min-width: 158px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .imp-picker.open {
+            display: flex;
+        }
+
+        .imp-picker-label {
+            font-size: 0.5rem;
+            color: var(--muted);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 4px 8px 5px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2px;
+        }
+
+        .imp-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 500;
+            transition: background .1s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .imp-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .imp-option.io-high {
+            color: #8A3030;
+        }
+
+        .imp-option.io-high:hover {
+            background: rgba(184, 84, 80, 0.07);
+        }
+
+        .io-high .imp-dot {
+            background: #B85450;
+        }
+
+        .imp-option.io-medium {
+            color: #7A5010;
+        }
+
+        .imp-option.io-medium:hover {
+            background: rgba(160, 112, 32, 0.07);
+        }
+
+        .io-medium .imp-dot {
+            background: #A07020;
+        }
+
+        .imp-option.io-low {
+            color: #2A5A50;
+        }
+
+        .imp-option.io-low:hover {
+            background: rgba(61, 122, 107, 0.07);
+        }
+
+        .io-low .imp-dot {
+            background: #3D7A6B;
+        }
+
+        .imp-option.io-none {
+            color: var(--muted);
+        }
+
+        .imp-option.io-none:hover {
+            background: rgba(139, 120, 100, 0.06);
+        }
+
+        .io-none .imp-dot {
+            background: var(--muted);
+        }
+
+        .imp-option.io-active::after {
+            content: '✓';
+            margin-left: auto;
+            font-size: 0.65rem;
+            opacity: 0.7;
+        }
+
+        /* review filter pill in notebook header */
+        .review-filter-btn {
+            padding: 4px 11px;
+            background: transparent;
+            color: var(--muted);
+            border: 1px dashed var(--border2);
+            border-radius: 5px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.62rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .18s;
+        }
+
+        .review-filter-btn:hover {
+            border-color: rgba(184, 84, 80, 0.4);
+            color: #8A3030;
+            border-style: solid;
+        }
+
+        .review-filter-btn.active {
+            background: rgba(184, 84, 80, 0.1);
+            color: #8A3030;
+            border-color: rgba(184, 84, 80, 0.45);
+            border-style: solid;
+        }
     </style>
 </head>
 
@@ -3388,9 +3644,13 @@
                         <button class="nb-search-clear" id="nb-search-clear" onclick="clearSearch()">✕</button>
                     </div>
                     <div id="cells-container"></div>
-                    <div style="display:flex;gap:8px;margin:6px 0 0 0;padding:0 2px">
+                    <div style="display:flex;gap:8px;margin:6px 0 0 0;padding:0 2px;align-items:center">
                         <button class="run-all-hdr-btn" onclick="runAllCells()">▶▶ Run All</button>
                         <button class="export-btn" onclick="exportNotebook()">⬇ Export .js</button>
+                        <button class="review-filter-btn" id="review-filter-btn" onclick="toggleReviewFilter()"
+                            title="Show only flagged important cells">★ Review Mode</button>
+                        <span id="review-count"
+                            style="font-size:0.58rem;color:var(--muted);font-family:'JetBrains Mono',monospace;display:none"></span>
                     </div>
                     <div class="add-cell-row" style="margin-bottom:0">
                         <button class="add-cell-btn" onclick="addCell('javascript')">⊕ JS Cell</button>
@@ -3911,7 +4171,7 @@
             document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
             cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
             document.getElementById('cells-container').innerHTML = '';
-            (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode));
+            (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance));
             updateCellCount();
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id); if (el) el.classList.add('active-nb');
@@ -3921,7 +4181,7 @@
             currentNotebookId = null; saveNotebookId(null);
             document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
             document.getElementById('nb-id').textContent = 'LOCAL';
-            cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
+            cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {}; cellImportance = {};
             document.getElementById('cells-container').innerHTML = '';
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             addCell('javascript'); showToast('New notebook created', 'success');
@@ -3936,7 +4196,7 @@
                 document.getElementById('nb-id').textContent = 'LOCAL';
                 cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
                 document.getElementById('cells-container').innerHTML = '';
-                (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode));
+                (notebookData.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance));
                 updateCellCount(); switchPage('notebook'); triggerAutoSave(); showToast('Duplicated', 'success');
             } catch (e) { showToast('Failed: ' + e.message, 'error'); }
         }
@@ -4112,10 +4372,10 @@
         function persistDSA() { localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); if (db) { db.collection('dsa').doc('questions').set({ questions: dsaQuestions, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(e => console.warn('DSA save err', e)); } }
         async function loadDSAFromFirebase() { if (!db) return; try { const doc = await db.collection('dsa').doc('questions').get(); if (doc.exists && doc.data().questions) { dsaQuestions = doc.data().questions; dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; }); localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id)); } } catch (e) { console.warn('DSA load err', e); } }
 
-        function addCell(lang, code, description, savedOutput, linkedQId, savedFontSizeIdx, savedDescMode) {
+        function addCell(lang, code, description, savedOutput, linkedQId, savedFontSizeIdx, savedDescMode, savedImportance) {
             lang = lang || 'javascript'; code = code || ''; description = description || ''; linkedQId = linkedQId || null;
             const id = ++cellIdCounter;
-            const cell = { id, lang, description, linkedQuestionId: linkedQId, lastOutput: savedOutput || null };
+            const cell = { id, lang, description, linkedQuestionId: linkedQId, lastOutput: savedOutput || null, importance: savedImportance || 'none' };
             cells.push(cell);
             const fsi = (savedFontSizeIdx !== undefined && savedFontSizeIdx !== null) ? savedFontSizeIdx : DEFAULT_FONT_IDX;
             cellFontSizeIdx[id] = fsi; cellDescMode[id] = savedDescMode || 'edit';
@@ -4123,7 +4383,7 @@
             const div = document.createElement('div'); div.className = 'cell'; div.id = 'cell-' + id;
             div.innerHTML = buildBannerHTML(id, linkedQId) +
                 '<div class="cell-desc" id="celldesc-' + id + '">' + '<div class="desc-label" onclick="toggleDesc(' + id + ')">' + '<span>▸</span> Solution Notes <span style="font-size:0.45rem;color:var(--plasma);margin-left:6px">MD</span>' + '<span class="desc-toggle-arrow">▾</span></div>' + '<div class="desc-body">' + '<div class="desc-toolbar">' + '<button class="desc-mode-btn ' + (cellDescMode[id] === 'edit' ? 'active' : '') + '" id="dmode-edit-' + id + '" onclick="setDescMode(' + id + ',\'edit\')">✎ Edit</button>' + '<button class="desc-mode-btn ' + (cellDescMode[id] === 'preview' ? 'active' : '') + '" id="dmode-prev-' + id + '" onclick="setDescMode(' + id + ',\'preview\')">👁 Preview</button>' + '<span class="desc-mode-hint">Markdown supported</span>' + '</div>' + '<textarea class="desc-ta" id="desc-' + id + '" placeholder="// Describe your approach, complexity, edge cases…" style="display:' + (cellDescMode[id] === 'edit' ? 'block' : 'none') + '">' + (description || '') + '</textarea>' + '<div class="desc-preview" id="descprev-' + id + '" style="display:' + (cellDescMode[id] === 'preview' ? 'block' : 'none') + '">' + (description ? renderMD(description) : '<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>') + '</div>' + '</div></div>' +
-                '<div class="cell-toolbar">' + '<div class="tl-left">' + '<span class="cell-num" id="cnum-' + id + '">[01]</span>' + '<div class="lang-toggle">' + '<button class="lang-btn ' + (lang === 'javascript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'javascript\')">JS</button>' + '<button class="lang-btn ' + (lang === 'typescript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'typescript\')">TS</button>' + '</div>' + '<span class="line-count-badge" id="lcbadge-' + id + '">0 L</span>' + '<span class="run-count" id="rcbadge-' + id + '">✦0</span>' + '<span class="hint">Ctrl+Enter Run · Ctrl+/ Comment · Alt+Shift+F Format</span>' + '</div>' + '<div class="tl-right">' + '<div class="font-size-ctrl">' + '<button class="fs-btn" onclick="setFontSize(' + id + ',-1)">A−</button>' + '<span class="fs-display" id="fsize-' + id + '">' + fontSize + 'px</span>' + '<button class="fs-btn" onclick="setFontSize(' + id + ',+1)">A+</button>' + '</div>' + '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format">✦ Fmt</button>' + '<button class="copy-btn" id="copybtn-' + id + '" onclick="copyCell(' + id + ')" title="Copy">⎘ Copy</button>' + '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ Run</button>' + '<button class="stop-btn" id="stopbtn-' + id + '" onclick="stopCell(' + id + ')" title="Stop">■ Stop</button>' + '<div class="move-btns"><button class="move-btn" title="Move up" onclick="moveCell(' + id + ',-1)">▲</button><button class="move-btn" title="Move down" onclick="moveCell(' + id + ',1)">▼</button></div>' + '<button class="collapse-btn" id="collbtn-' + id + '" onclick="toggleCollapseCell(' + id + ')" title="Collapse">▾ Min</button>' + '<button class="icon-btn" title="Delete" onclick="deleteCell(' + id + ')">⊗</button>' + '</div></div>' +
+                '<div class="cell-toolbar">' + '<div class="tl-left">' + '<span class="cell-num" id="cnum-' + id + '">[01]</span>' + '<div class="lang-toggle">' + '<button class="lang-btn ' + (lang === 'javascript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'javascript\')">JS</button>' + '<button class="lang-btn ' + (lang === 'typescript' ? 'active' : '') + '" onclick="setLang(' + id + ',\'typescript\')">TS</button>' + '</div>' + '<span class="line-count-badge" id="lcbadge-' + id + '">0 L</span>' + '<span class="run-count" id="rcbadge-' + id + '">✦0</span>' + '<span class="hint">Ctrl+Enter Run · Ctrl+/ Comment · Alt+Shift+F Format</span>' + '</div>' + '<div class="tl-right">' + '<div class="font-size-ctrl">' + '<button class="fs-btn" onclick="setFontSize(' + id + ',-1)">A−</button>' + '<span class="fs-display" id="fsize-' + id + '">' + fontSize + 'px</span>' + '<button class="fs-btn" onclick="setFontSize(' + id + ',+1)">A+</button>' + '</div>' + '<button class="format-btn" id="fmtbtn-' + id + '" onclick="formatCell(' + id + ')" title="Format">✦ Fmt</button>' + '<button class="copy-btn" id="copybtn-' + id + '" onclick="copyCell(' + id + ')" title="Copy">⎘ Copy</button>' + '<button class="run-btn" id="runbtn-' + id + '" onclick="runCell(' + id + ')">▶ Run</button>' + '<button class="stop-btn" id="stopbtn-' + id + '" onclick="stopCell(' + id + ')" title="Stop">■ Stop</button>' + '<div class="imp-wrap" id="impwrap-' + id + '"><button class="important-btn" id="impbtn-' + id + '" onclick="toggleImpPicker(' + id + ',event)" title="Mark as important">★ Important</button><div class="imp-picker" id="imppicker-' + id + '"><div class="imp-picker-label">Mark for review</div><button class="imp-option io-high" onclick="setImportance(' + id + ',\'high\')"><span class="imp-dot"></span> High — must revise</button><button class="imp-option io-medium" onclick="setImportance(' + id + ',\'medium\')"><span class="imp-dot"></span> Medium — revisit</button><button class="imp-option io-low" onclick="setImportance(' + id + ',\'low\')"><span class="imp-dot"></span> Low — glance later</button><button class="imp-option io-none" onclick="setImportance(' + id + ',\'none\')"><span class="imp-dot"></span> Clear flag</button></div></div>' + '<span class="imp-label-badge" id="implabel-' + id + '"></span>' + '<div class="move-btns"><button class="move-btn" title="Move up" onclick="moveCell(' + id + ',-1)">▲</button><button class="move-btn" title="Move down" onclick="moveCell(' + id + ',1)">▼</button></div>' + '<button class="collapse-btn" id="collbtn-' + id + '" onclick="toggleCollapseCell(' + id + ')" title="Collapse">▾ Min</button>' + '<button class="icon-btn" title="Delete" onclick="deleteCell(' + id + ')">⊗</button>' + '</div></div>' +
                 '<div class="cell-editor-wrap" id="edwrap-' + id + '"></div>' +
                 '<div class="cell-output" id="output-' + id + '" style="display:none"><div class="out-header" style="display:flex;align-items:center;justify-content:space-between"><span>Output<span class="out-async-badge" id="oasync-' + id + '" style="display:none">ASYNC</span><span class="out-time" id="otime-' + id + '"></span></span><span style="display:flex;gap:2px"><button class="copy-out-btn" onclick="copyOutput(' + id + ')" title="Copy output">⎘</button><button class="clear-out-btn" onclick="clearOutput(' + id + ')" title="Clear output">✕ Clear</button></span></div><div class="out-content" id="ocontent-' + id + '"></div></div>';
             document.getElementById('cells-container').appendChild(div);
@@ -4140,7 +4400,9 @@
             editor.on('change', () => { triggerAutoSave(); updateLineCount(id); });
             cellEditors[id] = editor;
             if (savedOutput && savedOutput.lines) showOutput(id, savedOutput.lines, savedOutput.hasError, savedOutput.time, savedOutput.isAsync);
-            updateCellCount(); return id;
+            cellImportance[id] = savedImportance || 'none';
+            if (savedImportance && savedImportance !== 'none') setTimeout(() => applyImportanceToCell(id, savedImportance), 0);
+            updateCellCount(); updateReviewCount(); return id;
         }
 
         function setDescMode(cellId, mode) {
@@ -4246,7 +4508,7 @@
         function triggerAutoSave() { document.getElementById('save-dot').classList.remove('saved'); document.getElementById('save-text').textContent = 'Writing…'; document.getElementById('save-bar').classList.add('visible'); clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(saveAll, 2500); }
         async function saveAll() {
             const title = document.getElementById('nb-title').value.trim() || 'UNTITLED_NOTEBOOK';
-            const cellsData = cells.map(c => { const editor = cellEditors[c.id]; const descEl = document.getElementById('desc-' + c.id); return { lang: c.lang, code: editor ? editor.getValue() : '', description: descEl ? descEl.value : c.description || '', output: c.lastOutput || null, linkedQuestionId: c.linkedQuestionId || null, fontSizeIdx: cellFontSizeIdx[c.id] !== undefined ? cellFontSizeIdx[c.id] : DEFAULT_FONT_IDX, descMode: cellDescMode[c.id] || 'edit' }; });
+            const cellsData = cells.map(c => { const editor = cellEditors[c.id]; const descEl = document.getElementById('desc-' + c.id); return { lang: c.lang, code: editor ? editor.getValue() : '', description: descEl ? descEl.value : c.description || '', output: c.lastOutput || null, linkedQuestionId: c.linkedQuestionId || null, fontSizeIdx: cellFontSizeIdx[c.id] !== undefined ? cellFontSizeIdx[c.id] : DEFAULT_FONT_IDX, descMode: cellDescMode[c.id] || 'edit', importance: c.importance || 'none' }; });
             localStorage.setItem('current_notebook', JSON.stringify({ title, cells: cellsData, updatedAt: Date.now() })); persistDSA();
             const bar = document.getElementById('save-bar'), dot = document.getElementById('save-dot'), txt = document.getElementById('save-text');
             if (!db) { dot.classList.add('saved'); txt.textContent = 'Saved locally'; document.getElementById('last-saved').textContent = 'Saved locally'; setTimeout(() => bar.classList.remove('visible'), 2500); return; }
@@ -4280,7 +4542,7 @@
             refreshAllDSAUI(); pickDiff('medium');
             currentNotebookId = loadNotebookId();
             let loadedFromLocal = false;
-            try { const local = JSON.parse(localStorage.getItem('current_notebook') || 'null'); if (local && local.cells && local.cells.length > 0) { document.getElementById('nb-title').value = local.title || 'UNTITLED_NOTEBOOK'; local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode)); if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…'; loadedFromLocal = true; } } catch (e) { }
+            try { const local = JSON.parse(localStorage.getItem('current_notebook') || 'null'); if (local && local.cells && local.cells.length > 0) { document.getElementById('nb-title').value = local.title || 'UNTITLED_NOTEBOOK'; local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance)); if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…'; loadedFromLocal = true; } } catch (e) { }
             if (!loadedFromLocal) addCell('javascript');
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
             if (fc.apiKey && fc.projectId) { ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => { const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || ''; }); (async () => { try { try { await firebase.app().delete(); } catch (e) { } firebase.initializeApp(fc); db = firebase.firestore(); await db.collection('notebooks').limit(1).get(); setFirebaseStatus(true); loadNotebooksList(); try { const doc = await db.collection('dsa').doc('questions').get(); if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) { dsaQuestions = doc.data().questions; dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; }); localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id)); } } catch (e) { console.warn('DSA sync err', e); } } catch (e) { console.warn('Firebase auto-connect failed:', e); } })(); }
@@ -4301,6 +4563,115 @@
         async function copyOutput(cellId) { const content = document.getElementById('ocontent-' + cellId); if (!content) return; const text = [...content.querySelectorAll('div')].map(d => d.textContent).join('\n'); try { await navigator.clipboard.writeText(text); } catch (e) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showToast('Output copied', 'success'); }
         async function runAllCells() { showToast('▶▶ Running all cells…', 'success'); for (const cell of cells) { await runCell(cell.id); await new Promise(r => setTimeout(r, 80)); } showToast('✓ All cells executed', 'success'); }
         function exportNotebook() { const title = (document.getElementById('nb-title').value || 'notebook').replace(/[^a-z0-9_-]/gi, '_'); const lines = []; lines.push('// ═══════════════════════════════════════════'); lines.push('// CodeBook Export: ' + document.getElementById('nb-title').value); lines.push('// Exported: ' + new Date().toLocaleString()); lines.push('// ═══════════════════════════════════════════'); cells.forEach((cell, i) => { const editor = cellEditors[cell.id]; const descEl = document.getElementById('desc-' + cell.id); const code = editor ? editor.getValue() : ''; const desc = descEl ? descEl.value.trim() : ''; lines.push('\n'); lines.push('// ─── Cell [' + String(i + 1).padStart(2, '0') + '] — ' + cell.lang.toUpperCase() + (cell.linkedQuestionId ? ' · DSA: ' + (dsaQuestions.find(q => q.id === cell.linkedQuestionId) || {}).title || '' : '') + ' ───'); if (desc) desc.split('\n').forEach(l => lines.push('// ' + l)); lines.push(code); }); const blob = new Blob([lines.join('\n')], { type: 'text/javascript' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = title + '.js'; a.click(); URL.revokeObjectURL(a.href); showToast('⬇ Exported as ' + title + '.js', 'success'); }
+
+        /* ══════════════════════════════════════
+           IMPORTANCE / REVIEW SYSTEM
+           ══════════════════════════════════════ */
+        let cellImportance = {}; // cellId → 'high' | 'medium' | 'low' | 'none'
+        let reviewModeActive = false;
+
+        const IMP_LABELS = { high: '★ High', medium: '◆ Medium', low: '◇ Low', none: '' };
+        const IMP_BTN_LABELS = { high: '★ High', medium: '◆ Medium', low: '◇ Low', none: '★ Important' };
+
+        function toggleImpPicker(cellId, e) {
+            e.stopPropagation();
+            // close all other pickers first
+            document.querySelectorAll('.imp-picker.open').forEach(p => {
+                if (p.id !== 'imppicker-' + cellId) p.classList.remove('open');
+            });
+            const picker = document.getElementById('imppicker-' + cellId);
+            if (!picker) return;
+            picker.classList.toggle('open');
+            // mark active option
+            const cur = cellImportance[cellId] || 'none';
+            picker.querySelectorAll('.imp-option').forEach(btn => {
+                const level = btn.classList.contains('io-high') ? 'high' : btn.classList.contains('io-medium') ? 'medium' : btn.classList.contains('io-low') ? 'low' : 'none';
+                btn.classList.toggle('io-active', level === cur);
+            });
+        }
+
+        function setImportance(cellId, level) {
+            cellImportance[cellId] = level;
+            const cell = cells.find(c => c.id === cellId); if (!cell) return;
+            cell.importance = level;
+
+            // update cell classes
+            const el = document.getElementById('cell-' + cellId);
+            if (el) {
+                el.classList.remove('important-high', 'important-medium', 'important-low');
+                if (level !== 'none') el.classList.add('important-' + level);
+            }
+
+            // update button appearance
+            const btn = document.getElementById('impbtn-' + cellId);
+            if (btn) {
+                btn.className = 'important-btn' + (level !== 'none' ? ' flagged-' + level : '');
+                btn.textContent = IMP_BTN_LABELS[level] || '★ Important';
+            }
+
+            // update badge label
+            const badge = document.getElementById('implabel-' + cellId);
+            if (badge) badge.textContent = IMP_LABELS[level] || '';
+
+            // close picker
+            const picker = document.getElementById('imppicker-' + cellId);
+            if (picker) picker.classList.remove('open');
+
+            // refresh review mode if active
+            if (reviewModeActive) applyReviewFilter();
+            updateReviewCount();
+            triggerAutoSave();
+
+            const msgs = { high: '★ Marked High — must revise', medium: '◆ Marked Medium — revisit', low: '◇ Marked Low — glance later', none: 'Flag cleared' };
+            showToast(msgs[level] || '', level === 'none' ? '' : 'success');
+        }
+
+        function applyImportanceToCell(cellId, level) {
+            // Called on load to restore saved importance
+            if (!level || level === 'none') return;
+            const el = document.getElementById('cell-' + cellId); if (!el) return;
+            el.classList.remove('important-high', 'important-medium', 'important-low');
+            el.classList.add('important-' + level);
+            const btn = document.getElementById('impbtn-' + cellId);
+            if (btn) { btn.className = 'important-btn flagged-' + level; btn.textContent = IMP_BTN_LABELS[level]; }
+            const badge = document.getElementById('implabel-' + cellId);
+            if (badge) badge.textContent = IMP_LABELS[level] || '';
+        }
+
+        function updateReviewCount() {
+            const flagged = cells.filter(c => c.importance && c.importance !== 'none').length;
+            const countEl = document.getElementById('review-count');
+            if (countEl) {
+                if (flagged > 0) { countEl.style.display = 'inline'; countEl.textContent = flagged + ' flagged'; }
+                else { countEl.style.display = 'none'; }
+            }
+        }
+
+        function applyReviewFilter() {
+            cells.forEach(c => {
+                const el = document.getElementById('cell-' + c.id); if (!el) return;
+                const flagged = c.importance && c.importance !== 'none';
+                if (reviewModeActive) { el.classList.toggle('search-hidden', !flagged); }
+                else { el.classList.remove('search-hidden'); }
+            });
+        }
+
+        function toggleReviewFilter() {
+            reviewModeActive = !reviewModeActive;
+            const btn = document.getElementById('review-filter-btn');
+            if (btn) btn.classList.toggle('active', reviewModeActive);
+            applyReviewFilter();
+            const flagged = cells.filter(c => c.importance && c.importance !== 'none').length;
+            if (reviewModeActive) showToast('★ Review mode — showing ' + flagged + ' flagged cell' + (flagged !== 1 ? 's' : ''), 'success');
+            else showToast('Review mode off', '');
+        }
+
+        // Close importance pickers when clicking outside
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.imp-wrap')) {
+                document.querySelectorAll('.imp-picker.open').forEach(p => p.classList.remove('open'));
+            }
+        });
 
         let focusCellIdx = 0, focusMirrors = {};
         function toggleFocusMode() { const overlay = document.getElementById('focus-overlay'); if (overlay.classList.contains('active')) { exitFocusMode(); } else { const activeCells = cells.filter(c => !document.getElementById('cell-' + c.id)?.classList.contains('search-hidden')); if (activeCells.length === 0) { showToast('No cells to focus', 'warn'); return; } let startIdx = 0; activeCells.forEach((c, i) => { if (document.getElementById('cell-' + c.id)?.classList.contains('focused')) startIdx = i; }); focusCellIdx = startIdx; enterFocusMode(); } }
