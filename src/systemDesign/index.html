@@ -610,6 +610,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         .tab-pane {
@@ -617,10 +618,12 @@
             overflow-y: auto;
             padding: 20px;
             display: none;
+            min-height: 0;
         }
 
         .tab-pane.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         .tab-pane::-webkit-scrollbar {
@@ -641,7 +644,8 @@
             font-size: 13px;
             line-height: 1.8;
             color: #c5d0e0;
-            min-height: 150px;
+            flex: 1;
+            min-height: 200px;
             white-space: pre-wrap;
             font-family: var(--font-ui);
             outline: none;
@@ -744,10 +748,15 @@
         /* ─── CODE EDITOR PANE ─── */
         .code-pane {
             flex: 1;
-            display: flex;
+            display: none;
             flex-direction: column;
             overflow: hidden;
             padding: 0 !important;
+            min-height: 0;
+        }
+
+        .code-pane.active {
+            display: flex !important;
         }
 
         .code-toolbar {
@@ -1518,162 +1527,163 @@
 
     <div class="toast-stack" id="toasts"></div>
 
-    <script type="module">
-        // ══════════════════════════════════════════════
-        //  STATE
-        // ══════════════════════════════════════════════
-        let questions = JSON.parse(localStorage.getItem('sdp_q') || '[]');
-        let selectedId = null;
-        let editId = null;
-        let activeTab = 'answer';
-        let filterDiff = '';
-        let filterAnswered = false;
-        let filterCat = '';
-        let db = null, firestoreDoc = null, firestoreSet = null,
-            firestoreGet = null, firestoreDel = null, firestoreCollection = null;
-        const COL = 'sdp_questions';
+    <script>
+        (async function () {
+            // ══════════════════════════════════════════════
+            //  STATE
+            // ══════════════════════════════════════════════
+            let questions = JSON.parse(localStorage.getItem('sdp_q') || '[]');
+            let selectedId = null;
+            let editId = null;
+            let activeTab = 'answer';
+            let filterDiff = '';
+            let filterAnswered = false;
+            let filterCat = '';
+            let db = null, firestoreDoc = null, firestoreSet = null,
+                firestoreGet = null, firestoreDel = null, firestoreCollection = null;
+            const COL = 'sdp_questions';
 
-        // ── CodeMirror instances ──
-        let cmCode = null, cmPG = null;
-        let currentLang = 'jsx', pgLang = 'jsx';
+            // ── CodeMirror instances ──
+            let cmCode = null, cmPG = null;
+            let currentLang = 'jsx', pgLang = 'jsx';
 
-        // ══════════════════════════════════════════════
-        //  INIT
-        // ══════════════════════════════════════════════
-        window.addEventListener('DOMContentLoaded', async () => {
-            initEditors();
-            initResizers();
-            renderCatFilters();
-            renderAll();
+            // ══════════════════════════════════════════════
+            //  INIT
+            // ══════════════════════════════════════════════
+            window.addEventListener('DOMContentLoaded', async () => {
+                initEditors();
+                initResizers();
+                renderCatFilters();
+                renderAll();
 
-            // Auto-reconnect Firebase
-            const saved = localStorage.getItem('fbcfg');
-            if (saved) {
-                document.getElementById('fbConfigTxt').value = saved;
-                try { await fbConnectSilent(saved); } catch (e) { console.log('FB auto-reconnect:', e.message); }
+                // Auto-reconnect Firebase
+                const saved = localStorage.getItem('fbcfg');
+                if (saved) {
+                    document.getElementById('fbConfigTxt').value = saved;
+                    try { await fbConnectSilent(saved); } catch (e) { console.log('FB auto-reconnect:', e.message); }
+                }
+
+                // Seed if empty
+                if (!questions.length) {
+                    questions = [
+                        { id: 's1', question: 'How would you design a URL shortener at scale?', category: 'Scalability', difficulty: 'Medium', answer: 'Use a hash function (e.g. MD5, base62 encoding) to generate short codes. Store mappings in a distributed KV store (Redis + Cassandra). Use CDN for redirect latency. Handle collisions with retry or counter-based IDs.', concepts: ['Hashing', 'Base62', 'Redis', 'CDN', 'Cassandra'], tags: ['design', 'urls', 'caching'], notes: '', code: { jsx: getDefaultCode('jsx'), js: '', html: '' }, createdAt: Date.now() },
+                        { id: 's2', question: 'Design a rate limiter for an API gateway', category: 'API Design', difficulty: 'Medium', answer: 'Implement token bucket or sliding window counter. Use Redis atomic operations (INCR + EXPIRE) for distributed counting. Return 429 with Retry-After header on limit breach.', concepts: ['Token Bucket', 'Sliding Window', 'Redis INCR', '429 Response'], tags: ['api', 'rate-limit'], notes: '', code: { jsx: '', js: '', html: '' }, createdAt: Date.now() },
+                        { id: 's3', question: 'How to design a virtualized list component in React?', category: 'Frontend', difficulty: 'Hard', answer: 'Render only visible rows using a scrollable container. Track scrollTop to calculate visible window. Use absolute positioning for rows inside a full-height inner div. Libraries: react-window, react-virtual.', concepts: ['Virtualization', 'react-window', 'scrollTop', 'DOM Recycling'], tags: ['react', 'performance', 'frontend'], notes: '', code: { jsx: getVirtualListCode(), js: '', html: '' }, createdAt: Date.now() }
+                    ];
+                    localStorage.setItem('sdp_q', JSON.stringify(questions));
+                }
+                renderAll();
+            });
+
+            // ══════════════════════════════════════════════
+            //  EDITORS INIT
+            // ══════════════════════════════════════════════
+            function initEditors() {
+                const opts = {
+                    theme: 'dracula', lineNumbers: true, matchBrackets: true,
+                    autoCloseBrackets: true, indentUnit: 2, tabSize: 2,
+                    indentWithTabs: false, mode: 'text/jsx',
+                    extraKeys: { 'Ctrl-Enter': () => runCode(), 'Cmd-Enter': () => runCode() }
+                };
+                cmCode = CodeMirror.fromTextArea(document.getElementById('codeEditor'), opts);
+                cmPG = CodeMirror.fromTextArea(document.getElementById('pgEditor'), {
+                    ...opts,
+                    extraKeys: { 'Ctrl-Enter': () => runPG(), 'Cmd-Enter': () => runPG() }
+                });
+                cmPG.setValue(getDefaultCode('jsx'));
+
+                // Make CM fill container
+                [cmCode, cmPG].forEach(cm => {
+                    cm.getWrapperElement().style.height = '100%';
+                    cm.refresh();
+                });
             }
 
-            // Seed if empty
-            if (!questions.length) {
-                questions = [
-                    { id: 's1', question: 'How would you design a URL shortener at scale?', category: 'Scalability', difficulty: 'Medium', answer: 'Use a hash function (e.g. MD5, base62 encoding) to generate short codes. Store mappings in a distributed KV store (Redis + Cassandra). Use CDN for redirect latency. Handle collisions with retry or counter-based IDs.', concepts: ['Hashing', 'Base62', 'Redis', 'CDN', 'Cassandra'], tags: ['design', 'urls', 'caching'], notes: '', code: { jsx: getDefaultCode('jsx'), js: '', html: '' }, createdAt: Date.now() },
-                    { id: 's2', question: 'Design a rate limiter for an API gateway', category: 'API Design', difficulty: 'Medium', answer: 'Implement token bucket or sliding window counter. Use Redis atomic operations (INCR + EXPIRE) for distributed counting. Return 429 with Retry-After header on limit breach.', concepts: ['Token Bucket', 'Sliding Window', 'Redis INCR', '429 Response'], tags: ['api', 'rate-limit'], notes: '', code: { jsx: '', js: '', html: '' }, createdAt: Date.now() },
-                    { id: 's3', question: 'How to design a virtualized list component in React?', category: 'Frontend', difficulty: 'Hard', answer: 'Render only visible rows using a scrollable container. Track scrollTop to calculate visible window. Use absolute positioning for rows inside a full-height inner div. Libraries: react-window, react-virtual.', concepts: ['Virtualization', 'react-window', 'scrollTop', 'DOM Recycling'], tags: ['react', 'performance', 'frontend'], notes: '', code: { jsx: getVirtualListCode(), js: '', html: '' }, createdAt: Date.now() }
-                ];
-                localStorage.setItem('sdp_q', JSON.stringify(questions));
+            // ══════════════════════════════════════════════
+            //  RESIZERS
+            // ══════════════════════════════════════════════
+            function initResizers() {
+                makeResizer(document.getElementById('resizer'), document.getElementById('leftPanel'), 'horizontal', 180, 420);
+                makeResizer(document.getElementById('codeResizer'), document.querySelector('#tab-code .editor-wrap'), 'horizontal', 200, 900);
+                makeResizer(document.getElementById('pgResizer'), document.querySelector('#playgroundView .editor-wrap'), 'horizontal', 200, 900);
             }
-            renderAll();
-        });
 
-        // ══════════════════════════════════════════════
-        //  EDITORS INIT
-        // ══════════════════════════════════════════════
-        function initEditors() {
-            const opts = {
-                theme: 'dracula', lineNumbers: true, matchBrackets: true,
-                autoCloseBrackets: true, indentUnit: 2, tabSize: 2,
-                indentWithTabs: false, mode: 'text/jsx',
-                extraKeys: { 'Ctrl-Enter': () => runCode(), 'Cmd-Enter': () => runCode() }
+            function makeResizer(el, target, dir, min, max) {
+                if (!el || !target) return;
+                let dragging = false, startX, startW;
+                el.addEventListener('mousedown', e => {
+                    dragging = true; startX = e.clientX; startW = target.offsetWidth;
+                    document.body.style.userSelect = 'none';
+                    document.body.style.cursor = 'col-resize';
+                });
+                document.addEventListener('mousemove', e => {
+                    if (!dragging) return;
+                    const w = Math.max(min, Math.min(max, startW + e.clientX - startX));
+                    target.style.width = w + 'px'; target.style.flex = 'none';
+                    [cmCode, cmPG].forEach(cm => cm && cm.refresh());
+                });
+                document.addEventListener('mouseup', () => {
+                    if (!dragging) return; dragging = false;
+                    document.body.style.userSelect = ''; document.body.style.cursor = '';
+                });
+            }
+
+            // ══════════════════════════════════════════════
+            //  VIEWS
+            // ══════════════════════════════════════════════
+            window.setView = function (v, el) {
+                document.querySelectorAll('.topbar-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                const board = document.getElementById('boardView');
+                const pg = document.getElementById('playgroundView');
+                if (v === 'board') { board.style.display = 'flex'; pg.style.display = 'none'; }
+                else { board.style.display = 'none'; pg.style.display = 'flex'; setTimeout(() => { cmPG.refresh(); }, 50); }
             };
-            cmCode = CodeMirror.fromTextArea(document.getElementById('codeEditor'), opts);
-            cmPG = CodeMirror.fromTextArea(document.getElementById('pgEditor'), {
-                ...opts,
-                extraKeys: { 'Ctrl-Enter': () => runPG(), 'Cmd-Enter': () => runPG() }
-            });
-            cmPG.setValue(getDefaultCode('jsx'));
 
-            // Make CM fill container
-            [cmCode, cmPG].forEach(cm => {
-                cm.getWrapperElement().style.height = '100%';
-                cm.refresh();
-            });
-        }
+            // ══════════════════════════════════════════════
+            //  RENDER
+            // ══════════════════════════════════════════════
+            function renderAll() { renderStats(); renderCatFilters(); renderList(); }
 
-        // ══════════════════════════════════════════════
-        //  RESIZERS
-        // ══════════════════════════════════════════════
-        function initResizers() {
-            makeResizer(document.getElementById('resizer'), document.getElementById('leftPanel'), 'horizontal', 180, 420);
-            makeResizer(document.getElementById('codeResizer'), document.querySelector('#tab-code .editor-wrap'), 'horizontal', 200, 900);
-            makeResizer(document.getElementById('pgResizer'), document.querySelector('#playgroundView .editor-wrap'), 'horizontal', 200, 900);
-        }
-
-        function makeResizer(el, target, dir, min, max) {
-            if (!el || !target) return;
-            let dragging = false, startX, startW;
-            el.addEventListener('mousedown', e => {
-                dragging = true; startX = e.clientX; startW = target.offsetWidth;
-                document.body.style.userSelect = 'none';
-                document.body.style.cursor = 'col-resize';
-            });
-            document.addEventListener('mousemove', e => {
-                if (!dragging) return;
-                const w = Math.max(min, Math.min(max, startW + e.clientX - startX));
-                target.style.width = w + 'px'; target.style.flex = 'none';
-                [cmCode, cmPG].forEach(cm => cm && cm.refresh());
-            });
-            document.addEventListener('mouseup', () => {
-                if (!dragging) return; dragging = false;
-                document.body.style.userSelect = ''; document.body.style.cursor = '';
-            });
-        }
-
-        // ══════════════════════════════════════════════
-        //  VIEWS
-        // ══════════════════════════════════════════════
-        window.setView = function (v, el) {
-            document.querySelectorAll('.topbar-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            const board = document.getElementById('boardView');
-            const pg = document.getElementById('playgroundView');
-            if (v === 'board') { board.style.display = 'flex'; pg.style.display = 'none'; }
-            else { board.style.display = 'none'; pg.style.display = 'flex'; setTimeout(() => { cmPG.refresh(); }, 50); }
-        };
-
-        // ══════════════════════════════════════════════
-        //  RENDER
-        // ══════════════════════════════════════════════
-        function renderAll() { renderStats(); renderCatFilters(); renderList(); }
-
-        function renderStats() {
-            const t = questions.length;
-            const a = questions.filter(q => q.answer).length;
-            const c = [...new Set(questions.flatMap(q => q.concepts || []))].length;
-            const pct = t ? Math.round(a / t * 100) : 0;
-            document.getElementById('sTotal').textContent = t;
-            document.getElementById('sAnswered').textContent = a;
-            document.getElementById('sConcepts').textContent = c;
-            document.getElementById('sRate').textContent = pct + '%';
-        }
-
-        function renderCatFilters() {
-            const cats = [...new Set(questions.map(q => q.category))].sort();
-            const wrap = document.getElementById('catFilters');
-            wrap.innerHTML = `<div class="chip ${filterCat === '' ? 'on-cyan' : ''}" onclick="setCat('',this)">All</div>` +
-                cats.map(c => `<div class="chip ${filterCat === c ? 'on-cyan' : ''}" onclick="setCat('${c}',this)">${c}</div>`).join('');
-        }
-
-        function renderList() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = questions.filter(q => {
-                if (filterDiff && q.difficulty !== filterDiff) return false;
-                if (filterAnswered && !q.answer) return false;
-                if (filterCat && q.category !== filterCat) return false;
-                if (search && !q.question.toLowerCase().includes(search) &&
-                    !(q.answer || '').toLowerCase().includes(search) &&
-                    !(q.concepts || []).some(c => c.toLowerCase().includes(search))) return false;
-                return true;
-            });
-
-            document.getElementById('countLabel').textContent = filtered.length;
-            const list = document.getElementById('qList');
-
-            if (!filtered.length) {
-                list.innerHTML = '<div class="empty-list"><div class="e-icon">🔍</div><div>No results</div></div>';
-                return;
+            function renderStats() {
+                const t = questions.length;
+                const a = questions.filter(q => q.answer).length;
+                const c = [...new Set(questions.flatMap(q => q.concepts || []))].length;
+                const pct = t ? Math.round(a / t * 100) : 0;
+                document.getElementById('sTotal').textContent = t;
+                document.getElementById('sAnswered').textContent = a;
+                document.getElementById('sConcepts').textContent = c;
+                document.getElementById('sRate').textContent = pct + '%';
             }
 
-            list.innerHTML = filtered.map(q => `
+            function renderCatFilters() {
+                const cats = [...new Set(questions.map(q => q.category))].sort();
+                const wrap = document.getElementById('catFilters');
+                wrap.innerHTML = `<div class="chip ${filterCat === '' ? 'on-cyan' : ''}" onclick="setCat('',this)">All</div>` +
+                    cats.map(c => `<div class="chip ${filterCat === c ? 'on-cyan' : ''}" onclick="setCat('${c}',this)">${c}</div>`).join('');
+            }
+
+            function renderList() {
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                const filtered = questions.filter(q => {
+                    if (filterDiff && q.difficulty !== filterDiff) return false;
+                    if (filterAnswered && !q.answer) return false;
+                    if (filterCat && q.category !== filterCat) return false;
+                    if (search && !q.question.toLowerCase().includes(search) &&
+                        !(q.answer || '').toLowerCase().includes(search) &&
+                        !(q.concepts || []).some(c => c.toLowerCase().includes(search))) return false;
+                    return true;
+                });
+
+                document.getElementById('countLabel').textContent = filtered.length;
+                const list = document.getElementById('qList');
+
+                if (!filtered.length) {
+                    list.innerHTML = '<div class="empty-list"><div class="e-icon">🔍</div><div>No results</div></div>';
+                    return;
+                }
+
+                list.innerHTML = filtered.map(q => `
     <div class="q-item ${q.id === selectedId ? 'active' : ''}" onclick="selectQ('${q.id}')">
       ${q.answer ? '<div class="q-item-answered"></div>' : ''}
       <div class="q-item-title">${q.question}</div>
@@ -1684,24 +1694,24 @@
       </div>
     </div>
   `).join('');
-        }
+            }
 
-        // ══════════════════════════════════════════════
-        //  SELECT / DETAIL
-        // ══════════════════════════════════════════════
-        window.selectQ = function (id) {
-            selectedId = id;
-            const q = questions.find(x => x.id === id);
-            if (!q) return;
-            renderList();
+            // ══════════════════════════════════════════════
+            //  SELECT / DETAIL
+            // ══════════════════════════════════════════════
+            window.selectQ = function (id) {
+                selectedId = id;
+                const q = questions.find(x => x.id === id);
+                if (!q) return;
+                renderList();
 
-            document.getElementById('noSelect').style.display = 'none';
-            document.getElementById('detailView').style.display = 'flex';
+                document.getElementById('noSelect').style.display = 'none';
+                document.getElementById('detailView').style.display = 'flex';
 
-            document.getElementById('detailTitle').textContent = q.question;
+                document.getElementById('detailTitle').textContent = q.question;
 
-            const meta = document.getElementById('detailMeta');
-            meta.innerHTML = `
+                const meta = document.getElementById('detailMeta');
+                meta.innerHTML = `
     <span class="badge badge-cat" style="font-size:11px;padding:4px 10px">${q.category}</span>
     <span class="badge badge-${q.difficulty.toLowerCase()}" style="font-size:11px;padding:4px 10px">${q.difficulty}</span>
     ${q.answer ? '<span class="badge badge-done" style="font-size:11px;padding:4px 10px">✓ Answered</span>' : ''}
@@ -1711,472 +1721,489 @@
     </div>
   `;
 
-            // Fill tabs
-            document.getElementById('answerEditor').value = q.answer || '';
-            document.getElementById('notesEditor').value = q.notes || '';
+                // Fill tabs
+                document.getElementById('answerEditor').value = q.answer || '';
+                document.getElementById('notesEditor').value = q.notes || '';
 
-            // Load code for current lang
-            loadCodeForLang(q, currentLang);
+                // Load code for current lang
+                loadCodeForLang(q, currentLang);
 
-            renderConceptsTags(q);
-            setTimeout(() => { cmCode.refresh(); }, 50);
-        };
+                renderConceptsTags(q);
+                setTimeout(() => { cmCode.refresh(); }, 50);
+            };
 
-        function loadCodeForLang(q, lang) {
-            const code = (q.code && q.code[lang]) || (lang === 'jsx' ? getDefaultCode('jsx') : '');
-            cmCode.setValue(code);
-        }
-
-        // ══════════════════════════════════════════════
-        //  TABS
-        // ══════════════════════════════════════════════
-        window.switchTab = function (tab, el) {
-            activeTab = tab;
-            document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-            if (tab === 'code') setTimeout(() => cmCode.refresh(), 50);
-        };
-
-        window.switchOutput = function (which, el) {
-            document.querySelectorAll('#tab-code .out-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('previewFrame').style.display = which === 'preview' ? 'block' : 'none';
-            document.getElementById('consoleOutput').style.display = which === 'console' ? 'block' : 'none';
-        };
-
-        window.switchPGOutput = function (which, el) {
-            document.querySelectorAll('#playgroundView .out-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('pgFrame').style.display = which === 'preview' ? 'block' : 'none';
-            document.getElementById('pgConsole').style.display = which === 'console' ? 'block' : 'none';
-        };
-
-        // ══════════════════════════════════════════════
-        //  LANGUAGE SWITCH
-        // ══════════════════════════════════════════════
-        window.setLang = function (lang, el) {
-            // Save current code first
-            const q = questions.find(x => x.id === selectedId);
-            if (q) {
-                if (!q.code) q.code = {};
-                q.code[currentLang] = cmCode.getValue();
-                save();
-            }
-            currentLang = lang;
-            document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            const labels = { jsx: '⚛ React JSX', js: 'JavaScript', html: 'HTML' };
-            document.getElementById('editorLangLabel').textContent = labels[lang];
-            const cm = { javascript: 'text/javascript', jsx: 'text/jsx', html: 'text/html' };
-            cmCode.setOption('mode', cm[lang] || 'text/javascript');
-            if (q) loadCodeForLang(q, lang);
-        };
-
-        window.setPGLang = function (lang, el) {
-            pgLang = lang;
-            document.querySelectorAll('#playgroundView .lang-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('pgLangLabel').textContent = lang === 'jsx' ? '⚛ React JSX' : 'JavaScript';
-            cmPG.setOption('mode', lang === 'jsx' ? 'text/jsx' : 'text/javascript');
-        };
-
-        // ══════════════════════════════════════════════
-        //  CODE EXECUTION
-        // ══════════════════════════════════════════════
-        function buildRuntime(code, lang, consoleId, frameId) {
-            const consoleLogs = [];
-            const isReact = lang === 'jsx';
-            const isHTML = lang === 'html';
-
-            if (isHTML) {
-                const frame = document.getElementById(frameId);
-                frame.srcdoc = code;
-                return;
+            function loadCodeForLang(q, lang) {
+                const code = (q.code && q.code[lang]) || (lang === 'jsx' ? getDefaultCode('jsx') : '');
+                cmCode.setValue(code);
             }
 
-            let transpiled = code;
-            if (isReact) {
-                try {
-                    transpiled = Babel.transform(code, { presets: ['react'] }).code;
-                } catch (e) {
-                    appendLog(consoleId, '❌ Babel: ' + e.message, 'error'); return;
+            // ══════════════════════════════════════════════
+            //  TABS
+            // ══════════════════════════════════════════════
+            window.switchTab = function (tab, el) {
+                activeTab = tab;
+                document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                document.getElementById('tab-' + tab).classList.add('active');
+                if (tab === 'code') setTimeout(() => cmCode.refresh(), 50);
+            };
+
+            window.switchOutput = function (which, el) {
+                document.querySelectorAll('#tab-code .out-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                document.getElementById('previewFrame').style.display = which === 'preview' ? 'block' : 'none';
+                document.getElementById('consoleOutput').style.display = which === 'console' ? 'block' : 'none';
+            };
+
+            window.switchPGOutput = function (which, el) {
+                document.querySelectorAll('#playgroundView .out-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                document.getElementById('pgFrame').style.display = which === 'preview' ? 'block' : 'none';
+                document.getElementById('pgConsole').style.display = which === 'console' ? 'block' : 'none';
+            };
+
+            // ══════════════════════════════════════════════
+            //  LANGUAGE SWITCH
+            // ══════════════════════════════════════════════
+            window.setLang = function (lang, el) {
+                // Save current code first
+                const q = questions.find(x => x.id === selectedId);
+                if (q) {
+                    if (!q.code) q.code = {};
+                    q.code[currentLang] = cmCode.getValue();
+                    save();
                 }
-            }
+                currentLang = lang;
+                document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                const labels = { jsx: '⚛ React JSX', js: 'JavaScript', html: 'HTML' };
+                document.getElementById('editorLangLabel').textContent = labels[lang];
+                const cm = { javascript: 'text/javascript', jsx: 'text/jsx', html: 'text/html' };
+                cmCode.setOption('mode', cm[lang] || 'text/javascript');
+                if (q) loadCodeForLang(q, lang);
+            };
 
-            const logs = [];
-            const html = `<!DOCTYPE html>
+            window.setPGLang = function (lang, el) {
+                pgLang = lang;
+                document.querySelectorAll('#playgroundView .lang-tab').forEach(t => t.classList.remove('active'));
+                el.classList.add('active');
+                document.getElementById('pgLangLabel').textContent = lang === 'jsx' ? '⚛ React JSX' : 'JavaScript';
+                cmPG.setOption('mode', lang === 'jsx' ? 'text/jsx' : 'text/javascript');
+            };
+
+            // ══════════════════════════════════════════════
+            //  CODE EXECUTION
+            // ══════════════════════════════════════════════
+            function buildRuntime(code, lang, consoleId, frameId) {
+                if (lang === 'html') {
+                    document.getElementById(frameId).srcdoc = code;
+                    return;
+                }
+
+                // Strip ESM import lines (React is loaded as UMD globals in sandbox)
+                let stripped = code.replace(/^import\s+.*?from\s+['"][^'"]+['"]\s*;?\s*$/gm, '');
+
+                let transpiled = stripped;
+                if (lang === 'jsx') {
+                    try {
+                        transpiled = Babel.transform(stripped, {
+                            presets: ['react'],
+                            plugins: []
+                        }).code;
+                    } catch (e) {
+                        appendLog(consoleId, '❌ Babel: ' + e.message, 'error');
+                        return;
+                    }
+                }
+
+                const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8"/>
   <script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-  <style>body{margin:0;padding:16px;font-family:'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f5;}</style>
+  <style>
+    body { margin:0; padding:16px; font-family:'Segoe UI',sans-serif; background:#0d1117; color:#e2e8f5; }
+    * { box-sizing: border-box; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
   <script>
-    const _logs=[];
-    const origLog = console.log;
-    const origErr = console.error;
-    const origWarn = console.warn;
-    console.log = function(){const s=[...arguments].map(String).join(' ');_logs.push({t:'log',m:s});parent.postMessage({type:'log',msg:s},'*');origLog.apply(console,arguments);};
-    console.error = function(){const s=[...arguments].map(String).join(' ');parent.postMessage({type:'error',msg:s},'*');origErr.apply(console,arguments);};
-    console.warn = function(){const s=[...arguments].map(String).join(' ');parent.postMessage({type:'warn',msg:s},'*');origWarn.apply(console,arguments);};
-    window.onerror = function(m,s,l,c,e){parent.postMessage({type:'error',msg:m},'*');return false;};
-    try{
+    // Expose React hooks as globals so code can use useState, useEffect etc directly
+    const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, createContext } = React;
+
+    // Intercept console
+    const _olog=console.log, _oerr=console.error, _owarn=console.warn;
+    console.log  = function(){ parent.postMessage({type:'log',  msg:[...arguments].map(a=>typeof a==='object'?JSON.stringify(a):String(a)).join(' ')},'*'); _olog.apply(console,arguments); };
+    console.error= function(){ parent.postMessage({type:'error',msg:[...arguments].map(a=>typeof a==='object'?JSON.stringify(a):String(a)).join(' ')},'*'); _oerr.apply(console,arguments); };
+    console.warn = function(){ parent.postMessage({type:'warn', msg:[...arguments].map(a=>typeof a==='object'?JSON.stringify(a):String(a)).join(' ')},'*'); _owarn.apply(console,arguments); };
+    window.onerror = function(m){ parent.postMessage({type:'error',msg:m},'*'); return false; };
+
+    try {
       ${transpiled}
-      ${isReact ? `
-        const rootEl = document.getElementById('root');
-        if(typeof App !== 'undefined'){
-          const root = ReactDOM.createRoot(rootEl);
-          root.render(React.createElement(App));
-          parent.postMessage({type:'result',msg:'React App rendered ✓'},'*');
+      ${lang === 'jsx' ? `
+        if (typeof App !== 'undefined') {
+          ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+          parent.postMessage({type:'result', msg:'✓ React App mounted'},'*');
         } else {
-          rootEl.innerHTML='<p style="color:#ff4466">No <code>App</code> component found. Define <code>function App(){...}</code></p>';
+          document.getElementById('root').innerHTML = '<p style="color:#ff4466;font-family:monospace">Define a function <strong>App()</strong> component to render.</p>';
         }
-      ` : 'parent.postMessage({type:"result",msg:"Script executed ✓"},"*");'}
-    }catch(e){parent.postMessage({type:'error',msg:e.message},'*');}
+      ` : `parent.postMessage({type:'result',msg:'✓ Script executed'},'*');`}
+    } catch(e) {
+      document.getElementById('root').innerHTML = '<pre style="color:#ff4466;font-size:12px;padding:8px">' + e.message + '</pre>';
+      parent.postMessage({type:'error', msg:e.message},'*');
+    }
   <\/script>
 </body>
 </html>`;
 
-            const frame = document.getElementById(frameId);
-            frame.srcdoc = html;
-        }
-
-        window.addEventListener('message', e => {
-            if (!e.data || !e.data.type) return;
-            const active = document.getElementById('consoleOutput').style.display !== 'none' ||
-                document.getElementById('tab-code')?.classList.contains('active');
-            // Route to correct console
-            const codeTabActive = document.getElementById('tab-code')?.classList.contains('active');
-            const id = codeTabActive ? 'consoleOutput' : 'pgConsole';
-            appendLog(id, e.data.msg, e.data.type);
-        });
-
-        function appendLog(id, msg, type) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const line = document.createElement('div');
-            line.className = `console-line ${type}`;
-            const icons = { log: '', error: '❌ ', warn: '⚠ ', result: '→ ', info: 'ℹ ' };
-            line.textContent = (icons[type] || '') + msg;
-            el.appendChild(line);
-            el.scrollTop = el.scrollHeight;
-        }
-
-        window.runCode = function () {
-            // Save code first
-            const q = questions.find(x => x.id === selectedId);
-            if (q) {
-                if (!q.code) q.code = {};
-                q.code[currentLang] = cmCode.getValue();
-                save();
+                document.getElementById(frameId).srcdoc = html;
             }
-            document.getElementById('consoleOutput').innerHTML = '';
-            buildRuntime(cmCode.getValue(), currentLang, 'consoleOutput', 'previewFrame');
-        };
 
-        window.clearOutput = function () {
-            document.getElementById('consoleOutput').innerHTML = '<div class="console-line system">// Console cleared</div>';
-            document.getElementById('previewFrame').srcdoc = '';
-        };
+            window.addEventListener('message', e => {
+                if (!e.data || !e.data.type) return;
+                // Route to whichever console/frame is currently visible
+                const codeTabActive = document.getElementById('tab-code')?.classList.contains('active');
+                const pgVisible = document.getElementById('playgroundView')?.style.display !== 'none';
+                const id = pgVisible ? 'pgConsole' : 'consoleOutput';
+                appendLog(id, e.data.msg, e.data.type);
+            });
 
-        window.runPG = function () {
-            document.getElementById('pgConsole').innerHTML = '';
-            buildRuntime(cmPG.getValue(), pgLang, 'pgConsole', 'pgFrame');
-        };
+            function appendLog(id, msg, type) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const line = document.createElement('div');
+                line.className = `console-line ${type}`;
+                const icons = { log: '', error: '❌ ', warn: '⚠ ', result: '→ ', info: 'ℹ ' };
+                line.textContent = (icons[type] || '') + msg;
+                el.appendChild(line);
+                el.scrollTop = el.scrollHeight;
+            }
 
-        window.clearPG = function () {
-            document.getElementById('pgConsole').innerHTML = '';
-            document.getElementById('pgFrame').srcdoc = '';
-        };
+            window.runCode = function () {
+                // Save code first
+                const q = questions.find(x => x.id === selectedId);
+                if (q) {
+                    if (!q.code) q.code = {};
+                    q.code[currentLang] = cmCode.getValue();
+                    save();
+                }
+                document.getElementById('consoleOutput').innerHTML = '';
+                buildRuntime(cmCode.getValue(), currentLang, 'consoleOutput', 'previewFrame');
+            };
 
-        // ══════════════════════════════════════════════
-        //  SAVE ANSWER / NOTES
-        // ══════════════════════════════════════════════
-        window.saveAnswer = function () {
-            const q = questions.find(x => x.id === selectedId); if (!q) return;
-            q.answer = document.getElementById('answerEditor').value;
-            q.updatedAt = Date.now();
-            save(); renderStats(); renderList();
-            fbSync(q);
-        };
+            window.clearOutput = function () {
+                document.getElementById('consoleOutput').innerHTML = '<div class="console-line system">// Console cleared</div>';
+                document.getElementById('previewFrame').srcdoc = '';
+            };
 
-        window.saveNotes = function () {
-            const q = questions.find(x => x.id === selectedId); if (!q) return;
-            q.notes = document.getElementById('notesEditor').value;
-            save(); fbSync(q);
-        };
+            window.runPG = function () {
+                document.getElementById('pgConsole').innerHTML = '';
+                buildRuntime(cmPG.getValue(), pgLang, 'pgConsole', 'pgFrame');
+            };
 
-        // ══════════════════════════════════════════════
-        //  CONCEPTS & TAGS
-        // ══════════════════════════════════════════════
-        function renderConceptsTags(q) {
-            renderChips('conceptsWrap', q.concepts || [], 'concept', q.id);
-            renderChips('tagsWrap', q.tags || [], 'tag', q.id);
-        }
+            window.clearPG = function () {
+                document.getElementById('pgConsole').innerHTML = '';
+                document.getElementById('pgFrame').srcdoc = '';
+            };
 
-        function renderChips(wrapId, arr, type, qid) {
-            const wrap = document.getElementById(wrapId);
-            wrap.innerHTML = arr.map((t, i) => `
+            // ══════════════════════════════════════════════
+            //  SAVE ANSWER / NOTES
+            // ══════════════════════════════════════════════
+            window.saveAnswer = function () {
+                const q = questions.find(x => x.id === selectedId); if (!q) return;
+                q.answer = document.getElementById('answerEditor').value;
+                q.updatedAt = Date.now();
+                save(); renderStats(); renderList();
+                fbSync(q);
+            };
+
+            window.saveNotes = function () {
+                const q = questions.find(x => x.id === selectedId); if (!q) return;
+                q.notes = document.getElementById('notesEditor').value;
+                save(); fbSync(q);
+            };
+
+            // ══════════════════════════════════════════════
+            //  CONCEPTS & TAGS
+            // ══════════════════════════════════════════════
+            function renderConceptsTags(q) {
+                renderChips('conceptsWrap', q.concepts || [], 'concept', q.id);
+                renderChips('tagsWrap', q.tags || [], 'tag', q.id);
+            }
+
+            function renderChips(wrapId, arr, type, qid) {
+                const wrap = document.getElementById(wrapId);
+                wrap.innerHTML = arr.map((t, i) => `
     <div class="concept-tag">${t}
       <button onclick="removeChip('${type}','${qid}',${i})">×</button>
     </div>`).join('');
-        }
-
-        window.addConceptKey = function (e) {
-            if (e.key !== 'Enter') return;
-            const v = e.target.value.trim(); if (!v) return;
-            const q = questions.find(x => x.id === selectedId); if (!q) return;
-            if (!q.concepts) q.concepts = [];
-            if (!q.concepts.includes(v)) { q.concepts.push(v); renderConceptsTags(q); save(); fbSync(q); }
-            e.target.value = '';
-        };
-
-        window.addTagKey = function (e) {
-            if (e.key !== 'Enter') return;
-            const v = e.target.value.trim(); if (!v) return;
-            const q = questions.find(x => x.id === selectedId); if (!q) return;
-            if (!q.tags) q.tags = [];
-            if (!q.tags.includes(v)) { q.tags.push(v); renderConceptsTags(q); save(); fbSync(q); }
-            e.target.value = '';
-        };
-
-        window.removeChip = function (type, qid, idx) {
-            const q = questions.find(x => x.id === qid); if (!q) return;
-            if (type === 'concept') q.concepts.splice(idx, 1);
-            else q.tags.splice(idx, 1);
-            renderConceptsTags(q); save(); fbSync(q);
-        };
-
-        // ══════════════════════════════════════════════
-        //  ADD / EDIT / DELETE
-        // ══════════════════════════════════════════════
-        window.saveQuestion = function () {
-            const qText = document.getElementById('fQ').value.trim();
-            if (!qText) { showToast('Question is required', 'err'); return; }
-
-            if (editId) {
-                const q = questions.find(x => x.id === editId);
-                q.question = qText;
-                q.category = document.getElementById('fCat').value;
-                q.difficulty = document.getElementById('fDiff').value;
-                q.updatedAt = Date.now();
-                fbSync(q);
-                showToast('Updated ✓', 'ok');
-                if (selectedId === editId) selectQ(editId);
-            } else {
-                const q = {
-                    id: Date.now().toString(), question: qText,
-                    category: document.getElementById('fCat').value,
-                    difficulty: document.getElementById('fDiff').value,
-                    answer: '', concepts: [], tags: [], notes: '',
-                    code: { jsx: getDefaultCode('jsx'), js: '', html: '' },
-                    createdAt: Date.now()
-                };
-                questions.unshift(q);
-                fbSync(q);
-                showToast('Question added ✓', 'ok');
             }
-            save(); renderAll(); closeModal('addModal'); editId = null;
-        };
 
-        window.openEdit = function (id) {
-            const q = questions.find(x => x.id === id); if (!q) return;
-            editId = id;
-            document.getElementById('addModalTitle').textContent = '✏ Edit Question';
-            document.getElementById('fQ').value = q.question;
-            document.getElementById('fCat').value = q.category;
-            document.getElementById('fDiff').value = q.difficulty;
-            openModal('addModal');
-        };
+            window.addConceptKey = function (e) {
+                if (e.key !== 'Enter') return;
+                const v = e.target.value.trim(); if (!v) return;
+                const q = questions.find(x => x.id === selectedId); if (!q) return;
+                if (!q.concepts) q.concepts = [];
+                if (!q.concepts.includes(v)) { q.concepts.push(v); renderConceptsTags(q); save(); fbSync(q); }
+                e.target.value = '';
+            };
 
-        window.delQ = async function (id) {
-            if (!confirm('Delete this question?')) return;
-            questions = questions.filter(x => x.id !== id);
-            if (selectedId === id) {
-                selectedId = null;
-                document.getElementById('noSelect').style.display = 'flex';
-                document.getElementById('detailView').style.display = 'none';
-            }
-            if (db) { try { await firestoreDel(firestoreDoc(db, COL, id)); } catch (e) { } }
-            save(); renderAll(); showToast('Deleted', 'nfo');
-        };
+            window.addTagKey = function (e) {
+                if (e.key !== 'Enter') return;
+                const v = e.target.value.trim(); if (!v) return;
+                const q = questions.find(x => x.id === selectedId); if (!q) return;
+                if (!q.tags) q.tags = [];
+                if (!q.tags.includes(v)) { q.tags.push(v); renderConceptsTags(q); save(); fbSync(q); }
+                e.target.value = '';
+            };
 
-        // ══════════════════════════════════════════════
-        //  FILTERS
-        // ══════════════════════════════════════════════
-        window.toggleDiff = function (diff, el) {
-            if (filterDiff === diff) { filterDiff = ''; el.className = 'chip'; }
-            else {
-                filterDiff = diff;
-                document.querySelectorAll('#chip-all,#chip-Easy,#chip-Medium,#chip-Hard').forEach(c => c.className = 'chip');
-                el.className = diff === '' ? 'chip on-cyan' : `chip on-${diff === 'Easy' ? 'green' : diff === 'Medium' ? 'amber' : 'red'}`;
-                if (diff === '') document.getElementById('chip-all').className = 'chip on-cyan';
-            }
-            renderList();
-        };
+            window.removeChip = function (type, qid, idx) {
+                const q = questions.find(x => x.id === qid); if (!q) return;
+                if (type === 'concept') q.concepts.splice(idx, 1);
+                else q.tags.splice(idx, 1);
+                renderConceptsTags(q); save(); fbSync(q);
+            };
 
-        window.toggleAnswered = function (el) {
-            filterAnswered = !filterAnswered;
-            el.className = filterAnswered ? 'chip on-green' : 'chip';
-            renderList();
-        };
+            // ══════════════════════════════════════════════
+            //  ADD / EDIT / DELETE
+            // ══════════════════════════════════════════════
+            window.saveQuestion = function () {
+                const qText = document.getElementById('fQ').value.trim();
+                if (!qText) { showToast('Question is required', 'err'); return; }
 
-        window.setCat = function (cat, el) {
-            filterCat = cat;
-            document.querySelectorAll('#catFilters .chip').forEach(c => c.classList.remove('on-cyan'));
-            el.classList.add('on-cyan');
-            renderList();
-        };
-
-        // ══════════════════════════════════════════════
-        //  FIREBASE
-        // ══════════════════════════════════════════════
-        async function fbConnectSilent(cfgStr) {
-            const cfg = JSON.parse(cfgStr);
-            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-            const fm = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-            firestoreCollection = fm.collection; firestoreDoc = fm.doc;
-            firestoreSet = fm.setDoc; firestoreGet = fm.getDocs;
-            firestoreDel = fm.deleteDoc;
-            const app = initializeApp(cfg, 'sdp-' + Date.now());
-            db = fm.getFirestore(app);
-            const snap = await firestoreGet(firestoreCollection(db, COL));
-            const remote = [];
-            snap.forEach(d => remote.push({ id: d.id, ...d.data() }));
-            if (remote.length) { questions = remote; localStorage.setItem('sdp_q', JSON.stringify(questions)); renderAll(); }
-            setFBConnected(true);
-        }
-
-        window.fbConnect = async function () {
-            const raw = document.getElementById('fbConfigTxt').value.trim();
-            if (!raw) { showToast('Paste config first', 'err'); return; }
-            try {
-                await fbConnectSilent(raw);
-                // Push locals if remote was empty
-                const snap2 = await firestoreGet(firestoreCollection(db, COL));
-                if (snap2.empty) {
-                    for (const q of questions) await firestoreSet(firestoreDoc(db, COL, q.id), q);
+                if (editId) {
+                    const q = questions.find(x => x.id === editId);
+                    q.question = qText;
+                    q.category = document.getElementById('fCat').value;
+                    q.difficulty = document.getElementById('fDiff').value;
+                    q.updatedAt = Date.now();
+                    fbSync(q);
+                    showToast('Updated ✓', 'ok');
+                    if (selectedId === editId) selectQ(editId);
+                } else {
+                    const q = {
+                        id: Date.now().toString(), question: qText,
+                        category: document.getElementById('fCat').value,
+                        difficulty: document.getElementById('fDiff').value,
+                        answer: '', concepts: [], tags: [], notes: '',
+                        code: { jsx: getDefaultCode('jsx'), js: '', html: '' },
+                        createdAt: Date.now()
+                    };
+                    questions.unshift(q);
+                    fbSync(q);
+                    showToast('Question added ✓', 'ok');
                 }
-                localStorage.setItem('fbcfg', raw);
+                save(); renderAll(); closeModal('addModal'); editId = null;
+            };
+
+            window.openEdit = function (id) {
+                const q = questions.find(x => x.id === id); if (!q) return;
+                editId = id;
+                document.getElementById('addModalTitle').textContent = '✏ Edit Question';
+                document.getElementById('fQ').value = q.question;
+                document.getElementById('fCat').value = q.category;
+                document.getElementById('fDiff').value = q.difficulty;
+                openModal('addModal');
+            };
+
+            window.delQ = async function (id) {
+                if (!confirm('Delete this question?')) return;
+                questions = questions.filter(x => x.id !== id);
+                if (selectedId === id) {
+                    selectedId = null;
+                    document.getElementById('noSelect').style.display = 'flex';
+                    document.getElementById('detailView').style.display = 'none';
+                }
+                if (db) { try { await firestoreDel(firestoreDoc(db, COL, id)); } catch (e) { } }
+                save(); renderAll(); showToast('Deleted', 'nfo');
+            };
+
+            // ══════════════════════════════════════════════
+            //  FILTERS
+            // ══════════════════════════════════════════════
+            window.toggleDiff = function (diff, el) {
+                if (filterDiff === diff) { filterDiff = ''; el.className = 'chip'; }
+                else {
+                    filterDiff = diff;
+                    document.querySelectorAll('#chip-all,#chip-Easy,#chip-Medium,#chip-Hard').forEach(c => c.className = 'chip');
+                    el.className = diff === '' ? 'chip on-cyan' : `chip on-${diff === 'Easy' ? 'green' : diff === 'Medium' ? 'amber' : 'red'}`;
+                    if (diff === '') document.getElementById('chip-all').className = 'chip on-cyan';
+                }
+                renderList();
+            };
+
+            window.toggleAnswered = function (el) {
+                filterAnswered = !filterAnswered;
+                el.className = filterAnswered ? 'chip on-green' : 'chip';
+                renderList();
+            };
+
+            window.setCat = function (cat, el) {
+                filterCat = cat;
+                document.querySelectorAll('#catFilters .chip').forEach(c => c.classList.remove('on-cyan'));
+                el.classList.add('on-cyan');
+                renderList();
+            };
+
+            // ══════════════════════════════════════════════
+            //  FIREBASE
+            // ══════════════════════════════════════════════
+            async function fbConnectSilent(cfgStr) {
+                const cfg = JSON.parse(cfgStr);
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+                const fm = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+                firestoreCollection = fm.collection; firestoreDoc = fm.doc;
+                firestoreSet = fm.setDoc; firestoreGet = fm.getDocs;
+                firestoreDel = fm.deleteDoc;
+                const app = initializeApp(cfg, 'sdp-' + Date.now());
+                db = fm.getFirestore(app);
+                const snap = await firestoreGet(firestoreCollection(db, COL));
+                const remote = [];
+                snap.forEach(d => remote.push({ id: d.id, ...d.data() }));
+                if (remote.length) { questions = remote; localStorage.setItem('sdp_q', JSON.stringify(questions)); renderAll(); }
                 setFBConnected(true);
-                closeModal('fbModal');
-                showToast('Firebase connected ✓', 'ok');
-                renderAll();
-            } catch (e) { showToast('Failed: ' + e.message, 'err'); }
-        };
-
-        window.fbDisconnect = function () {
-            db = null; localStorage.removeItem('fbcfg');
-            setFBConnected(false); closeModal('fbModal');
-            showToast('Disconnected', 'nfo');
-        };
-
-        function setFBConnected(v) {
-            document.getElementById('fbDot').className = 'dot' + (v ? ' live' : '');
-            document.getElementById('fbLabel').textContent = v ? 'Connected' : 'Firebase';
-            document.getElementById('fbDiscBtn').style.display = v ? '' : 'none';
-        }
-
-        async function fbSync(q) {
-            if (!db) return;
-            try { await firestoreSet(firestoreDoc(db, COL, q.id), q); }
-            catch (e) { console.log('fbSync err:', e.message); }
-        }
-
-        window.fbDragOver = e => { e.preventDefault(); document.getElementById('fbUploadZone').classList.add('drag'); };
-        window.fbDragLeave = () => document.getElementById('fbUploadZone').classList.remove('drag');
-        window.fbDrop = e => {
-            e.preventDefault(); fbDragLeave();
-            const f = e.dataTransfer.files[0]; if (!f) return;
-            const r = new FileReader();
-            r.onload = ev => { document.getElementById('fbConfigTxt').value = ev.target.result; showToast('File loaded', 'nfo'); };
-            r.readAsText(f);
-        };
-        window.fbFileLoad = e => {
-            const f = e.target.files[0]; if (!f) return;
-            const r = new FileReader();
-            r.onload = ev => { document.getElementById('fbConfigTxt').value = ev.target.result; showToast('File loaded', 'nfo'); };
-            r.readAsText(f);
-        };
-
-        // ══════════════════════════════════════════════
-        //  MODALS
-        // ══════════════════════════════════════════════
-        window.openModal = function (id) {
-            if (id === 'addModal' && !editId) {
-                document.getElementById('addModalTitle').textContent = '✦ New Question';
-                document.getElementById('fQ').value = '';
-                document.getElementById('fCat').value = 'Scalability';
-                document.getElementById('fDiff').value = 'Medium';
             }
-            document.getElementById(id).classList.add('open');
-        };
-        window.closeModal = function (id) {
-            document.getElementById(id).classList.remove('open');
-            if (id === 'addModal') editId = null;
-        };
-        document.querySelectorAll('.overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
 
-        // ══════════════════════════════════════════════
-        //  PERSISTENCE
-        // ══════════════════════════════════════════════
-        function save() { localStorage.setItem('sdp_q', JSON.stringify(questions)); }
+            window.fbConnect = async function () {
+                const raw = document.getElementById('fbConfigTxt').value.trim();
+                if (!raw) { showToast('Paste config first', 'err'); return; }
+                try {
+                    await fbConnectSilent(raw);
+                    // Push locals if remote was empty
+                    const snap2 = await firestoreGet(firestoreCollection(db, COL));
+                    if (snap2.empty) {
+                        for (const q of questions) await firestoreSet(firestoreDoc(db, COL, q.id), q);
+                    }
+                    localStorage.setItem('fbcfg', raw);
+                    setFBConnected(true);
+                    closeModal('fbModal');
+                    showToast('Firebase connected ✓', 'ok');
+                    renderAll();
+                } catch (e) { showToast('Failed: ' + e.message, 'err'); }
+            };
 
-        // ══════════════════════════════════════════════
-        //  TOAST
-        // ══════════════════════════════════════════════
-        window.showToast = function (msg, type = 'nfo') {
-            const icons = { ok: '✅', err: '❌', nfo: 'ℹ️' };
-            const c = document.getElementById('toasts');
-            const t = document.createElement('div');
-            t.className = 'toast ' + type;
-            t.innerHTML = `<span>${icons[type]}</span>${msg}`;
-            c.appendChild(t);
-            setTimeout(() => t.remove(), 2800);
-        };
+            window.fbDisconnect = function () {
+                db = null; localStorage.removeItem('fbcfg');
+                setFBConnected(false); closeModal('fbModal');
+                showToast('Disconnected', 'nfo');
+            };
 
-        // ══════════════════════════════════════════════
-        //  DEFAULT CODE TEMPLATES
-        // ══════════════════════════════════════════════
-        function getDefaultCode(lang) {
-            if (lang !== 'jsx') return '';
-            return `// React component — define App and it auto-mounts
-import { useState } from "react";
+            function setFBConnected(v) {
+                document.getElementById('fbDot').className = 'dot' + (v ? ' live' : '');
+                document.getElementById('fbLabel').textContent = v ? 'Connected' : 'Firebase';
+                document.getElementById('fbDiscBtn').style.display = v ? '' : 'none';
+            }
+
+            async function fbSync(q) {
+                if (!db) return;
+                try { await firestoreSet(firestoreDoc(db, COL, q.id), q); }
+                catch (e) { console.log('fbSync err:', e.message); }
+            }
+
+            window.fbDragOver = e => { e.preventDefault(); document.getElementById('fbUploadZone').classList.add('drag'); };
+            window.fbDragLeave = () => document.getElementById('fbUploadZone').classList.remove('drag');
+            window.fbDrop = e => {
+                e.preventDefault(); fbDragLeave();
+                const f = e.dataTransfer.files[0]; if (!f) return;
+                const r = new FileReader();
+                r.onload = ev => { document.getElementById('fbConfigTxt').value = ev.target.result; showToast('File loaded', 'nfo'); };
+                r.readAsText(f);
+            };
+            window.fbFileLoad = e => {
+                const f = e.target.files[0]; if (!f) return;
+                const r = new FileReader();
+                r.onload = ev => { document.getElementById('fbConfigTxt').value = ev.target.result; showToast('File loaded', 'nfo'); };
+                r.readAsText(f);
+            };
+
+            // ══════════════════════════════════════════════
+            //  MODALS
+            // ══════════════════════════════════════════════
+            window.openModal = function (id) {
+                if (id === 'addModal' && !editId) {
+                    document.getElementById('addModalTitle').textContent = '✦ New Question';
+                    document.getElementById('fQ').value = '';
+                    document.getElementById('fCat').value = 'Scalability';
+                    document.getElementById('fDiff').value = 'Medium';
+                }
+                document.getElementById(id).classList.add('open');
+            };
+            window.closeModal = function (id) {
+                document.getElementById(id).classList.remove('open');
+                if (id === 'addModal') editId = null;
+            };
+            document.querySelectorAll('.overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
+
+            // ══════════════════════════════════════════════
+            //  PERSISTENCE
+            // ══════════════════════════════════════════════
+            function save() { localStorage.setItem('sdp_q', JSON.stringify(questions)); }
+
+            // ══════════════════════════════════════════════
+            //  TOAST
+            // ══════════════════════════════════════════════
+            window.showToast = function (msg, type = 'nfo') {
+                const icons = { ok: '✅', err: '❌', nfo: 'ℹ️' };
+                const c = document.getElementById('toasts');
+                const t = document.createElement('div');
+                t.className = 'toast ' + type;
+                t.innerHTML = `<span>${icons[type]}</span>${msg}`;
+                c.appendChild(t);
+                setTimeout(() => t.remove(), 2800);
+            };
+
+            // ══════════════════════════════════════════════
+            //  DEFAULT CODE TEMPLATES
+            // ══════════════════════════════════════════════
+            function getDefaultCode(lang) {
+                if (lang !== 'jsx') return '';
+                return `// useState, useEffect, useRef etc. are available as globals
+// Just define function App() and it auto-mounts ⚛
 
 function App() {
   const [count, setCount] = useState(0);
+  const [text, setText] = useState('');
 
   return (
     <div style={{ padding: "24px", fontFamily: "sans-serif" }}>
-      <h2 style={{ marginBottom: "16px" }}>🧪 Practice Component</h2>
+      <h2 style={{ marginBottom: "16px", color: "#00d4ff" }}>
+        🧪 Practice Component
+      </h2>
+
       <button
         onClick={() => setCount(c => c + 1)}
         style={{
-          padding: "8px 20px",
-          background: "#00d4ff",
-          color: "#000",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "bold"
+          padding: "8px 20px", background: "#00d4ff",
+          color: "#000", border: "none", borderRadius: "8px",
+          cursor: "pointer", fontWeight: "bold", marginBottom: "16px",
+          display: "block"
         }}
       >
-        Clicked {count} times
+        Clicked {count} {count === 1 ? "time" : "times"}
       </button>
+
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Type something..."
+        style={{
+          padding: "8px 12px", borderRadius: "8px",
+          border: "1px solid #2d3a4f", background: "#161b24",
+          color: "#e2e8f5", width: "100%"
+        }}
+      />
+      {text && <p style={{ marginTop: 10, color: "#00ff88" }}>You typed: {text}</p>}
     </div>
   );
 }`;
-        }
+            }
 
-        function getVirtualListCode() {
-            return `// Virtualized list — renders only visible items
-import { useState, useRef, useEffect } from "react";
+            function getVirtualListCode() {
+                return `// useState, useEffect, useRef available as globals — no imports needed
 
 const ITEM_H = 48;
 const TOTAL  = 10000;
@@ -2196,7 +2223,7 @@ function VirtualList() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h3 style={{ marginBottom: 8 }}>
+      <h3 style={{ marginBottom: 8, color: "#00d4ff" }}>
         ⚡ Virtual List — {TOTAL.toLocaleString()} rows
       </h3>
       <div
@@ -2234,8 +2261,6 @@ function VirtualList() {
 function App() {
   return <VirtualList />;
 }`;
-        }
+            }
+        })();
     </script>
-</body>
-
-</html>
