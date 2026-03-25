@@ -1,1668 +1,1412 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Design Tracker</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&family=DM+Sans:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f5f2eb;
-            --bg2: #ede9e0;
-            --bg3: #e4dfd3;
-            --ink: #1c1a16;
-            --ink2: #3d3a34;
-            --muted: #8a8478;
-            --border: #d4cfc5;
-            --border2: #c5bfb3;
-            --solved: #2ab87a;
-            --inprog: #e8962a;
-            --shadow: 0 2px 8px rgba(28, 26, 22, 0.08);
-            --shadow-lg: 0 8px 32px rgba(28, 26, 22, 0.14);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--ink);
-            font-family: 'DM Sans', sans-serif;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* =================== SETUP =================== */
-        #setup-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 2rem;
-            gap: 1.75rem;
-        }
-
-        .setup-brand h1 {
-            font-family: 'Fraunces', serif;
-            font-size: clamp(1.8rem, 5vw, 3rem);
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            text-align: center;
-        }
-
-        .setup-brand h1 em {
-            font-style: italic;
-            color: #e85d2a;
-        }
-
-        .setup-brand p {
-            font-size: 0.82rem;
-            color: var(--muted);
-            font-family: 'DM Mono', monospace;
-            text-align: center;
-            margin-top: 0.4rem;
-        }
-
-        .setup-card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 2rem;
-            width: 100%;
-            max-width: 540px;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .setup-tabs {
-            display: flex;
-            background: var(--bg2);
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            margin-bottom: 1.5rem;
-        }
-
-        .stab {
-            flex: 1;
-            padding: 0.58rem;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--muted);
-            transition: all 0.18s;
-        }
-
-        .stab.active {
-            background: #fff;
-            color: var(--ink);
-        }
-
-        .flabel {
-            display: block;
-            font-family: 'DM Mono', monospace;
-            font-size: 0.66rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--muted);
-            margin-bottom: 0.35rem;
-        }
-
-        .finput {
-            width: 100%;
-            background: var(--bg);
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 0.6rem 0.85rem;
-            font-family: 'DM Mono', monospace;
-            font-size: 0.78rem;
-            color: var(--ink);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .finput:focus {
-            border-color: #e85d2a;
-        }
-
-        .fg {
-            margin-bottom: 0.85rem;
-        }
-
-        .fgrow {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.7rem;
-        }
-
-        .btn-connect {
-            width: 100%;
-            margin-top: 0.75rem;
-            padding: 0.78rem;
-            background: var(--ink);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-connect:hover {
-            background: #e85d2a;
-            transform: translateY(-1px);
-        }
-
-        .file-zone {
-            border: 2px dashed var(--border2);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .file-zone:hover,
-        .file-zone.over {
-            border-color: #e85d2a;
-            background: rgba(232, 93, 42, 0.04);
-        }
-
-        .file-zone input {
-            display: none;
-        }
-
-        .demo-box {
-            border: 1.5px dashed var(--border2);
-            border-radius: 14px;
-            padding: 1.75rem;
-            text-align: center;
-        }
-
-        .demo-box h3 {
-            font-family: 'Fraunces', serif;
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 0.4rem;
-        }
-
-        .demo-box p {
-            font-size: 0.82rem;
-            color: var(--muted);
-            line-height: 1.6;
-            margin-bottom: 1.25rem;
-        }
-
-        .err-msg {
-            background: rgba(232, 93, 42, 0.08);
-            border: 1px solid rgba(232, 93, 42, 0.3);
-            border-radius: 8px;
-            padding: 0.55rem 0.85rem;
-            font-size: 0.76rem;
-            color: #e85d2a;
-            font-family: 'DM Mono', monospace;
-            margin-top: 0.6rem;
-            display: none;
-        }
-
-        /* =================== APP =================== */
-        #app {
-            display: none;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background: rgba(245, 242, 235, 0.92);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            padding: 0 1.5rem;
-            height: 58px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            font-family: 'Fraunces', serif;
-            font-size: 1.25rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-        }
-
-        .logo em {
-            font-style: italic;
-            color: #e85d2a;
-        }
-
-        .hbtn {
-            padding: 0.42rem 0.95rem;
-            border-radius: 8px;
-            border: 1.5px solid var(--border2);
-            background: #fff;
-            color: var(--ink2);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.79rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .hbtn:hover {
-            border-color: var(--ink);
-        }
-
-        .hbtn.primary {
-            background: var(--ink);
-            color: #fff;
-            border-color: var(--ink);
-        }
-
-        .hbtn.primary:hover {
-            background: #e85d2a;
-            border-color: #e85d2a;
-        }
-
-        /* stats */
-        .stats-strip {
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            padding: 0.85rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1.75rem;
-            overflow-x: auto;
-        }
-
-        .stat-block {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            flex-shrink: 0;
-        }
-
-        .stat-num {
-            font-family: 'Fraunces', serif;
-            font-size: 1.9rem;
-            font-weight: 900;
-            line-height: 1;
-            letter-spacing: -0.03em;
-        }
-
-        .stat-lbl {
-            font-size: 0.65rem;
-            font-family: 'DM Mono', monospace;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .s-solved .stat-num {
-            color: var(--solved);
-        }
-
-        .s-prog .stat-num {
-            color: var(--inprog);
-        }
-
-        .s-none .stat-num {
-            color: var(--muted);
-        }
-
-        .sdiv {
-            width: 1px;
-            height: 36px;
-            background: var(--border);
-            flex-shrink: 0;
-        }
-
-        .prog-block {
-            flex: 1;
-            min-width: 160px;
-        }
-
-        .prog-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.35rem;
-        }
-
-        .prog-header span {
-            font-size: 0.68rem;
-            font-family: 'DM Mono', monospace;
-            color: var(--muted);
-        }
-
-        .prog-header strong {
-            color: var(--solved);
-            font-size: 0.68rem;
-            font-family: 'DM Mono', monospace;
-        }
-
-        .pbar {
-            height: 7px;
-            background: var(--bg3);
-            border-radius: 99px;
-            overflow: hidden;
-        }
-
-        .pfill {
-            height: 100%;
-            background: linear-gradient(90deg, #e85d2a, var(--solved));
-            border-radius: 99px;
-            transition: width 0.6s cubic-bezier(.4, 0, .2, 1);
-        }
-
-        /* layout */
-        .app-body {
-            display: grid;
-            grid-template-columns: 232px 1fr;
-            min-height: calc(100vh - 110px);
-        }
-
-        /* sidebar */
-        .sidebar {
-            border-right: 1px solid var(--border);
-            padding: 1.1rem 0.65rem;
-            position: sticky;
-            top: 58px;
-            height: calc(100vh - 58px);
-            overflow-y: auto;
-            background: var(--bg);
-        }
-
-        .sidebar::-webkit-scrollbar {
-            width: 3px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 99px;
-        }
-
-        .side-sec {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--muted);
-            padding: 0.35rem 0.55rem;
-            margin-top: 0.9rem;
-            margin-bottom: 0.15rem;
-        }
-
-        .cat-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            width: 100%;
-            padding: 0.5rem 0.65rem;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: left;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.8rem;
-            color: var(--ink2);
-            transition: all 0.14s;
-        }
-
-        .cat-btn:hover {
-            background: var(--bg2);
-        }
-
-        .cat-btn.active {
-            background: var(--ink);
-            color: #fff;
-        }
-
-        .cat-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .cat-name {
-            flex: 1;
-            font-weight: 500;
-        }
-
-        .cat-ct {
-            font-size: 0.64rem;
-            font-family: 'DM Mono', monospace;
-            color: var(--muted);
-            background: var(--bg3);
-            padding: 1px 6px;
-            border-radius: 99px;
-        }
-
-        .cat-btn.active .cat-ct {
-            background: rgba(255, 255, 255, 0.18);
-            color: rgba(255, 255, 255, 0.75);
-        }
-
-        /* main */
-        .main-panel {
-            padding: 1.4rem 1.75rem;
-        }
-
-        .toolbar {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            margin-bottom: 1.25rem;
-            flex-wrap: wrap;
-        }
-
-        .search-wrap {
-            position: relative;
-            flex: 1;
-            min-width: 170px;
-        }
-
-        .search-wrap input {
-            width: 100%;
-            background: #fff;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            padding: 0.58rem 0.85rem 0.58rem 2.2rem;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.83rem;
-            color: var(--ink);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .search-wrap input:focus {
-            border-color: var(--ink);
-        }
-
-        .s-ico {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.85rem;
-            pointer-events: none;
-        }
-
-        .fchip {
-            padding: 0.42rem 0.85rem;
-            border-radius: 999px;
-            border: 1.5px solid var(--border);
-            background: #fff;
-            color: var(--muted);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.76rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.14s;
-        }
-
-        .fchip:hover {
-            border-color: var(--ink2);
-            color: var(--ink2);
-        }
-
-        .fchip.fa {
-            background: var(--ink);
-            color: #fff;
-            border-color: var(--ink);
-        }
-
-        .fchip.fs {
-            background: var(--solved);
-            color: #fff;
-            border-color: var(--solved);
-        }
-
-        .fchip.fp {
-            background: var(--inprog);
-            color: #fff;
-            border-color: var(--inprog);
-        }
-
-        .fchip.fn {
-            background: var(--muted);
-            color: #fff;
-            border-color: var(--muted);
-        }
-
-        .view-title {
-            font-family: 'Fraunces', serif;
-            font-size: 1.4rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            margin-bottom: 1rem;
-        }
-
-        /* add drawer */
-        .add-drawer {
-            background: #fff;
-            border: 1.5px solid var(--border);
-            border-radius: 16px;
-            padding: 1.4rem;
-            margin-bottom: 1.4rem;
-            display: none;
-            animation: fd .25s ease;
-        }
-
-        .add-drawer.open {
-            display: block;
-        }
-
-        @keyframes fd {
-            from {
-                opacity: 0;
-                transform: translateY(-8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .drawer-title {
-            font-family: 'Fraunces', serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .frow {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.7rem;
-        }
-
-        .finput2 {
-            width: 100%;
-            background: var(--bg);
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 0.58rem 0.8rem;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.82rem;
-            color: var(--ink);
-            outline: none;
-            transition: border-color 0.2s;
-            appearance: none;
-        }
-
-        .finput2:focus {
-            border-color: var(--ink);
-        }
-
-        .ftextarea {
-            width: 100%;
-            background: var(--bg);
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 0.65rem 0.8rem;
-            font-family: 'DM Mono', monospace;
-            font-size: 0.76rem;
-            line-height: 1.6;
-            color: var(--ink);
-            outline: none;
-            resize: vertical;
-            transition: border-color 0.2s;
-        }
-
-        .ftextarea:focus {
-            border-color: var(--ink);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 0.55rem;
-            margin-top: 0.9rem;
-        }
-
-        .btn-save {
-            padding: 0.58rem 1.3rem;
-            background: var(--ink);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.84rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .btn-save:hover {
-            background: #e85d2a;
-        }
-
-        .btn-ghost {
-            padding: 0.58rem 1rem;
-            background: transparent;
-            color: var(--muted);
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.14s;
-        }
-
-        .btn-ghost:hover {
-            border-color: var(--ink2);
-            color: var(--ink2);
-        }
-
-        /* cards */
-        .q-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 0.9rem;
-        }
-
-        .q-card {
-            background: #fff;
-            border: 1.5px solid var(--border);
-            border-radius: 14px;
-            padding: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 0.55rem;
-        }
-
-        .q-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-        }
-
-        .q-card.solved::before {
-            background: var(--solved);
-        }
-
-        .q-card.in-progress::before {
-            background: var(--inprog);
-        }
-
-        .q-card.unsolved::before {
-            background: var(--border);
-        }
-
-        .q-card:hover {
-            border-color: var(--ink2);
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-2px);
-        }
-
-        .q-top {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 0.5rem;
-        }
-
-        .q-title {
-            font-size: 0.9rem;
-            font-weight: 700;
-            line-height: 1.3;
-        }
-
-        .diff {
-            font-size: 0.58rem;
-            font-family: 'DM Mono', monospace;
-            padding: 2px 7px;
-            border-radius: 99px;
-            white-space: nowrap;
-            flex-shrink: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .diff.easy {
-            background: rgba(42, 184, 122, 0.12);
-            color: var(--solved);
-        }
-
-        .diff.medium {
-            background: rgba(232, 150, 42, 0.12);
-            color: var(--inprog);
-        }
-
-        .diff.hard {
-            background: rgba(232, 93, 42, 0.12);
-            color: #e85d2a;
-        }
-
-        .q-cat {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-size: 0.7rem;
-            color: var(--muted);
-            font-family: 'DM Mono', monospace;
-        }
-
-        .q-cdot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .q-np {
-            font-size: 0.73rem;
-            color: var(--muted);
-            font-family: 'DM Mono', monospace;
-            line-height: 1.5;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-
-        .q-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-        }
-
-        .qtag {
-            font-size: 0.61rem;
-            padding: 2px 7px;
-            border-radius: 4px;
-            background: var(--bg2);
-            color: var(--muted);
-            border: 1px solid var(--border);
-            font-family: 'DM Mono', monospace;
-        }
-
-        .q-bot {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: auto;
-            padding-top: 0.45rem;
-            border-top: 1px solid var(--bg2);
-        }
-
-        .qstatus {
-            display: flex;
-            align-items: center;
-            gap: 0.32rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .qsdot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-        }
-
-        .qstatus.solved {
-            color: var(--solved);
-        }
-
-        .qstatus.solved .qsdot {
-            background: var(--solved);
-            box-shadow: 0 0 4px var(--solved);
-        }
-
-        .qstatus.in-progress {
-            color: var(--inprog);
-        }
-
-        .qstatus.in-progress .qsdot {
-            background: var(--inprog);
-        }
-
-        .qstatus.unsolved {
-            color: var(--muted);
-        }
-
-        .qstatus.unsolved .qsdot {
-            background: var(--border2);
-        }
-
-        .q-date {
-            font-size: 0.63rem;
-            color: var(--muted);
-            font-family: 'DM Mono', monospace;
-        }
-
-        .empty {
-            grid-column: 1/-1;
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--muted);
-        }
-
-        .empty h3 {
-            font-family: 'Fraunces', serif;
-            font-size: 1.2rem;
-            color: var(--ink2);
-            margin: 0.5rem 0 0.3rem;
-        }
-
-        /* modal */
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(28, 26, 22, .5);
-            backdrop-filter: blur(6px);
-            z-index: 200;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-        }
-
-        .overlay.open {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--bg);
-            border-radius: 24px 24px 0 0;
-            width: 100%;
-            max-width: 720px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: sup .32s cubic-bezier(.4, 0, .2, 1);
-            border-top: 1px solid var(--border);
-        }
-
-        @keyframes sup {
-            from {
-                transform: translateY(60px);
-                opacity: 0
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1
-            }
-        }
-
-        .m-top {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
-            padding: 1.2rem 1.4rem;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            z-index: 1;
-        }
-
-        .m-title-wrap {
-            flex: 1;
-        }
-
-        .m-title {
-            font-family: 'Fraunces', serif;
-            font-size: 1.35rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            line-height: 1.2;
-        }
-
-        .m-sub {
-            display: flex;
-            gap: 0.45rem;
-            margin-top: 0.4rem;
-            flex-wrap: wrap;
-        }
-
-        .mpill {
-            font-size: 0.66rem;
-            font-family: 'DM Mono', monospace;
-            padding: 2px 9px;
-            border-radius: 99px;
-            border: 1px solid var(--border);
-            color: var(--muted);
-        }
-
-        .close-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            border: 1.5px solid var(--border);
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 0.95rem;
-            color: var(--muted);
-            transition: all .14s;
-            flex-shrink: 0;
-        }
-
-        .close-btn:hover {
-            border-color: var(--ink);
-            color: var(--ink);
-        }
-
-        .m-body {
-            padding: 1.4rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.1rem;
-        }
-
-        .msec-lbl {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.62rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--muted);
-            margin-bottom: 0.45rem;
-        }
-
-        .stog-row {
-            display: flex;
-            gap: 0.45rem;
-        }
-
-        .stog {
-            flex: 1;
-            padding: 0.58rem;
-            border-radius: 10px;
-            border: 1.5px solid var(--border);
-            background: #fff;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--muted);
-            text-align: center;
-            transition: all .14s;
-        }
-
-        .stog.au {
-            background: var(--bg2);
-            color: var(--ink);
-            border-color: var(--ink);
-        }
-
-        .stog.ap {
-            background: rgba(232, 150, 42, .1);
-            color: var(--inprog);
-            border-color: var(--inprog);
-        }
-
-        .stog.as {
-            background: rgba(42, 184, 122, .1);
-            color: var(--solved);
-            border-color: var(--solved);
-        }
-
-        .concept-cloud {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.45rem;
-        }
-
-        .cchip {
-            padding: 0.28rem 0.75rem;
-            border-radius: 8px;
-            font-size: 0.73rem;
-            font-family: 'DM Mono', monospace;
-            border: 1px solid;
-        }
-
-        .res-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-
-        .res-item {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            padding: 0.45rem 0.7rem;
-            background: #fff;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            font-size: 0.76rem;
-        }
-
-        .m-foot {
-            position: sticky;
-            bottom: 0;
-            background: var(--bg);
-            border-top: 1px solid var(--border);
-            padding: 0.95rem 1.4rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .del-btn {
-            padding: 0.5rem 1rem;
-            border: 1.5px solid rgba(232, 93, 42, .3);
-            border-radius: 8px;
-            background: transparent;
-            color: #e85d2a;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all .14s;
-        }
-
-        .del-btn:hover {
-            background: rgba(232, 93, 42, .08);
-            border-color: #e85d2a;
-        }
-
-        /* toast */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 9999;
-            background: var(--ink);
-            color: #fff;
-            padding: 0.65rem 1.35rem;
-            border-radius: 10px;
-            font-size: 0.83rem;
-            font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            transform: translateY(80px);
-            opacity: 0;
-            transition: all .3s cubic-bezier(.4, 0, .2, 1);
-            box-shadow: 0 8px 24px rgba(28, 26, 22, .2);
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        @media(max-width:768px) {
-            .app-body {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                position: relative;
-                top: 0;
-                height: auto;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.25rem;
-                padding: 0.7rem;
-            }
-
-            .side-sec {
-                display: none;
-            }
-
-            .cat-btn {
-                width: auto;
-                flex: 0 0 auto;
-                padding: 0.38rem 0.65rem;
-            }
-
-            .main-panel {
-                padding: 1rem;
-            }
-
-            .frow {
-                grid-template-columns: 1fr;
-            }
-
-            .modal {
-                max-height: 95vh;
-            }
-
-            .stog-row {
-                flex-direction: column;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS & React Native — Patterns & SOLID</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c10; --surface:#13131a; --surface2:#1a1a24; --surface3:#20202e;
+  --border:#25253a; --border2:#30304a;
+  --accent1:#ff6b35; --accent2:#7c3aed; --accent3:#06b6d4; --accent4:#10b981; --accent5:#f59e0b;
+  --text:#e8e8f4; --muted:#6b6b88; --code-bg:#080810;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;line-height:1.7;}
+
+/* ─── HERO ─── */
+.hero{background:linear-gradient(135deg,#0c0c10 0%,#160924 40%,#0c1020 100%);border-bottom:1px solid var(--border);padding:56px 44px 48px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-100px;right:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(124,58,237,.12) 0%,transparent 65%);pointer-events:none;}
+.hero::after{content:'';position:absolute;bottom:-80px;left:0;width:350px;height:350px;background:radial-gradient(circle,rgba(255,107,53,.08) 0%,transparent 65%);pointer-events:none;}
+.hero-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.35);color:#a78bfa;font-family:'Space Mono',monospace;font-size:10px;padding:4px 14px;border-radius:100px;margin-bottom:22px;letter-spacing:2px;text-transform:uppercase;}
+.hero h1{font-size:clamp(2rem,5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:14px;}
+.hero h1 em{font-style:normal;color:var(--accent1);}
+.hero-sub{color:var(--muted);font-family:'Space Mono',monospace;font-size:12px;max-width:560px;line-height:1.8;}
+.hero-stats{display:flex;gap:28px;margin-top:28px;flex-wrap:wrap;}
+.stat{text-align:center;}
+.stat-n{font-size:1.6rem;font-weight:800;color:var(--accent3);}
+.stat-l{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;}
+
+/* ─── NAV ─── */
+.nav{display:flex;flex-wrap:wrap;gap:8px;padding:18px 44px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+.nav a{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:5px 14px;border-radius:100px;transition:all .2s;letter-spacing:.5px;white-space:nowrap;}
+.nav a:hover{color:var(--text);border-color:var(--accent1);background:rgba(255,107,53,.08);}
+
+/* ─── LAYOUT ─── */
+.wrap{max-width:1040px;margin:0 auto;padding:44px 44px 100px;}
+
+/* ─── SECTION HDR ─── */
+.sec-hdr{display:flex;align-items:center;gap:16px;margin:64px 0 28px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.sec-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.si-c{background:rgba(255,107,53,.12);}
+.si-s{background:rgba(6,182,212,.12);}
+.si-b{background:rgba(124,58,237,.12);}
+.si-r{background:rgba(16,185,129,.12);}
+.si-p{background:rgba(245,158,11,.12);}
+.sec-hdr h2{font-size:1.45rem;font-weight:800;}
+.sec-lbl{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;}
+
+/* ─── QUICK VISUAL CARDS (pattern diagrams) ─── */
+.qv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:44px;}
+.qv-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s;cursor:default;}
+.qv-card:hover{border-color:var(--border2);}
+.qv-name{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.qv-diagram{background:var(--surface2);border-radius:10px;padding:14px;font-family:'Fira Code',monospace;font-size:11px;line-height:1.9;color:#9898b8;white-space:pre;overflow-x:auto;}
+.qv-diagram .hi{color:#e8e8f4;font-weight:700;}
+.qv-diagram .arr{color:var(--accent3);}
+.qv-diagram .lbl{color:var(--accent5);}
+.qv-diagram .dim{color:#3a3a58;}
+.qv-tag{font-family:'Space Mono',monospace;font-size:9px;padding:2px 8px;border-radius:100px;margin-left:auto;}
+
+/* ─── BADGE ─── */
+.badge{font-family:'Space Mono',monospace;font-size:9px;padding:3px 10px;border-radius:100px;letter-spacing:.5px;font-weight:700;white-space:nowrap;}
+.bc{background:rgba(255,107,53,.12);color:#fb923c;border:1px solid rgba(255,107,53,.25);}
+.bs{background:rgba(6,182,212,.12);color:#22d3ee;border:1px solid rgba(6,182,212,.25);}
+.bb{background:rgba(124,58,237,.12);color:#a78bfa;border:1px solid rgba(124,58,237,.25);}
+.br{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.bn{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25);}
+
+/* ─── PATTERN CARD ─── */
+.pc{background:var(--surface);border:1px solid var(--border);border-radius:18px;margin-bottom:26px;overflow:hidden;}
+.pc:hover{border-color:var(--border2);}
+.pc-head{padding:20px 26px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.pc-title{font-size:1.05rem;font-weight:800;margin-bottom:8px;}
+.pc-badges{display:flex;flex-wrap:wrap;gap:6px;}
+.pc-body{padding:22px 26px;}
+
+/* ─── INFO GRID ─── */
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.ig3{grid-template-columns:1fr 1fr 1fr;}
+.ib{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.ib-l{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;}
+.ib p{font-size:12.5px;color:#c0c0d8;line-height:1.55;}
+.ib code{background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;font-family:'Fira Code',monospace;font-size:11px;color:#c3e88d;}
+
+/* ─── POINTS ─── */
+.pts{margin-bottom:18px;}
+.pts-l{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;}
+.pt{display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:#b8b8d0;line-height:1.55;}
+.dot{width:5px;height:5px;border-radius:50%;margin-top:9px;flex-shrink:0;}
+.d1{background:var(--accent1);}
+.d2{background:var(--accent2);}
+.d3{background:var(--accent3);}
+.d4{background:var(--accent4);}
+.d5{background:var(--accent5);}
+.pt strong{color:#ddddf0;}
+.pt code{background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;font-family:'Fira Code',monospace;font-size:11px;color:#c3e88d;}
+
+/* ─── RN BOX ─── */
+.rn{background:linear-gradient(135deg,rgba(245,158,11,.05),rgba(245,158,11,.02));border:1px solid rgba(245,158,11,.2);border-left:3px solid var(--accent5);border-radius:10px;padding:14px 18px;margin-bottom:16px;}
+.rn-t{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent5);text-transform:uppercase;letter-spacing:2px;margin-bottom:9px;}
+.rn ul{list-style:none;}
+.rn li{font-size:12.5px;color:#c8b070;line-height:1.65;margin-bottom:3px;}
+.rn li::before{content:'▸ ';color:var(--accent5);}
+.rn p{font-size:12.5px;color:#c8b070;line-height:1.65;}
+.rn code{background:rgba(245,158,11,.12);border-radius:4px;padding:1px 5px;font-family:'Fira Code',monospace;font-size:11px;color:#fcd34d;}
+
+/* ─── PITFALL BOX ─── */
+.pit{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-left:3px solid #ef4444;border-radius:10px;padding:12px 16px;margin-bottom:14px;}
+.pit-t{font-family:'Space Mono',monospace;font-size:9px;color:#f87171;text-transform:uppercase;letter-spacing:2px;margin-bottom:7px;}
+.pit ul{list-style:none;}
+.pit li{font-size:12px;color:#e0a0a0;line-height:1.6;margin-bottom:2px;}
+.pit li::before{content:'⚠ ';color:#ef4444;}
+
+/* ─── COMPARE TABLE ─── */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px;}
+.tbl th{background:var(--surface2);padding:9px 13px;text-align:left;font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);}
+.tbl td{padding:9px 13px;border-bottom:1px solid #181824;color:#b0b0cc;line-height:1.5;vertical-align:top;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl td:first-child{color:#ddddf0;font-weight:700;}
+
+/* ─── CODE BLOCK ─── */
+.cw{background:var(--code-bg);border:1px solid #1a1a28;border-radius:12px;overflow:hidden;margin-top:14px;}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:#0d0d18;border-bottom:1px solid #1a1a28;}
+.dots{display:flex;gap:6px;}
+.dots span{width:10px;height:10px;border-radius:50%;}
+.r{background:#ff5f57;} .y{background:#ffbd2e;} .g{background:#28c840;}
+.cl{font-family:'Space Mono',monospace;font-size:9px;color:#404060;text-transform:uppercase;letter-spacing:1px;}
+pre{padding:18px;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12px;line-height:1.75;color:#b8b8d8;}
+.kw{color:#c792ea;} .fn{color:#82aaff;} .str{color:#c3e88d;} .cm{color:#3d5560;font-style:italic;} .num{color:#f78c6c;} .cls{color:#ffcb6b;} .op{color:#89ddff;}
+
+/* ─── SOLID CARD ─── */
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:18px;margin-bottom:22px;overflow:hidden;}
+.sh{display:flex;align-items:center;gap:18px;padding:18px 26px;border-bottom:1px solid var(--border);}
+.sl{font-size:2.2rem;font-weight:800;font-family:'Space Mono',monospace;line-height:1;flex-shrink:0;}
+.sh-info{}
+.sh-name{font-size:1rem;font-weight:800;}
+.sh-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.sb{padding:20px 26px;}
+
+/* ─── OVERVIEW TABLE ─── */
+.ovt{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:44px;}
+.ovt table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.ovt th{background:var(--surface2);padding:11px 16px;text-align:left;font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);}
+.ovt td{padding:10px 16px;border-bottom:1px solid #141420;color:#aaaacc;line-height:1.5;vertical-align:top;}
+.ovt tr:last-child td{border-bottom:none;}
+.ovt td:first-child{color:#ddddee;font-weight:700;}
+
+/* ─── ANALOGY BOX ─── */
+.analogy{background:linear-gradient(135deg,rgba(6,182,212,.06),rgba(6,182,212,.02));border:1px solid rgba(6,182,212,.18);border-left:3px solid var(--accent3);border-radius:10px;padding:13px 17px;margin-bottom:14px;}
+.analogy-t{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent3);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+.analogy p{font-size:12.5px;color:#7ee8f8;line-height:1.6;}
+
+/* ─── FOOTER ─── */
+.footer{text-align:center;padding:28px;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+
+@media(max-width:680px){
+  .hero,.nav,.wrap{padding-left:20px;padding-right:20px;}
+  .ig,.ig3{grid-template-columns:1fr;}
+  .qv-grid{grid-template-columns:1fr;}
+  .hero-stats{gap:16px;}
+}
+</style>
 </head>
-
 <body>
 
-    <!-- ======== SETUP ======== -->
-    <div id="setup-screen">
-        <div class="setup-brand">
-            <h1>System Design <em>Tracker</em></h1>
-            <p>// frontend · backend · react native · full-stack</p>
-        </div>
-        <div class="setup-card">
-            <div class="setup-tabs">
-                <button class="stab active" onclick="switchTab('manual')">Manual Config</button>
-                <button class="stab" onclick="switchTab('json')">Upload JSON</button>
-                <button class="stab" onclick="switchTab('demo')">Demo Mode</button>
-            </div>
+<!-- ═══════════ HERO ═══════════ -->
+<div class="hero">
+  <div class="hero-chip">📚 Revision Notes v2</div>
+  <h1>JS & React Native<br><em>Patterns + SOLID</em></h1>
+  <p class="hero-sub">// Design Patterns · SOLID Principles · Quick Diagrams · React Native Deep Dive</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-n">10</div><div class="stat-l">Patterns</div></div>
+    <div class="stat"><div class="stat-n">5</div><div class="stat-l">SOLID</div></div>
+    <div class="stat"><div class="stat-n">3</div><div class="stat-l">Categories</div></div>
+    <div class="stat"><div class="stat-n">25+</div><div class="stat-l">RN Examples</div></div>
+  </div>
+</div>
 
-            <div id="t-manual">
-                <div class="fg"><label class="flabel">API Key *</label><input class="finput" id="f-ak"
-                        placeholder="AIzaSy..." /></div>
-                <div class="fgrow">
-                    <div class="fg"><label class="flabel">Auth Domain *</label><input class="finput" id="f-ad"
-                            placeholder="app.firebaseapp.com" /></div>
-                    <div class="fg"><label class="flabel">Project ID *</label><input class="finput" id="f-pid"
-                            placeholder="my-project" /></div>
-                </div>
-                <div class="fgrow">
-                    <div class="fg"><label class="flabel">Storage Bucket</label><input class="finput" id="f-sb"
-                            placeholder="app.appspot.com" /></div>
-                    <div class="fg"><label class="flabel">App ID</label><input class="finput" id="f-aid"
-                            placeholder="1:123:web:abc" /></div>
-                </div>
-                <div class="fg"><label class="flabel">Database URL <span
-                            style="opacity:.6">(optional)</span></label><input class="finput" id="f-db"
-                        placeholder="https://app-rtdb.firebaseio.com" /></div>
-                <div class="err-msg" id="err-m">API Key, Auth Domain and Project ID are required.</div>
-                <button class="btn-connect" onclick="connectManual()">⚡ Connect to Firebase</button>
-            </div>
+<!-- ═══════════ NAV ═══════════ -->
+<div class="nav">
+  <a href="#diagrams">⚡ Quick Diagrams</a>
+  <a href="#overview">📋 Overview</a>
+  <a href="#creational">🏗 Creational</a>
+  <a href="#structural">🔧 Structural</a>
+  <a href="#behavioral">🔄 Behavioral</a>
+  <a href="#react">⚛️ React/RN</a>
+  <a href="#solid">💎 SOLID</a>
+</div>
 
-            <div id="t-json" style="display:none">
-                <div class="file-zone" id="drop-zone" onclick="document.getElementById('jfile').click()">
-                    <input type="file" id="jfile" accept=".json" onchange="handleJSON(event)" />
-                    <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
-                    <div style="font-weight:700;margin-bottom:.25rem;font-size:.9rem">Drop your Firebase config JSON
-                    </div>
-                    <div style="font-size:.76rem;color:var(--muted)">or click to browse</div>
-                </div>
-                <div id="j-preview" style="display:none;margin-top:1rem">
-                    <label class="flabel">Detected Config</label>
-                    <textarea class="finput" style="height:90px;resize:vertical" id="j-text" readonly></textarea>
-                    <button class="btn-connect" onclick="connectJSON()" style="margin-top:.7rem">⚡ Connect to
-                        Firebase</button>
-                </div>
-                <div class="err-msg" id="err-j"></div>
-            </div>
+<div class="wrap">
 
-            <div id="t-demo" style="display:none">
-                <div class="demo-box">
-                    <div style="font-size:2.2rem;margin-bottom:.7rem">🚀</div>
-                    <h3>Explore Without Firebase</h3>
-                    <p>30+ preloaded questions across <strong>Frontend SD</strong> topics — Performance, Component
-                        Architecture, State Management, Micro-frontends, React Native, Build Tools, A11y/SEO, Browser &
-                        Rendering — plus Backend SD classics. Data saved locally.</p>
-                    <button class="btn-connect" onclick="startDemo()">✨ Launch Demo</button>
-                </div>
-            </div>
-        </div>
+<!-- ═══════════ QUICK VISUAL DIAGRAMS ═══════════ -->
+<div id="diagrams">
+  <div class="sec-hdr">
+    <div class="sec-icon si-p">⚡</div>
+    <div>
+      <div class="sec-lbl">Quick Revision</div>
+      <h2>Pattern Diagrams at a Glance</h2>
+    </div>
+  </div>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:24px;font-family:'Space Mono',monospace;">// Read these first — understand the SHAPE of each pattern before diving into code</p>
+
+  <div class="qv-grid">
+
+    <!-- Singleton -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge bc">Creational</span> Singleton <span class="qv-tag bn">1 instance</span></div>
+      <div class="qv-diagram"><span class="hi">new Counter()</span>  ──►  <span class="arr">instance?</span>
+                  │
+       <span class="dim">YES</span> ◄──┘  └──► <span class="dim">NO</span>
+        │                   │
+<span class="arr">return old</span>       <span class="arr">create & store</span>
+        │                   │
+        └────────┬───────────┘
+                 ▼
+        <span class="hi">SAME instance</span>
+       <span class="lbl">counter1 === counter2 ✓</span></div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
-    <!-- ======== APP ======== -->
-    <div id="app">
-        <header>
-            <div class="logo">SD <em>Tracker</em></div>
-            <div style="display:flex;gap:.55rem">
-                <button class="hbtn primary" onclick="toggleDrawer()">+ Add Question</button>
-                <button class="hbtn" onclick="location.reload()">⏏ Disconnect</button>
-            </div>
-        </header>
-
-        <div class="stats-strip">
-            <div class="stat-block">
-                <div class="stat-num" id="s-tot">0</div>
-                <div class="stat-lbl">Total</div>
-            </div>
-            <div class="sdiv"></div>
-            <div class="stat-block s-solved">
-                <div class="stat-num" id="s-sol">0</div>
-                <div class="stat-lbl">Solved</div>
-            </div>
-            <div class="stat-block s-prog">
-                <div class="stat-num" id="s-prg">0</div>
-                <div class="stat-lbl">In Progress</div>
-            </div>
-            <div class="stat-block s-none">
-                <div class="stat-num" id="s-non">0</div>
-                <div class="stat-lbl">Not Started</div>
-            </div>
-            <div class="sdiv"></div>
-            <div class="prog-block">
-                <div class="prog-header"><span>Completion</span><strong id="s-pct">0%</strong></div>
-                <div class="pbar">
-                    <div class="pfill" id="pfill" style="width:0%"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="app-body">
-            <div class="sidebar">
-                <div class="side-sec">Overview</div>
-                <button class="cat-btn active" id="cat-all" onclick="setCat('all')">
-                    <span class="cat-dot" style="background:var(--ink)"></span>
-                    <span class="cat-name">All Topics</span>
-                    <span class="cat-ct" id="badge-all">0</span>
-                </button>
-                <div class="side-sec">⚡ Frontend SD</div>
-                <div id="fe-cats"></div>
-                <div class="side-sec">🗄 Backend SD</div>
-                <div id="be-cats"></div>
-            </div>
-
-            <div class="main-panel">
-                <!-- Add Drawer -->
-                <div class="add-drawer" id="add-drawer">
-                    <div class="drawer-title">Add New Question</div>
-                    <div class="fg"><label class="flabel">Question Title *</label><input class="finput2" id="n-title"
-                            placeholder="Design an infinite scroll feed" /></div>
-                    <div class="frow">
-                        <div class="fg"><label class="flabel">Category *</label>
-                            <select class="finput2" id="n-cat">
-                                <optgroup label="⚡ Frontend SD">
-                                    <option>Performance &amp; Core Web Vitals</option>
-                                    <option>Component Architecture</option>
-                                    <option>State Management</option>
-                                    <option>Micro-frontends</option>
-                                    <option>Accessibility &amp; SEO</option>
-                                    <option>Build Tools &amp; Bundling</option>
-                                    <option>React Native</option>
-                                    <option>Browser &amp; Rendering</option>
-                                    <option>Frontend Security</option>
-                                </optgroup>
-                                <optgroup label="🗄 Backend SD">
-                                    <option>Scalability</option>
-                                    <option>Data Systems</option>
-                                    <option>Messaging &amp; Events</option>
-                                    <option>Storage Systems</option>
-                                    <option>API Design</option>
-                                    <option>Infrastructure</option>
-                                </optgroup>
-                                <option>General</option>
-                            </select>
-                        </div>
-                        <div class="fg"><label class="flabel">Difficulty</label>
-                            <select class="finput2" id="n-diff">
-                                <option value="easy">Easy</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="hard">Hard</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="frow">
-                        <div class="fg"><label class="flabel">Status</label>
-                            <select class="finput2" id="n-status">
-                                <option value="unsolved">Not Started</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="solved">Solved</option>
-                            </select>
-                        </div>
-                        <div class="fg"><label class="flabel">Tags (comma separated)</label><input class="finput2"
-                                id="n-tags" placeholder="React, Virtualization, memo" /></div>
-                    </div>
-                    <div class="fg"><label class="flabel">Key Concepts (comma separated)</label><input class="finput2"
-                            id="n-concepts" placeholder="Virtual DOM, Lazy Loading, Code Splitting" /></div>
-                    <div class="fg"><label class="flabel">Resources (URLs, comma separated)</label><input
-                            class="finput2" id="n-res" placeholder="https://web.dev/..." /></div>
-                    <div class="fg"><label class="flabel">Notes / My Approach</label><textarea class="ftextarea"
-                            id="n-notes" rows="3" placeholder="My thoughts..."></textarea></div>
-                    <div class="form-actions">
-                        <button class="btn-save" onclick="addQuestion()">Save Question</button>
-                        <button class="btn-ghost" onclick="toggleDrawer()">Cancel</button>
-                    </div>
-                </div>
-
-                <!-- Toolbar -->
-                <div class="toolbar">
-                    <div class="search-wrap">
-                        <span class="s-ico">🔍</span>
-                        <input type="text" placeholder="Search questions, tags, concepts..." id="s-in"
-                            oninput="render()" />
-                    </div>
-                    <button class="fchip fa" onclick="setSt('all',this)">All</button>
-                    <button class="fchip" onclick="setSt('solved',this)">✅ Solved</button>
-                    <button class="fchip" onclick="setSt('in-progress',this)">🔄 Progress</button>
-                    <button class="fchip" onclick="setSt('unsolved',this)">🔲 Not Started</button>
-                </div>
-
-                <div class="view-title" id="view-title">All Topics</div>
-                <div class="q-grid" id="q-grid"></div>
-            </div>
-        </div>
+    <!-- Factory -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge bc">Creational</span> Factory <span class="qv-tag bn">dynamic create</span></div>
+      <div class="qv-diagram">    <span class="lbl">consumer</span>
+        │
+        ▼
+  <span class="hi">factory('car')</span>
+        │
+   <span class="arr">switch(type)</span>
+   ├── 'car'  ──► <span class="hi">new Car()</span>
+   ├── 'truck'──► <span class="hi">new Truck()</span>
+   └── 'bus'  ──► <span class="hi">new Bus()</span>
+        │
+        ▼
+   <span class="lbl">object with same interface</span></div>
     </div>
 
-    <!-- MODAL -->
-    <div class="overlay" id="overlay" onclick="closeModal(event)">
-        <div class="modal">
-            <div class="m-top">
-                <div class="m-title-wrap">
-                    <div class="m-title" id="m-title"></div>
-                    <div class="m-sub" id="m-sub"></div>
-                </div>
-                <button class="close-btn" onclick="closeModal()">✕</button>
-            </div>
-            <div class="m-body">
-                <div>
-                    <div class="msec-lbl">Status</div>
-                    <div class="stog-row">
-                        <button class="stog" id="tog-unsolved" onclick="setPS('unsolved')">🔲 Not Started</button>
-                        <button class="stog" id="tog-in-progress" onclick="setPS('in-progress')">🔄 In Progress</button>
-                        <button class="stog" id="tog-solved" onclick="setPS('solved')">✅ Solved</button>
-                    </div>
-                </div>
-                <div>
-                    <div class="msec-lbl">Key Concepts</div>
-                    <div class="concept-cloud" id="m-concepts"></div>
-                </div>
-                <div>
-                    <div class="msec-lbl">Tags</div>
-                    <div class="q-tags" id="m-tags"></div>
-                </div>
-                <div id="m-res-wrap">
-                    <div class="msec-lbl">Resources</div>
-                    <div class="res-list" id="m-res"></div>
-                </div>
-                <div>
-                    <div class="msec-lbl">My Notes &amp; Approach</div>
-                    <textarea class="ftextarea" id="m-notes" rows="6"
-                        placeholder="Write your approach, key insights, trade-offs..."></textarea>
-                </div>
-                <div>
-                    <div class="msec-lbl">Last Updated</div>
-                    <div style="font-size:.76rem;color:var(--muted);font-family:'DM Mono',monospace" id="m-date">—</div>
-                </div>
-            </div>
-            <div class="m-foot">
-                <button class="del-btn" onclick="deleteQ()">🗑 Delete</button>
-                <div style="display:flex;gap:.55rem">
-                    <button class="btn-ghost" onclick="closeModal()">Cancel</button>
-                    <button class="btn-save" onclick="saveQ()">💾 Save Changes</button>
-                </div>
-            </div>
-        </div>
+    <!-- Proxy -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge bs">Structural</span> Proxy <span class="qv-tag bn">intercept</span></div>
+      <div class="qv-diagram">  <span class="lbl">caller</span>
+     │
+     ▼
+ <span class="hi">PROXY</span>  ◄── wraps ──  <span class="dim">Real Object</span>
+  │  │
+  │  <span class="arr">get trap</span>  ──► log / validate
+  │  <span class="arr">set trap</span>  ──► encrypt / guard
+  │
+  ▼
+<span class="lbl">Real Object.property</span>
+<span class="dim">(caller never touches real obj)</span></div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        window._FB = { initializeApp, getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot };
-        document.dispatchEvent(new Event('fb-ready'));
-    </script>
+    <!-- Observer -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge bb">Behavioral</span> Observer <span class="qv-tag bn">1→many</span></div>
+      <div class="qv-diagram">   <span class="hi">Subject</span> (has state)
+      │
+  <span class="arr">state changes</span>
+      │
+  <span class="arr">notify all</span>
+  ├──► <span class="hi">Observer A</span>.update()
+  ├──► <span class="hi">Observer B</span>.update()
+  └──► <span class="hi">Observer C</span>.update()
 
-    <script>
-        const TOPICS = {
-            'Performance & Core Web Vitals': { color: '#e85d2a', side: 'fe' },
-            'Component Architecture': { color: '#2a7be8', side: 'fe' },
-            'State Management': { color: '#9c27b0', side: 'fe' },
-            'Micro-frontends': { color: '#e8962a', side: 'fe' },
-            'Accessibility & SEO': { color: '#2ab87a', side: 'fe' },
-            'Build Tools & Bundling': { color: '#c4302b', side: 'fe' },
-            'React Native': { color: '#61aff7', side: 'fe' },
-            'Browser & Rendering': { color: '#7c3aed', side: 'fe' },
-            'Frontend Security': { color: '#e82a6a', side: 'fe' },
-            'Scalability': { color: '#4a6fa5', side: 'be' },
-            'Data Systems': { color: '#3d8b37', side: 'be' },
-            'Messaging & Events': { color: '#b5742a', side: 'be' },
-            'Storage Systems': { color: '#7a4a9c', side: 'be' },
-            'API Design': { color: '#2a8b8b', side: 'be' },
-            'Infrastructure': { color: '#8b5a2a', side: 'be' },
-            'General': { color: '#888', side: 'be' },
-        };
+<span class="lbl">Observers KNOW the Subject</span>
+<span class="lbl">Synchronous · Single-app</span></div>
+    </div>
 
-        const DEMO_DATA = {
-            'pe1': { id: 'pe1', title: 'Design a lazy-loading image system', category: 'Performance & Core Web Vitals', difficulty: 'medium', status: 'solved', tags: ['IntersectionObserver', 'LQIP', 'WebP'], concepts: ['IntersectionObserver API', 'Low-Quality Image Placeholder', 'Responsive Images', 'srcset', 'WebP format'], notes: 'Used IntersectionObserver with 200px rootMargin. Serve LQIP first then swap to full res. srcset for responsive breakpoints.', resources: ['https://web.dev/lazy-loading-images/'], date: '2025-02-10' },
-            'pe2': { id: 'pe2', title: 'Improve LCP on a content-heavy marketing page', category: 'Performance & Core Web Vitals', difficulty: 'hard', status: 'in-progress', tags: ['LCP', 'Critical Path', 'Preload'], concepts: ['Largest Contentful Paint', 'Critical Rendering Path', 'Preload Hints', 'font-display:swap', 'Resource Prioritization'], notes: 'Hero image preload + font-display:swap giving big wins. Still reducing main thread work.', resources: ['https://web.dev/lcp/'], date: '2025-02-18' },
-            'pe3': { id: 'pe3', title: 'Design a Real User Monitoring (RUM) SDK', category: 'Performance & Core Web Vitals', difficulty: 'hard', status: 'unsolved', tags: ['PerformanceObserver', 'Beacon API', 'Core Web Vitals'], concepts: ['Real User Monitoring', 'PerformanceObserver', 'navigator.sendBeacon', 'Sampling Strategy', 'Session Attribution'], notes: '', resources: [], date: '' },
-            'pe4': { id: 'pe4', title: 'Design a client-side caching strategy', category: 'Performance & Core Web Vitals', difficulty: 'medium', status: 'solved', tags: ['Cache-Control', 'Service Worker', 'ETags'], concepts: ['HTTP Caching Headers', 'Service Worker Cache', 'Stale-While-Revalidate', 'Cache Busting', 'ETags'], notes: 'Use stale-while-revalidate for non-critical assets. Hard-bust hashed filenames in prod.', resources: [], date: '2025-01-25' },
-            'ca1': { id: 'ca1', title: 'Design a scalable design system component library', category: 'Component Architecture', difficulty: 'hard', status: 'in-progress', tags: ['Design Tokens', 'Storybook', 'Compound Components'], concepts: ['Design Tokens', 'Compound Component Pattern', 'Controlled vs Uncontrolled', 'Polymorphic as prop', 'Accessibility from scratch'], notes: 'Token layer → primitive components → composite components. Polymorphic `as` prop pattern for flexibility.', resources: ['https://bradfrost.com/blog/post/atomic-web-design/'], date: '2025-02-20' },
-            'ca2': { id: 'ca2', title: 'Design a virtualized infinite scroll list', category: 'Component Architecture', difficulty: 'medium', status: 'solved', tags: ['Virtualization', 'react-window', 'Pagination'], concepts: ['DOM Windowing', 'IntersectionObserver sentinel', 'Debounce', 'Skeleton Loading', 'react-window'], notes: 'react-window for virtualization + IntersectionObserver at bottom for pagination trigger.', resources: ['https://web.dev/virtualize-long-lists-react-window/'], date: '2025-01-30' },
-            'ca3': { id: 'ca3', title: 'Design a drag-and-drop kanban board', category: 'Component Architecture', difficulty: 'hard', status: 'unsolved', tags: ['DnD', 'Pointer Events', 'ARIA'], concepts: ['HTML5 Drag and Drop', 'Pointer Events API', 'ARIA Live Regions', 'Optimistic Reordering', 'dnd-kit'], notes: '', resources: [], date: '' },
-            'ca4': { id: 'ca4', title: 'Build a headless data table component', category: 'Component Architecture', difficulty: 'medium', status: 'solved', tags: ['Headless UI', 'TanStack Table', 'Render Props'], concepts: ['Headless Component Pattern', 'Render Props', 'Virtual Rows', 'Multi-sort', 'Column Pinning'], notes: 'TanStack Table for logic, completely custom render layer. Memo-ize heavy cell renderers.', resources: [], date: '2025-02-05' },
-            'sm1': { id: 'sm1', title: 'Design global state architecture for large React app', category: 'State Management', difficulty: 'hard', status: 'in-progress', tags: ['Zustand', 'React Query', 'Colocation'], concepts: ['Server State vs Client State', 'State Colocation', 'Selector Pattern', 'Zustand Slices', 'React Query Caching'], notes: 'Server state → React Query. Client UI state → Zustand slices. Keep local state local.', resources: ['https://tkdodo.eu/blog/react-query-as-a-state-manager'], date: '2025-02-22' },
-            'sm2': { id: 'sm2', title: 'Implement optimistic UI updates with rollback', category: 'State Management', difficulty: 'medium', status: 'solved', tags: ['Optimistic', 'Rollback', 'useMutation'], concepts: ['Optimistic Updates', 'onMutate / onError', 'Cache Snapshots', 'Rollback Pattern', 'Versioning'], notes: 'React Query useMutation: onMutate saves snapshot, updates cache optimistically, onError rolls back.', resources: [], date: '2025-02-12' },
-            'sm3': { id: 'sm3', title: 'Design offline-first state sync with conflict resolution', category: 'State Management', difficulty: 'hard', status: 'unsolved', tags: ['IndexedDB', 'CRDT', 'Sync'], concepts: ['Offline-First Architecture', 'IndexedDB', 'CRDT', 'Background Sync API', 'Merge Strategies'], notes: '', resources: [], date: '' },
-            'mf1': { id: 'mf1', title: 'Design a micro-frontend shell with Module Federation', category: 'Micro-frontends', difficulty: 'hard', status: 'in-progress', tags: ['Module Federation', 'Webpack 5', 'Shell App'], concepts: ['Module Federation', 'Shell App Pattern', 'Shared Singletons', 'Independent Deployments', 'Runtime Integration'], notes: 'Host shell loads remote apps at runtime. Share React/ReactDOM to avoid duplicate bundle weight.', resources: ['https://module-federation.io/'], date: '2025-02-19' },
-            'mf2': { id: 'mf2', title: 'Handle shared auth across micro-frontends', category: 'Micro-frontends', difficulty: 'hard', status: 'unsolved', tags: ['SSO', 'BroadcastChannel', 'Token Refresh'], concepts: ['Shared Session Token', 'BroadcastChannel API', 'Silent Token Refresh', 'Cookie Strategy', 'Cross-Origin Auth'], notes: '', resources: [], date: '' },
-            'mf3': { id: 'mf3', title: 'Design cross-MFE routing strategy', category: 'Micro-frontends', difficulty: 'medium', status: 'solved', tags: ['History API', 'CustomEvents', 'Route Ownership'], concepts: ['History API', 'Route Ownership Model', 'CustomEvents for navigation', 'popstate listener'], notes: 'Each MFE owns its route segment. Shell listens to popstate. CustomEvents for cross-MFE navigation.', resources: [], date: '2025-01-28' },
-            'a1': { id: 'a1', title: 'Design an accessible modal dialog system', category: 'Accessibility & SEO', difficulty: 'medium', status: 'solved', tags: ['Focus Trap', 'ARIA', 'WCAG 2.1'], concepts: ['Focus Trap', 'role="dialog"', 'aria-modal', 'Return Focus on Close', 'Keyboard Navigation'], notes: 'Focus trap on open. ESC to close. Return focus to trigger. role="dialog" + aria-labelledby.', resources: ['https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/'], date: '2025-02-08' },
-            'a2': { id: 'a2', title: 'Design Next.js app architecture for maximum SEO', category: 'Accessibility & SEO', difficulty: 'medium', status: 'in-progress', tags: ['SSR', 'SSG', 'Structured Data'], concepts: ['SSR vs SSG vs ISR', 'JSON-LD Structured Data', 'Open Graph Tags', 'Canonical URLs', 'Sitemaps'], notes: 'SSG for static pages, ISR for product pages (revalidate:60). JSON-LD per page type.', resources: [], date: '2025-02-21' },
-            'a3': { id: 'a3', title: 'Build an accessible combobox autocomplete', category: 'Accessibility & SEO', difficulty: 'hard', status: 'unsolved', tags: ['ARIA combobox', 'aria-activedescendant', 'Screen Reader'], concepts: ['ARIA combobox pattern', 'aria-activedescendant', 'Announce results', 'VoiceOver testing', 'Keyboard Navigation'], notes: '', resources: [], date: '' },
-            'bt1': { id: 'bt1', title: 'Optimize Webpack bundle for production', category: 'Build Tools & Bundling', difficulty: 'medium', status: 'solved', tags: ['Tree Shaking', 'Code Splitting', 'Bundle Analyzer'], concepts: ['Tree Shaking', 'Dynamic import()', 'SplitChunksPlugin', 'Side Effects Flag', 'Bundle Analyzer'], notes: 'Analyze with webpack-bundle-analyzer. Dynamic import for routes. sideEffects:false in package.json.', resources: [], date: '2025-01-20' },
-            'bt2': { id: 'bt2', title: 'Design monorepo build pipeline with Turborepo', category: 'Build Tools & Bundling', difficulty: 'hard', status: 'in-progress', tags: ['Turborepo', 'Monorepo', 'Remote Cache'], concepts: ['Task Pipeline', 'Turborepo Remote Caching', 'Topological Sort', 'Affected Packages', 'Changesets'], notes: 'Remote cache cuts CI time by ~70%. Pipeline: lint → typecheck → test → build in topological order.', resources: ['https://turbo.build/repo/docs'], date: '2025-02-15' },
-            'bt3': { id: 'bt3', title: 'Migrate Create React App to Vite', category: 'Build Tools & Bundling', difficulty: 'medium', status: 'unsolved', tags: ['Vite', 'ESM', 'HMR'], concepts: ['Native ESM Dev Server', 'HMR Protocol', 'Rollup Production Build', 'Vite Plugin API', 'Env Variable Migration'], notes: '', resources: [], date: '' },
-            'rn1': { id: 'rn1', title: 'Design offline-capable React Native app', category: 'React Native', difficulty: 'hard', status: 'in-progress', tags: ['WatermelonDB', 'AsyncStorage', 'Background Sync'], concepts: ['WatermelonDB', 'AsyncStorage', 'NetInfo API', 'Background Fetch', 'Conflict Resolution'], notes: 'WatermelonDB for structured local data. NetInfo for connectivity detection. Background sync on reconnect.', resources: [], date: '2025-02-17' },
-            'rn2': { id: 'rn2', title: 'Optimize FlatList performance in React Native', category: 'React Native', difficulty: 'medium', status: 'solved', tags: ['FlatList', 'getItemLayout', 'memo'], concepts: ['getItemLayout', 'keyExtractor', 'removeClippedSubviews', 'memo + useCallback', 'initialNumToRender'], notes: 'getItemLayout avoids async layout measurement. removeClippedSubviews=true. Memo item component rigorously.', resources: [], date: '2025-02-03' },
-            'rn3': { id: 'rn3', title: 'Design push notification system for React Native', category: 'React Native', difficulty: 'hard', status: 'unsolved', tags: ['FCM', 'APNs', 'Deep Linking'], concepts: ['FCM', 'APNs', 'Expo Notifications', 'Deep Linking', 'Background Message Handler', 'Permission UX'], notes: '', resources: [], date: '' },
-            'rn4': { id: 'rn4', title: 'Design navigation architecture for large RN app', category: 'React Native', difficulty: 'medium', status: 'solved', tags: ['React Navigation', 'Deep Links', 'Tab+Stack'], concepts: ['React Navigation v6', 'Nested Navigators', 'Deep Link Configuration', 'State Persistence', 'Tab + Stack Pattern'], notes: 'Root Tab navigator with Stack per tab. Deep links configured at root. Persist nav state for UX.', resources: [], date: '2025-01-22' },
-            'br1': { id: 'br1', title: 'Explain the browser rendering pipeline', category: 'Browser & Rendering', difficulty: 'medium', status: 'solved', tags: ['CRP', 'Paint', 'Composite'], concepts: ['DOM Construction', 'CSSOM', 'Render Tree', 'Layout/Reflow', 'Paint', 'Composite Layers'], notes: 'HTML → DOM, CSS → CSSOM → Render Tree → Layout → Paint → Composite. Avoid forced synchronous layout.', resources: ['https://web.dev/rendering-performance/'], date: '2025-02-01' },
-            'br2': { id: 'br2', title: 'Design a React concurrent rendering strategy', category: 'Browser & Rendering', difficulty: 'hard', status: 'in-progress', tags: ['Concurrent Mode', 'Suspense', 'Transitions'], concepts: ['React Concurrent Mode', 'useTransition', 'Suspense Boundaries', 'Time Slicing', 'startTransition'], notes: 'Wrap non-urgent state updates in startTransition. Suspense boundaries for async data fetching.', resources: [], date: '2025-02-23' },
-            'fs1': { id: 'fs1', title: 'Implement Content Security Policy (CSP)', category: 'Frontend Security', difficulty: 'medium', status: 'solved', tags: ['CSP', 'XSS', 'Nonces'], concepts: ['Content Security Policy', 'script-src nonce', 'Strict CSP', 'Trusted Types', 'XSS Prevention'], notes: 'Strict CSP with nonces on scripts. Trusted Types to prevent DOM XSS. Report-only mode for rollout.', resources: [], date: '2025-02-06' },
-            'be1': { id: 'be1', title: 'Design a URL Shortener', category: 'Scalability', difficulty: 'medium', status: 'solved', tags: ['Hashing', 'Redis', 'CDN'], concepts: ['Base62 Encoding', 'Consistent Hashing', 'Rate Limiting', 'Cache TTL'], notes: 'Base62 short codes, Redis for hot URLs, CDN for redirect serving at edge.', resources: [], date: '2025-02-15' },
-            'be2': { id: 'be2', title: "Design Twitter's Timeline Feed", category: 'Scalability', difficulty: 'hard', status: 'in-progress', tags: ['Fan-out', 'Kafka', 'Cache'], concepts: ['Fan-out on Write', 'Fan-out on Read', 'Celebrity Problem', 'Hybrid Strategy', 'Timeline Cache'], notes: 'Fan-out on write for normal users, fan-out on read for celebrities. Hybrid approach.', resources: [], date: '2025-02-20' },
-            'be3': { id: 'be3', title: 'Design a real-time chat system', category: 'Messaging & Events', difficulty: 'hard', status: 'solved', tags: ['WebSocket', 'Cassandra', 'Presence'], concepts: ['WebSocket', 'Cassandra', 'Message Ordering', 'Presence Detection', 'Heartbeat'], notes: 'WebSocket connections per server. Cassandra for message history. Redis for online presence.', resources: [], date: '2025-02-10' },
-        };
+    <!-- Pub/Sub -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge bb">Behavioral</span> Pub/Sub <span class="qv-tag bn">decoupled</span></div>
+      <div class="qv-diagram"> <span class="hi">Publisher</span>
+      │
+ <span class="arr">publish('topic', data)</span>
+      │
+      ▼
+  <span class="hi">EVENT BUS</span> (broker)
+      │
+ <span class="arr">route by topic</span>
+  ├──► <span class="hi">Subscriber A</span>
+  └──► <span class="hi">Subscriber B</span>
 
-        let db = null, isDemo = false, questions = {}, activeCat = 'all', activeSt = 'all', activeModalId = null, pendingStatus = null;
+<span class="lbl">No direct reference</span>
+<span class="lbl">Async · Cross-app</span></div>
+    </div>
 
-        // ---- SETUP ----
-        function switchTab(t) {
-            ['manual', 'json', 'demo'].forEach((n, i) => { document.getElementById('t-' + n).style.display = n === t ? 'block' : 'none'; document.querySelectorAll('.stab')[i].classList.toggle('active', n === t); });
-        }
-        window.switchTab = switchTab;
+    <!-- Container-Presentation -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge br">React/RN</span> Container-Presentation</div>
+      <div class="qv-diagram">  <span class="hi">Container</span> (Screen)
+  │  fetch data
+  │  manage state
+  │  handle errors
+  │
+  <span class="arr">pass props ↓</span>
+  │
+  ▼
+  <span class="hi">Presentation</span> (UI)
+  │  only renders
+  │  no state
+  │  no side-effects
+  <span class="lbl">easy to test in isolation</span></div>
+    </div>
 
-        window.connectManual = async function () {
-            const cfg = { apiKey: gv('f-ak'), authDomain: gv('f-ad'), projectId: gv('f-pid'), storageBucket: gv('f-sb'), appId: gv('f-aid'), databaseURL: gv('f-db') };
-            if (!cfg.apiKey || !cfg.authDomain || !cfg.projectId) { show('err-m'); return; }
-            hide('err-m'); await bootFB(cfg);
-        };
+    <!-- Hook Pattern -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge br">React/RN</span> Custom Hook <span class="qv-tag bn">reuse logic</span></div>
+      <div class="qv-diagram">  <span class="hi">useNetworkStatus()</span>
+  ┌──────────────────┐
+  │ useState          │
+  │ useEffect         │
+  │ NetInfo listener  │
+  │ cleanup on exit   │
+  └──────────────────┘
+      │
+  <span class="arr">returns { isOnline, type }</span>
+      │
+  ├──► <span class="hi">ComponentA</span>
+  ├──► <span class="hi">ComponentB</span>
+  └──► <span class="hi">ComponentC</span>
+<span class="lbl">logic shared, no duplication</span></div>
+    </div>
 
-        window.handleJSON = function (e) {
-            const file = e.target.files[0]; if (!file) return;
-            const r = new FileReader();
-            r.onload = ev => {
-                try { const d = JSON.parse(ev.target.result); document.getElementById('j-text').value = JSON.stringify(d, null, 2); document.getElementById('j-preview').style.display = 'block'; hide('err-j'); window._jc = d; }
-                catch (er) { document.getElementById('err-j').textContent = 'Invalid JSON: ' + er.message; show('err-j'); }
-            }; r.readAsText(file);
-        };
+    <!-- Provider -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge br">React/RN</span> Provider <span class="qv-tag bn">no prop-drill</span></div>
+      <div class="qv-diagram">  <span class="hi">&lt;ThemeProvider&gt;</span>  ← holds theme
+    │
+    ├── <span class="dim">&lt;Screen&gt;</span>
+    │     ├── <span class="dim">&lt;Header&gt;</span>
+    │     │     └── <span class="hi">useTheme() ✓</span>
+    │     └── <span class="dim">&lt;Card&gt;</span>
+    │           └── <span class="hi">useTheme() ✓</span>
+    └── <span class="dim">&lt;TabBar&gt;</span>
+          └── <span class="hi">useTheme() ✓</span>
+<span class="lbl">ANY depth — no props passed</span></div>
+    </div>
 
-        window.connectJSON = async function () { if (!window._jc) return; const cfg = window._jc.apiKey ? window._jc : (window._jc.firebase || window._jc); await bootFB(cfg); };
+    <!-- Render Prop -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge br">React/RN</span> Render Prop <span class="qv-tag bn">fn as prop</span></div>
+      <div class="qv-diagram">  <span class="hi">&lt;Mouse render={fn} /&gt;</span>
+        │
+  <span class="dim">Mouse component:</span>
+  │  tracks position
+  │  calls <span class="arr">render({ x, y })</span>
+  │
+  ▼
+  <span class="hi">fn({ x, y })</span>
+  └──► <span class="dim">consumer renders what</span>
+       <span class="dim">IT wants with the data</span>
+<span class="lbl">flexibility without HOC</span></div>
+    </div>
 
-        window.startDemo = function () {
-            isDemo = true; questions = JSON.parse(JSON.stringify(DEMO_DATA));
-            launchApp(); refresh(); toast('🚀 Demo — 30 questions across all topics!');
-        };
+    <!-- Composition -->
+    <div class="qv-card">
+      <div class="qv-name"><span class="badge bs">Structural</span> Composition <span class="qv-tag bn">compound</span></div>
+      <div class="qv-diagram">  <span class="hi">&lt;Card&gt;</span>
+  ├── <span class="hi">&lt;Card.Header&gt;</span>
+  │     &lt;Avatar /&gt; &lt;Name /&gt;
+  ├── <span class="hi">&lt;Card.Body&gt;</span>
+  │     &lt;Description /&gt;
+  └── <span class="hi">&lt;Card.Footer&gt;</span>
+        &lt;Button /&gt;
 
-        async function bootFB(cfg) {
-            try {
-                if (!window._FB) await new Promise(r => document.addEventListener('fb-ready', r, { once: true }));
-                const app = window._FB.initializeApp(cfg); db = window._FB.getFirestore(app); launchApp();
-                const { collection, onSnapshot } = window._FB;
-                onSnapshot(collection(db, 'sd_questions'), snap => {
-                    questions = {}; snap.forEach(d => questions[d.id] = { id: d.id, ...d.data() }); refresh();
-                });
-            } catch (e) { alert('Firebase error: ' + e.message); }
-        }
+<span class="lbl">build complex from small</span>
+<span class="lbl">flexible · reusable · readable</span></div>
+    </div>
 
-        function launchApp() { document.getElementById('setup-screen').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
+  </div><!-- /qv-grid -->
+</div>
 
-        // drag/drop
-        document.addEventListener('DOMContentLoaded', () => {
-            const dz = document.getElementById('drop-zone');
-            ['dragover', 'dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
-                e.preventDefault();
-                if (ev === 'dragover') dz.classList.add('over');
-                else if (ev === 'dragleave') dz.classList.remove('over');
-                else { dz.classList.remove('over'); handleJSON({ target: { files: e.dataTransfer.files } }); }
-            }));
-        });
+<!-- ═══════════ OVERVIEW TABLE ═══════════ -->
+<div id="overview">
+  <div class="sec-hdr">
+    <div class="sec-icon si-p">📋</div>
+    <div><div class="sec-lbl">Master Table</div><h2>All Patterns Overview</h2></div>
+  </div>
+  <div class="ovt">
+    <table>
+      <thead>
+        <tr><th>Pattern</th><th>Category</th><th>Core Idea</th><th>RN Real-World Use</th><th>Key Methods</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Singleton</td><td><span class="badge bc">Creational</span></td><td>One instance, global access</td><td>Axios client, AsyncStorage wrapper, FCM manager</td><td>getInstance(), constructor check</td></tr>
+        <tr><td>Factory</td><td><span class="badge bc">Creational</span></td><td>Centralised object creation</td><td>Platform buttons, storage selector, payment gateway</td><td>createX(), switch(type)</td></tr>
+        <tr><td>Proxy</td><td><span class="badge bs">Structural</span></td><td>Intercept object access</td><td>Encrypted storage, API logger, image cache</td><td>get trap, set trap</td></tr>
+        <tr><td>Observer</td><td><span class="badge bb">Behavioral</span></td><td>Subject notifies observers</td><td>Cart store, keyboard events, AppState</td><td>subscribe, unsubscribe, notify</td></tr>
+        <tr><td>Pub/Sub</td><td><span class="badge bb">Behavioral</span></td><td>Loose-coupled via broker</td><td>Cross-screen events, Redux, deep links</td><td>publish(topic), subscribe(topic)</td></tr>
+        <tr><td>Container-Presentation</td><td><span class="badge br">React/RN</span></td><td>Logic vs UI separation</td><td>Screen (smart) + UI Component (dumb)</td><td>props passing, no state in presentation</td></tr>
+        <tr><td>Custom Hook</td><td><span class="badge br">React/RN</span></td><td>Reusable stateful logic</td><td>useLocation, useBluetooth, useNetInfo</td><td>useState, useEffect, cleanup</td></tr>
+        <tr><td>Provider</td><td><span class="badge br">React/RN</span></td><td>Global data without prop drilling</td><td>Theme, Auth, i18n, Navigation</td><td>createContext, Provider, useContext</td></tr>
+        <tr><td>Render Prop</td><td><span class="badge br">React/RN</span></td><td>Share logic via function prop</td><td>PermissionGate, FlatList renderItem</td><td>render={fn}, children as function</td></tr>
+        <tr><td>Composition</td><td><span class="badge bs">Structural</span></td><td>Build from small pieces</td><td>Compound components, HOCs, wrappers</td><td>Card.Header, Card.Body, Card.Footer</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-        // ---- DATA ----
-        function refresh() { updateStats(); buildSidebar(); render(); }
+<!-- ═══════════ CREATIONAL ═══════════ -->
+<div id="creational">
+  <div class="sec-hdr">
+    <div class="sec-icon si-c">🏗️</div>
+    <div><div class="sec-lbl">Category 1</div><h2>Creational Patterns</h2></div>
+  </div>
 
-        function updateStats() {
-            const all = Object.values(questions);
-            const sol = all.filter(q => q.status === 'solved').length;
-            const prg = all.filter(q => q.status === 'in-progress').length;
-            const non = all.filter(q => q.status === 'unsolved').length;
-            const pct = all.length ? Math.round(sol / all.length * 100) : 0;
-            setText('s-tot', all.length); setText('s-sol', sol); setText('s-prg', prg); setText('s-non', non);
-            setText('s-pct', pct + '%'); document.getElementById('pfill').style.width = pct + '%';
-            document.getElementById('badge-all').textContent = all.length;
-        }
-
-        function buildSidebar() {
-            const cats = {}; Object.values(questions).forEach(q => cats[q.category] = (cats[q.category] || 0) + 1);
-            const fe = document.getElementById('fe-cats'), be = document.getElementById('be-cats');
-            fe.innerHTML = ''; be.innerHTML = '';
-            Object.entries(TOPICS).forEach(([cat, meta]) => {
-                const count = cats[cat] || 0;
-                const btn = document.createElement('button');
-                btn.className = 'cat-btn' + (activeCat === cat ? ' active' : '');
-                btn.innerHTML = `<span class="cat-dot" style="background:${meta.color}"></span><span class="cat-name">${cat}</span><span class="cat-ct">${count}</span>`;
-                btn.onclick = () => setCat(cat);
-                (meta.side === 'fe' ? fe : be).appendChild(btn);
-            });
-            document.getElementById('cat-all').classList.toggle('active', activeCat === 'all');
-        }
-
-        function render() {
-            const grid = document.getElementById('q-grid');
-            const search = document.getElementById('s-in').value.toLowerCase();
-            let list = Object.values(questions).filter(q => {
-                const mc = activeCat === 'all' || q.category === activeCat;
-                const ms = activeSt === 'all' || q.status === activeSt;
-                const mt = !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search) || (q.tags || []).join(' ').toLowerCase().includes(search) || (q.concepts || []).join(' ').toLowerCase().includes(search);
-                return mc && ms && mt;
-            });
-            document.getElementById('view-title').textContent = activeCat === 'all' ? 'All Topics' : activeCat;
-            if (!list.length) { grid.innerHTML = '<div class="empty"><div style="font-size:2.5rem">🔍</div><h3>No questions found</h3><p>Adjust filters or add a new question.</p></div>'; return; }
-            const tc = cat => TOPICS[cat] || { color: '#888' };
-            grid.innerHTML = list.map(q => `
-    <div class="q-card ${q.status || 'unsolved'}" onclick="openModal('${q.id}')">
-      <div class="q-top">
-        <div class="q-title">${q.title}</div>
-        <span class="diff ${q.difficulty || 'medium'}">${q.difficulty || 'medium'}</span>
+  <!-- SINGLETON -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Singleton Pattern</div>
+        <div class="pc-badges"><span class="badge bc">Creational</span><span class="badge bn">React Native</span></div>
       </div>
-      <div class="q-cat"><span class="q-cdot" style="background:${tc(q.category).color}"></span>${q.category || 'General'}</div>
-      ${q.notes ? `<div class="q-np">${q.notes}</div>` : ''}
-      <div class="q-tags">${(q.tags || []).slice(0, 4).map(t => `<span class="qtag">${t}</span>`).join('')}</div>
-      <div class="q-bot">
-        <div class="qstatus ${q.status || 'unsolved'}"><span class="qsdot"></span>${q.status === 'solved' ? 'Solved' : q.status === 'in-progress' ? 'In Progress' : 'Not Started'}</div>
-        <div class="q-date">${q.date || ''}</div>
+    </div>
+    <div class="pc-body">
+
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of a <strong>country's President</strong> — there can only be ONE at a time. If you ask for "the president", you always get the same person. Even if 10 people ask, they all refer to the same person. That's Singleton.</p>
       </div>
-    </div>`).join('');
+
+      <div class="ig">
+        <div class="ib"><div class="ib-l">Purpose</div><p>Ensures a class has <strong>only one instance</strong> ever created, and provides a global access point to it.</p></div>
+        <div class="ib"><div class="ib-l">Core Mechanism</div><p>Constructor checks <code>ClassName.instance</code> — if it exists, returns it. Otherwise creates and stores it.</p></div>
+        <div class="ib"><div class="ib-l">Private Fields</div><p>Use <code>#field</code> (ES2022) to prevent external mutation of the instance's internal state.</p></div>
+        <div class="ib"><div class="ib-l">Thread Safety</div><p>JS is single-threaded so race conditions aren't an issue. In React Native, module caching handles singleton naturally via <code>import</code>.</p></div>
+      </div>
+
+      <div class="pts">
+        <div class="pts-l">Detailed Points</div>
+        <div class="pt"><span class="dot d1"></span><strong>Module-level singleton:</strong> In Node.js / React Native, every <code>import</code>ed module is cached — so an exported object is already a singleton by nature.</div>
+        <div class="pt"><span class="dot d1"></span><strong>Static instance property:</strong> Stored on the class itself (<code>MyClass.instance</code>), not on the prototype, so it survives across <code>new</code> calls.</div>
+        <div class="pt"><span class="dot d1"></span><strong>Return from constructor:</strong> Returning an object from a constructor replaces the newly created <code>this</code> — used to return the old instance.</div>
+        <div class="pt"><span class="dot d1"></span><strong>When NOT to use:</strong> Avoid for things that need multiple configs (e.g., two different API bases) — use Factory or DI instead.</div>
+        <div class="pt"><span class="dot d1"></span><strong>Testing trap:</strong> Singleton state persists between tests — always reset or mock the instance in your test setup.</div>
+      </div>
+
+      <div class="rn">
+        <div class="rn-t">📱 React Native Applications</div>
+        <ul>
+          <li><strong>Axios API Client</strong> — create once with baseURL + interceptors, reuse across all screens</li>
+          <li><strong>AsyncStorage / MMKV wrapper</strong> — one controller, centralised read/write logic</li>
+          <li><strong>Firebase Analytics</strong> — initialise once, log events from anywhere</li>
+          <li><strong>WebSocket Manager</strong> — single persistent connection, all screens subscribe to it</li>
+          <li><strong>FCM Token Manager</strong> — manage push notification token in one place</li>
+          <li><strong>App Config</strong> — env variables (API_URL, feature flags) loaded once at startup</li>
+        </ul>
+      </div>
+
+      <div class="pit">
+        <div class="pit-t">⚠ Common Pitfalls</div>
+        <ul>
+          <li>Shared mutable state = hidden coupling between screens — hard to debug</li>
+          <li>Singleton makes unit testing harder — use dependency injection for testability</li>
+          <li>Don't use for UI state — use React state / Context instead</li>
+        </ul>
+      </div>
+
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">singleton.ts — Axios Client (React Native)</span></div>
+        <pre><span class="cm">// ✅ Module-level singleton (simplest RN approach)</span>
+<span class="kw">import</span> axios, { AxiosInstance } <span class="kw">from</span> <span class="str">'axios'</span>;
+<span class="kw">import</span> AsyncStorage <span class="kw">from</span> <span class="str">'@react-native-async-storage/async-storage'</span>;
+
+<span class="kw">class</span> <span class="cls">ApiClient</span> {
+  <span class="kw">private static</span> instance: <span class="cls">ApiClient</span>;
+  <span class="kw">private</span> http: <span class="cls">AxiosInstance</span>;
+
+  <span class="kw">private</span> <span class="fn">constructor</span>() {
+    <span class="cm">// Private constructor — blocks `new ApiClient()` from outside</span>
+    <span class="kw">this</span>.http = axios.<span class="fn">create</span>({
+      baseURL: <span class="str">'https://api.myapp.com/v1'</span>,
+      timeout: <span class="num">10000</span>,
+      headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+    });
+
+    <span class="cm">// Add request interceptor — attach token on every request</span>
+    <span class="kw">this</span>.http.interceptors.request.<span class="fn">use</span>(<span class="kw">async</span> (config) => {
+      <span class="kw">const</span> token = <span class="kw">await</span> AsyncStorage.<span class="fn">getItem</span>(<span class="str">'@auth_token'</span>);
+      <span class="kw">if</span> (token) config.headers.Authorization = <span class="str">`Bearer ${token}`</span>;
+      <span class="kw">return</span> config;
+    });
+
+    <span class="cm">// Add response interceptor — handle 401 globally</span>
+    <span class="kw">this</span>.http.interceptors.response.<span class="fn">use</span>(
+      res => res,
+      <span class="kw">async</span> err => {
+        <span class="kw">if</span> (err.response?.status === <span class="num">401</span>) {
+          <span class="kw">await</span> AsyncStorage.<span class="fn">removeItem</span>(<span class="str">'@auth_token'</span>);
+          <span class="cm">// Redirect to login — navigate globally</span>
+        }
+        <span class="kw">return</span> Promise.<span class="fn">reject</span>(err);
+      }
+    );
+  }
+
+  <span class="cm">// 🔑 Only way to get the instance</span>
+  <span class="kw">public static</span> <span class="fn">getInstance</span>(): <span class="cls">ApiClient</span> {
+    <span class="kw">if</span> (!<span class="cls">ApiClient</span>.instance) {
+      <span class="cls">ApiClient</span>.instance = <span class="kw">new</span> <span class="cls">ApiClient</span>();
+    }
+    <span class="kw">return</span> <span class="cls">ApiClient</span>.instance;
+  }
+
+  <span class="fn">get</span>&lt;T&gt;(url: string)           { <span class="kw">return</span> <span class="kw">this</span>.http.<span class="fn">get</span>&lt;T&gt;(url); }
+  <span class="fn">post</span>&lt;T&gt;(url: string, data: <span class="kw">any</span>) { <span class="kw">return</span> <span class="kw">this</span>.http.<span class="fn">post</span>&lt;T&gt;(url, data); }
+  <span class="fn">put</span>&lt;T&gt;(url: string, data: <span class="kw">any</span>)  { <span class="kw">return</span> <span class="kw">this</span>.http.<span class="fn">put</span>&lt;T&gt;(url, data); }
+  <span class="fn">del</span>&lt;T&gt;(url: string)           { <span class="kw">return</span> <span class="kw">this</span>.http.<span class="fn">delete</span>&lt;T&gt;(url); }
+}
+
+<span class="cm">// Usage — same instance everywhere in app</span>
+<span class="kw">const</span> api = <span class="cls">ApiClient</span>.<span class="fn">getInstance</span>();
+<span class="kw">const</span> users = <span class="kw">await</span> api.<span class="fn">get</span>&lt;<span class="cls">User</span>[]&gt;(<span class="str">'/users'</span>);
+<span class="kw">const</span> profile = <span class="kw">await</span> api.<span class="fn">post</span>(<span class="str">'/profile'</span>, { name: <span class="str">'John'</span> });</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACTORY -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Factory Pattern</div>
+        <div class="pc-badges"><span class="badge bc">Creational</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
+
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of a <strong>restaurant kitchen</strong> — you say "I want a burger" (factory call). The kitchen (factory) figures out whether to make a veggie burger or chicken burger based on your preference. You don't care HOW it's made, you just get a burger.</p>
+      </div>
+
+      <div class="ig ig3">
+        <div class="ib"><div class="ib-l">Purpose</div><p>Centralises object creation. The <strong>what</strong> is decided at runtime, not compile time.</p></div>
+        <div class="ib"><div class="ib-l">Factory vs Constructor</div><p>Constructor always makes the same type. Factory decides which type based on a condition.</p></div>
+        <div class="ib"><div class="ib-l">Factory vs Singleton</div><p>Factory returns <strong>different</strong> instances each call. Singleton always returns the <strong>same</strong> one.</p></div>
+      </div>
+
+      <div class="pts">
+        <div class="pts-l">Detailed Points</div>
+        <div class="pt"><span class="dot d1"></span><strong>Two forms:</strong> Factory Function (simple function that returns object) and Factory Class (class with <code>create()</code> method — better for complex hierarchies).</div>
+        <div class="pt"><span class="dot d1"></span><strong>Open/Closed benefit:</strong> Add new types to the switch/map without changing consumer code — just register the new type in the factory.</div>
+        <div class="pt"><span class="dot d1"></span><strong>Abstract Factory:</strong> A factory of factories — creates families of related objects (e.g., iOS theme factory creates iOS-styled Button, Input, Modal).</div>
+        <div class="pt"><span class="dot d1"></span><strong>Common pattern:</strong> Replace <code>switch(type)</code> with a <code>registry Map</code> for O(1) lookup and easy extension without changing factory code.</div>
+      </div>
+
+      <div class="rn">
+        <div class="rn-t">📱 React Native Applications</div>
+        <ul>
+          <li><strong>Platform Factory</strong> — <code>Platform.OS === 'ios'</code> → IOSButton, else AndroidButton</li>
+          <li><strong>Storage Factory</strong> — <code>sensitive=true</code> → SecureStore, else AsyncStorage, or MMKV for perf</li>
+          <li><strong>Notification Factory</strong> — local notification vs push vs in-app banner based on app state</li>
+          <li><strong>Payment Factory</strong> — Stripe (US), Razorpay (IN), PayPal (EU) based on user region</li>
+          <li><strong>Analytics Factory</strong> — Firebase (prod) vs ConsoleLogger (dev) based on <code>__DEV__</code></li>
+        </ul>
+      </div>
+
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">factory.ts — Storage Factory (React Native)</span></div>
+        <pre><span class="cm">// Storage interface — all implementations must follow this</span>
+<span class="kw">interface</span> <span class="cls">StorageDriver</span> {
+  <span class="fn">get</span>(key: string): Promise&lt;string | null&gt;;
+  <span class="fn">set</span>(key: string, val: string): Promise&lt;<span class="kw">void</span>&gt;;
+  <span class="fn">remove</span>(key: string): Promise&lt;<span class="kw">void</span>&gt;;
+}
+
+<span class="cm">// Three concrete implementations</span>
+<span class="kw">class</span> <span class="cls">AsyncStorageDriver</span> <span class="kw">implements</span> <span class="cls">StorageDriver</span> { <span class="cm">/* ... */</span> }
+<span class="kw">class</span> <span class="cls">MMKVDriver</span>         <span class="kw">implements</span> <span class="cls">StorageDriver</span> { <span class="cm">/* ... */</span> }
+<span class="kw">class</span> <span class="cls">SecureStoreDriver</span>  <span class="kw">implements</span> <span class="cls">StorageDriver</span> { <span class="cm">/* ... */</span> }
+
+<span class="cm">// ✅ Factory with registry Map (better than switch)</span>
+<span class="kw">type</span> StorageType = <span class="str">'async'</span> | <span class="str">'mmkv'</span> | <span class="str">'secure'</span>;
+
+<span class="kw">const</span> registry: Record&lt;StorageType, () => <span class="cls">StorageDriver</span>&gt; = {
+  async:  () => <span class="kw">new</span> <span class="cls">AsyncStorageDriver</span>(),
+  mmkv:   () => <span class="kw">new</span> <span class="cls">MMKVDriver</span>(),
+  secure: () => <span class="kw">new</span> <span class="cls">SecureStoreDriver</span>(),
+};
+
+<span class="kw">function</span> <span class="fn">createStorage</span>(type: StorageType): <span class="cls">StorageDriver</span> {
+  <span class="kw">const</span> factory = registry[type];
+  <span class="kw">if</span> (!factory) <span class="kw">throw new</span> Error(<span class="str">`Unknown storage type: ${type}`</span>);
+  <span class="kw">return</span> <span class="fn">factory</span>();
+}
+
+<span class="cm">// Usage — decision made at call site, implementation hidden</span>
+<span class="kw">const</span> tokenStorage  = <span class="fn">createStorage</span>(<span class="str">'secure'</span>); <span class="cm">// biometric protect</span>
+<span class="kw">const</span> cacheStorage  = <span class="fn">createStorage</span>(<span class="str">'mmkv'</span>);   <span class="cm">// speed priority</span>
+<span class="kw">const</span> prefStorage   = <span class="fn">createStorage</span>(<span class="str">'async'</span>);  <span class="cm">// general purpose</span>
+
+<span class="cm">// All use same interface — consumer code is identical</span>
+<span class="kw">await</span> tokenStorage.<span class="fn">set</span>(<span class="str">'jwt'</span>, token);
+<span class="kw">const</span> jwt = <span class="kw">await</span> tokenStorage.<span class="fn">get</span>(<span class="str">'jwt'</span>);</pre>
+      </div>
+    </div>
+  </div>
+</div><!-- /creational -->
+
+<!-- ═══════════ STRUCTURAL ═══════════ -->
+<div id="structural">
+  <div class="sec-hdr">
+    <div class="sec-icon si-s">🔧</div>
+    <div><div class="sec-lbl">Category 2</div><h2>Structural Patterns</h2></div>
+  </div>
+
+  <!-- PROXY -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Proxy Pattern</div>
+        <div class="pc-badges"><span class="badge bs">Structural</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
+
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of a <strong>hotel receptionist</strong> — you never talk to the hotel owner directly. The receptionist (proxy) intercepts your request, checks if you're a guest, logs your visit, and then forwards it. They can even deny access if needed.</p>
+      </div>
+
+      <div class="ig">
+        <div class="ib"><div class="ib-l">Purpose</div><p>A surrogate that <strong>controls access</strong> to another object. Add behaviour (logging, caching, validation) without touching original.</p></div>
+        <div class="ib"><div class="ib-l">JS Built-in</div><p><code>new Proxy(target, handler)</code> — handler defines traps: <code>get</code>, <code>set</code>, <code>has</code>, <code>apply</code>, <code>construct</code>, etc.</p></div>
+        <div class="ib"><div class="ib-l">get Trap</div><p>Fires when any property is READ from the proxy. Can return modified values, log access, or throw for forbidden keys.</p></div>
+        <div class="ib"><div class="ib-l">set Trap</div><p>Fires when any property is WRITTEN. Can validate types, encrypt values, log mutations. Must <code>return true</code> to confirm write.</p></div>
+      </div>
+
+      <div class="pts">
+        <div class="pts-l">Proxy Trap Types (Important for Interview)</div>
+        <div class="pt"><span class="dot d3"></span><code>get(target, prop, receiver)</code> — intercept property read</div>
+        <div class="pt"><span class="dot d3"></span><code>set(target, prop, value, receiver)</code> — intercept property write, must return <code>true</code></div>
+        <div class="pt"><span class="dot d3"></span><code>has(target, prop)</code> — intercept <code>in</code> operator (<code>'name' in obj</code>)</div>
+        <div class="pt"><span class="dot d3"></span><code>deleteProperty(target, prop)</code> — intercept <code>delete obj.name</code></div>
+        <div class="pt"><span class="dot d3"></span><code>apply(target, thisArg, args)</code> — intercept function calls (proxy on a function)</div>
+        <div class="pt"><span class="dot d3"></span><strong>Reflect API:</strong> Always use <code>Reflect.get(target, prop)</code> inside traps to maintain default behaviour cleanly.</div>
+      </div>
+
+      <div class="rn">
+        <div class="rn-t">📱 React Native Applications</div>
+        <ul>
+          <li><strong>Encrypted AsyncStorage</strong> — proxy transparently encrypts on <code>set</code>, decrypts on <code>get</code></li>
+          <li><strong>API Logger</strong> — proxy Axios to log every request/response in dev mode</li>
+          <li><strong>Image Cache Proxy</strong> — serve from in-memory cache; fetch from CDN on miss</li>
+          <li><strong>Permission Proxy</strong> — check permission before allowing camera/mic access calls</li>
+          <li><strong>Rate Limit Proxy</strong> — block excessive API calls within a time window</li>
+        </ul>
+      </div>
+
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">proxy.ts — API Logger + Rate Limiter (RN Dev Tools)</span></div>
+        <pre><span class="cm">// Proxy that logs API calls in dev and rate-limits in prod</span>
+<span class="kw">function</span> <span class="fn">createApiProxy</span>(apiService: <span class="cls">ApiService</span>): <span class="cls">ApiService</span> {
+  <span class="kw">const</span> callCounts = <span class="kw">new</span> Map&lt;string, { count: <span class="kw">number</span>; resetAt: <span class="kw">number</span> }&gt;();
+  <span class="kw">const</span> RATE_LIMIT = <span class="num">10</span>; <span class="cm">// max 10 calls per endpoint per minute</span>
+
+  <span class="kw">return new</span> Proxy(apiService, {
+    <span class="fn">get</span>(target, prop: keyof <span class="cls">ApiService</span>) {
+      <span class="kw">const</span> original = target[prop];
+      <span class="kw">if</span> (<span class="kw">typeof</span> original !== <span class="str">'function'</span>) <span class="kw">return</span> original;
+
+      <span class="kw">return</span> <span class="kw">async</span> (url: string, ...args: <span class="kw">any</span>[]) => {
+        <span class="cm">// 📊 Rate limit check</span>
+        <span class="kw">const</span> key = <span class="str">`${String(prop)}:${url}`</span>;
+        <span class="kw">const</span> now = Date.<span class="fn">now</span>();
+        <span class="kw">const</span> entry = callCounts.<span class="fn">get</span>(key) || { count: <span class="num">0</span>, resetAt: now + <span class="num">60000</span> };
+
+        <span class="kw">if</span> (now > entry.resetAt) { entry.count = <span class="num">0</span>; entry.resetAt = now + <span class="num">60000</span>; }
+        <span class="kw">if</span> (entry.count >= RATE_LIMIT) <span class="kw">throw new</span> Error(<span class="str">`Rate limit: ${key}`</span>);
+
+        entry.count++;
+        callCounts.<span class="fn">set</span>(key, entry);
+
+        <span class="cm">// 🔍 Dev logging</span>
+        <span class="kw">if</span> (__DEV__) {
+          console.<span class="fn">log</span>(<span class="str">`[API] ${String(prop).toUpperCase()} ${url}`</span>, args[<span class="num">0</span>] || <span class="str">''</span>);
+          <span class="kw">const</span> start = Date.<span class="fn">now</span>();
+          <span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">original</span>.<span class="fn">call</span>(target, url, ...args);
+          console.<span class="fn">log</span>(<span class="str">`[API] ✓ ${Date.now() - start}ms`</span>, result);
+          <span class="kw">return</span> result;
         }
 
-        window.setCat = function (cat) { activeCat = cat; buildSidebar(); render(); };
-        window.setSt = function (s, el) {
-            activeSt = s;
-            document.querySelectorAll('.fchip').forEach(c => c.classList.remove('fa', 'fs', 'fp', 'fn'));
-            el.classList.add(s === 'all' ? 'fa' : s === 'solved' ? 'fs' : s === 'in-progress' ? 'fp' : 'fn');
-            render();
-        };
+        <span class="kw">return</span> <span class="fn">original</span>.<span class="fn">call</span>(target, url, ...args);
+      };
+    },
+  });
+}
 
-        // ---- ADD ----
-        window.toggleDrawer = function () { document.getElementById('add-drawer').classList.toggle('open'); };
-        window.addQuestion = async function () {
-            const title = gv('n-title'); if (!title) { alert('Title required'); return; }
-            const id = 'q' + Date.now();
-            const q = {
-                id, title, category: gv('n-cat') || 'General', difficulty: gv('n-diff') || 'medium', status: gv('n-status') || 'unsolved',
-                tags: gv('n-tags').split(',').map(t => t.trim()).filter(Boolean),
-                concepts: gv('n-concepts').split(',').map(c => c.trim()).filter(Boolean),
-                resources: gv('n-res').split(',').map(r => r.trim()).filter(Boolean),
-                notes: gv('n-notes'), date: today()
-            };
-            questions[id] = q;
-            if (!isDemo && db) await fbSave(q);
-            ['n-title', 'n-tags', 'n-concepts', 'n-res', 'n-notes'].forEach(i => sv(i, ''));
-            toggleDrawer(); refresh(); toast('✅ Question added!');
-        };
+<span class="cm">// Usage — transparent to all consumers</span>
+<span class="kw">const</span> api = <span class="fn">createApiProxy</span>(<span class="cls">ApiClient</span>.<span class="fn">getInstance</span>());
+<span class="cm">// Logs in dev, rate-limited in prod — zero changes to consumer</span></pre>
+      </div>
+    </div>
+  </div>
+</div><!-- /structural -->
 
-        // ---- MODAL ----
-        window.openModal = function (id) {
-            const q = questions[id]; if (!q) return;
-            activeModalId = id; pendingStatus = q.status || 'unsolved';
-            document.getElementById('m-title').textContent = q.title;
-            const meta = TOPICS[q.category] || { color: '#888' };
-            document.getElementById('m-sub').innerHTML = `<span class="mpill" style="color:${meta.color};border-color:${meta.color}30">${q.category || 'General'}</span><span class="mpill diff ${q.difficulty || 'medium'}">${(q.difficulty || 'medium').toUpperCase()}</span>`;
-            document.getElementById('m-concepts').innerHTML = (q.concepts || []).length ? (q.concepts || []).map(c => `<span class="cchip" style="background:${meta.color}15;color:${meta.color};border-color:${meta.color}30">${c}</span>`).join('') : '<span style="font-size:.76rem;color:var(--muted)">None added</span>';
-            document.getElementById('m-tags').innerHTML = (q.tags || []).map(t => `<span class="qtag">${t}</span>`).join('') || '<span style="font-size:.76rem;color:var(--muted)">None</span>';
-            const res = (q.resources || []).filter(Boolean);
-            const rw = document.getElementById('m-res-wrap');
-            if (res.length) { rw.style.display = 'block'; document.getElementById('m-res').innerHTML = res.map(r => `<div class="res-item">🔗 <a href="${r}" target="_blank" style="color:#e85d2a;text-decoration:none;font-family:'DM Mono',monospace;font-size:.73rem;word-break:break-all">${r}</a></div>`).join(''); }
-            else rw.style.display = 'none';
-            document.getElementById('m-notes').value = q.notes || '';
-            document.getElementById('m-date').textContent = q.date ? 'Last updated: ' + q.date : 'Never updated';
-            updateTogs();
-            document.getElementById('overlay').classList.add('open');
-        };
+<!-- ═══════════ BEHAVIORAL ═══════════ -->
+<div id="behavioral">
+  <div class="sec-hdr">
+    <div class="sec-icon si-b">🔄</div>
+    <div><div class="sec-lbl">Category 3</div><h2>Behavioral Patterns</h2></div>
+  </div>
 
-        function updateTogs() {
-            ['unsolved', 'in-progress', 'solved'].forEach(s => {
-                const el = document.getElementById('tog-' + s);
-                el.className = 'stog';
-                if (s === pendingStatus) el.classList.add(s === 'unsolved' ? 'au' : s === 'in-progress' ? 'ap' : 'as');
-            });
-        }
-        window.setPS = function (s) { pendingStatus = s; updateTogs(); };
-        window.saveQ = async function () {
-            const q = questions[activeModalId]; if (!q) return;
-            q.status = pendingStatus; q.notes = document.getElementById('m-notes').value; q.date = today();
-            if (!isDemo && db) await fbSave(q);
-            closeModal(); refresh(); toast('💾 Saved!');
-        };
-        window.deleteQ = async function () {
-            if (!confirm('Delete this question?')) return;
-            const id = activeModalId;
-            if (!isDemo && db) await fbDel(id);
-            delete questions[id]; closeModal(); refresh(); toast('🗑 Deleted');
-        };
-        window.closeModal = function (e) {
-            if (e && e.target !== document.getElementById('overlay')) return;
-            document.getElementById('overlay').classList.remove('open');
-            activeModalId = null; pendingStatus = null;
-        };
+  <!-- OBSERVER -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Observer Pattern</div>
+        <div class="pc-badges"><span class="badge bb">Behavioral</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
 
-        // ---- FIREBASE ----
-        async function fbSave(q) { const { doc, setDoc } = window._FB; await setDoc(doc(db, 'sd_questions', q.id), q); }
-        async function fbDel(id) { const { doc, deleteDoc } = window._FB; await deleteDoc(doc(db, 'sd_questions', id)); }
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of a <strong>YouTube channel</strong> — when you subscribe, you get notified on every new video. The channel (subject) maintains a list of subscribers (observers). Any change (new video) notifies ALL subscribers automatically.</p>
+      </div>
 
-        // ---- HELPERS ----
-        const gv = id => document.getElementById(id)?.value?.trim() || '';
-        const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-        const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        const show = id => document.getElementById(id).style.display = 'block';
-        const hide = id => document.getElementById(id).style.display = 'none';
-        const today = () => new Date().toISOString().split('T')[0];
-        function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
-    </script>
+      <div class="ig">
+        <div class="ib"><div class="ib-l">Subject Role</div><p>Holds state. Maintains observer list. Calls <code>notify()</code> on every state change. Also called Observable.</p></div>
+        <div class="ib"><div class="ib-l">Observer Role</div><p>Has an <code>update(data)</code> method. Gets called by Subject. Can subscribe/unsubscribe at any time.</p></div>
+        <div class="ib"><div class="ib-l">Memory Leak Warning</div><p>Always <code>unsubscribe</code> in <code>useEffect</code> cleanup. Forgetting this = components update after unmount = crash.</p></div>
+        <div class="ib"><div class="ib-l">Vs Pub/Sub</div><p>Observer: tight coupling, synchronous, single-app. Pub/Sub: loose (via broker), async, cross-app.</p></div>
+      </div>
+
+      <div class="pts">
+        <div class="pts-l">Detailed Points</div>
+        <div class="pt"><span class="dot d2"></span><strong>Push vs Pull:</strong> In push model, subject sends data to observers. In pull model, observers query subject for latest data. Push is more common.</div>
+        <div class="pt"><span class="dot d2"></span><strong>React's useState:</strong> React's own state is an Observer implementation — components re-render (notify) when state changes.</div>
+        <div class="pt"><span class="dot d2"></span><strong>RxJS / Zustand subscriptions:</strong> Both are Observer pattern implementations — <code>store.subscribe(fn)</code> is classic Observer.</div>
+        <div class="pt"><span class="dot d2"></span><strong>EventEmitter (Node/RN):</strong> Node's built-in EventEmitter is the canonical JS Observer implementation.</div>
+        <div class="pt"><span class="dot d2"></span><strong>Cleanup is critical in RN:</strong> <code>AppState.addEventListener</code>, <code>Keyboard.addListener</code>, <code>NetInfo.addEventListener</code> all return cleanup functions — always call them.</div>
+      </div>
+
+      <div class="rn">
+        <div class="rn-t">📱 React Native — Built-in Observers</div>
+        <ul>
+          <li><code>AppState.addEventListener('change', fn)</code> — foreground/background transitions</li>
+          <li><code>Keyboard.addListener('keyboardDidShow', fn)</code> — keyboard height tracking</li>
+          <li><code>NetInfo.addEventListener(fn)</code> — online/offline detection</li>
+          <li><code>navigation.addListener('focus', fn)</code> — screen focus events</li>
+          <li><code>Dimensions.addEventListener('change', fn)</code> — orientation changes</li>
+          <li>Custom: <strong>Cart Store</strong>, <strong>Auth Store</strong> — components observe for changes</li>
+        </ul>
+      </div>
+
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">observer.ts — Generic Observable Store (React Native)</span></div>
+        <pre><span class="cm">// Generic Observable — can be reused for any store</span>
+<span class="kw">class</span> <span class="cls">Observable</span>&lt;T&gt; {
+  <span class="kw">private</span> observers: Set&lt;(data: T) => <span class="kw">void</span>&gt; = <span class="kw">new</span> Set();
+  <span class="kw">protected</span> state: T;
+
+  <span class="fn">constructor</span>(initialState: T) { <span class="kw">this</span>.state = initialState; }
+
+  <span class="fn">subscribe</span>(fn: (data: T) => <span class="kw">void</span>): () => <span class="kw">void</span> {
+    <span class="kw">this</span>.observers.<span class="fn">add</span>(fn);
+    <span class="fn">fn</span>(<span class="kw">this</span>.state); <span class="cm">// immediately emit current state</span>
+    <span class="kw">return</span> () => <span class="kw">this</span>.observers.<span class="fn">delete</span>(fn); <span class="cm">// returns cleanup</span>
+  }
+
+  <span class="kw">protected</span> <span class="fn">setState</span>(updater: (prev: T) => T) {
+    <span class="kw">this</span>.state = <span class="fn">updater</span>(<span class="kw">this</span>.state);
+    <span class="kw">this</span>.observers.<span class="fn">forEach</span>(fn => <span class="fn">fn</span>(<span class="kw">this</span>.state)); <span class="cm">// notify all</span>
+  }
+
+  <span class="fn">getState</span>() { <span class="kw">return this</span>.state; }
+}
+
+<span class="cm">// ✅ Concrete Cart Store extending Observable</span>
+<span class="kw">interface</span> <span class="cls">CartState</span> { items: <span class="cls">CartItem</span>[]; total: <span class="kw">number</span>; }
+
+<span class="kw">class</span> <span class="cls">CartStore</span> <span class="kw">extends</span> <span class="cls">Observable</span>&lt;<span class="cls">CartState</span>&gt; {
+  <span class="fn">constructor</span>() { <span class="kw">super</span>({ items: [], total: <span class="num">0</span> }); }
+
+  <span class="fn">addItem</span>(item: <span class="cls">CartItem</span>) {
+    <span class="kw">this</span>.<span class="fn">setState</span>(prev => ({
+      items: [...prev.items, item],
+      total: prev.total + item.price,
+    }));
+  }
+
+  <span class="fn">removeItem</span>(id: string) {
+    <span class="kw">this</span>.<span class="fn">setState</span>(prev => {
+      <span class="kw">const</span> item = prev.items.<span class="fn">find</span>(i => i.id === id);
+      <span class="kw">return</span> {
+        items: prev.items.<span class="fn">filter</span>(i => i.id !== id),
+        total: prev.total - (item?.price || <span class="num">0</span>),
+      };
+    });
+  }
+}
+
+<span class="kw">export const</span> cartStore = <span class="kw">new</span> <span class="cls">CartStore</span>(); <span class="cm">// singleton instance</span>
+
+<span class="cm">// ✅ React Native hook to use Observable store</span>
+<span class="kw">function</span> <span class="fn">useCart</span>() {
+  <span class="kw">const</span> [cartState, setCartState] = <span class="fn">useState</span>(cartStore.<span class="fn">getState</span>());
+
+  <span class="fn">useEffect</span>(() => {
+    <span class="kw">const</span> unsubscribe = cartStore.<span class="fn">subscribe</span>(setCartState);
+    <span class="kw">return</span> unsubscribe; <span class="cm">// cleanup prevents memory leak</span>
+  }, []);
+
+  <span class="kw">return</span> { ...cartState, addItem: cartStore.<span class="fn">addItem</span>.<span class="fn">bind</span>(cartStore) };
+}
+
+<span class="cm">// Usage in any component — all sync automatically</span>
+<span class="kw">function</span> <span class="fn">CartBadge</span>() {
+  <span class="kw">const</span> { items } = <span class="fn">useCart</span>();
+  <span class="kw">return</span> &lt;Badge count={items.length} /&gt;;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUB/SUB -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Publish-Subscribe Pattern</div>
+        <div class="pc-badges"><span class="badge bb">Behavioral</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
+
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of a <strong>newspaper subscription</strong> — The journalist (publisher) writes articles and gives them to the newspaper office (broker/event bus). Readers (subscribers) subscribe to topics like "Sports" or "Tech". The journalist has NO IDEA who the readers are. Readers have NO IDEA who the journalist is.</p>
+      </div>
+
+      <div class="ig ig3">
+        <div class="ib"><div class="ib-l">Publisher</div><p>Sends message to broker with a topic key. Knows nothing about subscribers. Fully decoupled.</p></div>
+        <div class="ib"><div class="ib-l">Broker / Event Bus</div><p>Stores topic→subscribers map. Routes published messages. The ONLY shared dependency.</p></div>
+        <div class="ib"><div class="ib-l">Subscriber</div><p>Registers interest in a topic with the broker. Receives matching messages. Doesn't know the publisher.</p></div>
+      </div>
+
+      <div class="pts">
+        <div class="pts-l">Observer vs Pub/Sub — Key Differences</div>
+        <div class="pt"><span class="dot d2"></span><strong>Awareness:</strong> In Observer, observers know the Subject. In Pub/Sub, publisher and subscriber are completely unaware of each other.</div>
+        <div class="pt"><span class="dot d2"></span><strong>Coupling:</strong> Observer = tight. Pub/Sub = loose (only coupled to broker/bus).</div>
+        <div class="pt"><span class="dot d2"></span><strong>Execution:</strong> Observer = synchronous. Pub/Sub = typically asynchronous via message queue.</div>
+        <div class="pt"><span class="dot d2"></span><strong>Scope:</strong> Observer = single application. Pub/Sub = can be cross-application, distributed systems.</div>
+        <div class="pt"><span class="dot d2"></span><strong>Redux:</strong> Redux is Pub/Sub — <code>dispatch(action)</code> = publish, <code>useSelector(fn)</code> = subscribe. Store = broker.</div>
+      </div>
+
+      <div class="rn">
+        <div class="rn-t">📱 React Native Applications</div>
+        <ul>
+          <li><strong>Cross-screen events:</strong> ProductScreen adds to cart → TabBar badge updates (no direct connection)</li>
+          <li><strong>Redux / Zustand:</strong> Both are Pub/Sub — dispatch=publish, selector=subscribe, store=broker</li>
+          <li><strong>Deep link routing:</strong> URL opens → event published → correct screen subscribes and handles</li>
+          <li><strong>Push notifications:</strong> FCM receives message → publishes to 'notification' topic → multiple handlers</li>
+          <li><strong>Socket.IO:</strong> Server emits events → clients subscribed to rooms receive them</li>
+        </ul>
+      </div>
+
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">eventBus.ts — Typed Event Bus (React Native)</span></div>
+        <pre><span class="cm">// Typed EventBus for React Native — type-safe Pub/Sub</span>
+<span class="kw">type</span> EventMap = {
+  <span class="str">'cart:add'</span>:    { productId: string; qty: <span class="kw">number</span>; price: <span class="kw">number</span> };
+  <span class="str">'cart:remove'</span>: { productId: string };
+  <span class="str">'auth:login'</span>:  { userId: string; token: string };
+  <span class="str">'auth:logout'</span>: <span class="kw">void</span>;
+  <span class="str">'nav:deeplink'</span>: { screen: string; params: Record&lt;string, <span class="kw">any</span>&gt; };
+};
+
+<span class="kw">class</span> <span class="cls">TypedEventBus</span> {
+  <span class="kw">private</span> topics = <span class="kw">new</span> Map&lt;string, Set&lt;Function&gt;&gt;();
+
+  <span class="fn">subscribe</span>&lt;K <span class="kw">extends keyof</span> <span class="cls">EventMap</span>&gt;(
+    topic: K,
+    fn: (payload: <span class="cls">EventMap</span>[K]) => <span class="kw">void</span>
+  ): () => <span class="kw">void</span> {
+    <span class="kw">if</span> (!<span class="kw">this</span>.topics.<span class="fn">has</span>(topic)) <span class="kw">this</span>.topics.<span class="fn">set</span>(topic, <span class="kw">new</span> Set());
+    <span class="kw">this</span>.topics.<span class="fn">get</span>(topic)!.<span class="fn">add</span>(fn);
+    <span class="kw">return</span> () => <span class="kw">this</span>.topics.<span class="fn">get</span>(topic)?.delete(fn); <span class="cm">// cleanup fn</span>
+  }
+
+  <span class="fn">publish</span>&lt;K <span class="kw">extends keyof</span> <span class="cls">EventMap</span>&gt;(topic: K, payload: <span class="cls">EventMap</span>[K]) {
+    <span class="kw">this</span>.topics.<span class="fn">get</span>(topic)?.forEach(fn => <span class="fn">fn</span>(payload));
+  }
+}
+
+<span class="kw">export const</span> bus = <span class="kw">new</span> <span class="cls">TypedEventBus</span>();
+
+<span class="cm">// ProductScreen.tsx — Publisher (knows nothing about TabBar)</span>
+<span class="kw">const</span> <span class="fn">handleAddToCart</span> = () => {
+  bus.<span class="fn">publish</span>(<span class="str">'cart:add'</span>, { productId: <span class="str">'p-42'</span>, qty: <span class="num">1</span>, price: <span class="num">29.99</span> });
+};
+
+<span class="cm">// TabBar.tsx — Subscriber (knows nothing about ProductScreen)</span>
+<span class="fn">useEffect</span>(() => {
+  <span class="kw">const</span> unsub = bus.<span class="fn">subscribe</span>(<span class="str">'cart:add'</span>, ({ qty }) => {
+    <span class="fn">setBadgeCount</span>(prev => prev + qty);
+  });
+  <span class="kw">return</span> unsub; <span class="cm">// cleanup</span>
+}, []);</pre>
+      </div>
+    </div>
+  </div>
+</div><!-- /behavioral -->
+
+<!-- ═══════════ REACT/RN PATTERNS ═══════════ -->
+<div id="react">
+  <div class="sec-hdr">
+    <div class="sec-icon si-r">⚛️</div>
+    <div><div class="sec-lbl">Category 4</div><h2>React / React Native Patterns</h2></div>
+  </div>
+
+  <!-- CONTAINER-PRESENTATION -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Container-Presentation Pattern</div>
+        <div class="pc-badges"><span class="badge bs">Structural</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of a <strong>waiter and chef</strong> — the chef (container) knows all the business: ingredients, cooking process, timing. The waiter (presentation) only knows how to serve the plate. Swap the chef without retraining the waiter.</p>
+      </div>
+      <div class="ig">
+        <div class="ib"><div class="ib-l">Container (Smart)</div><p>Has <code>useState</code>, <code>useEffect</code>. Fetches data, handles errors, loading states. Passes everything down as props.</p></div>
+        <div class="ib"><div class="ib-l">Presentation (Dumb)</div><p>Pure function of props. No internal state (or only UI state like hover). Receives callbacks — never creates them.</p></div>
+      </div>
+      <div class="pts">
+        <div class="pts-l">Benefits</div>
+        <div class="pt"><span class="dot d4"></span><strong>Testability:</strong> Test presentation components with mock props — no API mocking needed.</div>
+        <div class="pt"><span class="dot d4"></span><strong>Reusability:</strong> Same presentation component used by different containers (live data vs mock data).</div>
+        <div class="pt"><span class="dot d4"></span><strong>Storybook-friendly:</strong> Presentation components render perfectly in Storybook with prop controls.</div>
+        <div class="pt"><span class="dot d4"></span><strong>Modern approach:</strong> With hooks, container = custom hook (<code>useUserList()</code>). Screen consumes hook + renders presentation.</div>
+      </div>
+      <div class="rn">
+        <div class="rn-t">📱 React Native File Structure</div>
+        <ul>
+          <li><code>screens/HomeScreen.tsx</code> → Container: fetches, manages state, handles nav</li>
+          <li><code>components/UserCard.tsx</code> → Presentation: pure UI from props</li>
+          <li><code>components/UserList.tsx</code> → Presentation: renders FlatList from array prop</li>
+          <li><code>hooks/useUserList.ts</code> → Modern container logic extracted to hook</li>
+        </ul>
+      </div>
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">container-presentation.tsx — Modern Hook Approach (RN)</span></div>
+        <pre><span class="cm">// ✅ Hook = modern container (replaces class container)</span>
+<span class="kw">function</span> <span class="fn">useUserList</span>() {
+  <span class="kw">const</span> [users,   setUsers]   = <span class="fn">useState</span>&lt;<span class="cls">User</span>[]&gt;([]);
+  <span class="kw">const</span> [loading, setLoading] = <span class="fn">useState</span>(<span class="kw">true</span>);
+  <span class="kw">const</span> [error,   setError]   = <span class="fn">useState</span>&lt;string | null&gt;(<span class="kw">null</span>);
+
+  <span class="fn">useEffect</span>(() => {
+    <span class="kw">const</span> <span class="fn">load</span> = <span class="kw">async</span> () => {
+      <span class="kw">try</span> {
+        <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">get</span>&lt;<span class="cls">User</span>[]&gt;(<span class="str">'/users'</span>);
+        <span class="fn">setUsers</span>(data);
+      } <span class="kw">catch</span> (e) {
+        <span class="fn">setError</span>(<span class="str">'Failed to load users'</span>);
+      } <span class="kw">finally</span> {
+        <span class="fn">setLoading</span>(<span class="kw">false</span>);
+      }
+    };
+    <span class="fn">load</span>();
+  }, []);
+
+  <span class="kw">const</span> <span class="fn">refresh</span> = () => { <span class="fn">setLoading</span>(<span class="kw">true</span>); };
+
+  <span class="kw">return</span> { users, loading, error, refresh };
+}
+
+<span class="cm">// ✅ Screen = thin orchestration layer</span>
+<span class="kw">function</span> <span class="fn">UserListScreen</span>() {
+  <span class="kw">const</span> { users, loading, error, refresh } = <span class="fn">useUserList</span>();
+  <span class="kw">return</span> &lt;<span class="cls">UserListUI</span> users={users} loading={loading} error={error} onRefresh={refresh} /&gt;;
+}
+
+<span class="cm">// ✅ Presentation = pure UI — no logic at all</span>
+<span class="kw">function</span> <span class="fn">UserListUI</span>({ users, loading, error, onRefresh }: <span class="cls">Props</span>) {
+  <span class="kw">if</span> (loading) <span class="kw">return</span> &lt;ActivityIndicator size=<span class="str">"large"</span> /&gt;;
+  <span class="kw">if</span> (error)   <span class="kw">return</span> &lt;ErrorView message={error} onRetry={onRefresh} /&gt;;
+  <span class="kw">return</span> (
+    &lt;FlatList
+      data={users}
+      keyExtractor={u => u.id}
+      renderItem={({ item }) => &lt;<span class="cls">UserCard</span> user={item} /&gt;}
+      refreshControl={&lt;RefreshControl refreshing={<span class="kw">false</span>} onRefresh={onRefresh} /&gt;}
+    /&gt;
+  );
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOOK PATTERN -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Custom Hook Pattern</div>
+        <div class="pc-badges"><span class="badge bb">Behavioral</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of <strong>electrical outlets</strong> — the wiring (hook logic: useState, useEffect, cleanup) is hidden in the wall. Any device (component) just plugs in and gets power. 10 rooms can use the same wiring pattern without duplicating it.</p>
+      </div>
+      <div class="ig">
+        <div class="ib"><div class="ib-l">Rules of Hooks</div><p>Must start with <code>use</code>. Only call at top level (no loops/conditions). Only inside function components or other hooks.</p></div>
+        <div class="ib"><div class="ib-l">What Can Be Extracted</div><p>Any stateful logic: API calls, subscriptions, timers, device sensors, permissions, keyboard state, etc.</p></div>
+      </div>
+      <div class="pts">
+        <div class="pts-l">Hook Architecture for React Native</div>
+        <div class="pt"><span class="dot d4"></span><strong>Data hooks:</strong> <code>useUsers()</code>, <code>useProduct(id)</code> — fetch + cache + error + loading</div>
+        <div class="pt"><span class="dot d4"></span><strong>Device hooks:</strong> <code>useCamera()</code>, <code>useLocation()</code>, <code>useBluetooth()</code> — native module abstraction</div>
+        <div class="pt"><span class="dot d4"></span><strong>UI hooks:</strong> <code>useKeyboard()</code>, <code>useOrientation()</code>, <code>useSafeArea()</code></div>
+        <div class="pt"><span class="dot d4"></span><strong>State hooks:</strong> <code>useToggle()</code>, <code>useDebounce(val, ms)</code>, <code>usePrevious(val)</code></div>
+        <div class="pt"><span class="dot d4"></span><strong>Cleanup pattern:</strong> Always return cleanup from <code>useEffect</code> — subscriptions, timers, event listeners.</div>
+      </div>
+      <div class="rn">
+        <div class="rn-t">📱 React Native Hardware Hooks</div>
+        <ul>
+          <li><code>useCamera()</code> — permission request + camera ref + photo capture</li>
+          <li><code>useLocation()</code> — GPS permission + current coords + watchPosition cleanup</li>
+          <li><code>useNetworkStatus()</code> — NetInfo subscription + online/offline/type</li>
+          <li><code>useKeyboard()</code> — keyboard height for adjusting scroll view padding</li>
+          <li><code>useBackHandler()</code> — Android hardware back button override</li>
+          <li><code>useAppState()</code> — foreground/background/inactive tracking</li>
+          <li><code>useDeepLink()</code> — handle incoming URLs / universal links</li>
+        </ul>
+      </div>
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">useLocation.ts — GPS Hook with Full Lifecycle (RN)</span></div>
+        <pre><span class="kw">import</span> * <span class="kw">as</span> Location <span class="kw">from</span> <span class="str">'expo-location'</span>;
+
+<span class="kw">interface</span> <span class="cls">LocationState</span> {
+  coords: Location.LocationObject | null;
+  error: string | null;
+  loading: boolean;
+  permissionStatus: <span class="str">'granted'</span> | <span class="str">'denied'</span> | <span class="str">'undetermined'</span>;
+}
+
+<span class="kw">function</span> <span class="fn">useLocation</span>(watchMode = <span class="kw">false</span>) {
+  <span class="kw">const</span> [state, setState] = <span class="fn">useState</span>&lt;<span class="cls">LocationState</span>&gt;({
+    coords: <span class="kw">null</span>, error: <span class="kw">null</span>, loading: <span class="kw">true</span>, permissionStatus: <span class="str">'undetermined'</span>,
+  });
+
+  <span class="fn">useEffect</span>(() => {
+    <span class="kw">let</span> subscription: Location.LocationSubscription | null = <span class="kw">null</span>;
+
+    <span class="kw">const</span> <span class="fn">init</span> = <span class="kw">async</span> () => {
+      <span class="cm">// 1️⃣ Request permission</span>
+      <span class="kw">const</span> { status } = <span class="kw">await</span> Location.<span class="fn">requestForegroundPermissionsAsync</span>();
+      <span class="fn">setState</span>(s => ({ ...s, permissionStatus: status }));
+
+      <span class="kw">if</span> (status !== <span class="str">'granted'</span>) {
+        <span class="fn">setState</span>(s => ({ ...s, loading: <span class="kw">false</span>, error: <span class="str">'Permission denied'</span> }));
+        <span class="kw">return</span>;
+      }
+
+      <span class="kw">if</span> (watchMode) {
+        <span class="cm">// 2️⃣ Watch mode — continuous updates</span>
+        subscription = <span class="kw">await</span> Location.<span class="fn">watchPositionAsync</span>(
+          { accuracy: Location.Accuracy.High, distanceInterval: <span class="num">10</span> },
+          (location) => <span class="fn">setState</span>(s => ({ ...s, coords: location, loading: <span class="kw">false</span> }))
+        );
+      } <span class="kw">else</span> {
+        <span class="cm">// 2️⃣ One-shot — get once</span>
+        <span class="kw">const</span> location = <span class="kw">await</span> Location.<span class="fn">getCurrentPositionAsync</span>({});
+        <span class="fn">setState</span>(s => ({ ...s, coords: location, loading: <span class="kw">false</span> }));
+      }
+    };
+
+    <span class="fn">init</span>();
+
+    <span class="cm">// 3️⃣ Cleanup — stop watching on unmount</span>
+    <span class="kw">return</span> () => { subscription?..<span class="fn">remove</span>(); };
+  }, [watchMode]);
+
+  <span class="kw">return</span> state;
+}
+
+<span class="cm">// Usage</span>
+<span class="kw">function</span> <span class="fn">MapScreen</span>() {
+  <span class="kw">const</span> { coords, loading, error } = <span class="fn">useLocation</span>(<span class="kw">true</span>); <span class="cm">// watch mode</span>
+  <span class="kw">if</span> (loading) <span class="kw">return</span> &lt;ActivityIndicator /&gt;;
+  <span class="kw">if</span> (error)   <span class="kw">return</span> &lt;Text&gt;{error}&lt;/Text&gt;;
+  <span class="kw">return</span> &lt;MapView region={{ lat: coords?.coords.latitude, ... }} /&gt;;
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROVIDER -->
+  <div class="pc">
+    <div class="pc-head">
+      <div>
+        <div class="pc-title">Provider Pattern</div>
+        <div class="pc-badges"><span class="badge bb">Behavioral</span><span class="badge bn">React Native</span></div>
+      </div>
+    </div>
+    <div class="pc-body">
+      <div class="analogy">
+        <div class="analogy-t">🧠 Simple Analogy</div>
+        <p>Think of <strong>WiFi in a building</strong> — the router (Provider) is set up once at the top. Every room (component) can connect to it anywhere in the building without running a cable through every floor (prop drilling).</p>
+      </div>
+      <div class="ig">
+        <div class="ib"><div class="ib-l">How It Works</div><p><code>createContext()</code> → <code>&lt;Context.Provider value={...}&gt;</code> → any descendant calls <code>useContext()</code>.</p></div>
+        <div class="ib"><div class="ib-l">Re-render Warning</div><p>All consumers re-render when Provider value changes. Split contexts by update frequency to avoid unnecessary re-renders.</p></div>
+      </div>
+      <div class="pts">
+        <div class="pts-l">Performance Optimisation Tips</div>
+        <div class="pt"><span class="dot d4"></span><strong>Split contexts:</strong> Don't put everything in one context. <code>AuthContext</code> (rarely changes) vs <code>UIContext</code> (frequent changes).</div>
+        <div class="pt"><span class="dot d4"></span><strong>Memoize value:</strong> Wrap Provider value in <code>useMemo</code> to prevent unnecessary re-renders of all consumers.</div>
+        <div class="pt"><span class="dot d4"></span><strong>Custom hook pattern:</strong> Always export <code>useTheme()</code> instead of exposing raw <code>useContext(ThemeContext)</code> — hides implementation detail.</div>
+        <div class="pt"><span class="dot d4"></span><strong>Default value:</strong> Always provide a sensible default to <code>createContext(defaultValue)</code> — important for testing components in isolation.</div>
+      </div>
+      <div class="rn">
+        <div class="rn-t">📱 React Native Provider Stack (App.tsx)</div>
+        <ul>
+          <li><code>&lt;GestureHandlerRootView&gt;</code> — required for react-native-gesture-handler</li>
+          <li><code>&lt;SafeAreaProvider&gt;</code> — notch/island safe area context</li>
+          <li><code>&lt;ThemeProvider&gt;</code> — dark/light mode, design tokens</li>
+          <li><code>&lt;AuthProvider&gt;</code> — user session, login/logout, token refresh</li>
+          <li><code>&lt;LocaleProvider&gt;</code> — language, RTL support</li>
+          <li><code>&lt;NavigationContainer&gt;</code> — itself is a Provider!</li>
+        </ul>
+      </div>
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">AuthProvider.tsx — Full Auth Context (React Native)</span></div>
+        <pre><span class="kw">interface</span> <span class="cls">AuthState</span> {
+  user: <span class="cls">User</span> | null;
+  token: string | null;
+  isLoading: boolean;
+  <span class="fn">login</span>(email: string, password: string): Promise&lt;<span class="kw">void</span>&gt;;
+  <span class="fn">logout</span>(): Promise&lt;<span class="kw">void</span>&gt;;
+}
+
+<span class="kw">const</span> AuthContext = React.<span class="fn">createContext</span>&lt;<span class="cls">AuthState</span>&gt;(<span class="kw">null</span>!);
+
+<span class="kw">export function</span> <span class="fn">AuthProvider</span>({ children }: { children: React.ReactNode }) {
+  <span class="kw">const</span> [user,      setUser]      = <span class="fn">useState</span>&lt;<span class="cls">User</span> | null&gt;(<span class="kw">null</span>);
+  <span class="kw">const</span> [token,     setToken]     = <span class="fn">useState</span>&lt;string | null&gt;(<span class="kw">null</span>);
+  <span class="kw">const</span> [isLoading, setIsLoading] = <span class="fn">useState</span>(<span class="kw">true</span>);
+
+  <span class="cm">// Restore session on app launch</span>
+  <span class="fn">useEffect</span>(() => {
+    <span class="kw">const</span> <span class="fn">restore</span> = <span class="kw">async</span> () => {
+      <span class="kw">const</span> savedToken = <span class="kw">await</span> SecureStore.<span class="fn">getItemAsync</span>(<span class="str">'token'</span>);
+      <span class="kw">if</span> (savedToken) {
+        <span class="kw">const</span> userData = <span class="kw">await</span> api.<span class="fn">get</span>&lt;<span class="cls">User</span>&gt;(<span class="str">'/me'</span>);
+        <span class="fn">setUser</span>(userData.data);
+        <span class="fn">setToken</span>(savedToken);
+      }
+      <span class="fn">setIsLoading</span>(<span class="kw">false</span>);
+    };
+    <span class="fn">restore</span>();
+  }, []);
+
+  <span class="kw">const</span> <span class="fn">login</span> = <span class="kw">async</span> (email: string, password: string) => {
+    <span class="kw">const</span> { data } = <span class="kw">await</span> api.<span class="fn">post</span>(<span class="str">'/auth/login'</span>, { email, password });
+    <span class="kw">await</span> SecureStore.<span class="fn">setItemAsync</span>(<span class="str">'token'</span>, data.token);
+    <span class="fn">setUser</span>(data.user);
+    <span class="fn">setToken</span>(data.token);
+  };
+
+  <span class="kw">const</span> <span class="fn">logout</span> = <span class="kw">async</span> () => {
+    <span class="kw">await</span> SecureStore.<span class="fn">deleteItemAsync</span>(<span class="str">'token'</span>);
+    <span class="fn">setUser</span>(<span class="kw">null</span>);
+    <span class="fn">setToken</span>(<span class="kw">null</span>);
+  };
+
+  <span class="cm">// Memoize to prevent unnecessary re-renders</span>
+  <span class="kw">const</span> value = <span class="fn">useMemo</span>(
+    () => ({ user, token, isLoading, login, logout }),
+    [user, token, isLoading]
+  );
+
+  <span class="kw">return</span> &lt;AuthContext.Provider value={value}&gt;{children}&lt;/AuthContext.Provider&gt;;
+}
+
+<span class="cm">// Custom hook — safe & semantic</span>
+<span class="kw">export const</span> <span class="fn">useAuth</span> = () => {
+  <span class="kw">const</span> ctx = React.<span class="fn">useContext</span>(AuthContext);
+  <span class="kw">if</span> (!ctx) <span class="kw">throw new</span> Error(<span class="str">'useAuth must be used inside AuthProvider'</span>);
+  <span class="kw">return</span> ctx;
+};</pre>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /react -->
+
+<!-- ═══════════ SOLID ═══════════ -->
+<div id="solid">
+  <div class="sec-hdr">
+    <div class="sec-icon si-p">💎</div>
+    <div><div class="sec-lbl">Category 5</div><h2>SOLID Principles in React Native</h2></div>
+  </div>
+
+  <!-- S -->
+  <div class="sc">
+    <div class="sh">
+      <div class="sl" style="color:#ff6b35;">S</div>
+      <div class="sh-info">
+        <div class="sh-name">Single Responsibility Principle (SRP)</div>
+        <div class="sh-sub">Every module/component/function should have ONE reason to change</div>
+      </div>
+    </div>
+    <div class="sb">
+      <div class="analogy"><div class="analogy-t">🧠 Analogy</div><p>A <strong>chef should only cook</strong>. Not cook + take orders + clean tables + manage billing. When you need to change the menu, only the chef is affected — not the waiter or cleaner.</p></div>
+      <div class="pts">
+        <div class="pts-l">In React Native</div>
+        <div class="pt"><span class="dot d1"></span><strong>One component = one visual concern:</strong> <code>&lt;UserAvatar&gt;</code>, <code>&lt;UserName&gt;</code>, <code>&lt;FollowButton&gt;</code> — not one massive <code>&lt;UserProfile&gt;</code></div>
+        <div class="pt"><span class="dot d1"></span><strong>One hook = one data concern:</strong> <code>useAuth()</code>, <code>useCart()</code>, <code>useProducts()</code> — not one <code>useEverything()</code></div>
+        <div class="pt"><span class="dot d1"></span><strong>Service files:</strong> <code>userService.ts</code> (API calls only), <code>userStore.ts</code> (state only), <code>UserScreen.tsx</code> (UI only)</div>
+        <div class="pt"><span class="dot d1"></span><strong>Utility functions:</strong> <code>formatPrice(n)</code>, <code>validateEmail(s)</code>, <code>parseDate(d)</code> — pure, single-purpose functions</div>
+        <div class="pt"><span class="dot d1"></span><strong>Signal of violation:</strong> If your component has 300+ lines, multiple <code>useEffect</code>s doing different things, or handles both API + UI + navigation — it violates SRP</div>
+      </div>
+      <div class="rn"><div class="rn-t">📱 Before vs After</div><p>❌ <code>OrderScreen</code>: fetches orders, formats prices, handles payment, shows toast, navigates on success, tracks analytics — 6 responsibilities<br><br>✅ <code>OrderScreen</code> → orchestrates:<br></p><ul><li><code>useOrders()</code> — data fetching</li><li><code>OrderList</code> — renders list</li><li><code>paymentService.charge()</code> — payment logic</li><li><code>useAnalytics().track()</code> — analytics</li></ul></div>
+    </div>
+  </div>
+
+  <!-- O -->
+  <div class="sc">
+    <div class="sh">
+      <div class="sl" style="color:#06b6d4;">O</div>
+      <div class="sh-info">
+        <div class="sh-name">Open/Closed Principle (OCP)</div>
+        <div class="sh-sub">Open for extension, closed for modification — add without changing existing code</div>
+      </div>
+    </div>
+    <div class="sb">
+      <div class="analogy"><div class="analogy-t">🧠 Analogy</div><p>A <strong>power strip</strong> — you can plug in new devices (extend) without rewiring the strip (modify). The strip's core doesn't change when you add a new device.</p></div>
+      <div class="pts">
+        <div class="pts-l">In React Native</div>
+        <div class="pt"><span class="dot d3"></span><strong>Variant props:</strong> <code>&lt;Button variant="primary" | "outline" | "ghost"&gt;</code> — new variant added via props + StyleSheet map, not by opening Button.tsx</div>
+        <div class="pt"><span class="dot d3"></span><strong>Strategy pattern:</strong> Pass sorting/filtering function as prop instead of hardcoding logic inside component</div>
+        <div class="pt"><span class="dot d3"></span><strong>Higher-Order Components:</strong> <code>withAuth(Component)</code> adds auth-checking without touching <code>Component</code></div>
+        <div class="pt"><span class="dot d3"></span><strong>Plugin / Registry pattern:</strong> Factory using a registry Map — add new types without modifying factory code</div>
+      </div>
+      <div class="rn"><div class="rn-t">📱 React Native Example</div><p>❌ Bad: <code>if(type==='primary') ... else if(type==='outline') ...</code> inside Button — every new type requires opening the file<br><br>✅ Good:</p><ul><li><code>const styles = { primary: {...}, outline: {...}, ghost: {...} }</code></li><li><code>return &lt;Pressable style={[base, styles[variant]]} /&gt;</code></li><li>New variant? Add one entry to styles object. Button.tsx untouched.</li></ul></div>
+    </div>
+  </div>
+
+  <!-- L -->
+  <div class="sc">
+    <div class="sh">
+      <div class="sl" style="color:#a78bfa;">L</div>
+      <div class="sh-info">
+        <div class="sh-name">Liskov Substitution Principle (LSP)</div>
+        <div class="sh-sub">Subtypes must be substitutable for their base type without breaking the app</div>
+      </div>
+    </div>
+    <div class="sb">
+      <div class="analogy"><div class="analogy-t">🧠 Analogy</div><p>If you order a <strong>vehicle</strong>, you should be able to drive whatever shows up — car, truck, bus. They all steer, accelerate, brake. A vehicle that doesn't steer would violate LSP.</p></div>
+      <div class="pts">
+        <div class="pts-l">In React Native</div>
+        <div class="pt"><span class="dot d2"></span><strong>Component contracts:</strong> All Button variants (<code>PrimaryButton</code>, <code>IconButton</code>, <code>GhostButton</code>) must accept the same base props: <code>onPress</code>, <code>disabled</code>, <code>title</code></div>
+        <div class="pt"><span class="dot d2"></span><strong>TypeScript enforces LSP:</strong> Define a base interface; all variants implement it. TypeScript compiler catches violations</div>
+        <div class="pt"><span class="dot d2"></span><strong>Hook contracts:</strong> <code>useAsyncStorage()</code> and <code>useMMKV()</code> both return <code>{get, set, remove}</code> — components don't care which is injected</div>
+        <div class="pt"><span class="dot d2"></span><strong>Violation example:</strong> <code>IconButton</code> that ignores the <code>disabled</code> prop — screens using <code>Button</code> type would break when receiving <code>IconButton</code></div>
+      </div>
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">lsp.ts — Button Contract (TypeScript + RN)</span></div>
+        <pre><span class="cm">// Base contract — all button variants MUST follow this</span>
+<span class="kw">interface</span> <span class="cls">ButtonProps</span> {
+  title: string;
+  onPress: () => <span class="kw">void</span>;
+  disabled?: boolean;
+  loading?: boolean;
+  testID?: string;
+}
+
+<span class="cm">// ✅ All variants implement the contract</span>
+<span class="kw">function</span> <span class="fn">PrimaryButton</span>({ title, onPress, disabled, loading }: <span class="cls">ButtonProps</span>) {
+  <span class="kw">return</span> &lt;Pressable onPress={!disabled && !loading ? onPress : <span class="kw">undefined</span>}&gt;...&lt;/Pressable&gt;;
+}
+
+<span class="kw">function</span> <span class="fn">GhostButton</span>({ title, onPress, disabled, loading }: <span class="cls">ButtonProps</span>) {
+  <span class="cm">// Must honour disabled + loading — or it violates LSP!</span>
+  <span class="kw">return</span> &lt;Pressable onPress={!disabled && !loading ? onPress : <span class="kw">undefined</span>}&gt;...&lt;/Pressable&gt;;
+}
+
+<span class="cm">// Screen is agnostic — any ButtonProps-conforming component works</span>
+<span class="kw">function</span> <span class="fn">SubmitArea</span>({ ButtonComponent = PrimaryButton }: { ButtonComponent?: React.FC&lt;<span class="cls">ButtonProps</span>&gt; }) {
+  <span class="kw">return</span> &lt;ButtonComponent title=<span class="str">"Submit"</span> onPress={handleSubmit} /&gt;;
+  <span class="cm">// SubmitArea works with ANY button variant — LSP guaranteed</span>
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- I -->
+  <div class="sc">
+    <div class="sh">
+      <div class="sl" style="color:#10b981;">I</div>
+      <div class="sh-info">
+        <div class="sh-name">Interface Segregation Principle (ISP)</div>
+        <div class="sh-sub">Don't force components to depend on props they don't use</div>
+      </div>
+    </div>
+    <div class="sb">
+      <div class="analogy"><div class="analogy-t">🧠 Analogy</div><p>A <strong>printer + scanner + fax machine</strong> vs three separate devices. If you only need to print, you shouldn't have to depend on (and break when) the scanner breaks. Separate interfaces for separate needs.</p></div>
+      <div class="pts">
+        <div class="pts-l">In React Native</div>
+        <div class="pt"><span class="dot d4"></span><strong>Specific props:</strong> <code>&lt;UserAvatar name={user.name} url={user.avatarUrl} /&gt;</code> not <code>&lt;UserAvatar user={entireUser} /&gt;</code></div>
+        <div class="pt"><span class="dot d4"></span><strong>Re-render performance:</strong> Passing only used fields = component only re-renders when THOSE fields change. Passing whole object = re-renders on ANY field change.</div>
+        <div class="pt"><span class="dot d4"></span><strong>Split large prop interfaces:</strong> <code>ProductCardProps</code> should not include <code>addToCart</code> if some cards are display-only</div>
+        <div class="pt"><span class="dot d4"></span><strong>React.memo + specific props:</strong> Works best when props are primitives/specific — memo comparison is more effective</div>
+      </div>
+      <div class="rn"><div class="rn-t">📱 Performance Impact</div><ul><li>❌ <code>user</code> object passed → re-renders on ANY user field change (even unrelated ones)</li><li>✅ <code>name + avatarUrl</code> passed → only re-renders when name or avatar actually changes</li><li>Combine with <code>React.memo(UserCard)</code> for maximum optimisation</li><li>Use <code>useCallback</code> for function props to stabilise references</li></ul></div>
+    </div>
+  </div>
+
+  <!-- D -->
+  <div class="sc">
+    <div class="sh">
+      <div class="sl" style="color:#f59e0b;">D</div>
+      <div class="sh-info">
+        <div class="sh-name">Dependency Inversion Principle (DIP)</div>
+        <div class="sh-sub">High-level modules should not depend on low-level modules — both should depend on abstractions</div>
+      </div>
+    </div>
+    <div class="sb">
+      <div class="analogy"><div class="analogy-t">🧠 Analogy</div><p>Your <strong>laptop charger has a standard plug</strong> (abstraction). You can use it in any country with an adapter (implementation). The laptop doesn't care if it's UK or US power — it depends on the plug standard, not the wall socket.</p></div>
+      <div class="pts">
+        <div class="pts-l">In React Native</div>
+        <div class="pt"><span class="dot d5"></span><strong>Service interfaces:</strong> Define <code>interface StorageService</code> — inject AsyncStorage or MMKV or MockStorage without changing consuming code</div>
+        <div class="pt"><span class="dot d5"></span><strong>Analytics abstraction:</strong> <code>interface Analytics { track(event, props): void }</code> — swap Firebase for Amplitude for tests without code changes</div>
+        <div class="pt"><span class="dot d5"></span><strong>Context injection:</strong> Provide implementations via Context — consumers call <code>useStorage()</code>, don't import AsyncStorage directly</div>
+        <div class="pt"><span class="dot d5"></span><strong>Testing benefit:</strong> Jest tests inject <code>MockStorageService</code> — no real storage, no disk I/O, fast tests</div>
+        <div class="pt"><span class="dot d5"></span><strong>Feature flags:</strong> A/B test implementations by injecting different service based on flag — zero component changes</div>
+      </div>
+      <div class="cw">
+        <div class="ch"><div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div><span class="cl">dip.ts — Analytics DI + Testing (React Native)</span></div>
+        <pre><span class="cm">// 1️⃣ Abstraction (interface) — the contract</span>
+<span class="kw">interface</span> <span class="cls">AnalyticsService</span> {
+  <span class="fn">track</span>(event: string, props?: Record&lt;string, <span class="kw">any</span>&gt;): <span class="kw">void</span>;
+  <span class="fn">identify</span>(userId: string, traits?: Record&lt;string, <span class="kw">any</span>&gt;): <span class="kw">void</span>;
+  <span class="fn">screen</span>(name: string): <span class="kw">void</span>;
+}
+
+<span class="cm">// 2️⃣ Concrete: Firebase (production)</span>
+<span class="kw">class</span> <span class="cls">FirebaseAnalytics</span> <span class="kw">implements</span> <span class="cls">AnalyticsService</span> {
+  <span class="fn">track</span>(event, props) { analytics().<span class="fn">logEvent</span>(event, props); }
+  <span class="fn">identify</span>(userId)    { analytics().<span class="fn">setUserId</span>(userId); }
+  <span class="fn">screen</span>(name)        { analytics().<span class="fn">logScreenView</span>({ screen_name: name }); }
+}
+
+<span class="cm">// 3️⃣ Concrete: Console logger (development)</span>
+<span class="kw">class</span> <span class="cls">DevAnalytics</span> <span class="kw">implements</span> <span class="cls">AnalyticsService</span> {
+  <span class="fn">track</span>(event, props)  { console.<span class="fn">log</span>(<span class="str">'📊 track'</span>, event, props); }
+  <span class="fn">identify</span>(userId)     { console.<span class="fn">log</span>(<span class="str">'👤 identify'</span>, userId); }
+  <span class="fn">screen</span>(name)         { console.<span class="fn">log</span>(<span class="str">'📱 screen'</span>, name); }
+}
+
+<span class="cm">// 4️⃣ Concrete: Mock (testing)</span>
+<span class="kw">class</span> <span class="cls">MockAnalytics</span> <span class="kw">implements</span> <span class="cls">AnalyticsService</span> {
+  calls: <span class="kw">any</span>[] = [];
+  <span class="fn">track</span>(event, props)  { <span class="kw">this</span>.calls.<span class="fn">push</span>({ type: <span class="str">'track'</span>, event, props }); }
+  <span class="fn">identify</span>(userId)     { <span class="kw">this</span>.calls.<span class="fn">push</span>({ type: <span class="str">'identify'</span>, userId }); }
+  <span class="fn">screen</span>(name)         { <span class="kw">this</span>.calls.<span class="fn">push</span>({ type: <span class="str">'screen'</span>, name }); }
+}
+
+<span class="cm">// 5️⃣ Inject via context — components never import concrete class</span>
+<span class="kw">const</span> AnalyticsContext = <span class="fn">createContext</span>&lt;<span class="cls">AnalyticsService</span>&gt;(<span class="kw">null</span>!);
+<span class="kw">export const</span> <span class="fn">useAnalytics</span> = () => <span class="fn">useContext</span>(AnalyticsContext);
+
+<span class="cm">// App.tsx — pick implementation at app boundary</span>
+&lt;<span class="cls">AnalyticsContext</span>.Provider value={__DEV__ ? <span class="kw">new</span> <span class="cls">DevAnalytics</span>() : <span class="kw">new</span> <span class="cls">FirebaseAnalytics</span>()}&gt;
+  &lt;<span class="cls">App</span> /&gt;
+&lt;/AnalyticsContext.Provider&gt;
+
+<span class="cm">// Any component — uses abstraction, zero coupling to Firebase</span>
+<span class="kw">function</span> <span class="fn">ProductScreen</span>() {
+  <span class="kw">const</span> analytics = <span class="fn">useAnalytics</span>();
+  <span class="fn">useEffect</span>(() => { analytics.<span class="fn">screen</span>(<span class="str">'ProductScreen'</span>); }, []);
+  <span class="kw">const</span> <span class="fn">handleBuy</span> = () => { analytics.<span class="fn">track</span>(<span class="str">'purchase_clicked'</span>, { productId }); };
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOLID SUMMARY TABLE -->
+  <div style="margin-top:32px;">
+    <div class="ovt">
+      <table>
+        <thead>
+          <tr><th>Letter</th><th>Full Name</th><th>RN Violation Sign</th><th>RN Fix</th><th>Test Signal</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="color:#ff6b35;font-size:1.1rem;">S</td><td>Single Responsibility</td><td>500+ line screen, multiple useEffects for different concerns</td><td>Custom hooks + sub-components + service files</td><td>Easy to unit test each piece</td></tr>
+          <tr><td style="color:#06b6d4;font-size:1.1rem;">O</td><td>Open/Closed</td><td>if/else chain grows every time you add a feature</td><td>Variant props + StyleSheet map + registry pattern</td><td>Add feature without touching existing code</td></tr>
+          <tr><td style="color:#a78bfa;font-size:1.1rem;">L</td><td>Liskov Substitution</td><td>Variant component ignores base props (disabled, onPress)</td><td>TypeScript interface for all variants + enforce contract</td><td>Swap variants in Storybook — all behave same</td></tr>
+          <tr><td style="color:#10b981;font-size:1.1rem;">I</td><td>Interface Segregation</td><td>Passing full object when only 1–2 fields are used</td><td>Destructure and pass only needed primitives</td><td>Component re-renders only on relevant changes</td></tr>
+          <tr><td style="color:#f59e0b;font-size:1.1rem;">D</td><td>Dependency Inversion</td><td>Direct import of AsyncStorage, Firebase inside component</td><td>Interface + Context injection + swap at app boundary</td><td>Tests use MockService — no real API/storage</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /solid -->
+
+</div><!-- /wrap -->
+
+<div class="footer">// JS · React Native · Design Patterns · SOLID Principles · Revision Notes v2</div>
+
 </body>
-
 </html>
