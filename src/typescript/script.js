@@ -66,7 +66,6 @@ console.log("Try fixing the errors above!");`;
         });
 
         require(["vs/editor/editor.main"], () => {
-            // CRITICAL: Configure TypeScript compiler options FIRST
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                 target: monaco.languages.typescript.ScriptTarget.ES2020,
                 module: monaco.languages.typescript.ModuleKind.ESNext,
@@ -83,18 +82,15 @@ console.log("Try fixing the errors above!");`;
                 checkJs: false
             });
 
-            // CRITICAL: Enable diagnostics - this makes errors appear!
             monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-                noSemanticValidation: false,  // MUST be false!
-                noSyntaxValidation: false,     // MUST be false!
+                noSemanticValidation: false,
+                noSyntaxValidation: false,
                 noSuggestionDiagnostics: false,
                 diagnosticCodesToIgnore: []
             });
 
-            // Enable eager model sync for instant validation
             monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
 
-            // Create the editor
             editor = monaco.editor.create(document.getElementById("editor"), {
                 value: initialCode,
                 language: "typescript",
@@ -115,24 +111,20 @@ console.log("Try fixing the errors above!");`;
                 lightbulb: { enabled: true }
             });
 
-            // Update line info on cursor move
             editor.onDidChangeCursorPosition(e => {
                 updateLineInfo(e.position);
             });
 
-            // Listen to Monaco's marker changes (this is when errors appear)
             monaco.editor.onDidChangeMarkers(([resource]) => {
                 if (editor.getModel() && editor.getModel().uri.toString() === resource.toString()) {
                     updateErrorDisplay();
                 }
             });
 
-            // Save on change
             editor.onDidChangeModelContent(() => {
                 autoSaveCode();
             });
 
-            // Initial error check after a moment
             setTimeout(() => {
                 updateErrorDisplay();
             }, 500);
@@ -154,7 +146,6 @@ function updateErrorDisplay() {
     const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
     const warnings = markers.filter(m => m.severity === monaco.MarkerSeverity.Warning);
 
-    // Update status text
     const statusEl = document.getElementById('status');
     if (statusEl) {
         if (errors.length > 0) {
@@ -165,8 +156,6 @@ function updateErrorDisplay() {
             statusEl.innerHTML = `<span style="color: #4CAF50;">✅ No errors</span>`;
         }
     }
-
-    console.log(`Validation: ${errors.length} errors, ${warnings.length} warnings`);
 }
 
 function updateLineInfo(position) {
@@ -193,7 +182,6 @@ function updateLineInfo(position) {
 function runCode() {
     outputElement.innerHTML = "";
 
-    // Check for errors
     const model = editor.getModel();
     const markers = monaco.editor.getModelMarkers({ resource: model.uri });
     const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
@@ -218,53 +206,27 @@ function runCode() {
 
 function executeCode() {
     try {
-        // Transpile TypeScript to JavaScript using browser TypeScript compiler
         const jsCode = ts.transpile(editor.getValue(), {
             target: ts.ScriptTarget.ES2020,
             module: ts.ModuleKind.ESNext
         });
 
-        // Create console override
-        const logs = [];
         const customConsole = {
-            log: (...args) => {
-                logs.push({ type: 'log', args });
-                renderLog(args, "log");
-            },
-            error: (...args) => {
-                logs.push({ type: 'error', args });
-                renderLog(args, "error");
-            },
-            warn: (...args) => {
-                logs.push({ type: 'warn', args });
-                renderLog(args, "warn");
-            },
-            info: (...args) => {
-                logs.push({ type: 'info', args });
-                renderLog(args, "info");
-            }
+            log: (...args) => renderLog(args, "log"),
+            error: (...args) => renderLog(args, "error"),
+            warn: (...args) => renderLog(args, "warn"),
+            info: (...args) => renderLog(args, "info")
         };
 
-        // Execute in isolated context
         const executeFunction = new Function(
-            'console',
-            'Date',
-            'Math',
-            'JSON',
-            'Array',
-            'Object',
-            'String',
-            'Number',
-            'Boolean',
-            `
-            try {
+            'console', 'Date', 'Math', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean',
+            `try {
                 ${jsCode}
                 console.log("✅ Code executed successfully");
             } catch (error) {
                 console.error("Runtime Error:", error.message);
                 throw error;
-            }
-            `
+            }`
         );
 
         executeFunction(customConsole, Date, Math, JSON, Array, Object, String, Number, Boolean);
@@ -339,23 +301,25 @@ function setupEventListeners() {
         showToast("Type checking complete!", "info");
     };
 
-    // Language switcher
+    // ✅ FIX: Use relative paths so navigation works when opening files locally
     const languageList = document.getElementById("languageList");
     if (languageList) {
         languageList.addEventListener("click", (e) => {
             const item = e.target.closest("li");
             if (!item || !item.dataset.lang) return;
 
+            // Paths relative to THIS file's location (src/typescript/)
             const routes = {
-                javascript: "/src/editor/index.html",
-                typescript: "/src/typescript/index.html",
-                html: "/src/html/index.html",
-                react: "/src/react/index.html",
-                json: "/src/jsonformatter/index.html"
+                javascript: "../editor/index.html",
+                typescript: "index.html",
+                html: "../html/index.html",
+                react: "../react/index.html",
+                json: "../jsonformatter/index.html"
             };
 
-            if (routes[item.dataset.lang]) {
-                window.location.href = routes[item.dataset.lang];
+            const dest = routes[item.dataset.lang];
+            if (dest) {
+                window.location.href = dest;
             }
         });
     }
@@ -365,8 +329,7 @@ function setupEventListeners() {
    AUTO-SAVE & STORAGE
 ================================ */
 function autoSaveCode() {
-    const code = editor.getValue();
-    localStorage.setItem("typescript_code", code);
+    localStorage.setItem("typescript_code", editor.getValue());
 }
 
 function saveCode() {
@@ -375,7 +338,7 @@ function saveCode() {
 }
 
 function loadSavedCode() {
-    // Already loaded in initial editor setup
+    // Already loaded during editor initialisation
 }
 
 function loadCodeFromURL() {
@@ -395,8 +358,7 @@ function loadCodeFromURL() {
 }
 
 function shareCode() {
-    const code = editor.getValue();
-    const encoded = btoa(encodeURIComponent(code));
+    const encoded = btoa(encodeURIComponent(editor.getValue()));
     const shareUrl = `${location.origin}${location.pathname}?code=${encoded}`;
 
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -411,53 +373,37 @@ function shareCode() {
 ================================ */
 function showToast(message, type = "info", duration = 2000) {
     if (!toast) return;
-
     toast.textContent = message;
     toast.className = `toast ${type} show`;
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, duration);
+    setTimeout(() => toast.classList.remove('show'), duration);
 }
 
 /* ===============================
-   TEST BUTTON FOR DEMONSTRATIONS
+   LOAD TEST EXAMPLES BUTTON
 ================================ */
 setTimeout(() => {
-    // Add test button
     const testButton = document.createElement('button');
-    testButton.className = 'test-button';
     testButton.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
+        position: fixed; bottom: 20px; left: 20px;
         background: linear-gradient(135deg, #6c5ce7, #00cec9);
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        z-index: 1000;
-        box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+        color: white; border: none; padding: 12px 20px;
+        border-radius: 8px; cursor: pointer; font-weight: 600;
+        z-index: 1000; box-shadow: 0 4px 15px rgba(108,92,231,0.4);
         transition: all 0.3s ease;
     `;
     testButton.textContent = '🧪 Load Test Examples';
 
     testButton.onmouseover = () => {
         testButton.style.transform = 'translateY(-2px)';
-        testButton.style.boxShadow = '0 6px 20px rgba(108, 92, 231, 0.6)';
+        testButton.style.boxShadow = '0 6px 20px rgba(108,92,231,0.6)';
     };
-
     testButton.onmouseout = () => {
         testButton.style.transform = 'translateY(0)';
-        testButton.style.boxShadow = '0 4px 15px rgba(108, 92, 231, 0.4)';
+        testButton.style.boxShadow = '0 4px 15px rgba(108,92,231,0.4)';
     };
 
     testButton.onclick = () => {
         const testCode = `// REAL-TIME TYPE CHECKING TEST
-// Watch errors appear and disappear as you type!
-
 interface Product {
     id: number;
     name: string;
@@ -467,7 +413,7 @@ interface Product {
 
 // ❌ ERROR: Type 'string' is not assignable to type 'number'
 const product1: Product = {
-    id: "123",  // Should be a number - fix this!
+    id: "123",   // Should be a number - fix this!
     name: "Laptop",
     price: 999,
     inStock: true
@@ -481,19 +427,13 @@ const product2: Product = {
     // Add inStock property to fix!
 };
 
-// Function with strict typing
 function calculateTotal(price: number, quantity: number): number {
     return price * quantity;
 }
 
-// ✅ Correct usage
-const total1 = calculateTotal(99, 2);
-
-// ❌ ERROR: Argument of type 'string' is not assignable
-const total2 = calculateTotal("50", 3);
-
-// ❌ ERROR: Expected 2 arguments, but got 1
-const total3 = calculateTotal(100);
+const total1 = calculateTotal(99, 2);          // ✅ OK
+const total2 = calculateTotal("50", 3);        // ❌ string arg
+const total3 = calculateTotal(100);            // ❌ missing arg
 
 console.log("Total:", total1);
 console.log("Fix the errors above and watch them disappear!");`;
