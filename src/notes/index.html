@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InterviewVault — Notes Manager</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0f18;
+            --surface: #161925;
+            --surface-2: #1e2236;
+            --border: #272d45;
+            --border-2: #3a4163;
+            --accent: #ffb547;
+            --accent-dim: rgba(255, 181, 71, 0.12);
+            --teal: #4ecdc4;
+            --teal-dim: rgba(78, 205, 196, 0.12);
+            --red: #ff6b6b;
+            --red-dim: rgba(255, 107, 107, 0.12);
+            --green: #6bcf7f;
+            --green-dim: rgba(107, 207, 127, 0.12);
+            --purple: #a78bfa;
+            --purple-dim: rgba(167, 139, 250, 0.12);
+            --blue: #60a5fa;
+            --text: #e8eaf2;
+            --text-2: #9aa3c2;
+            --text-3: #5a6382;
+            --font-head: 'Syne', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.6);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 14px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 10%, rgba(255, 181, 71, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(78, 205, 196, 0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── LAYOUT ── */
+        #app {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar {
+            width: 256px;
+            min-width: 256px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-text {
+            font-family: var(--font-head);
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text span {
+            color: var(--accent);
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            color: var(--text-3);
+            font-family: var(--font-mono);
+            margin-top: 3px;
+        }
+
+        .firebase-status {
+            margin: 14px 14px 0;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .firebase-status:hover {
+            border-color: var(--border-2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-3);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+
+        .status-dot.connected {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .status-dot.connecting {
+            background: var(--accent);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.35
+            }
+        }
+
+        .status-text {
+            font-size: 11px;
+            color: var(--text-2);
+            font-family: var(--font-mono);
+            line-height: 1.5;
+        }
+
+        .status-text strong {
+            color: var(--text);
+            display: block;
+        }
+
+        .sidebar-nav {
+            padding: 16px 10px;
+            flex: 1;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--text-3);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 0 8px;
+            margin-bottom: 6px;
+            margin-top: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-2);
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: all 0.15s;
+            margin-bottom: 2px;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background: var(--surface-2);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .nav-icon {
+            font-size: 15px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--surface-2);
+            color: var(--text-3);
+            font-size: 10px;
+            font-family: var(--font-mono);
+            padding: 2px 7px;
+            border-radius: 20px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .nav-item.active .nav-badge {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 8px 10px;
+        }
+
+        .sidebar-footer {
+            padding: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── MAIN ── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            padding: 14px 26px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: rgba(22, 25, 37, 0.85);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .topbar-title {
+            font-family: var(--font-head);
+            font-size: 19px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .search-box {
+            margin-left: auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box input {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px 8px 34px;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 13px;
+            width: 220px;
+            outline: none;
+            transition: border-color 0.2s, width 0.3s;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-3);
+        }
+
+        .search-box input:focus {
+            border-color: var(--border-2);
+            width: 270px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            color: var(--text-3);
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0d0f18;
+        }
+
+        .btn-primary:hover {
+            background: #ffc56a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255, 181, 71, 0.28);
+        }
+
+        .btn-ghost {
+            background: var(--surface-2);
+            color: var(--text-2);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--border-2);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: var(--red-dim);
+            color: var(--red);
+            border: 1px solid transparent;
+        }
+
+        .btn-danger:hover {
+            border-color: var(--red);
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-icon {
+            padding: 6px;
+            width: 30px;
+            height: 30px;
+            justify-content: center;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 26px;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* ── STATS ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-3);
+            font-family: var(--font-mono);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-family: var(--font-head);
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .stat-value.amber {
+            color: var(--accent);
+        }
+
+        .stat-value.teal {
+            color: var(--teal);
+        }
+
+        .stat-value.green {
+            color: var(--green);
+        }
+
+        .stat-value.purple {
+            color: var(--purple);
+        }
+
+        /* ── SECTION ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-family: var(--font-head);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ── NOTES GRID ── */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+            gap: 14px;
+        }
+
+        .note-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: fadeUp 0.3s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .note-card:hover {
+            border-color: var(--border-2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .note-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--radius) var(--radius) 0 0;
+            background: var(--card-color, var(--accent));
+            opacity: 0.75;
+        }
+
+        .note-card.color-amber {
+            --card-color: #ffb547;
+        }
+
+        .note-card.color-teal {
+            --card-color: #4ecdc4;
+        }
+
+        .note-card.color-purple {
+            --card-color: #a78bfa;
+        }
+
+        .note-card.color-red {
+            --card-color: #ff6b6b;
+        }
+
+        .note-card.color-green {
+            --card-color: #6bcf7f;
+        }
+
+        .note-card.color-blue {
+            --card-color: #60a5fa;
+        }
+
+        .note-title {
+            font-family: var(--font-head);
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .note-content {
+            font-size: 12.5px;
+            color: var(--text-2);
+            line-height: 1.65;
+            flex: 1;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            white-space: pre-wrap;
+        }
+
+        .note-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 2px;
+        }
+
+        .note-date {
+            font-size: 10.5px;
+            color: var(--text-3);
+            font-family: var(--font-mono);
+        }
+
+        .note-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .note-card:hover .note-actions {
+            opacity: 1;
+        }
+
+        .note-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .tag {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            padding: 2px 7px;
+            border-radius: 20px;
+            background: var(--surface-2);
+            color: var(--text-3);
+            border: 1px solid var(--border);
+        }
+
+        .add-note-card {
+            background: transparent;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--text-3);
+            font-size: 13px;
+            font-weight: 500;
+            min-height: 100px;
+        }
+
+        .add-note-card:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        /* ── INTERVIEWS ── */
+        .interviews-topbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 3px;
+            padding: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .filter-tab {
+            padding: 5px 11px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-3);
+            transition: all 0.15s;
+            border: none;
+            background: none;
+            font-family: var(--font-body);
+        }
+
+        .filter-tab.active {
+            background: var(--surface-2);
+            color: var(--text);
+        }
+
+        .filter-tab:hover:not(.active) {
+            color: var(--text-2);
+        }
+
+        .interview-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .interview-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all 0.2s;
+            animation: fadeUp 0.3s ease forwards;
+            opacity: 0;
+        }
+
+        .interview-card:hover {
+            border-color: var(--border-2);
+        }
+
+        .interview-card-header {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+        }
+
+        .company-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-head);
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .interview-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .interview-company {
+            font-family: var(--font-head);
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .interview-role {
+            font-size: 11.5px;
+            color: var(--text-2);
+            margin-top: 2px;
+        }
+
+        .interview-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .interview-date {
+            font-size: 11px;
+            color: var(--text-3);
+            font-family: var(--font-mono);
+        }
+
+        .status-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+
+        .status-applied {
+            background: var(--teal-dim);
+            color: var(--teal);
+        }
+
+        .status-screening {
+            background: rgba(96, 165, 250, 0.12);
+            color: #60a5fa;
+        }
+
+        .status-interview {
+            background: var(--purple-dim);
+            color: var(--purple);
+        }
+
+        .status-offer {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .status-rejected {
+            background: var(--red-dim);
+            color: var(--red);
+        }
+
+        .status-ghost {
+            background: var(--surface-2);
+            color: var(--text-3);
+        }
+
+        .interview-card-body {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.2s;
+        }
+
+        .interview-card-body.open {
+            padding: 0 18px 18px;
+            max-height: 700px;
+        }
+
+        .interview-notes-content {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 13px 15px;
+            font-size: 12.5px;
+            color: var(--text-2);
+            line-height: 1.7;
+            white-space: pre-wrap;
+            margin-bottom: 12px;
+            font-family: var(--font-body);
+        }
+
+        .iv-meta-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .iv-meta-item {
+            font-size: 11px;
+            color: var(--text-3);
+            font-family: var(--font-mono);
+        }
+
+        .iv-meta-item strong {
+            color: var(--text-2);
+        }
+
+        .interview-card-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            padding: 11px 0 0;
+        }
+
+        /* ── MODALS ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 560px;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.22s;
+        }
+
+        .modal-overlay.open .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 22px 22px 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-family: var(--font-head);
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .modal-subtitle {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-top: 3px;
+        }
+
+        .modal-close {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-2);
+            font-size: 16px;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+            border-color: var(--border-2);
+        }
+
+        .modal-body {
+            padding: 18px 22px 22px;
+        }
+
+        .modal-footer {
+            padding: 0 22px 22px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* ── FORMS ── */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: var(--font-mono);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="url"],
+        select,
+        textarea {
+            width: 100%;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 9px 12px;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--text-3);
+        }
+
+        select option {
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        .color-option {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            border-color: white;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+        }
+
+        .color-option[data-color="amber"] {
+            background: #ffb547;
+        }
+
+        .color-option[data-color="teal"] {
+            background: #4ecdc4;
+        }
+
+        .color-option[data-color="purple"] {
+            background: #a78bfa;
+        }
+
+        .color-option[data-color="red"] {
+            background: #ff6b6b;
+        }
+
+        .color-option[data-color="green"] {
+            background: #6bcf7f;
+        }
+
+        .color-option[data-color="blue"] {
+            background: #60a5fa;
+        }
+
+        /* ── FIREBASE MODAL ── */
+        .setup-tabs {
+            display: flex;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .setup-tab {
+            flex: 1;
+            padding: 9px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-3);
+            background: none;
+            border: none;
+            font-family: var(--font-body);
+            transition: all 0.15s;
+        }
+
+        .setup-tab.active {
+            background: var(--surface-2);
+            color: var(--text);
+        }
+
+        .setup-panel {
+            display: none;
+        }
+
+        .setup-panel.active {
+            display: block;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-3);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .upload-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .info-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 11px 13px;
+            font-size: 11.5px;
+            color: var(--text-2);
+            line-height: 1.65;
+            margin-bottom: 16px;
+            font-family: var(--font-mono);
+        }
+
+        .info-box.warning {
+            border-color: rgba(255, 181, 71, 0.35);
+            background: rgba(255, 181, 71, 0.06);
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 70px 40px;
+            text-align: center;
+            color: var(--text-3);
+        }
+
+        .empty-icon {
+            font-size: 44px;
+            margin-bottom: 14px;
+        }
+
+        .empty-title {
+            font-family: var(--font-head);
+            font-size: 17px;
+            color: var(--text-2);
+            margin-bottom: 7px;
+        }
+
+        .empty-desc {
+            font-size: 13px;
+            line-height: 1.6;
+            max-width: 280px;
+        }
+
+        /* ── TOAST ── */
+        .toast-container {
+            position: fixed;
+            bottom: 22px;
+            right: 22px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .toast {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 11px 15px;
+            font-size: 13px;
+            color: var(--text);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 240px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1
+            }
+        }
+
+        .toast.success {
+            border-color: rgba(107, 207, 127, 0.5);
+        }
+
+        .toast.error {
+            border-color: rgba(255, 107, 107, 0.5);
+        }
+
+        .toast.info {
+            border-color: rgba(255, 181, 71, 0.4);
+        }
+
+        .toast-icon {
+            font-size: 15px;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-2);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 210px;
+                min-width: 210px;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .sidebar {
+                display: none;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Keyboard shortcut badge */
+        .kbd {
+            display: inline-block;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--text-3);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+
+        <!-- ═══ SIDEBAR ═══ -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-text">Interview<span>Vault</span></div>
+                <div class="logo-sub">// notes.manager v1.0</div>
+            </div>
+
+            <div class="firebase-status" onclick="openFirebaseModal()">
+                <div class="status-dot" id="statusDot"></div>
+                <div class="status-text">
+                    <strong id="statusText">Not connected</strong>
+                    <span id="statusSub">Click to setup Firebase</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-label">Views</div>
+                <div class="nav-item active" onclick="switchView('dashboard')" id="nav-dashboard">
+                    <span class="nav-icon">⬡</span> Dashboard
+                </div>
+                <div class="nav-item" onclick="switchView('quick')" id="nav-quick">
+                    <span class="nav-icon">⚡</span> Quick Notes
+                    <span class="nav-badge" id="badge-quick">0</span>
+                </div>
+                <div class="nav-item" onclick="switchView('interviews')" id="nav-interviews">
+                    <span class="nav-icon">🎯</span> Interviews
+                    <span class="nav-badge" id="badge-interviews">0</span>
+                </div>
+
+                <div class="divider"></div>
+                <div class="nav-label">Quick Add</div>
+                <div class="nav-item" onclick="openNoteModal()">
+                    <span class="nav-icon">✦</span> New Quick Note
+                </div>
+                <div class="nav-item" onclick="openInterviewModal()">
+                    <span class="nav-icon">✦</span> New Interview
+                </div>
+
+                <div class="divider"></div>
+                <div class="nav-label">Data</div>
+                <div class="nav-item" onclick="exportData()">
+                    <span class="nav-icon">↓</span> Export JSON
+                </div>
+                <div class="nav-item" onclick="importJSON()">
+                    <span class="nav-icon">↑</span> Import JSON
+                </div>
+                <div class="nav-item" onclick="syncFromFirebase()" id="nav-sync" style="display:none;">
+                    <span class="nav-icon">↻</span> Sync Firebase
+                </div>
+                <div class="nav-item" onclick="clearAllData()" style="color:var(--red);">
+                    <span class="nav-icon">⊘</span> Clear All
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;"
+                    onclick="openFirebaseModal()">⚙ Firebase Setup</button>
+            </div>
+        </div>
+
+        <!-- ═══ MAIN ═══ -->
+        <div class="main">
+            <div class="topbar">
+                <div class="topbar-title" id="topbarTitle">Dashboard</div>
+                <div class="search-box">
+                    <span class="search-icon">⌕</span>
+                    <input type="text" id="searchInput" placeholder="Search… (⌘K)" oninput="handleSearch(this.value)">
+                </div>
+                <button class="btn btn-primary" id="topAddBtn" onclick="handleTopAdd()">+ Add Note</button>
+            </div>
+
+            <div class="content">
+
+                <!-- ── DASHBOARD ── -->
+                <div class="view active" id="view-dashboard">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-label">Quick Notes</div>
+                            <div class="stat-value amber" id="stat-quick">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Interviews</div>
+                            <div class="stat-value teal" id="stat-interviews">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Offers</div>
+                            <div class="stat-value green" id="stat-offers">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">In Progress</div>
+                            <div class="stat-value purple" id="stat-inprogress">0</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">
+                        <div class="section-title">Recent Quick Notes</div>
+                        <button class="btn btn-ghost btn-sm" onclick="switchView('quick')">All notes →</button>
+                    </div>
+                    <div class="notes-grid" id="dashboard-quick-notes"></div>
+
+                    <div style="margin-top:32px;">
+                        <div class="section-header">
+                            <div class="section-title">Recent Interviews</div>
+                            <button class="btn btn-ghost btn-sm" onclick="switchView('interviews')">All interviews
+                                →</button>
+                        </div>
+                        <div class="interview-list" id="dashboard-interviews"></div>
+                    </div>
+                </div>
+
+                <!-- ── QUICK NOTES ── -->
+                <div class="view" id="view-quick">
+                    <div class="section-header">
+                        <div class="section-title">Quick Notes</div>
+                        <button class="btn btn-primary btn-sm" onclick="openNoteModal()">+ New Note</button>
+                    </div>
+                    <div class="notes-grid" id="quick-notes-grid"></div>
+                </div>
+
+                <!-- ── INTERVIEWS ── -->
+                <div class="view" id="view-interviews">
+                    <div class="interviews-topbar">
+                        <div class="section-title" style="margin-bottom:0;">Interviews</div>
+                        <div class="filter-tabs" id="statusFilter">
+                            <button class="filter-tab active" onclick="setStatusFilter('all',this)">All</button>
+                            <button class="filter-tab" onclick="setStatusFilter('applied',this)">Applied</button>
+                            <button class="filter-tab" onclick="setStatusFilter('screening',this)">Screening</button>
+                            <button class="filter-tab" onclick="setStatusFilter('interview',this)">Interview</button>
+                            <button class="filter-tab" onclick="setStatusFilter('offer',this)">Offer</button>
+                            <button class="filter-tab" onclick="setStatusFilter('rejected',this)">Rejected</button>
+                        </div>
+                        <button class="btn btn-primary btn-sm" style="margin-left:auto;"
+                            onclick="openInterviewModal()">+ New</button>
+                    </div>
+                    <div class="interview-list" id="interview-list"></div>
+                </div>
+
+            </div><!-- /content -->
+        </div><!-- /main -->
+    </div><!-- /app -->
+
+    <!-- ═══ TOAST CONTAINER ═══ -->
+    <div class="toast-container" id="toastContainer"></div>
+    <!-- Hidden file inputs -->
+    <input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="handleJsonUpload(event)">
+    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImport(event)">
+
+    <!-- ═══════════════ MODALS ═══════════════ -->
+
+    <!-- Firebase Setup Modal -->
+    <div class="modal-overlay" id="firebaseModal">
+        <div class="modal" style="max-width:540px;">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">🔥 Firebase Setup</div>
+                    <div class="modal-subtitle">Connect Firestore to sync across devices</div>
+                </div>
+                <button class="modal-close" onclick="closeModal('firebaseModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box">💡 Without Firebase, notes live in your browser's localStorage. Connect to get
+                    real-time sync across all your devices.</div>
+
+                <div class="setup-tabs">
+                    <button class="setup-tab active" onclick="switchSetupTab('keys',this)">Manual Keys</button>
+                    <button class="setup-tab" onclick="switchSetupTab('json',this)">Upload JSON</button>
+                    <button class="setup-tab" onclick="switchSetupTab('paste',this)">Paste Config</button>
+                </div>
+
+                <!-- PANEL: Manual Keys -->
+                <div class="setup-panel active" id="panel-keys">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="text" id="fb-apiKey" placeholder="AIzaSy...">
+                        </div>
+                        <div class="form-group">
+                            <label>Project ID</label>
+                            <input type="text" id="fb-projectId" placeholder="my-project-id">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Auth Domain</label>
+                            <input type="text" id="fb-authDomain" placeholder="myapp.firebaseapp.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Storage Bucket</label>
+                            <input type="text" id="fb-storageBucket" placeholder="myapp.appspot.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Messaging Sender ID</label>
+                            <input type="text" id="fb-messagingSenderId" placeholder="123456789">
+                        </div>
+                        <div class="form-group">
+                            <label>App ID</label>
+                            <input type="text" id="fb-appId" placeholder="1:123:web:abc">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL: Upload JSON -->
+                <div class="setup-panel" id="panel-json">
+                    <div class="upload-zone" onclick="document.getElementById('jsonFileInput').click()" id="uploadZone">
+                        <div class="upload-icon">📂</div>
+                        <p style="font-size:13px;font-weight:600;">Click to upload Firebase config JSON</p>
+                        <p style="font-size:11px;margin-top:4px;color:var(--text-3);">Supports firebaseConfig.json or
+                            google-services.json</p>
+                    </div>
+                    <div id="jsonPreview" style="margin-top:10px;display:none;">
+                        <div class="info-box" id="jsonPreviewText"></div>
+                    </div>
+                </div>
+
+                <!-- PANEL: Paste Config -->
+                <div class="setup-panel" id="panel-paste">
+                    <div class="form-group">
+                        <label>Paste your firebaseConfig object</label>
+                        <textarea id="fb-pasteConfig"
+                            style="min-height:150px;font-family:var(--font-mono);font-size:12px;" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "myapp.firebaseapp.com",
+  projectId: "my-project",
+  storageBucket: "myapp.appspot.com",
+  messagingSenderId: "123456",
+  appId: "1:123:web:abc"
+};'></textarea>
+                    </div>
+                </div>
+
+                <div class="info-box warning" style="margin-bottom:0;">
+                    ⚠️ Firestore Rules: In Firebase Console → Firestore → Rules, temporarily set <code
+                        style="color:var(--accent);">allow read, write: if true;</code> for testing. Secure with auth
+                    rules before production.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="disconnectFirebase()">Disconnect</button>
+                <button class="btn btn-primary" onclick="connectFirebase()">🔥 Connect Firebase</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Note Modal -->
+    <div class="modal-overlay" id="noteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="noteModalTitle">New Quick Note</div>
+                <button class="modal-close" onclick="closeModal('noteModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="note-title" placeholder="Note title…">
+                </div>
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea id="note-content" placeholder="Write anything — questions, concepts, reminders…"
+                        style="min-height:200px;"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tags <span style="color:var(--text-3);font-weight:400;">(comma separated)</span></label>
+                        <input type="text" id="note-tags" placeholder="react, dsa, behavioral">
+                    </div>
+                    <div class="form-group">
+                        <label>Card Color</label>
+                        <div class="color-picker" id="colorPicker">
+                            <div class="color-option selected" data-color="amber" onclick="selectColor(this)"></div>
+                            <div class="color-option" data-color="teal" onclick="selectColor(this)"></div>
+                            <div class="color-option" data-color="purple" onclick="selectColor(this)"></div>
+                            <div class="color-option" data-color="red" onclick="selectColor(this)"></div>
+                            <div class="color-option" data-color="green" onclick="selectColor(this)"></div>
+                            <div class="color-option" data-color="blue" onclick="selectColor(this)"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('noteModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interview Modal -->
+    <div class="modal-overlay" id="interviewModal">
+        <div class="modal" style="max-width:620px;">
+            <div class="modal-header">
+                <div class="modal-title" id="interviewModalTitle">New Interview</div>
+                <button class="modal-close" onclick="closeModal('interviewModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company *</label>
+                        <input type="text" id="iv-company" placeholder="Google, Flipkart, Amazon…">
+                    </div>
+                    <div class="form-group">
+                        <label>Role / Position</label>
+                        <input type="text" id="iv-role" placeholder="Software Engineer, SDE-2…">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Interview Date</label>
+                        <input type="date" id="iv-date">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="iv-status">
+                            <option value="applied">Applied</option>
+                            <option value="screening">Screening</option>
+                            <option value="interview" selected>Interview</option>
+                            <option value="offer">Offer Received</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="ghost">Ghosted</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Round</label>
+                        <input type="text" id="iv-round" placeholder="Phone Screen, Technical 1, Final…">
+                    </div>
+                    <div class="form-group">
+                        <label>Interviewer(s)</label>
+                        <input type="text" id="iv-interviewer" placeholder="Name, team, or LinkedIn">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes, Questions & Feedback</label>
+                    <textarea id="iv-notes"
+                        placeholder="Questions asked, topics covered, your answers, feedback received, things to improve…"
+                        style="min-height:170px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Tags</label>
+                    <input type="text" id="iv-tags" placeholder="system-design, DSA, behavioral, SQL">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('interviewModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveInterview()">Save Interview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title" style="font-size:18px;">⚠️ Confirm</div>
+                <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text-2);font-size:13px;line-height:1.6;" id="confirmMsg">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════ FIREBASE SDK ═══════════════ -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ═══════════════════════════════════════════════════
+        // STATE
+        // ═══════════════════════════════════════════════════
+        const state = {
+            quickNotes: [],
+            interviews: [],
+            currentView: 'dashboard',
+            searchQuery: '',
+            statusFilter: 'all',
+            editingNote: null,
+            editingInterview: null,
+            selectedColor: 'amber',
+            firebaseApp: null,
+            db: null,
+            connected: false,
+            _pendingJsonConfig: null,
+        };
+
+        // ═══════════════════════════════════════════════════
+        // LOCAL STORAGE
+        // ═══════════════════════════════════════════════════
+        function saveLocal() {
+            try {
+                localStorage.setItem('iv_quick_notes', JSON.stringify(state.quickNotes));
+                localStorage.setItem('iv_interviews', JSON.stringify(state.interviews));
+            } catch (e) { }
+        }
+
+        function loadLocal() {
+            try {
+                state.quickNotes = JSON.parse(localStorage.getItem('iv_quick_notes') || '[]');
+                state.interviews = JSON.parse(localStorage.getItem('iv_interviews') || '[]');
+            } catch (e) { state.quickNotes = []; state.interviews = []; }
+        }
+
+        // ═══════════════════════════════════════════════════
+        // FIREBASE
+        // ═══════════════════════════════════════════════════
+        function initFirebase(config, silent = false) {
+            try {
+                // Clean up any old app instance
+                if (state.firebaseApp) {
+                    try { state.firebaseApp.delete(); } catch (e) { }
+                }
+
+                const appName = 'iv-app-' + Date.now();
+                state.firebaseApp = firebase.initializeApp(config, appName);
+                state.db = firebase.firestore(state.firebaseApp);
+
+                setStatus('connecting');
+
+                state.db.collection('_ping').limit(1).get()
+                    .then(() => {
+                        state.connected = true;
+                        setStatus('connected', config.projectId);
+                        localStorage.setItem('iv_firebase_config', JSON.stringify(config));
+                        document.getElementById('nav-sync').style.display = 'flex';
+                        if (!silent) {
+                            closeModal('firebaseModal');
+                            showToast('🔥 Firebase connected! Syncing data…', 'success');
+                        }
+                        syncFromFirebase();
+                    })
+                    .catch(err => {
+                        // Firestore might reject _ping but still be valid — try actual collection
+                        state.db.collection('quick_notes').limit(1).get()
+                            .then(() => {
+                                state.connected = true;
+                                setStatus('connected', config.projectId);
+                                localStorage.setItem('iv_firebase_config', JSON.stringify(config));
+                                document.getElementById('nav-sync').style.display = 'flex';
+                                if (!silent) { closeModal('firebaseModal'); showToast('🔥 Firebase connected!', 'success'); }
+                                syncFromFirebase();
+                            })
+                            .catch(err2 => {
+                                setStatus('error');
+                                state.db = null; state.firebaseApp = null; state.connected = false;
+                                if (!silent) showToast('Connection failed: ' + err2.message, 'error');
+                                else setStatus('disconnected');
+                            });
+                    });
+            } catch (err) {
+                setStatus('disconnected');
+                state.connected = false;
+                if (!silent) showToast('Firebase init error: ' + err.message, 'error');
+            }
+        }
+
+        function setStatus(status, projectId) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const sub = document.getElementById('statusSub');
+            dot.className = 'status-dot';
+            if (status === 'connected') {
+                dot.classList.add('connected');
+                text.textContent = 'Connected';
+                sub.textContent = projectId || 'Firebase Firestore';
+            } else if (status === 'connecting') {
+                dot.classList.add('connecting');
+                text.textContent = 'Connecting…';
+                sub.textContent = 'Verifying connection';
+            } else if (status === 'error') {
+                text.textContent = 'Connection failed';
+                sub.textContent = 'Check config & rules';
+            } else {
+                text.textContent = 'Not connected';
+                sub.textContent = 'Click to setup Firebase';
+            }
+        }
+
+        async function syncFromFirebase() {
+            if (!state.db) return;
+            try {
+                const [qSnap, ivSnap] = await Promise.all([
+                    state.db.collection('quick_notes').orderBy('createdAt', 'desc').get(),
+                    state.db.collection('interviews').orderBy('createdAt', 'desc').get()
+                ]);
+                state.quickNotes = qSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.interviews = ivSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                saveLocal();
+                renderAll();
+                showToast('✓ Synced from Firebase', 'success');
+            } catch (e) {
+                showToast('Sync error: ' + e.message, 'error');
+            }
+        }
+
+        async function fbSave(col, data) {
+            if (!state.db) return null;
+            try { const ref = await state.db.collection(col).add(data); return ref.id; }
+            catch (e) { showToast('Firebase save error: ' + e.message, 'error'); return null; }
+        }
+
+        async function fbUpdate(col, id, data) {
+            if (!state.db) return;
+            try { await state.db.collection(col).doc(id).update(data); }
+            catch (e) { showToast('Firebase update error: ' + e.message, 'error'); }
+        }
+
+        async function fbDelete(col, id) {
+            if (!state.db) return;
+            try { await state.db.collection(col).doc(id).delete(); }
+            catch (e) { showToast('Firebase delete error: ' + e.message, 'error'); }
+        }
+
+        function connectFirebase() {
+            const activePanel = document.querySelector('.setup-panel.active');
+            let config = {};
+
+            if (activePanel.id === 'panel-keys') {
+                config = {
+                    apiKey: v('fb-apiKey'),
+                    authDomain: v('fb-authDomain'),
+                    projectId: v('fb-projectId'),
+                    storageBucket: v('fb-storageBucket'),
+                    messagingSenderId: v('fb-messagingSenderId'),
+                    appId: v('fb-appId'),
+                };
+                if (!config.apiKey || !config.projectId) { showToast('API Key and Project ID are required', 'error'); return; }
+
+            } else if (activePanel.id === 'panel-json') {
+                if (!state._pendingJsonConfig) { showToast('Please upload a JSON file first', 'error'); return; }
+                config = state._pendingJsonConfig;
+
+            } else if (activePanel.id === 'panel-paste') {
+                const text = v('fb-pasteConfig');
+                try {
+                    const match = text.match(/\{[\s\S]*\}/);
+                    if (!match) throw new Error('No config object found in pasted text');
+                    config = Function('"use strict"; return (' + match[0] + ')')();
+                } catch (e) { showToast('Parse error: ' + e.message, 'error'); return; }
+            }
+
+            initFirebase(config);
+        }
+
+        function disconnectFirebase() {
+            if (state.firebaseApp) { try { state.firebaseApp.delete(); } catch (e) { } }
+            state.firebaseApp = null; state.db = null; state.connected = false;
+            localStorage.removeItem('iv_firebase_config');
+            document.getElementById('nav-sync').style.display = 'none';
+            setStatus('disconnected');
+            closeModal('firebaseModal');
+            showToast('Disconnected from Firebase', 'info');
+        }
+
+        function handleJsonUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    let config = json;
+                    // Handle google-services.json
+                    if (json.project_info) {
+                        const client = json.client?.[0];
+                        config = {
+                            apiKey: client?.api_key?.[0]?.current_key || '',
+                            projectId: json.project_info.project_id,
+                            storageBucket: json.project_info.storage_bucket,
+                            messagingSenderId: json.project_info.project_number,
+                            authDomain: json.project_info.project_id + '.firebaseapp.com',
+                            appId: client?.client_info?.mobilesdk_app_id || '',
+                        };
+                    }
+                    state._pendingJsonConfig = config;
+                    const preview = document.getElementById('jsonPreview');
+                    document.getElementById('jsonPreviewText').textContent =
+                        '✓ Loaded: ' + (config.projectId || 'unknown') + '\n' +
+                        'API Key: ' + (config.apiKey ? config.apiKey.substring(0, 14) + '…' : 'missing');
+                    preview.style.display = 'block';
+                    document.getElementById('uploadZone').style.borderColor = 'var(--green)';
+                } catch (err) { showToast('Invalid JSON: ' + err.message, 'error'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ═══════════════════════════════════════════════════
+        // CRUD — QUICK NOTES
+        // ═══════════════════════════════════════════════════
+        async function saveNote() {
+            const title = v('note-title');
+            const content = v('note-content');
+            const tagsRaw = v('note-tags');
+            const color = state.selectedColor;
+
+            if (!title && !content) { showToast('Add a title or some content', 'error'); return; }
+
+            const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const now = Date.now();
+
+            if (state.editingNote) {
+                const idx = state.quickNotes.findIndex(n => n.id === state.editingNote);
+                if (idx !== -1) {
+                    const updated = { ...state.quickNotes[idx], title, content, tags, color, updatedAt: now };
+                    state.quickNotes[idx] = updated;
+                    if (state.connected) await fbUpdate('quick_notes', state.editingNote, { title, content, tags, color, updatedAt: now });
+                }
+                showToast('Note updated ✓', 'success');
+            } else {
+                const id = 'note_' + now + '_' + Math.random().toString(36).substr(2, 5);
+                const note = { id, title, content, tags, color, createdAt: now, updatedAt: now };
+                if (state.connected) {
+                    const fbId = await fbSave('quick_notes', { title, content, tags, color, createdAt: now, updatedAt: now });
+                    if (fbId) note.id = fbId;
+                }
+                state.quickNotes.unshift(note);
+                showToast('Note saved ✓', 'success');
+            }
+
+            saveLocal(); renderAll(); closeModal('noteModal');
+        }
+
+        function deleteNote(id) {
+            confirmAction('Delete this note? This cannot be undone.', async () => {
+                state.quickNotes = state.quickNotes.filter(n => n.id !== id);
+                if (state.connected) await fbDelete('quick_notes', id);
+                saveLocal(); renderAll(); showToast('Note deleted', 'info');
+            });
+        }
+
+        function editNote(id) {
+            const note = state.quickNotes.find(n => n.id === id);
+            if (!note) return;
+            state.editingNote = id;
+            document.getElementById('noteModalTitle').textContent = 'Edit Note';
+            set('note-title', note.title || '');
+            set('note-content', note.content || '');
+            set('note-tags', (note.tags || []).join(', '));
+            selectColorByValue(note.color || 'amber');
+            openModal('noteModal');
+            setTimeout(() => document.getElementById('note-title').focus(), 200);
+        }
+
+        // ═══════════════════════════════════════════════════
+        // CRUD — INTERVIEWS
+        // ═══════════════════════════════════════════════════
+        async function saveInterview() {
+            const company = v('iv-company');
+            const role = v('iv-role');
+            const date = v('iv-date');
+            const status = v('iv-status');
+            const round = v('iv-round');
+            const interviewer = v('iv-interviewer');
+            const notes = v('iv-notes');
+            const tagsRaw = v('iv-tags');
+
+            if (!company) { showToast('Company name is required', 'error'); return; }
+
+            const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const now = Date.now();
+            const data = { company, role, date, status, round, interviewer, notes, tags, updatedAt: now };
+
+            if (state.editingInterview) {
+                const idx = state.interviews.findIndex(i => i.id === state.editingInterview);
+                if (idx !== -1) {
+                    state.interviews[idx] = { ...state.interviews[idx], ...data };
+                    if (state.connected) await fbUpdate('interviews', state.editingInterview, data);
+                }
+                showToast('Interview updated ✓', 'success');
+            } else {
+                const id = 'iv_' + now + '_' + Math.random().toString(36).substr(2, 5);
+                const interview = { id, ...data, createdAt: now };
+                if (state.connected) {
+                    const fbId = await fbSave('interviews', { ...data, createdAt: now });
+                    if (fbId) interview.id = fbId;
+                }
+                state.interviews.unshift(interview);
+                showToast('Interview saved ✓', 'success');
+            }
+
+            saveLocal(); renderAll(); closeModal('interviewModal');
+        }
+
+        function deleteInterview(id) {
+            confirmAction('Delete this interview entry? This cannot be undone.', async () => {
+                state.interviews = state.interviews.filter(i => i.id !== id);
+                if (state.connected) await fbDelete('interviews', id);
+                saveLocal(); renderAll(); showToast('Interview deleted', 'info');
+            });
+        }
+
+        function editInterview(id) {
+            const iv = state.interviews.find(i => i.id === id);
+            if (!iv) return;
+            state.editingInterview = id;
+            document.getElementById('interviewModalTitle').textContent = 'Edit Interview';
+            set('iv-company', iv.company || '');
+            set('iv-role', iv.role || '');
+            set('iv-date', iv.date || '');
+            set('iv-status', iv.status || 'interview');
+            set('iv-round', iv.round || '');
+            set('iv-interviewer', iv.interviewer || '');
+            set('iv-notes', iv.notes || '');
+            set('iv-tags', (iv.tags || []).join(', '));
+            openModal('interviewModal');
+            setTimeout(() => document.getElementById('iv-company').focus(), 200);
+        }
+
+        // ═══════════════════════════════════════════════════
+        // RENDERING
+        // ═══════════════════════════════════════════════════
+        function renderAll() {
+            renderQuickNotes();
+            renderInterviews();
+            renderDashboard();
+            updateBadges();
+        }
+
+        function filteredNotes() {
+            let notes = state.quickNotes;
+            if (state.searchQuery) {
+                const q = state.searchQuery.toLowerCase();
+                notes = notes.filter(n =>
+                    (n.title || '').toLowerCase().includes(q) ||
+                    (n.content || '').toLowerCase().includes(q) ||
+                    (n.tags || []).some(t => t.toLowerCase().includes(q))
+                );
+            }
+            return notes;
+        }
+
+        function filteredInterviews() {
+            let ivs = state.interviews;
+            if (state.searchQuery) {
+                const q = state.searchQuery.toLowerCase();
+                ivs = ivs.filter(i =>
+                    (i.company || '').toLowerCase().includes(q) ||
+                    (i.role || '').toLowerCase().includes(q) ||
+                    (i.notes || '').toLowerCase().includes(q) ||
+                    (i.tags || []).some(t => t.toLowerCase().includes(q))
+                );
+            }
+            if (state.statusFilter !== 'all') ivs = ivs.filter(i => i.status === state.statusFilter);
+            return ivs;
+        }
+
+        function noteCardHTML(note, delay = 0) {
+            const tags = (note.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+            const date = note.createdAt ? new Date(note.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
+            return `<div class="note-card color-${note.color || 'amber'}" style="animation-delay:${delay}ms" onclick="editNote('${note.id}')">
+    <div class="note-title">${esc(note.title || 'Untitled')}</div>
+    ${note.content ? `<div class="note-content">${esc(note.content)}</div>` : ''}
+    ${tags ? `<div class="note-tags">${tags}</div>` : ''}
+    <div class="note-footer">
+      <span class="note-date">${date}</span>
+      <div class="note-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="editNote('${note.id}')" title="Edit">✏</button>
+        <button class="btn btn-danger btn-icon btn-sm" onclick="deleteNote('${note.id}')" title="Delete">✕</button>
+      </div>
+    </div>
+  </div>`;
+        }
+
+        function interviewCardHTML(iv, delay = 0) {
+            const initials = (iv.company || '?').substring(0, 2).toUpperCase();
+            const date = iv.date ? new Date(iv.date + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
+            const statusClass = 'status-' + (iv.status || 'applied');
+            const statusLabel = capitalize(iv.status || 'applied');
+            const tags = (iv.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+            return `<div class="interview-card" style="animation-delay:${delay}ms">
+    <div class="interview-card-header" onclick="toggleICard('${iv.id}')">
+      <div class="company-avatar">${initials}</div>
+      <div class="interview-meta">
+        <div class="interview-company">${esc(iv.company || 'Unknown')}</div>
+        <div class="interview-role">${esc(iv.role || 'Role not specified')}${iv.round ? ' · ' + esc(iv.round) : ''}</div>
+      </div>
+      <div class="interview-info">
+        ${tags ? `<div class="note-tags" style="max-width:180px;">${tags}</div>` : ''}
+        <span class="interview-date">${date}</span>
+        <span class="status-badge ${statusClass}">${statusLabel}</span>
+      </div>
+    </div>
+    <div class="interview-card-body" id="ibody-${iv.id}">
+      <div class="iv-meta-row">
+        ${iv.interviewer ? `<div class="iv-meta-item">👤 <strong>Interviewer:</strong> ${esc(iv.interviewer)}</div>` : ''}
+        ${iv.round ? `<div class="iv-meta-item">🔄 <strong>Round:</strong> ${esc(iv.round)}</div>` : ''}
+        ${iv.date ? `<div class="iv-meta-item">📅 <strong>Date:</strong> ${date}</div>` : ''}
+      </div>
+      ${iv.notes
+                    ? `<div class="interview-notes-content">${esc(iv.notes)}</div>`
+                    : `<div style="color:var(--text-3);font-size:12px;padding:6px 0 10px;">No notes added yet.</div>`}
+      <div class="interview-card-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editInterview('${iv.id}')">✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteInterview('${iv.id}')">✕ Delete</button>
+      </div>
+    </div>
+  </div>`;
+        }
+
+        function renderQuickNotes() {
+            const grid = document.getElementById('quick-notes-grid');
+            const notes = filteredNotes();
+            if (!notes.length && !state.searchQuery) {
+                grid.innerHTML = `<div class="add-note-card" onclick="openNoteModal()"><span style="font-size:18px;">+</span> Add your first quick note</div>`;
+            } else if (!notes.length) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No notes found</div><div class="empty-desc">Try a different search query</div></div>`;
+            } else {
+                grid.innerHTML = notes.map((n, i) => noteCardHTML(n, i * 45)).join('');
+            }
+        }
+
+        function renderInterviews() {
+            const list = document.getElementById('interview-list');
+            const ivs = filteredInterviews();
+            if (!ivs.length) {
+                list.innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div>
+      <div class="empty-title">${state.statusFilter !== 'all' ? 'No ' + state.statusFilter + ' interviews' : 'No interviews yet'}</div>
+      <div class="empty-desc">Start tracking your interview journey. Add your first entry!</div></div>`;
+            } else {
+                list.innerHTML = ivs.map((iv, i) => interviewCardHTML(iv, i * 40)).join('');
+            }
+        }
+
+        function renderDashboard() {
+            const rn = state.quickNotes.slice(0, 3);
+            const ri = state.interviews.slice(0, 4);
+
+            document.getElementById('dashboard-quick-notes').innerHTML = rn.length
+                ? rn.map((n, i) => noteCardHTML(n, i * 50)).join('')
+                : `<p style="color:var(--text-3);font-size:13px;padding:16px 0;">No quick notes yet. <a href="#" onclick="openNoteModal();return false;" style="color:var(--accent);">Add one ↗</a></p>`;
+
+            document.getElementById('dashboard-interviews').innerHTML = ri.length
+                ? ri.map((iv, i) => interviewCardHTML(iv, i * 40)).join('')
+                : `<p style="color:var(--text-3);font-size:13px;padding:16px 0;">No interviews tracked yet. <a href="#" onclick="openInterviewModal();return false;" style="color:var(--accent);">Add one ↗</a></p>`;
+
+            document.getElementById('stat-quick').textContent = state.quickNotes.length;
+            document.getElementById('stat-interviews').textContent = state.interviews.length;
+            document.getElementById('stat-offers').textContent = state.interviews.filter(i => i.status === 'offer').length;
+            document.getElementById('stat-inprogress').textContent = state.interviews.filter(i => ['screening', 'interview'].includes(i.status)).length;
+        }
+
+        function updateBadges() {
+            document.getElementById('badge-quick').textContent = state.quickNotes.length;
+            document.getElementById('badge-interviews').textContent = state.interviews.length;
+        }
+
+        // ═══════════════════════════════════════════════════
+        // UI HELPERS
+        // ═══════════════════════════════════════════════════
+        function switchView(view) {
+            state.currentView = view;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + view).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('nav-' + view)?.classList.add('active');
+            const titles = { dashboard: 'Dashboard', quick: 'Quick Notes', interviews: 'Interviews' };
+            document.getElementById('topbarTitle').textContent = titles[view] || view;
+            document.getElementById('topAddBtn').textContent = view === 'interviews' ? '+ New Interview' : '+ Add Note';
+            if (view === 'quick') renderQuickNotes();
+            if (view === 'interviews') renderInterviews();
+        }
+
+        function handleTopAdd() {
+            if (state.currentView === 'interviews') openInterviewModal();
+            else openNoteModal();
+        }
+
+        function openNoteModal() {
+            state.editingNote = null;
+            document.getElementById('noteModalTitle').textContent = 'New Quick Note';
+            set('note-title', ''); set('note-content', ''); set('note-tags', '');
+            selectColorByValue('amber');
+            openModal('noteModal');
+            setTimeout(() => document.getElementById('note-title').focus(), 200);
+        }
+
+        function openInterviewModal() {
+            state.editingInterview = null;
+            document.getElementById('interviewModalTitle').textContent = 'New Interview';
+            set('iv-company', ''); set('iv-role', ''); set('iv-round', ''); set('iv-interviewer', ''); set('iv-notes', ''); set('iv-tags', '');
+            set('iv-date', new Date().toISOString().split('T')[0]);
+            set('iv-status', 'interview');
+            openModal('interviewModal');
+            setTimeout(() => document.getElementById('iv-company').focus(), 200);
+        }
+
+        function openFirebaseModal() { openModal('firebaseModal'); }
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        function handleSearch(query) { state.searchQuery = query; renderAll(); }
+
+        function setStatusFilter(filter, el) {
+            state.statusFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            renderInterviews();
+        }
+
+        function toggleICard(id) {
+            document.getElementById('ibody-' + id)?.classList.toggle('open');
+        }
+
+        function selectColor(el) {
+            document.querySelectorAll('.color-option').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            state.selectedColor = el.dataset.color;
+        }
+
+        function selectColorByValue(color) {
+            document.querySelectorAll('.color-option').forEach(c => c.classList.toggle('selected', c.dataset.color === color));
+            state.selectedColor = color;
+        }
+
+        function switchSetupTab(tab, el) {
+            document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.setup-panel').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('panel-' + tab).classList.add('active');
+        }
+
+        function confirmAction(msg, cb) {
+            document.getElementById('confirmMsg').textContent = msg;
+            const btn = document.getElementById('confirmBtn');
+            btn.onclick = () => { closeModal('confirmModal'); cb(); };
+            openModal('confirmModal');
+        }
+
+        function showToast(message, type = 'info') {
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span> ${message}`;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => { toast.style.transition = 'opacity 0.3s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3200);
+        }
+
+        // ═══════════════════════════════════════════════════
+        // EXPORT / IMPORT
+        // ═══════════════════════════════════════════════════
+        function exportData() {
+            const data = { exportedAt: new Date().toISOString(), version: '1.0', quickNotes: state.quickNotes, interviews: state.interviews };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'interview-vault-' + new Date().toISOString().split('T')[0] + '.json';
+            a.click(); URL.revokeObjectURL(url);
+            showToast('Exported successfully!', 'success');
+        }
+
+        function importJSON() {
+            document.getElementById('importFileInput').click();
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.quickNotes || data.interviews) {
+                        if (data.quickNotes) state.quickNotes = [...data.quickNotes, ...state.quickNotes];
+                        if (data.interviews) state.interviews = [...data.interviews, ...state.interviews];
+                        saveLocal(); renderAll();
+                        showToast(`Imported ${(data.quickNotes || []).length} notes, ${(data.interviews || []).length} interviews`, 'success');
+                    } else { showToast('No valid data found in file', 'error'); }
+                } catch (err) { showToast('Import failed: ' + err.message, 'error'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function clearAllData() {
+            confirmAction('Clear ALL notes and interviews? This cannot be undone. (Firebase data will NOT be deleted)', () => {
+                state.quickNotes = []; state.interviews = [];
+                saveLocal(); renderAll();
+                showToast('All local data cleared', 'info');
+            });
+        }
+
+        // ═══════════════════════════════════════════════════
+        // UTILS
+        // ═══════════════════════════════════════════════════
+        function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+        function set(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+        function esc(str) { return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+        // ═══════════════════════════════════════════════════
+        // EVENTS
+        // ═══════════════════════════════════════════════════
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); document.getElementById('searchInput').focus(); }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'n') { e.preventDefault(); openNoteModal(); }
+        });
+
+        // ═══════════════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════════════
+        loadLocal();
+        renderAll();
+
+        // Try to restore saved Firebase config
+        const savedConfig = localStorage.getItem('iv_firebase_config');
+        if (savedConfig) {
+            try { initFirebase(JSON.parse(savedConfig), true); } catch (e) { }
+        } else if (!localStorage.getItem('iv_visited')) {
+            localStorage.setItem('iv_visited', '1');
+            setTimeout(() => showToast('👋 Welcome! Connect Firebase in the sidebar to sync across devices.', 'info'), 1200);
+        }
+    </script>
+</body>
+
+</html>
