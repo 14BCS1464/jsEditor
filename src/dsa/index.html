@@ -558,7 +558,6 @@
             btn.classList.toggle('armed', match);
         }
 
-        // FIX: Save fn reference BEFORE closeDeleteModal() nulls pendingDeleteFn
         function executeDelete() {
             if (document.getElementById('del-confirm-btn').disabled) return;
             const fn = pendingDeleteFn;
@@ -675,18 +674,26 @@
                 });
             } catch (e) { list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:0.7rem">' + escH(e.message) + '</div>'; }
         }
+
+        // ── FIX 1: loadNotebook now resets cellImportance and re-renders all banners
+        // after cells are added, so DSA links always display correctly even when
+        // dsaQuestions was already in memory before this call.
         function loadNotebook(id, data) {
             currentNotebookId = id; saveNotebookId(id);
             document.getElementById('nb-title').value = data.title || 'Untitled';
             document.getElementById('nb-id').textContent = id.slice(0, 8) + '…';
-            cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {};
+            cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {}; cellImportance = {};
             document.getElementById('cells-container').innerHTML = '';
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance));
             updateCellCount();
+            // Re-render all banners now that both cells AND dsaQuestions are loaded.
+            // This ensures links are never shown as broken when switching notebooks.
+            cells.forEach(c => refreshBanner(c.id));
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id); if (el) el.classList.add('active-nb');
             switchPage('notebook'); showToast('Notebook loaded', 'success');
         }
+
         function newNotebook() {
             currentNotebookId = null; saveNotebookId(null);
             document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
@@ -927,7 +934,6 @@
         }
         function setLang(id, lang) { const cell = cells.find(c => c.id === id); if (!cell) return; cell.lang = lang; document.querySelectorAll('#cell-' + id + ' .lang-btn').forEach(btn => { btn.classList.toggle('active', (lang === 'javascript' && btn.textContent === 'JS') || (lang === 'typescript' && btn.textContent === 'TS')); }); triggerAutoSave(); }
 
-        // FIX: Removed the two debug alert() calls that were blocking modal execution
         function deleteCell(id) {
             const cell = cells.find(c => c.id === id);
             if (!cell) return;
@@ -972,8 +978,12 @@
         function selectLinkQuestion(qId) { if (!_linkModalCellId) return; linkQ(_linkModalCellId, qId); closeModal('link-q-modal'); }
         function closeAllPickers() { const picker = document.getElementById('shared-qbpicker'); if (picker) picker.style.display = 'none'; }
         function buildPickerList(cellId, search) { search = (search || '').toLowerCase(); const list = document.getElementById('shared-qbplist'); if (!list) return; const cell = cells.find(c => c.id === cellId); const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search)); if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">// No questions found</div>'; return; } list.innerHTML = filtered.map(q => '<div class="qb-pitem' + (cell && cell.linkedQuestionId === q.id ? ' selected' : '') + '" onclick="linkQ(' + cellId + ',\'' + q.id + '\')">' + '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty[0].toUpperCase() + '</span>' + '<span class="qb-pname">' + escH(q.title) + '</span>' + '<span style="font-size:0.54rem;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + escH(q.category || '') + '</span>' + '</div>').join(''); }
-        function linkQ(cellId, qId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave(); }
-        function unlinkQ(cellId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); triggerAutoSave(); }
+
+        // ── FIX 2: linkQ and unlinkQ now call saveAll() immediately instead of using
+        // the 2.5s debounced triggerAutoSave(). This prevents links from being lost
+        // if the user closes/refreshes the tab before the debounce fires.
+        function linkQ(cellId, qId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); saveAll(); }
+        function unlinkQ(cellId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); saveAll(); }
         document.addEventListener('click', e => { if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn') && !e.target.closest('#shared-qbpicker')) closeAllPickers(); });
 
         const cellExecContexts = {};
@@ -1060,8 +1070,26 @@
             let loadedFromLocal = false;
             try { const local = JSON.parse(localStorage.getItem('current_notebook') || 'null'); if (local && local.cells && local.cells.length > 0) { document.getElementById('nb-title').value = local.title || 'UNTITLED_NOTEBOOK'; local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance)); if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…'; loadedFromLocal = true; } } catch (e) { }
             if (!loadedFromLocal) addCell('javascript');
+            // ── FIX 3: After local notebook restore, refresh all banners so DSA links
+            // render correctly from the start (dsaQuestions already loaded above).
+            else cells.forEach(c => refreshBanner(c.id));
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
-            if (fc.apiKey && fc.projectId) { ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => { const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || ''; }); (async () => { try { try { await firebase.app().delete(); } catch (e) { } firebase.initializeApp(fc); db = firebase.firestore(); await db.collection('notebooks').limit(1).get(); setFirebaseStatus(true); loadNotebooksList(); try { const doc = await db.collection('dsa').doc('questions').get(); if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) { dsaQuestions = doc.data().questions; dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; }); localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); refreshAllDSAUI(); cells.forEach(c => refreshBanner(c.id)); } } catch (e) { console.warn('DSA sync err', e); } } catch (e) { console.warn('Firebase auto-connect failed:', e); } })(); }
+            if (fc.apiKey && fc.projectId) {
+                ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => { const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || ''; }); (async () => {
+                    try {
+                        try { await firebase.app().delete(); } catch (e) { } firebase.initializeApp(fc); db = firebase.firestore(); await db.collection('notebooks').limit(1).get(); setFirebaseStatus(true); loadNotebooksList(); try {
+                            const doc = await db.collection('dsa').doc('questions').get(); if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
+                                dsaQuestions = doc.data().questions; dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; }); localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); refreshAllDSAUI();
+                                // ── FIX 4: After Firebase DSA load, always refresh all cell banners.
+                                // This is the core race condition fix: Firebase returns DSA data AFTER
+                                // the notebook cells were already rendered with potentially stale/empty
+                                // dsaQuestions, causing links to show as "◇ No challenge linked".
+                                cells.forEach(c => refreshBanner(c.id));
+                            }
+                        } catch (e) { console.warn('DSA sync err', e); }
+                    } catch (e) { console.warn('Firebase auto-connect failed:', e); }
+                })();
+            }
         });
 
         function stopCell(id) { const ctx = cellExecContexts[id]; if (ctx) { ctx.killed = true; ctx.pendingCount = 0; ctx.timers.forEach(t => { try { clearTimeout(t); clearInterval(t); } catch (e) { } }); ctx.timers = []; if (ctx.finalize) ctx.finalize(); } const runBtn = document.getElementById('runbtn-' + id); const stopBtn = document.getElementById('stopbtn-' + id); const contentEl = document.getElementById('ocontent-' + id); if (runBtn) { runBtn.classList.remove('running'); runBtn.innerHTML = '▶ Run'; } if (stopBtn) stopBtn.classList.remove('visible'); if (contentEl) contentEl.className = 'out-content has-error'; appendOutputLine(id, 'warn', '■ Execution stopped by user'); }
