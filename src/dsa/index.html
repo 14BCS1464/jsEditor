@@ -28,8 +28,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-
     <link rel="stylesheet" href="styles.css">
+
+   
 </head>
 
 <body>
@@ -69,7 +70,6 @@
                 <button class="stab active" id="stab-nb" onclick="switchSidebarTab('nb')">Notebooks</button>
                 <button class="stab" id="stab-dsa" onclick="switchSidebarTab('dsa')">DSA List</button>
             </div>
-
             <div class="spanel active" id="spanel-nb">
                 <div class="panel-top">
                     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="newNotebook()">⊕
@@ -81,7 +81,6 @@
                         Connect Firebase to sync</div>
                 </div>
             </div>
-
             <div class="spanel" id="spanel-dsa">
                 <div class="dsa-toolbar">
                     <input class="dsa-search" id="sb-dsa-search" placeholder="Search questions…"
@@ -145,7 +144,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="page" id="page-dsa">
                 <div class="dsa-page">
                     <div class="dsa-ph">
@@ -255,21 +253,67 @@
         </div>
     </div>
 
-    <!-- DSA VIEW MODAL -->
+    <!-- DSA VIEW MODAL — wider, editor tab first -->
     <div class="modal-overlay" id="qview-modal">
-        <div class="modal modal-wide">
+        <div class="modal modal-wide" id="qview-modal-inner">
             <div class="qview-header">
                 <div class="qview-title" id="qv-title">—</div>
                 <button class="btn btn-ghost btn-sm" onclick="closeModal('qview-modal')">✕ Close</button>
             </div>
             <div class="qview-badges" id="qv-badges"></div>
+
+            <!-- TABS: Editor first, then Overview, Tests -->
             <div class="qv-tabs">
-                <button class="qv-tab active" onclick="switchQVTab('overview')">📋 Overview</button>
+                <button class="qv-tab active" id="qv-tab-editor" onclick="switchQVTab('editor')">⚡ Editor<span
+                        class="qv-tab-new">NEW</span></button>
+                <button class="qv-tab" id="qv-tab-overview" onclick="switchQVTab('overview')">📋 Overview</button>
                 <button class="qv-tab" id="qv-tab-tests" onclick="switchQVTab('tests')">🧪 Tests <span
                         id="qv-test-count" style="margin-left:4px"></span></button>
-                <button class="qv-tab" onclick="switchQVTab('cells')">⚡ Linked Cells</button>
             </div>
-            <div class="qv-panel active" id="qv-panel-overview">
+
+            <!-- EDITOR PANEL (first / default) -->
+            <div class="qv-panel active" id="qv-panel-editor">
+                <div class="qv-editor-topbar">
+                    <div class="qv-editor-cell-selector">
+                        <span class="qv-editor-cell-label">Cell:</span>
+                        <select class="qv-cell-select" id="qv-cell-select" onchange="onQVCellSelectChange()">
+                            <option value="">— No cells linked —</option>
+                        </select>
+                        <span class="qv-sync-status" id="qv-sync-status">Synced</span>
+                    </div>
+                    <div class="qv-editor-actions">
+                        <button class="qv-fmt-btn" onclick="qvFormatCode()" title="Format code">✦ Fmt</button>
+                        <button class="qv-sync-btn" id="qv-sync-btn" onclick="qvSyncToCell()"
+                            title="Write changes back to the real cell">↑ Sync to Cell</button>
+                        <button class="qv-run-btn" id="qv-run-btn" onclick="qvRunCode()">▶ Run</button>
+                    </div>
+                </div>
+
+                <!-- No linked cell state -->
+                <div class="qv-no-cell-msg" id="qv-no-cell-msg">
+                    // No cells linked to this question yet.<br>
+                    Link a cell from your notebook using the <strong>⊕ Link</strong> button on any cell,<br>
+                    then come back here to edit and run it.
+                </div>
+
+                <!-- Editor wrapper (hidden until a cell is selected) -->
+                <div id="qv-editor-container" style="display:none">
+                    <div class="qv-editor-cm-wrap" id="qv-cm-wrap"></div>
+                    <div class="qv-editor-output" id="qv-editor-output">
+                        <div class="qv-editor-out-header">
+                            <span>▸ Output</span>
+                            <span style="display:flex;align-items:center;gap:8px">
+                                <span id="qv-out-time" style="color:var(--cyan)"></span>
+                                <button class="qv-editor-out-clear" onclick="qvClearOutput()">✕ Clear</button>
+                            </span>
+                        </div>
+                        <div class="qv-editor-out-content" id="qv-out-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OVERVIEW PANEL -->
+            <div class="qv-panel" id="qv-panel-overview">
                 <div class="qview-desc" id="qv-desc" style="display:none"></div>
                 <div id="qv-url-row" style="margin-bottom:14px;display:none">
                     <a id="qv-url" href="#" target="_blank"
@@ -277,6 +321,8 @@
                         Problem</a>
                 </div>
             </div>
+
+            <!-- TESTS PANEL -->
             <div class="qv-panel" id="qv-panel-tests">
                 <div class="tc-section">
                     <div class="tc-section-header">
@@ -299,12 +345,7 @@
                     </div>
                 </div>
             </div>
-            <div class="qv-panel" id="qv-panel-cells">
-                <div
-                    style="font-size:0.52rem;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">
-                    // Linked solution cells</div>
-                <div class="qview-cells" id="qv-cells"></div>
-            </div>
+
             <div class="modal-actions" style="margin-top:18px">
                 <button class="btn btn-success btn-sm" id="qv-solve-btn" onclick="toggleSolvedFromView()">✓ Mark
                     Solved</button>
@@ -504,14 +545,18 @@
         let db = null, cells = [], cellEditors = {}, dsaQuestions = [];
         let currentNotebookId = null, autoSaveTimer = null, cellIdCounter = 0;
         let dsaFilter = 'all', selDiff = 'medium', viewingQId = null;
-        let activeQVTab = 'overview';
+        let activeQVTab = 'editor'; // editor is default now
 
         const FONT_SIZES = [11, 12, 13, 14, 15, 16, 18, 20, 22, 24];
         const DEFAULT_FONT_IDX = 2;
         let cellFontSizeIdx = {};
         let cellDescMode = {};
-
         let pendingDeleteFn = null, deleteConfirmKeyword = 'DELETE';
+
+        // ── QV EDITOR STATE ──
+        let qvEditor = null;       // CodeMirror instance in the question view
+        let qvLinkedCellId = null; // which real cell is currently loaded
+        let qvEditorDirty = false; // has user made edits not yet synced
 
         if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
         function renderMD(src) {
@@ -522,48 +567,262 @@
         function saveNotebookId(id) { if (id) localStorage.setItem('current_notebook_id', id); else localStorage.removeItem('current_notebook_id'); }
         function loadNotebookId() { return localStorage.getItem('current_notebook_id') || null; }
 
+        // ════════════════════════════════════════════════
+        //  QV EDITOR TAB
+        // ════════════════════════════════════════════════
+
+        function qvInitEditor() {
+            const wrap = document.getElementById('qv-cm-wrap');
+            if (!wrap) return;
+            if (qvEditor) { qvEditor.toTextArea(); qvEditor = null; }
+            wrap.innerHTML = '';
+            const ta = document.createElement('textarea');
+            wrap.appendChild(ta);
+            qvEditor = CodeMirror.fromTextArea(ta, {
+                mode: 'javascript',
+                theme: 'solarized light',
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                indentUnit: 2, tabSize: 2, indentWithTabs: false,
+                extraKeys: {
+                    'Ctrl-Enter': () => qvRunCode(),
+                    'Cmd-Enter': () => qvRunCode(),
+                    'Ctrl-/': cm => cm.execCommand('toggleComment'),
+                    'Alt-Shift-F': () => qvFormatCode()
+                }
+            });
+            qvEditor.on('change', () => {
+                if (!qvEditorDirty) {
+                    qvEditorDirty = true;
+                    qvSetSyncStatus('dirty');
+                }
+            });
+        }
+
+        function qvSetSyncStatus(state) {
+            const el = document.getElementById('qv-sync-status');
+            const btn = document.getElementById('qv-sync-btn');
+            if (!el) return;
+            if (state === 'dirty') {
+                el.textContent = '● Unsaved'; el.className = 'qv-sync-status dirty';
+                if (btn) { btn.textContent = '↑ Sync to Cell'; btn.className = 'qv-sync-btn'; }
+            } else {
+                el.textContent = '✓ Synced'; el.className = 'qv-sync-status';
+                if (btn) { btn.textContent = '✓ Synced'; btn.className = 'qv-sync-btn synced'; }
+                setTimeout(() => { if (btn) { btn.textContent = '↑ Sync to Cell'; btn.className = 'qv-sync-btn'; } }, 1800);
+            }
+        }
+
+        function qvPopulateCellSelect(qId) {
+            const sel = document.getElementById('qv-cell-select');
+            if (!sel) return;
+            sel.innerHTML = '';
+            const linked = cells.filter(c => c.linkedQuestionId === qId);
+            if (linked.length === 0) {
+                sel.innerHTML = '<option value="">— No cells linked —</option>';
+                return;
+            }
+            linked.forEach((c, i) => {
+                const cellIdx = cells.findIndex(x => x.id === c.id);
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `Cell [${String(cellIdx + 1).padStart(2, '0')}] — ${c.lang.toUpperCase()}`;
+                sel.appendChild(opt);
+            });
+            // auto-select first
+            sel.value = linked[0].id;
+        }
+
+        function qvLoadCellIntoEditor(cellId) {
+            if (!cellId) {
+                document.getElementById('qv-no-cell-msg').style.display = 'block';
+                document.getElementById('qv-editor-container').style.display = 'none';
+                qvLinkedCellId = null;
+                return;
+            }
+            document.getElementById('qv-no-cell-msg').style.display = 'none';
+            document.getElementById('qv-editor-container').style.display = 'block';
+
+            if (!qvEditor) qvInitEditor();
+
+            const editor = cellEditors[cellId];
+            const code = editor ? editor.getValue() : (cells.find(c => c.id === cellId) || {}).code || '';
+            qvEditor.setValue(code);
+            qvLinkedCellId = parseInt(cellId);
+            qvEditorDirty = false;
+            qvSetSyncStatus('synced');
+            qvClearOutput();
+            setTimeout(() => qvEditor && qvEditor.refresh(), 80);
+        }
+
+        function onQVCellSelectChange() {
+            const sel = document.getElementById('qv-cell-select');
+            if (!sel) return;
+            if (qvEditorDirty) {
+                const ok = confirm('You have unsaved changes in the editor. Discard and switch cell?');
+                if (!ok) { sel.value = qvLinkedCellId || ''; return; }
+            }
+            qvLoadCellIntoEditor(sel.value ? parseInt(sel.value) : null);
+        }
+
+        // Sync editor content back to the real cell
+        function qvSyncToCell() {
+            if (!qvEditor || !qvLinkedCellId) { showToast('No cell to sync to', 'error'); return; }
+            const newCode = qvEditor.getValue();
+            const realEditor = cellEditors[qvLinkedCellId];
+            if (!realEditor) { showToast('Cell editor not found', 'error'); return; }
+            realEditor.setValue(newCode);
+            qvEditorDirty = false;
+            qvSetSyncStatus('synced');
+            triggerAutoSave();
+            showToast('✓ Code synced to Cell [' + (cells.findIndex(c => c.id === qvLinkedCellId) + 1) + ']', 'success');
+        }
+
+        // Format code in the QV editor
+        async function qvFormatCode() {
+            if (!qvEditor) return;
+            const original = qvEditor.getValue();
+            try {
+                let formatted;
+                if (window.prettier && window.prettierPlugins && window.prettierPlugins.babel) {
+                    formatted = prettier.format(original, { parser: 'babel', plugins: [prettierPlugins.babel], semi: true, singleQuote: true, tabWidth: 2, trailingComma: 'es5', printWidth: 80, arrowParens: 'avoid' });
+                } else { formatted = basicFormat(original); }
+                if (formatted && formatted !== original) {
+                    const cursor = qvEditor.getCursor();
+                    qvEditor.setValue(formatted);
+                    qvEditor.setCursor(cursor);
+                    showToast('✨ Code formatted', 'success');
+                } else { showToast('// Already clean', 'success'); }
+            } catch (err) { showToast('Format error: ' + err.message.split('\n')[0], 'error'); }
+        }
+
+        // Run the code in the QV editor (uses the real cell's lang for TS support)
+        async function qvRunCode() {
+            if (!qvEditor) return;
+            const btn = document.getElementById('qv-run-btn');
+            btn.classList.add('running'); btn.textContent = '⏳ Running…';
+
+            const code = qvEditor.getValue();
+            const cell = qvLinkedCellId ? cells.find(c => c.id === qvLinkedCellId) : null;
+            const lang = cell ? cell.lang : 'javascript';
+
+            const outEl = document.getElementById('qv-editor-output');
+            const contentEl = document.getElementById('qv-out-content');
+            const timeEl = document.getElementById('qv-out-time');
+            outEl.classList.add('visible');
+            contentEl.innerHTML = '';
+            contentEl.className = 'qv-editor-out-content';
+            if (timeEl) timeEl.textContent = '';
+
+            const t0 = performance.now();
+
+            const emit = (type, str) => {
+                const div = document.createElement('div');
+                const clsMap = { error: 'error-line', warn: 'warn-line', info: 'info-line', return: 'return-line', timer: 'timer-line' };
+                div.className = clsMap[type] || 'log-line';
+                const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : type === 'timer' ? '⏱ ' : '';
+                div.textContent = prefix + (str || '');
+                contentEl.appendChild(div);
+                outEl.scrollTop = outEl.scrollHeight;
+            };
+
+            // Build sandboxed console
+            const _timers = {}, _counts = {};
+            const sandboxConsole = {
+                log: (...a) => emit('log', a.map(serializeVal).join(' ')),
+                error: (...a) => emit('error', a.map(serializeVal).join(' ')),
+                warn: (...a) => emit('warn', a.map(serializeVal).join(' ')),
+                info: (...a) => emit('info', a.map(serializeVal).join(' ')),
+                debug: (...a) => emit('info', a.map(serializeVal).join(' ')),
+                dir: (...a) => emit('log', a.map(serializeVal).join(' ')),
+                clear: () => { contentEl.innerHTML = ''; },
+                table: (data) => { try { emit('log', JSON.stringify(data, null, 2)); } catch (e) { emit('log', serializeVal(data)); } },
+                time: (l = 'default') => { _timers[l] = performance.now(); },
+                timeEnd: (l = 'default') => { const t = _timers[l]; emit('timer', l + ': ' + (t !== undefined ? (performance.now() - t).toFixed(3) + 'ms' : 'n/a')); delete _timers[l]; },
+                count: (l = 'default') => { _counts[l] = (_counts[l] || 0) + 1; emit('log', l + ': ' + _counts[l]); },
+                assert: (ok, ...a) => { if (!ok) emit('error', 'Assertion failed: ' + a.map(serializeVal).join(' ')); }
+            };
+
+            try {
+                let jsCode = code;
+                if (lang === 'typescript' && window.ts) {
+                    try {
+                        jsCode = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict: false } }).outputText;
+                    } catch (tsErr) { emit('error', '[TypeScript] ' + tsErr.message); }
+                }
+                const AsyncFn = Object.getPrototypeOf(async function () { }).constructor;
+                const fn = new AsyncFn('console', '"use strict";\n' + jsCode);
+                const ret = await fn(sandboxConsole);
+                if (ret !== undefined && ret !== null) emit('return', '→ ' + serializeVal(ret));
+                if (contentEl.children.length === 0) emit('info', '// (no output)');
+                contentEl.classList.add('has-success');
+            } catch (err) {
+                emit('error', err instanceof Error ? err.name + ': ' + err.message : String(err));
+                contentEl.classList.add('has-error');
+            }
+
+            const elapsed = (performance.now() - t0).toFixed(1) + 'ms';
+            if (timeEl) timeEl.textContent = elapsed;
+            btn.classList.remove('running'); btn.textContent = '▶ Run';
+        }
+
+        function qvClearOutput() {
+            const outEl = document.getElementById('qv-editor-output');
+            const contentEl = document.getElementById('qv-out-content');
+            if (outEl) outEl.classList.remove('visible');
+            if (contentEl) contentEl.innerHTML = '';
+            const timeEl = document.getElementById('qv-out-time');
+            if (timeEl) timeEl.textContent = '';
+        }
+
+        // Override switchQVTab to handle 'editor'
+        function switchQVTab(tab) {
+            activeQVTab = tab;
+            const tabIds = ['editor', 'overview', 'tests'];
+            document.querySelectorAll('.qv-tab').forEach((b, i) => {
+                b.classList.toggle('active', tabIds[i] === tab);
+            });
+            document.querySelectorAll('.qv-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('qv-panel-' + tab).classList.add('active');
+
+            const modalInner = document.getElementById('qview-modal-inner');
+            if (tab === 'editor') {
+                modalInner.classList.add('editor-tab-open');
+                // Refresh editor if it exists
+                setTimeout(() => { if (qvEditor) qvEditor.refresh(); }, 50);
+            } else {
+                modalInner.classList.remove('editor-tab-open');
+            }
+            if (tab === 'tests' && viewingQId) renderTestCaseList(viewingQId);
+        }
+
+        // ════════════════════════════════════════════════
+        //  REST OF THE APP (unchanged except openQuestionView)
+        // ════════════════════════════════════════════════
+
         function openDeleteModal({ subtitle, targetName, warningItems, keyword, onConfirm }) {
             deleteConfirmKeyword = (keyword || 'DELETE').toUpperCase();
             pendingDeleteFn = onConfirm;
-
             document.getElementById('del-modal-subtitle').textContent = subtitle || '// This action cannot be undone';
             document.getElementById('del-target-name').textContent = targetName || '—';
             document.getElementById('del-confirm-input').value = '';
             document.getElementById('del-confirm-input').classList.remove('valid');
-
             const btn = document.getElementById('del-confirm-btn');
-            btn.disabled = true;
-            btn.classList.remove('armed');
-
-            document.getElementById('del-warning-items').innerHTML = (warningItems || []).map(w =>
-                `<li>${escH(w)}</li>`
-            ).join('');
-
+            btn.disabled = true; btn.classList.remove('armed');
+            document.getElementById('del-warning-items').innerHTML = (warningItems || []).map(w => `<li>${escH(w)}</li>`).join('');
             document.getElementById('delete-modal').classList.add('open');
             setTimeout(() => document.getElementById('del-confirm-input').focus(), 100);
         }
-
-        function closeDeleteModal() {
-            document.getElementById('delete-modal').classList.remove('open');
-            document.getElementById('del-confirm-input').value = '';
-            pendingDeleteFn = null;
-        }
-
+        function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('open'); document.getElementById('del-confirm-input').value = ''; pendingDeleteFn = null; }
         function checkDeleteConfirm() {
             const val = (document.getElementById('del-confirm-input').value || '').trim().toUpperCase();
             const match = val === deleteConfirmKeyword;
             const btn = document.getElementById('del-confirm-btn');
             document.getElementById('del-confirm-input').classList.toggle('valid', match);
-            btn.disabled = !match;
-            btn.classList.toggle('armed', match);
+            btn.disabled = !match; btn.classList.toggle('armed', match);
         }
-
-        function executeDelete() {
-            if (document.getElementById('del-confirm-btn').disabled) return;
-            const fn = pendingDeleteFn;
-            closeDeleteModal();
-            if (fn) fn();
-        }
+        function executeDelete() { if (document.getElementById('del-confirm-btn').disabled) return; const fn = pendingDeleteFn; closeDeleteModal(); if (fn) fn(); }
 
         function getFontIdx(id) { return cellFontSizeIdx[id] !== undefined ? cellFontSizeIdx[id] : DEFAULT_FONT_IDX; }
         function setFontSize(cellId, delta) {
@@ -579,7 +838,6 @@
             editor.getWrapperElement().style.fontSize = size + 'px';
             setTimeout(() => editor.refresh(), 0);
         }
-
         async function formatCell(cellId) {
             const editor = cellEditors[cellId]; if (!editor) return;
             const btn = document.getElementById('fmtbtn-' + cellId);
@@ -602,10 +860,7 @@
         async function copyCell(cellId) {
             const editor = cellEditors[cellId]; if (!editor) return;
             const code = editor.getValue(); const btn = document.getElementById('copybtn-' + cellId);
-            try { await navigator.clipboard.writeText(code); } catch (e) {
-                const ta = document.createElement('textarea'); ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
-                document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-            }
+            try { await navigator.clipboard.writeText(code); } catch (e) { const ta = document.createElement('textarea'); ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
             btn.classList.add('copied'); btn.innerHTML = '✓ Copied';
             setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '⎘ Copy'; }, 1800);
         }
@@ -614,7 +869,6 @@
             for (let raw of lines) { let line = raw.trim(); if (!line) { result.push(''); continue; } if (/^[}\])]/.test(line)) indent = Math.max(0, indent - 1); result.push(TAB.repeat(indent) + line); indent = Math.max(0, indent + (line.match(/[{[(]/g) || []).length - (line.match(/[}\])]/g) || []).length); }
             return result.join('\n');
         }
-
         function switchPage(n) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -628,14 +882,6 @@
             document.getElementById('spanel-' + n).classList.add('active');
             document.getElementById('stab-' + n).classList.add('active');
         }
-        function switchQVTab(tab) {
-            activeQVTab = tab;
-            document.querySelectorAll('.qv-tab').forEach((b, i) => { b.classList.toggle('active', ['overview', 'tests', 'cells'][i] === tab); });
-            document.querySelectorAll('.qv-panel').forEach(p => p.classList.remove('active'));
-            document.getElementById('qv-panel-' + tab).classList.add('active');
-            if (tab === 'tests' && viewingQId) renderTestCaseList(viewingQId);
-        }
-
         function loadFirebaseFromFile(input) {
             const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -654,7 +900,6 @@
             try { try { await firebase.app().delete(); } catch (e) { } firebase.initializeApp(config); db = firebase.firestore(); await db.collection('notebooks').limit(1).get(); localStorage.setItem('fb_config', JSON.stringify(config)); setFirebaseStatus(true); closeModal('firebase-modal'); showToast('Firebase connected', 'success'); loadNotebooksList(); loadDSAFromFirebase(); } catch (e) { showToast('Failed: ' + e.message, 'error'); }
         }
         function setFirebaseStatus(on) { document.getElementById('fb-dot').className = 'fb-dot' + (on ? ' on' : ''); document.getElementById('fb-status').textContent = on ? 'SYNCED' : 'OFFLINE'; }
-
         async function loadNotebooksList() {
             if (!db) return;
             const list = document.getElementById('nb-list');
@@ -674,10 +919,6 @@
                 });
             } catch (e) { list.innerHTML = '<div style="padding:12px;color:var(--error);font-size:0.7rem">' + escH(e.message) + '</div>'; }
         }
-
-        // ── FIX 1: loadNotebook now resets cellImportance and re-renders all banners
-        // after cells are added, so DSA links always display correctly even when
-        // dsaQuestions was already in memory before this call.
         function loadNotebook(id, data) {
             currentNotebookId = id; saveNotebookId(id);
             document.getElementById('nb-title').value = data.title || 'Untitled';
@@ -686,14 +927,11 @@
             document.getElementById('cells-container').innerHTML = '';
             (data.cells || []).forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance));
             updateCellCount();
-            // Re-render all banners now that both cells AND dsaQuestions are loaded.
-            // This ensures links are never shown as broken when switching notebooks.
             cells.forEach(c => refreshBanner(c.id));
             document.querySelectorAll('.nb-item').forEach(el => el.classList.remove('active-nb'));
             const el = document.getElementById('nb-item-' + id); if (el) el.classList.add('active-nb');
             switchPage('notebook'); showToast('Notebook loaded', 'success');
         }
-
         function newNotebook() {
             currentNotebookId = null; saveNotebookId(null);
             document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK';
@@ -721,7 +959,8 @@
             const nbEl = document.getElementById('nb-item-' + id);
             const nbTitle = nbEl ? nbEl.querySelector('.nb-item-title').textContent : id.slice(0, 8) + '…';
             openDeleteModal({
-                subtitle: '// Permanently deletes notebook from all storage', targetName: nbTitle, warningItems: ['All code cells and outputs will be erased', 'All solution notes will be lost', db ? 'Will be deleted from Firebase' : 'Will be removed from local storage'], keyword: 'DELETE',
+                subtitle: '// Permanently deletes notebook from all storage', targetName: nbTitle,
+                warningItems: ['All code cells and outputs will be erased', 'All solution notes will be lost', db ? 'Will be deleted from Firebase' : 'Will be removed from local storage'], keyword: 'DELETE',
                 onConfirm: async () => {
                     if (id === currentNotebookId) { currentNotebookId = null; saveNotebookId(null); document.getElementById('nb-title').value = 'UNTITLED_NOTEBOOK'; document.getElementById('nb-id').textContent = 'LOCAL'; cells = []; cellEditors = {}; cellFontSizeIdx = {}; cellDescMode = {}; document.getElementById('cells-container').innerHTML = ''; addCell('javascript'); }
                     if (db) { try { await db.collection('notebooks').doc(id).delete(); showToast('Deleted', 'success'); loadNotebooksList(); } catch (e) { showToast('Failed: ' + e.message, 'error'); } } else { const el = document.getElementById('nb-item-' + id); if (el) el.remove(); showToast('Deleted', 'success'); }
@@ -737,7 +976,6 @@
             else { const nbEl = document.getElementById('nb-item-' + id); if (nbEl) { const titleEl = nbEl.querySelector('.nb-item-title'); if (titleEl) titleEl.textContent = newTitle; } showToast('Renamed locally', 'success'); }
             closeModal('rename-modal');
         }
-
         function pickDiff(d) {
             selDiff = d;
             ['easy', 'medium', 'hard'].forEach(x => { document.getElementById('rd-' + x).className = 'radio-opt' + (x === d ? ' sel-' + x : ''); });
@@ -760,12 +998,12 @@
             const q = dsaQuestions.find(q => q.id === id); if (!q) return;
             const linkedCount = cells.filter(c => c.linkedQuestionId === id).length;
             openDeleteModal({
-                subtitle: '// Removes question from DSA training matrix', targetName: q.title, warningItems: [`Difficulty: ${q.difficulty.toUpperCase()} · Category: ${q.category || 'Uncategorized'}`, linkedCount > 0 ? `${linkedCount} cell(s) linked — links will be severed` : 'No cells linked', (q.testCases || []).length > 0 ? `${q.testCases.length} test case(s) will be deleted` : 'No test cases to lose', q.solved ? 'This question is marked SOLVED — progress will be lost' : 'Question not solved yet'], keyword: 'DELETE',
+                subtitle: '// Removes question from DSA training matrix', targetName: q.title,
+                warningItems: [`Difficulty: ${q.difficulty.toUpperCase()} · Category: ${q.category || 'Uncategorized'}`, linkedCount > 0 ? `${linkedCount} cell(s) linked — links will be severed` : 'No cells linked', (q.testCases || []).length > 0 ? `${q.testCases.length} test case(s) will be deleted` : 'No test cases to lose', q.solved ? 'This question is marked SOLVED — progress will be lost' : 'Question not solved yet'], keyword: 'DELETE',
                 onConfirm: () => { cells.forEach(c => { if (c.linkedQuestionId === id) { c.linkedQuestionId = null; refreshBanner(c.id); } }); dsaQuestions = dsaQuestions.filter(q => q.id !== id); persistDSA(); refreshAllDSAUI(); triggerAutoSave(); showToast('Question deleted', 'success'); }
             });
         }
         function toggleSolved(id) { const q = dsaQuestions.find(q => q.id === id); if (!q) return; q.solved = !q.solved; persistDSA(); refreshAllDSAUI(); cells.forEach(c => { if (c.linkedQuestionId === id) refreshBanner(c.id); }); }
-
         let tcModalQId = null;
         function openTCModal(idx) {
             tcModalQId = viewingQId; const idxVal = (idx !== null && idx !== undefined) ? String(idx) : '';
@@ -790,7 +1028,6 @@
         }
         function deleteTCAtIdx(qId, idx) { const q = dsaQuestions.find(q => q.id === qId); if (!q) return; q.testCases.splice(idx, 1); persistDSA(); renderTestCaseList(qId); updateTCCountBadge(q); showToast('Test case deleted', 'success'); }
         function updateTCCountBadge(q) { const tcCount = (q.testCases || []).length; const badge = document.getElementById('qv-test-count'); if (badge) badge.textContent = tcCount > 0 ? `(${tcCount})` : ''; }
-
         function renderTestCaseList(qId) {
             const q = dsaQuestions.find(q => q.id === qId); if (!q) return;
             const list = document.getElementById('qv-tc-list'); if (!list) return;
@@ -842,9 +1079,11 @@
             showToast(`${passed}/${q.testCases.length} test cases passed`, passed === q.testCases.length ? 'success' : 'error');
         }
 
+        // openQuestionView — now populates editor tab first
         function openQuestionView(id) {
             const q = dsaQuestions.find(q => q.id === id); if (!q) return;
-            viewingQId = id; document.getElementById('qv-title').textContent = q.title;
+            viewingQId = id;
+            document.getElementById('qv-title').textContent = q.title;
             let badges = '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
             if (q.category) badges += '<span style="font-size:0.62rem;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + escH(q.category) + '</span>';
             if (q.solved) badges += '<span style="color:var(--plasma);font-size:0.67rem;font-family:\'JetBrains Mono\',monospace">✓ Solved</span>';
@@ -856,16 +1095,26 @@
             if (q.url) { document.getElementById('qv-url').href = q.url; urlRow.style.display = 'block'; } else urlRow.style.display = 'none';
             document.getElementById('qv-solve-btn').textContent = q.solved ? '↩ Reopen' : '✓ Mark Solved';
             document.getElementById('qv-solve-btn').className = q.solved ? 'btn btn-ghost btn-sm' : 'btn btn-success btn-sm';
-            const linkedCells = cells.filter(c => c.linkedQuestionId === id);
-            const cellsEl = document.getElementById('qv-cells');
-            if (linkedCells.length === 0) { cellsEl.innerHTML = '<div class="qview-empty">// No cells linked yet</div>'; }
-            else { cellsEl.innerHTML = linkedCells.map(c => { const editor = cellEditors[c.id]; const code = editor ? editor.getValue() : c.code || ''; const wrap = document.getElementById('cell-' + c.id); const desc = wrap ? wrap.querySelector('.desc-ta').value : c.description || ''; const cellIdx = cells.findIndex(x => x.id === c.id); return '<div class="qview-cell"><div class="qview-cell-header"><span>[' + (cellIdx + 1) + ']</span><span class="diff-badge diff-' + (c.lang === 'typescript' ? 'medium' : 'easy') + '">' + c.lang.toUpperCase().slice(0, 2) + '</span><span>' + escH(document.getElementById('nb-title').value || 'Current Notebook') + '</span></div>' + (desc ? '<div class="qview-cell-desc">// ' + escH(desc) + '</div>' : '') + '<div class="qview-cell-code">' + escH(code.slice(0, 600)) + (code.length > 600 ? '\n…' : '') + '</div></div>'; }).join(''); }
-            updateTCCountBadge(q); switchQVTab('overview'); openModal('qview-modal');
+            updateTCCountBadge(q);
+
+            // ── EDITOR TAB: populate cell selector and load first cell ──
+            qvPopulateCellSelect(id);
+            qvClearOutput();
+            const sel = document.getElementById('qv-cell-select');
+            const firstCellId = sel && sel.value ? parseInt(sel.value) : null;
+            qvLoadCellIntoEditor(firstCellId);
+
+            // open on editor tab first
+            switchQVTab('editor');
+            openModal('qview-modal');
+
+            // refresh editor after modal animates in
+            setTimeout(() => { if (qvEditor) qvEditor.refresh(); }, 120);
         }
+
         function toggleSolvedFromView() { if (!viewingQId) return; toggleSolved(viewingQId); openQuestionView(viewingQId); }
         function editFromView() { closeModal('qview-modal'); openDSAModal(viewingQId); }
         function deleteFromView() { closeModal('qview-modal'); deleteDSAQuestion(viewingQId); }
-
         function setFilter(f) {
             dsaFilter = f;
             ['all', 'easy', 'medium', 'hard', 'unsolved'].forEach(x => { const el = document.getElementById('fc-' + x); if (!el) return; const map = { all: 'fa', easy: 'fe', medium: 'fm', hard: 'fh', unsolved: 'fa' }; el.className = 'fchip' + (x === f ? ' ' + map[x] : ''); });
@@ -933,10 +1182,8 @@
             return `// JavaScript solution\nfunction solve(nums) {\n  return nums.map(n => n * 2);\n}\n\nconst result = solve([1, 2, 3]);\nconsole.log(result);`;
         }
         function setLang(id, lang) { const cell = cells.find(c => c.id === id); if (!cell) return; cell.lang = lang; document.querySelectorAll('#cell-' + id + ' .lang-btn').forEach(btn => { btn.classList.toggle('active', (lang === 'javascript' && btn.textContent === 'JS') || (lang === 'typescript' && btn.textContent === 'TS')); }); triggerAutoSave(); }
-
         function deleteCell(id) {
-            const cell = cells.find(c => c.id === id);
-            if (!cell) return;
+            const cell = cells.find(c => c.id === id); if (!cell) return;
             const cellIdx = cells.findIndex(c => c.id === id);
             const editor = cellEditors[id];
             const codeLines = editor ? editor.getValue().split('\n').length : 0;
@@ -945,16 +1192,13 @@
                 onConfirm: () => { const idx = cells.findIndex(c => c.id === id); if (idx !== -1) { stashDeletedCell(id); cells.splice(idx, 1); delete cellEditors[id]; delete cellFontSizeIdx[id]; delete cellDescMode[id]; document.getElementById('cell-' + id).remove(); updateCellCount(); triggerAutoSave(); showUndoToast('Cell deleted — click UNDO to restore'); } }
             });
         }
-
         function updateCellCount() { document.getElementById('cell-count').textContent = cells.length + ' cell' + (cells.length !== 1 ? 's' : ''); cells.forEach((c, i) => { const el = document.getElementById('cnum-' + c.id); if (el) el.textContent = '[' + (String(i + 1).padStart(2, '0')) + ']'; }); }
         function toggleDesc(cellId) { const el = document.getElementById('celldesc-' + cellId); if (!el) return; el.classList.toggle('collapsed'); }
-
         function buildBannerHTML(cellId, linkedQId) {
             const q = linkedQId ? dsaQuestions.find(x => x.id === linkedQId) : null;
             return '<div class="cell-qbanner' + (q ? ' linked' : '') + '" id="qbanner-' + cellId + '">' + '<span class="qb-icon">' + (q ? '⬡' : '◇') + '</span>' + '<div class="qb-info">' + '<div class="qb-sublabel">Linked DSA Challenge</div>' + (q ? '<div class="qb-title-row"><span class="qb-title qb-title-link" onclick="openQuestionView(\'' + q.id + '\')">' + escH(q.title) + '</span><button class="qb-view-btn" onclick="openQuestionView(\'' + q.id + '\')">↗ View</button></div><div class="qb-meta"><span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty + '</span><span class="dsa-cat-tag" style="font-size:0.52rem">' + escH(q.category || '') + '</span>' + (q.solved ? '<span style="color:var(--plasma);font-size:0.56rem;font-family:\'JetBrains Mono\',monospace;margin-left:4px">✓ Solved</span>' : '') + '</div>' : '<div class="qb-empty">// No challenge linked</div>') + '</div>' + '<div class="qb-right"><div class="qb-drop-wrap" id="qbdrop-' + cellId + '"><button class="qb-link-btn' + (q ? ' linked' : '') + '" onclick="togglePicker(' + cellId + ')">' + (q ? '✎ Change' : '⊕ Link') + '</button></div>' + (q ? '<button class="qb-unlink" onclick="unlinkQ(' + cellId + ')">✕</button>' : '') + '</div></div>';
         }
         function refreshBanner(cellId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; const old = document.getElementById('qbanner-' + cellId); if (!old) return; const tmp = document.createElement('div'); tmp.innerHTML = buildBannerHTML(cellId, cell.linkedQuestionId); old.parentNode.replaceChild(tmp.firstChild, old); }
-
         let _linkModalCellId = null, _linkModalFilter = 'all';
         function togglePicker(cellId) {
             _linkModalCellId = cellId; _linkModalFilter = 'all';
@@ -978,10 +1222,6 @@
         function selectLinkQuestion(qId) { if (!_linkModalCellId) return; linkQ(_linkModalCellId, qId); closeModal('link-q-modal'); }
         function closeAllPickers() { const picker = document.getElementById('shared-qbpicker'); if (picker) picker.style.display = 'none'; }
         function buildPickerList(cellId, search) { search = (search || '').toLowerCase(); const list = document.getElementById('shared-qbplist'); if (!list) return; const cell = cells.find(c => c.id === cellId); const filtered = dsaQuestions.filter(q => !search || q.title.toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search)); if (filtered.length === 0) { list.innerHTML = '<div class="qb-pempty">// No questions found</div>'; return; } list.innerHTML = filtered.map(q => '<div class="qb-pitem' + (cell && cell.linkedQuestionId === q.id ? ' selected' : '') + '" onclick="linkQ(' + cellId + ',\'' + q.id + '\')">' + '<span class="diff-badge diff-' + q.difficulty + '">' + q.difficulty[0].toUpperCase() + '</span>' + '<span class="qb-pname">' + escH(q.title) + '</span>' + '<span style="font-size:0.54rem;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + escH(q.category || '') + '</span>' + '</div>').join(''); }
-
-        // ── FIX 2: linkQ and unlinkQ now call saveAll() immediately instead of using
-        // the 2.5s debounced triggerAutoSave(). This prevents links from being lost
-        // if the user closes/refreshes the tab before the debounce fires.
         function linkQ(cellId, qId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = qId; closeAllPickers(); refreshBanner(cellId); refreshAllDSAUI(); saveAll(); }
         function unlinkQ(cellId) { const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.linkedQuestionId = null; refreshBanner(cellId); refreshAllDSAUI(); saveAll(); }
         document.addEventListener('click', e => { if (!e.target.closest('[id^="qbdrop-"]') && !e.target.closest('.qb-link-btn') && !e.target.closest('#shared-qbpicker')) closeAllPickers(); });
@@ -1030,7 +1270,6 @@
             } catch (err) { ctx.hasError = true; if (err instanceof Error) { emit('error', err.name + ': ' + err.message); if (err.stack) { err.stack.split('\n').slice(1).filter(l => l.trim() && !l.includes('runCell') && !l.includes('<anonymous>:1:')).slice(0, 4).forEach(l => emit('error', '  ' + l.trim())); } } else { emit('error', 'Thrown: ' + serializeVal(err)); } schedulefinalize(); }
         }
         function showOutput(id, logs, hasError, time, isAsync) { const el = document.getElementById('output-' + id); const content = document.getElementById('ocontent-' + id); const timeEl = document.getElementById('otime-' + id); const asyncBadge = document.getElementById('oasync-' + id); el.style.display = 'block'; if (time) timeEl.textContent = time; if (asyncBadge) asyncBadge.style.display = isAsync ? 'inline' : 'none'; content.className = 'out-content ' + (hasError ? 'has-error' : 'has-success'); content.innerHTML = ''; (logs || []).forEach(({ type, str }) => { const div = document.createElement('div'); const clsMap = { error: 'error-line', warn: 'warn-line', info: 'info-line', return: 'return-line', timer: 'timer-line', group: 'group-line' }; div.className = clsMap[type] || 'log-line'; const prefix = type === 'error' ? '✖ ' : type === 'warn' ? '⚠ ' : type === 'timer' ? '⏱ ' : ''; div.textContent = prefix + (str || ''); content.appendChild(div); }); }
-
         function triggerAutoSave() { document.getElementById('save-dot').classList.remove('saved'); document.getElementById('save-text').textContent = 'Writing…'; document.getElementById('save-bar').classList.add('visible'); clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(saveAll, 2500); }
         async function saveAll() {
             const title = document.getElementById('nb-title').value.trim() || 'UNTITLED_NOTEBOOK';
@@ -1046,12 +1285,10 @@
                 loadNotebooksList(); setTimeout(() => bar.classList.remove('visible'), 2500);
             } catch (e) { txt.textContent = 'Save failed: ' + e.message; setTimeout(() => bar.classList.remove('visible'), 3500); }
         }
-
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
         function escH(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
         function showToast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show ' + (type || ''); setTimeout(() => t.className = 'toast', 2800); }
-
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); }
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') { e.preventDefault(); runAllCells(); }
@@ -1061,7 +1298,6 @@
             if (document.getElementById('focus-overlay')?.classList.contains('active')) { if (e.key === 'ArrowLeft' && !e.target.closest('.CodeMirror')) { e.preventDefault(); focusNav(-1); } if (e.key === 'ArrowRight' && !e.target.closest('.CodeMirror')) { e.preventDefault(); focusNav(+1); } }
             if (e.key === 'Escape') { if (document.getElementById('focus-overlay')?.classList.contains('active')) { exitFocusMode(); return; } closeAllPickers(); const openModals = [...document.querySelectorAll('.modal-overlay.open')]; if (openModals.length > 0) { const top = openModals.sort((a, b) => (parseInt(getComputedStyle(b).zIndex) || 1000) - (parseInt(getComputedStyle(a).zIndex) || 1000))[0]; if (top.id === 'delete-modal') { closeDeleteModal(); } else { top.classList.remove('open'); } } }
         });
-
         window.addEventListener('load', () => {
             try { dsaQuestions = JSON.parse(localStorage.getItem('dsa_questions') || '[]'); } catch (e) { dsaQuestions = []; }
             dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
@@ -1070,20 +1306,19 @@
             let loadedFromLocal = false;
             try { const local = JSON.parse(localStorage.getItem('current_notebook') || 'null'); if (local && local.cells && local.cells.length > 0) { document.getElementById('nb-title').value = local.title || 'UNTITLED_NOTEBOOK'; local.cells.forEach(c => addCell(c.lang, c.code, c.description, c.output, c.linkedQuestionId, c.fontSizeIdx, c.descMode, c.importance)); if (currentNotebookId) document.getElementById('nb-id').textContent = currentNotebookId.slice(0, 8) + '…'; loadedFromLocal = true; } } catch (e) { }
             if (!loadedFromLocal) addCell('javascript');
-            // ── FIX 3: After local notebook restore, refresh all banners so DSA links
-            // render correctly from the start (dsaQuestions already loaded above).
             else cells.forEach(c => refreshBanner(c.id));
             const fc = JSON.parse(localStorage.getItem('fb_config') || '{}');
             if (fc.apiKey && fc.projectId) {
-                ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => { const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || ''; }); (async () => {
+                ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(k => { const el = document.getElementById('fb-' + k); if (el) el.value = fc[k] || ''; });
+                (async () => {
                     try {
-                        try { await firebase.app().delete(); } catch (e) { } firebase.initializeApp(fc); db = firebase.firestore(); await db.collection('notebooks').limit(1).get(); setFirebaseStatus(true); loadNotebooksList(); try {
-                            const doc = await db.collection('dsa').doc('questions').get(); if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
-                                dsaQuestions = doc.data().questions; dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; }); localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); refreshAllDSAUI();
-                                // ── FIX 4: After Firebase DSA load, always refresh all cell banners.
-                                // This is the core race condition fix: Firebase returns DSA data AFTER
-                                // the notebook cells were already rendered with potentially stale/empty
-                                // dsaQuestions, causing links to show as "◇ No challenge linked".
+                        try { await firebase.app().delete(); } catch (e) { }
+                        firebase.initializeApp(fc); db = firebase.firestore(); await db.collection('notebooks').limit(1).get(); setFirebaseStatus(true); loadNotebooksList();
+                        try {
+                            const doc = await db.collection('dsa').doc('questions').get();
+                            if (doc.exists && doc.data().questions && doc.data().questions.length >= dsaQuestions.length) {
+                                dsaQuestions = doc.data().questions; dsaQuestions.forEach(q => { if (!q.testCases) q.testCases = []; });
+                                localStorage.setItem('dsa_questions', JSON.stringify(dsaQuestions)); refreshAllDSAUI();
                                 cells.forEach(c => refreshBanner(c.id));
                             }
                         } catch (e) { console.warn('DSA sync err', e); }
@@ -1091,9 +1326,7 @@
                 })();
             }
         });
-
         function stopCell(id) { const ctx = cellExecContexts[id]; if (ctx) { ctx.killed = true; ctx.pendingCount = 0; ctx.timers.forEach(t => { try { clearTimeout(t); clearInterval(t); } catch (e) { } }); ctx.timers = []; if (ctx.finalize) ctx.finalize(); } const runBtn = document.getElementById('runbtn-' + id); const stopBtn = document.getElementById('stopbtn-' + id); const contentEl = document.getElementById('ocontent-' + id); if (runBtn) { runBtn.classList.remove('running'); runBtn.innerHTML = '▶ Run'; } if (stopBtn) stopBtn.classList.remove('visible'); if (contentEl) contentEl.className = 'out-content has-error'; appendOutputLine(id, 'warn', '■ Execution stopped by user'); }
-
         let lastDeletedCell = null, undoTimer = null;
         function stashDeletedCell(cellId) { const editor = cellEditors[cellId]; const descEl = document.getElementById('desc-' + cellId); const cell = cells.find(c => c.id === cellId); if (!cell || !editor) return; lastDeletedCell = { lang: cell.lang, code: editor.getValue(), description: descEl ? descEl.value : '', output: cell.lastOutput || null, linkedQuestionId: cell.linkedQuestionId || null, fontSizeIdx: cellFontSizeIdx[cellId], descMode: cellDescMode[cellId] || 'edit', index: cells.findIndex(c => c.id === cellId) }; }
         function showUndoToast(msg) { clearTimeout(undoTimer); const t = document.getElementById('undo-toast'); document.getElementById('undo-msg').textContent = msg || 'Cell deleted'; t.classList.add('show'); undoTimer = setTimeout(() => { t.classList.remove('show'); lastDeletedCell = null; }, 5000); }
@@ -1107,91 +1340,46 @@
         async function copyOutput(cellId) { const content = document.getElementById('ocontent-' + cellId); if (!content) return; const text = [...content.querySelectorAll('div')].map(d => d.textContent).join('\n'); try { await navigator.clipboard.writeText(text); } catch (e) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } showToast('Output copied', 'success'); }
         async function runAllCells() { showToast('▶▶ Running all cells…', 'success'); for (const cell of cells) { await runCell(cell.id); await new Promise(r => setTimeout(r, 80)); } showToast('✓ All cells executed', 'success'); }
         function exportNotebook() { const title = (document.getElementById('nb-title').value || 'notebook').replace(/[^a-z0-9_-]/gi, '_'); const lines = []; lines.push('// ═══════════════════════════════════════════'); lines.push('// CodeBook Export: ' + document.getElementById('nb-title').value); lines.push('// Exported: ' + new Date().toLocaleString()); lines.push('// ═══════════════════════════════════════════'); cells.forEach((cell, i) => { const editor = cellEditors[cell.id]; const descEl = document.getElementById('desc-' + cell.id); const code = editor ? editor.getValue() : ''; const desc = descEl ? descEl.value.trim() : ''; lines.push('\n'); lines.push('// ─── Cell [' + String(i + 1).padStart(2, '0') + '] — ' + cell.lang.toUpperCase() + (cell.linkedQuestionId ? ' · DSA: ' + (dsaQuestions.find(q => q.id === cell.linkedQuestionId) || {}).title || '' : '') + ' ───'); if (desc) desc.split('\n').forEach(l => lines.push('// ' + l)); lines.push(code); }); const blob = new Blob([lines.join('\n')], { type: 'text/javascript' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = title + '.js'; a.click(); URL.revokeObjectURL(a.href); showToast('⬇ Exported as ' + title + '.js', 'success'); }
-
         let cellImportance = {};
         let reviewModeActive = false;
-
         const IMP_LABELS = { high: '★ High', medium: '◆ Medium', low: '◇ Low', none: '' };
         const IMP_BTN_LABELS = { high: '★ High', medium: '◆ Medium', low: '◇ Low', none: '★ Important' };
-
         function toggleImpPicker(cellId, e) {
             e.stopPropagation();
-            document.querySelectorAll('.imp-picker.open').forEach(p => {
-                if (p.id !== 'imppicker-' + cellId) p.classList.remove('open');
-            });
-            const picker = document.getElementById('imppicker-' + cellId);
-            if (!picker) return;
+            document.querySelectorAll('.imp-picker.open').forEach(p => { if (p.id !== 'imppicker-' + cellId) p.classList.remove('open'); });
+            const picker = document.getElementById('imppicker-' + cellId); if (!picker) return;
             picker.classList.toggle('open');
             const cur = cellImportance[cellId] || 'none';
-            picker.querySelectorAll('.imp-option').forEach(btn => {
-                const level = btn.classList.contains('io-high') ? 'high' : btn.classList.contains('io-medium') ? 'medium' : btn.classList.contains('io-low') ? 'low' : 'none';
-                btn.classList.toggle('io-active', level === cur);
-            });
+            picker.querySelectorAll('.imp-option').forEach(btn => { const level = btn.classList.contains('io-high') ? 'high' : btn.classList.contains('io-medium') ? 'medium' : btn.classList.contains('io-low') ? 'low' : 'none'; btn.classList.toggle('io-active', level === cur); });
         }
-
         function setImportance(cellId, level) {
-            cellImportance[cellId] = level;
-            const cell = cells.find(c => c.id === cellId); if (!cell) return;
-            cell.importance = level;
+            cellImportance[cellId] = level; const cell = cells.find(c => c.id === cellId); if (!cell) return; cell.importance = level;
             const el = document.getElementById('cell-' + cellId);
             if (el) { el.classList.remove('important-high', 'important-medium', 'important-low'); if (level !== 'none') el.classList.add('important-' + level); }
             const btn = document.getElementById('impbtn-' + cellId);
             if (btn) { btn.className = 'important-btn' + (level !== 'none' ? ' flagged-' + level : ''); btn.textContent = IMP_BTN_LABELS[level] || '★ Important'; }
             const badge = document.getElementById('implabel-' + cellId);
             if (badge) badge.textContent = IMP_LABELS[level] || '';
-            const picker = document.getElementById('imppicker-' + cellId);
-            if (picker) picker.classList.remove('open');
-            if (reviewModeActive) applyReviewFilter();
-            updateReviewCount();
-            triggerAutoSave();
+            const picker = document.getElementById('imppicker-' + cellId); if (picker) picker.classList.remove('open');
+            if (reviewModeActive) applyReviewFilter(); updateReviewCount(); triggerAutoSave();
             const msgs = { high: '★ Marked High — must revise', medium: '◆ Marked Medium — revisit', low: '◇ Marked Low — glance later', none: 'Flag cleared' };
             showToast(msgs[level] || '', level === 'none' ? '' : 'success');
         }
-
         function applyImportanceToCell(cellId, level) {
-            if (!level || level === 'none') return;
-            const el = document.getElementById('cell-' + cellId); if (!el) return;
-            el.classList.remove('important-high', 'important-medium', 'important-low');
-            el.classList.add('important-' + level);
-            const btn = document.getElementById('impbtn-' + cellId);
-            if (btn) { btn.className = 'important-btn flagged-' + level; btn.textContent = IMP_BTN_LABELS[level]; }
-            const badge = document.getElementById('implabel-' + cellId);
-            if (badge) badge.textContent = IMP_LABELS[level] || '';
+            if (!level || level === 'none') return; const el = document.getElementById('cell-' + cellId); if (!el) return;
+            el.classList.remove('important-high', 'important-medium', 'important-low'); el.classList.add('important-' + level);
+            const btn = document.getElementById('impbtn-' + cellId); if (btn) { btn.className = 'important-btn flagged-' + level; btn.textContent = IMP_BTN_LABELS[level]; }
+            const badge = document.getElementById('implabel-' + cellId); if (badge) badge.textContent = IMP_LABELS[level] || '';
         }
-
-        function updateReviewCount() {
-            const flagged = cells.filter(c => c.importance && c.importance !== 'none').length;
-            const countEl = document.getElementById('review-count');
-            if (countEl) { if (flagged > 0) { countEl.style.display = 'inline'; countEl.textContent = flagged + ' flagged'; } else { countEl.style.display = 'none'; } }
-        }
-
-        function applyReviewFilter() {
-            cells.forEach(c => {
-                const el = document.getElementById('cell-' + c.id); if (!el) return;
-                const flagged = c.importance && c.importance !== 'none';
-                if (reviewModeActive) { el.classList.toggle('search-hidden', !flagged); } else { el.classList.remove('search-hidden'); }
-            });
-        }
-
-        function toggleReviewFilter() {
-            reviewModeActive = !reviewModeActive;
-            const btn = document.getElementById('review-filter-btn');
-            if (btn) btn.classList.toggle('active', reviewModeActive);
-            applyReviewFilter();
-            const flagged = cells.filter(c => c.importance && c.importance !== 'none').length;
-            if (reviewModeActive) showToast('★ Review mode — showing ' + flagged + ' flagged cell' + (flagged !== 1 ? 's' : ''), 'success');
-            else showToast('Review mode off', '');
-        }
-
-        document.addEventListener('click', e => {
-            if (!e.target.closest('.imp-wrap')) { document.querySelectorAll('.imp-picker.open').forEach(p => p.classList.remove('open')); }
-        });
-
+        function updateReviewCount() { const flagged = cells.filter(c => c.importance && c.importance !== 'none').length; const countEl = document.getElementById('review-count'); if (countEl) { if (flagged > 0) { countEl.style.display = 'inline'; countEl.textContent = flagged + ' flagged'; } else { countEl.style.display = 'none'; } } }
+        function applyReviewFilter() { cells.forEach(c => { const el = document.getElementById('cell-' + c.id); if (!el) return; const flagged = c.importance && c.importance !== 'none'; if (reviewModeActive) { el.classList.toggle('search-hidden', !flagged); } else { el.classList.remove('search-hidden'); } }); }
+        function toggleReviewFilter() { reviewModeActive = !reviewModeActive; const btn = document.getElementById('review-filter-btn'); if (btn) btn.classList.toggle('active', reviewModeActive); applyReviewFilter(); const flagged = cells.filter(c => c.importance && c.importance !== 'none').length; if (reviewModeActive) showToast('★ Review mode — showing ' + flagged + ' flagged cell' + (flagged !== 1 ? 's' : ''), 'success'); else showToast('Review mode off', ''); }
+        document.addEventListener('click', e => { if (!e.target.closest('.imp-wrap')) { document.querySelectorAll('.imp-picker.open').forEach(p => p.classList.remove('open')); } });
         let focusCellIdx = 0, focusMirrors = {};
         function toggleFocusMode() { const overlay = document.getElementById('focus-overlay'); if (overlay.classList.contains('active')) { exitFocusMode(); } else { const activeCells = cells.filter(c => !document.getElementById('cell-' + c.id)?.classList.contains('search-hidden')); if (activeCells.length === 0) { showToast('No cells to focus', 'warn'); return; } let startIdx = 0; activeCells.forEach((c, i) => { if (document.getElementById('cell-' + c.id)?.classList.contains('focused')) startIdx = i; }); focusCellIdx = startIdx; enterFocusMode(); } }
         function getVisibleCells() { return cells.filter(c => { const el = document.getElementById('cell-' + c.id); return el && !el.classList.contains('search-hidden'); }); }
         function enterFocusMode() { const overlay = document.getElementById('focus-overlay'); overlay.classList.add('active'); document.body.classList.add('focus-mode'); const btn = document.getElementById('focus-toggle'); if (btn) btn.textContent = '⊞ Focus'; renderFocusCell(); }
-        function exitFocusMode() { const overlay = document.getElementById('focus-overlay'); overlay.classList.remove('active'); document.body.classList.remove('focus-mode'); const btn = document.getElementById('focus-toggle'); if (btn) btn.textContent = '⊟ Focus'; syncFocusEdits(); cells.forEach(cell => { const realEditor = cellEditors[cell.id]; if (!realEditor) return; const origWrap = document.getElementById('edwrap-' + cell.id); if (origWrap && !origWrap.contains(realEditor.getWrapperElement())) { origWrap.innerHTML = ''; origWrap.appendChild(realEditor.getWrapperElement()); realEditor.refresh(); } }); focusMirrors = {}; document.getElementById('focus-cell-wrap').innerHTML = ''; }
+        function exitFocusMode() { const overlay = document.getElementById('focus-overlay'); overlay.classList.remove('active'); document.body.classList.remove('focus-mode'); const btn = document.getElementById('focus-toggle'); if (btn) btn.textContent = '⊟ Focus'; cells.forEach(cell => { const realEditor = cellEditors[cell.id]; if (!realEditor) return; const origWrap = document.getElementById('edwrap-' + cell.id); if (origWrap && !origWrap.contains(realEditor.getWrapperElement())) { origWrap.innerHTML = ''; origWrap.appendChild(realEditor.getWrapperElement()); realEditor.refresh(); } }); focusMirrors = {}; document.getElementById('focus-cell-wrap').innerHTML = ''; }
         function syncFocusEdits() { }
         function focusNav(dir) { const vis = getVisibleCells(); const newIdx = Math.max(0, Math.min(vis.length - 1, focusCellIdx + dir)); if (newIdx === focusCellIdx) return; focusCellIdx = newIdx; renderFocusCell(); }
         function renderFocusCell() {
@@ -1200,7 +1388,7 @@
             focusCellIdx = Math.max(0, Math.min(vis.length - 1, focusCellIdx)); const cell = vis[focusCellIdx]; const cellEl = document.getElementById('cell-' + cell.id); if (!cellEl) return;
             counter.textContent = (focusCellIdx + 1) + ' / ' + vis.length; prevBtn.disabled = (focusCellIdx === 0); nextBtn.disabled = (focusCellIdx === vis.length - 1);
             const q = cell.linkedQuestionId ? dsaQuestions.find(x => x.id === cell.linkedQuestionId) : null;
-            label.textContent = '◈ ' + (q ? q.title + ' · ' : '') + 'Cell [' + String(vis.indexOf(cell) + 1).padStart(2, '0') + '] · ' + cell.lang.toUpperCase();
+            label.textContent = '◈ ' + (q ? q.title + ' · ' : '') + 'Cell [' + String(vis.indexOf(cell) + 1).padStart(2, '00') + '] · ' + cell.lang.toUpperCase();
             wrap.innerHTML = ''; const clone = cellEl.cloneNode(true); clone.classList.remove('collapsed', 'search-hidden'); clone.querySelectorAll('[id]').forEach(el => { el.id = 'f-' + el.id; }); clone.querySelectorAll('button').forEach(btn => { btn.removeAttribute('onclick'); }); wrap.appendChild(clone);
             const edWrap = document.getElementById('f-edwrap-' + cell.id); if (edWrap) { edWrap.innerHTML = ''; const realEditor = cellEditors[cell.id]; if (realEditor) { edWrap.appendChild(realEditor.getWrapperElement()); realEditor.refresh(); setTimeout(() => { realEditor.refresh(); realEditor.focus(); }, 60); } }
             const tb = clone.querySelector('.cell-toolbar'); if (tb) { const runBtn = clone.querySelector('[id^="f-runbtn-"]'); if (runBtn) runBtn.onclick = () => runCell(cell.id); const stopBtn = clone.querySelector('[id^="f-stopbtn-"]'); if (stopBtn) stopBtn.onclick = () => stopCell(cell.id); const fmtBtn = clone.querySelector('[id^="f-fmtbtn-"]'); if (fmtBtn) fmtBtn.onclick = () => formatCell(cell.id); const copyBtn = clone.querySelector('[id^="f-copybtn-"]'); if (copyBtn) copyBtn.onclick = () => copyCell(cell.id); const fsBtns = clone.querySelectorAll('.fs-btn'); fsBtns.forEach((b, i) => { b.onclick = () => setFontSize(cell.id, i === 0 ? -1 : +1); }); clone.querySelectorAll('.lang-btn').forEach(b => { const l = b.textContent.trim().toLowerCase(); b.onclick = () => setLang(cell.id, l === 'ts' ? 'typescript' : 'javascript'); }); const collBtn = clone.querySelector('[id^="f-collbtn-"]'); if (collBtn) collBtn.onclick = () => toggleCollapseCell(cell.id); clone.querySelectorAll('.icon-btn').forEach(b => { b.onclick = () => showToast('Exit focus mode to delete', 'warn'); }); }
@@ -1209,7 +1397,6 @@
         }
         function searchCells(query) { const clearBtn = document.getElementById('nb-search-clear'); clearBtn.classList.toggle('visible', query.length > 0); const q = query.toLowerCase().trim(); cells.forEach(cell => { const el = document.getElementById('cell-' + cell.id); if (!el) return; if (!q) { el.classList.remove('search-hidden', 'search-match'); return; } const editor = cellEditors[cell.id]; const code = editor ? editor.getValue().toLowerCase() : ''; const desc = (document.getElementById('desc-' + cell.id) || {}).value || ''; const match = code.includes(q) || desc.toLowerCase().includes(q); el.classList.toggle('search-hidden', !match); el.classList.toggle('search-match', match); }); }
         function clearSearch() { document.getElementById('nb-search').value = ''; searchCells(''); }
-
         (function () {
             const TYPOS = [[/\bcnst\b/, 'Did you mean "const"?'], [/\bcosnt\b/, 'Did you mean "const"?'], [/\bconts\b/, 'Did you mean "const"?'], [/\blett\b/, 'Did you mean "let"?'], [/\bvarr\b/, 'Did you mean "var"?'], [/\bfunciton\b/, 'Did you mean "function"?'], [/\bfuncion\b/, 'Did you mean "function"?'], [/\bretrun\b/, 'Did you mean "return"?'], [/\bretunr\b/, 'Did you mean "return"?'], [/\bconsloe\b/, 'Did you mean "console"?'], [/\bconsoel\b/, 'Did you mean "console"?'], [/\bawiat\b/, 'Did you mean "await"?'], [/\basnyc\b/, 'Did you mean "async"?']];
             function lintCode(code) {
