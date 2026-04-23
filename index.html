@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Zero to Hero</title>
+    <title>JS Zero to Hero — Learn JavaScript, Right in Your Browser</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap"
         rel="stylesheet">
     <style>
         *,
@@ -18,194 +18,940 @@
         }
 
         :root {
-            --bg: #0f0f13;
-            --card: #16161c;
-            --border: #1e1e26;
-            --text: #e2e0ea;
-            --sub: #5a5870;
-            --dim: #2a2838;
+            --bg: #09090f;
+            --bg2: #0f0f1a;
+            --bg3: #141422;
+            --border: #1e1e30;
+            --border2: #2a2a40;
+            --text: #f0eeff;
+            --sub: #6b6890;
+            --dim: #2e2c48;
+            --accent: #7c6fef;
+            --accent2: #a594ff;
+            --accent3: #c8beff;
+            --green: #3ecf8e;
+            --amber: #f5a623;
+            --coral: #ff6b6b;
+            --teal: #38bdf8;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             background: var(--bg);
             color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 48px;
+            height: 64px;
+            background: rgba(9, 9, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .nav-logo {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 0.08em;
+            color: var(--accent2);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--sub);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .nav-cta {
+            padding: 8px 20px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .nav-cta:hover {
+            background: var(--accent2);
+            transform: translateY(-1px);
+        }
+
+        /* ─── HERO ─── */
+        .hero {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 20px 60px;
-        }
-
-        /* Header */
-        .header {
             text-align: center;
-            margin-bottom: 48px;
-            animation: fade 0.5s ease forwards;
+            padding: 100px 24px 60px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .wordmark {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--sub);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            margin-bottom: 18px;
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124, 111, 239, 0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 20% 80%, rgba(62, 207, 142, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 80% 80%, rgba(56, 189, 248, 0.07) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.25;
+            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(124, 111, 239, 0.12);
+            border: 0.5px solid rgba(124, 111, 239, 0.3);
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: var(--accent3);
+            letter-spacing: 0.08em;
+            margin-bottom: 28px;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.4
+            }
         }
 
         h1 {
-            font-size: 2rem;
-            font-weight: 600;
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(42px, 7vw, 80px);
+            font-weight: 800;
+            line-height: 1.05;
             letter-spacing: -0.03em;
             color: var(--text);
-            margin-bottom: 8px;
+            margin-bottom: 24px;
+            animation: fadeUp 0.6s 0.1s ease both;
+            max-width: 800px;
         }
 
-        .tagline {
-            font-size: 0.85rem;
+        h1 em {
+            font-style: normal;
+            color: var(--accent2);
+        }
+
+        .hero-sub {
+            font-size: 17px;
             font-weight: 300;
             color: var(--sub);
+            line-height: 1.7;
+            max-width: 520px;
+            animation: fadeUp 0.6s 0.2s ease both;
+            margin-bottom: 40px;
         }
 
-        /* Group */
-        .group {
-            width: 100%;
-            max-width: 720px;
-            margin-bottom: 32px;
-            animation: fade 0.5s ease forwards;
-            opacity: 0;
+        .hero-ctas {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeUp 0.6s 0.3s ease both;
+            margin-bottom: 64px;
         }
 
-        .group:nth-child(2) {
-            animation-delay: 0.1s;
+        .btn-primary {
+            padding: 14px 28px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+            box-shadow: 0 0 0 0 rgba(124, 111, 239, 0.4);
         }
 
-        .group:nth-child(3) {
-            animation-delay: 0.2s;
+        .btn-primary:hover {
+            background: var(--accent2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(124, 111, 239, 0.3);
         }
 
-        .group-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.6rem;
+        .btn-ghost {
+            padding: 14px 28px;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text);
+            border: 0.5px solid var(--border2);
+            font-size: 15px;
+            font-weight: 400;
+            text-decoration: none;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--sub);
+            background: var(--bg2);
+        }
+
+        /* ─── STATS ─── */
+        .stats {
+            display: flex;
+            gap: 48px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeUp 0.6s 0.4s ease both;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-num span {
+            color: var(--accent2);
+        }
+
+        .stat-label {
+            font-size: 12px;
             color: var(--sub);
-            letter-spacing: 0.18em;
+            margin-top: 2px;
+            letter-spacing: 0.04em;
+        }
+
+        /* ─── SECTION COMMON ─── */
+        section {
+            padding: 96px 24px;
+        }
+
+        .section-inner {
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        .section-tag {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
             text-transform: uppercase;
-            margin-bottom: 10px;
-            padding-left: 1px;
+            margin-bottom: 12px;
         }
 
-        /* Grid */
-        .grid {
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(28px, 4vw, 44px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 16px;
+            line-height: 1.1;
+        }
+
+        .section-sub {
+            font-size: 16px;
+            color: var(--sub);
+            max-width: 540px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        /* ─── TOOLS GRID ─── */
+        .tools-section {
+            background: var(--bg2);
+            border-top: 0.5px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .tools-header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        .tools-header .section-sub {
+            margin: 0 auto;
+        }
+
+        .tools-grid {
             display: grid;
-            gap: 8px;
-        }
-
-        .grid.col3 {
             grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
 
-        .grid.col4 {
-            grid-template-columns: repeat(4, 1fr);
+        .tool-card {
+            background: var(--bg3);
+            border: 0.5px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.2s, transform 0.15s, background 0.2s;
+            display: block;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Card */
-        a.card {
+        .tool-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border2);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tool-card:hover::after {
+            opacity: 1;
+        }
+
+        .tc-js::after {
+            background: linear-gradient(90deg, transparent, #7c6fef, transparent);
+        }
+
+        .tc-nb::after {
+            background: linear-gradient(90deg, transparent, #f5a623, transparent);
+        }
+
+        .tc-react::after {
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+        }
+
+        .tc-ts::after {
+            background: linear-gradient(90deg, transparent, #3ecf8e, transparent);
+        }
+
+        .tc-html::after {
+            background: linear-gradient(90deg, transparent, #ff6b6b, transparent);
+        }
+
+        .tc-json::after {
+            background: linear-gradient(90deg, transparent, #a855f7, transparent);
+        }
+
+        .tc-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 14px 16px;
-            background: var(--card);
-            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .tc-icon {
+            width: 40px;
+            height: 40px;
             border-radius: 10px;
-            text-decoration: none;
-            color: inherit;
-            transition: border-color 0.18s, background 0.18s;
-        }
-
-        a.card:hover {
-            border-color: #2e2c42;
-            background: #1a1a22;
-        }
-
-        .card-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            font-size: 0.85rem;
+            font-size: 16px;
         }
 
-        /* soft icon colors */
         .ic-js {
-            background: #1c1830;
-            color: #8b76f5;
-        }
-
-        .ic-simple {
-            background: #0f1f2a;
-            color: #4aa8cc;
+            background: rgba(124, 111, 239, 0.12);
+            color: #a594ff;
         }
 
         .ic-nb {
-            background: #1f1a10;
-            color: #b88a3a;
+            background: rgba(245, 166, 35, 0.12);
+            color: #f5a623;
         }
 
         .ic-react {
-            background: #0f1d28;
-            color: #3d9fd4;
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
         }
 
         .ic-ts {
-            background: #0d1f1a;
-            color: #3ab08a;
+            background: rgba(62, 207, 142, 0.12);
+            color: #3ecf8e;
         }
 
         .ic-html {
-            background: #1f1710;
-            color: #c07040;
+            background: rgba(255, 107, 107, 0.12);
+            color: #ff6b6b;
         }
 
         .ic-json {
-            background: #1f1020;
-            color: #a85ab0;
+            background: rgba(168, 85, 247, 0.12);
+            color: #c084fc;
         }
 
-        .card-text {}
+        .tc-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
 
-        .card-name {
-            font-size: 0.82rem;
+        .tc-tag {
+            font-size: 11px;
+            color: var(--sub);
+            margin-top: 2px;
+        }
+
+        .tc-desc {
+            font-size: 13px;
+            color: var(--sub);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-weight: 300;
+        }
+
+        .tc-link {
+            font-size: 12px;
+            color: var(--accent2);
+            font-family: 'DM Mono', monospace;
+            letter-spacing: 0.05em;
+        }
+
+        /* ─── CODE PREVIEW ─── */
+        .code-section {
+            background: var(--bg);
+        }
+
+        .code-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: start;
+        }
+
+        .code-info {
+            padding-top: 16px;
+        }
+
+        .code-features {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .cf-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .cf-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent2);
+            margin-top: 7px;
+            flex-shrink: 0;
+        }
+
+        .cf-text {
+            font-size: 14px;
+            color: var(--sub);
+            line-height: 1.6;
+        }
+
+        .cf-text strong {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .code-window {
+            background: var(--bg2);
+            border: 0.5px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .cw-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 18px;
+            border-bottom: 0.5px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .cw-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .cw-dot.r {
+            background: #ff5f57;
+        }
+
+        .cw-dot.y {
+            background: #febc2e;
+        }
+
+        .cw-dot.g {
+            background: #28c840;
+        }
+
+        .cw-title {
+            margin-left: 8px;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: var(--sub);
+        }
+
+        .cw-tabs {
+            margin-left: auto;
+            display: flex;
+            gap: 4px;
+        }
+
+        .cw-tab {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: var(--sub);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .cw-tab.active {
+            background: rgba(124, 111, 239, 0.15);
+            color: var(--accent2);
+        }
+
+        .cw-body {
+            padding: 0;
+        }
+
+        pre {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            line-height: 1.75;
+            padding: 24px 20px;
+            overflow-x: auto;
+            color: #c9c3f5;
+        }
+
+        .code-panel {
+            display: none;
+        }
+
+        .code-panel.active {
+            display: block;
+        }
+
+        /* syntax */
+        .k {
+            color: #a594ff;
+        }
+
+        /* keyword */
+        .f {
+            color: #38bdf8;
+        }
+
+        /* function name */
+        .s {
+            color: #3ecf8e;
+        }
+
+        /* string */
+        .c {
+            color: #4a4870;
+            font-style: italic;
+        }
+
+        /* comment */
+        .n {
+            color: #f5a623;
+        }
+
+        /* number */
+        .p {
+            color: #e2e0ea;
+        }
+
+        /* punctuation */
+
+        .cw-output {
+            border-top: 0.5px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 16px 20px;
+        }
+
+        .cw-out-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--sub);
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .cw-out-line {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            color: var(--green);
+            padding: 2px 0;
+        }
+
+        .cw-out-line.err {
+            color: var(--coral);
+        }
+
+        /* ─── FEATURES ─── */
+        .features-section {
+            background: var(--bg2);
+            border-top: 0.5px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 0.5px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-top: 56px;
+        }
+
+        .feat-card {
+            background: var(--bg2);
+            padding: 32px 28px;
+            transition: background 0.2s;
+        }
+
+        .feat-card:hover {
+            background: var(--bg3);
+        }
+
+        .feat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .feat-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .feat-desc {
+            font-size: 13px;
+            color: var(--sub);
+            line-height: 1.65;
+            font-weight: 300;
+        }
+
+        /* ─── TESTIMONIALS ─── */
+        .testi-section {
+            background: var(--bg);
+        }
+
+        .testi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 56px;
+        }
+
+        .testi-card {
+            background: var(--bg2);
+            border: 0.5px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+        }
+
+        .testi-stars {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .star {
+            color: var(--amber);
+            font-size: 14px;
+        }
+
+        .testi-text {
+            font-size: 14px;
+            color: var(--sub);
+            line-height: 1.75;
+            font-weight: 300;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .testi-text::before {
+            content: '"';
+            color: var(--accent2);
+            font-size: 24px;
+            font-family: 'Syne', serif;
+            line-height: 0;
+            vertical-align: -8px;
+            margin-right: 4px;
+        }
+
+        .testi-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .testi-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .av1 {
+            background: rgba(124, 111, 239, 0.2);
+            color: var(--accent2);
+        }
+
+        .av2 {
+            background: rgba(62, 207, 142, 0.15);
+            color: var(--green);
+        }
+
+        .av3 {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--teal);
+        }
+
+        .av4 {
+            background: rgba(245, 166, 35, 0.15);
+            color: var(--amber);
+        }
+
+        .av5 {
+            background: rgba(255, 107, 107, 0.15);
+            color: var(--coral);
+        }
+
+        .av6 {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+        }
+
+        .testi-name {
+            font-size: 13px;
             font-weight: 500;
             color: var(--text);
-            margin-bottom: 2px;
         }
 
-        .card-desc {
-            font-size: 0.72rem;
-            font-weight: 300;
+        .testi-role {
+            font-size: 12px;
             color: var(--sub);
-            line-height: 1.4;
         }
 
-        /* Footer */
-        .footer {
-            margin-top: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.6rem;
+        /* ─── TRUST BADGES ─── */
+        .trust-section {
+            background: var(--bg2);
+            border-top: 0.5px solid var(--border);
+            border-bottom: 0.5px solid var(--border);
+            padding: 64px 24px;
+        }
+
+        .trust-inner {
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        .trust-label {
+            text-align: center;
+            font-size: 12px;
+            color: var(--sub);
+            letter-spacing: 0.08em;
+            margin-bottom: 36px;
+            font-family: 'DM Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        .trust-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: var(--bg3);
+            border: 0.5px solid var(--border);
+            font-size: 13px;
+            color: var(--sub);
+        }
+
+        .trust-badge svg {
+            flex-shrink: 0;
+        }
+
+        /* ─── CTA ─── */
+        .cta-section {
+            padding: 120px 24px;
+            text-align: center;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(124, 111, 239, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(32px, 5vw, 56px);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .cta-sub {
+            font-size: 16px;
+            color: var(--sub);
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        /* ─── FOOTER ─── */
+        footer {
+            border-top: 0.5px solid var(--border);
+            padding: 40px 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+        }
+
+        .footer-logo {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            color: var(--sub);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 28px;
+        }
+
+        .footer-links a {
+            font-size: 13px;
+            color: var(--sub);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        .footer-copy {
+            font-size: 12px;
             color: var(--dim);
-            letter-spacing: 0.1em;
-            animation: fade 0.5s 0.35s ease forwards;
-            opacity: 0;
         }
 
-        @keyframes fade {
+        /* ─── ANIMATIONS ─── */
+        @keyframes fadeUp {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
 
             to {
@@ -214,19 +960,49 @@
             }
         }
 
-        @media (max-width: 600px) {
-            .grid.col3 {
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .tools-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .code-layout {
                 grid-template-columns: 1fr;
             }
 
-            .grid.col4 {
-                grid-template-columns: 1fr 1fr;
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .testi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            nav {
+                padding: 0 24px;
+            }
+
+            .nav-links {
+                display: none;
             }
         }
 
-        @media (max-width: 360px) {
-            .grid.col4 {
+        @media (max-width: 600px) {
+
+            .tools-grid,
+            .features-grid,
+            .testi-grid {
                 grid-template-columns: 1fr;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .stats {
+                gap: 32px;
             }
         }
     </style>
@@ -234,120 +1010,565 @@
 
 <body>
 
-    <div class="header">
-        <div class="wordmark">js.zero2hero</div>
-        <h1>Pick your tool</h1>
-        <p class="tagline">Write, run, and learn JavaScript.</p>
-    </div>
-
-    <!-- JS Group -->
-    <div class="group">
-        <div class="group-label">JavaScript</div>
-        <div class="grid col3">
-
-            <a href="src/editor/index.html" class="card">
-                <div class="card-icon ic-js">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="16 18 22 12 16 6" />
-                        <polyline points="8 6 2 12 8 18" />
-                    </svg>
-                </div>
-                <div class="card-text">
-                    <div class="card-name">JS Editor</div>
-                    <div class="card-desc">Full editor with console</div>
-                </div>
-            </a>
-
-
-
-            <a href="src/notebook/index.html" class="card">
-                <div class="card-icon ic-nb">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <line x1="9" y1="9" x2="15" y2="9" />
-                        <line x1="9" y1="13" x2="15" y2="13" />
-                        <line x1="9" y1="17" x2="12" y2="17" />
-                    </svg>
-                </div>
-                <div class="card-text">
-                    <div class="card-name">JS Notebook</div>
-                    <div class="card-desc">Cell-based code blocks</div>
-                </div>
-            </a>
-
+    <!-- NAV -->
+    <nav>
+        <div class="nav-logo">js.zero2hero</div>
+        <div class="nav-links">
+            <a href="#tools">Tools</a>
+            <a href="#features">Features</a>
+            <a href="#examples">Examples</a>
+            <a href="#reviews">Reviews</a>
         </div>
-    </div>
+        <a href="#tools" class="nav-cta">Start Coding →</a>
+    </nav>
 
-    <!-- More Editors Group -->
-    <div class="group">
-        <div class="group-label">More Editors</div>
-        <div class="grid col4">
-
-            <a href="src/react/index.html" class="card">
-                <div class="card-icon ic-react">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="2" />
-                        <ellipse cx="12" cy="12" rx="10" ry="3.5" />
-                        <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(60 12 12)" />
-                        <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(120 12 12)" />
-                    </svg>
-                </div>
-                <div class="card-text">
-                    <div class="card-name">React Editor</div>
-                    <div class="card-desc">JSX with live reload</div>
-                </div>
-            </a>
-
-            <a href="src/typescript/index.html" class="card">
-                <div class="card-icon ic-ts">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="4 7 4 4 20 4 20 7" />
-                        <line x1="9" y1="20" x2="15" y2="20" />
-                        <line x1="12" y1="4" x2="12" y2="20" />
-                    </svg>
-                </div>
-                <div class="card-text">
-                    <div class="card-name">TypeScript Editor</div>
-                    <div class="card-desc">Typed JS, transpiled</div>
-                </div>
-            </a>
-
-            <a href="src/html/index.html" class="card">
-                <div class="card-icon ic-html">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 3h16l-1.5 14L12 20l-6.5-3L4 3z" />
-                    </svg>
-                </div>
-                <div class="card-text">
-                    <div class="card-name">HTML Editor</div>
-                    <div class="card-desc">HTML, CSS & JS preview</div>
-                </div>
-            </a>
-
-            <a href="src/json/index.html" class="card">
-                <div class="card-icon ic-json">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1" />
-                        <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1" />
-                    </svg>
-                </div>
-                <div class="card-text">
-                    <div class="card-name">JSON Viewer</div>
-                    <div class="card-desc">Format & validate JSON</div>
-                </div>
-            </a>
-
+    <!-- HERO -->
+    <section class="hero">
+        <div class="grid-overlay"></div>
+        <div class="hero-badge">
+            <span class="dot"></span>
+            Free · No install · No account required
         </div>
-    </div>
+        <h1>Learn <em>JavaScript</em><br>right in your browser</h1>
+        <p class="hero-sub">A complete toolkit for beginners and pros. Write, run, and understand JavaScript — with zero
+            setup, zero friction, zero excuses.</p>
+        <div class="hero-ctas">
+            <a href="#tools" class="btn-primary">Open the Editor</a>
+            <a href="#examples" class="btn-ghost">See Code Examples</a>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-num">6<span>+</span></div>
+                <div class="stat-label">Built-in tools</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">0<span>ms</span></div>
+                <div class="stat-label">Setup time</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">100<span>%</span></div>
+                <div class="stat-label">Free, forever</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">ES<span>2024</span></div>
+                <div class="stat-label">Latest JS support</div>
+            </div>
+        </div>
+    </section>
 
-    <div class="footer"> js.zero2hero · 2025</div>
+    <!-- TOOLS -->
+    <section class="tools-section" id="tools">
+        <div class="section-inner">
+            <div class="tools-header">
+                <div class="section-tag">// pick your weapon</div>
+                <h2 class="section-title">Every tool you need to learn JS</h2>
+                <p class="section-sub">From a beginner's first hello world to a senior dev prototyping a component —
+                    there's a tool for every moment.</p>
+            </div>
+            <div class="tools-grid">
 
+                <a href="src/editor/index.html" class="tool-card tc-js">
+                    <div class="tc-header">
+                        <div class="tc-icon ic-js">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6" />
+                                <polyline points="8 6 2 12 8 18" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">JS Editor</div>
+                            <div class="tc-tag">Full-featured playground</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">Write JavaScript with syntax highlighting, auto-complete, and a live console.
+                        Supports ES2024 out of the box. Perfect for scripts, algorithms, and exploring APIs.</p>
+                    <div class="tc-link">Open editor →</div>
+                </a>
+
+                <a href="src/notebook/index.html" class="tool-card tc-nb">
+                    <div class="tc-header">
+                        <div class="tc-icon ic-nb">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <line x1="9" y1="9" x2="15" y2="9" />
+                                <line x1="9" y1="13" x2="15" y2="13" />
+                                <line x1="9" y1="17" x2="12" y2="17" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">JS Notebook</div>
+                            <div class="tc-tag">Cell-by-cell learning</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">Like Jupyter — but for JavaScript. Run code cells one at a time, see output
+                        inline, and build up concepts step by step. Great for tutorials and experiments.</p>
+                    <div class="tc-link">Open notebook →</div>
+                </a>
+
+                <a href="src/react/index.html" class="tool-card tc-react">
+                    <div class="tc-header">
+                        <div class="tc-icon ic-react">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="2" />
+                                <ellipse cx="12" cy="12" rx="10" ry="3.5" />
+                                <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(60 12 12)" />
+                                <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(120 12 12)" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">React Editor</div>
+                            <div class="tc-tag">JSX + hot reload</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">Write React components with JSX syntax and see them live in a split preview. No
+                        bundler setup, no config — just components that work immediately.</p>
+                    <div class="tc-link">Open React editor →</div>
+                </a>
+
+                <a href="src/typescript/index.html" class="tool-card tc-ts">
+                    <div class="tc-header">
+                        <div class="tc-icon ic-ts">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 7 4 4 20 4 20 7" />
+                                <line x1="9" y1="20" x2="15" y2="20" />
+                                <line x1="12" y1="4" x2="12" y2="20" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">TypeScript Editor</div>
+                            <div class="tc-tag">Types, transpiled live</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">Write TypeScript and see it transpiled in real time. Understand type errors,
+                        interfaces, generics, and why TypeScript makes large codebases sane.</p>
+                    <div class="tc-link">Open TS editor →</div>
+                </a>
+
+                <a href="src/html/index.html" class="tool-card tc-html">
+                    <div class="tc-header">
+                        <div class="tc-icon ic-html">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 3h16l-1.5 14L12 20l-6.5-3L4 3z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">HTML Editor</div>
+                            <div class="tc-tag">HTML + CSS + JS, live</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">A full HTML/CSS/JS playground with a live preview pane. Build mini UIs, test DOM
+                        manipulation, or prototype a landing page concept instantly.</p>
+                    <div class="tc-link">Open HTML editor →</div>
+                </a>
+
+                <a href="src/json/index.html" class="tool-card tc-json">
+                    <div class="tc-header">
+                        <div class="tc-icon ic-json">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1" />
+                                <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">JSON Viewer</div>
+                            <div class="tc-tag">Format, validate, explore</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">Paste raw JSON and get a beautiful, collapsible tree view with syntax validation,
+                        search, and formatting. Indispensable when debugging APIs.</p>
+                    <div class="tc-link">Open JSON viewer →</div>
+                </a>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CODE EXAMPLES -->
+    <section class="code-section" id="examples">
+        <div class="section-inner">
+            <div class="code-layout">
+                <div class="code-info">
+                    <div class="section-tag">// code examples</div>
+                    <h2 class="section-title">Real code.<br>Real output.</h2>
+                    <p class="section-sub">Every concept is runnable. Switch between examples to see JavaScript patterns
+                        that actually matter.</p>
+                    <div class="code-features">
+                        <div class="cf-item">
+                            <div class="cf-dot"></div>
+                            <div class="cf-text"><strong>ES2024 syntax</strong> — async/await, optional chaining,
+                                destructuring and all modern features work out of the box.</div>
+                        </div>
+                        <div class="cf-item">
+                            <div class="cf-dot"></div>
+                            <div class="cf-text"><strong>Live console</strong> — see <code
+                                    style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2)">console.log</code>
+                                output, errors, and warnings instantly as you type.</div>
+                        </div>
+                        <div class="cf-item">
+                            <div class="cf-dot"></div>
+                            <div class="cf-text"><strong>Shareable snippets</strong> — copy a link to share your code
+                                with anyone. No account needed.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-window">
+                    <div class="cw-header">
+                        <div class="cw-dot r"></div>
+                        <div class="cw-dot y"></div>
+                        <div class="cw-dot g"></div>
+                        <span class="cw-title">playground.js</span>
+                        <div class="cw-tabs">
+                            <button class="cw-tab active" onclick="switchTab('basics',this)">Basics</button>
+                            <button class="cw-tab" onclick="switchTab('async',this)">Async</button>
+                            <button class="cw-tab" onclick="switchTab('arrays',this)">Arrays</button>
+                        </div>
+                    </div>
+                    <div class="cw-body">
+
+                        <div id="tab-basics" class="code-panel active">
+                            <pre><span class="c">// Variables, functions &amp; closures</span>
+<span class="k">const</span> greet = (<span class="p">name</span>) <span class="k">=></span> {
+  <span class="k">const</span> hour = <span class="k">new</span> <span class="f">Date</span>().<span class="f">getHours</span>();
+  <span class="k">const</span> time = hour &lt; <span class="n">12</span> ? <span class="s">'morning'</span>
+              : hour &lt; <span class="n">18</span> ? <span class="s">'afternoon'</span>
+              : <span class="s">'evening'</span>;
+  <span class="k">return</span> <span class="s">`Good ${time}, ${name}!`</span>;
+};
+
+<span class="c">// Destructuring + default params</span>
+<span class="k">const</span> <span class="f">profile</span> = ({ name = <span class="s">'stranger'</span>, age }) <span class="k">=></span>
+  <span class="s">`${name} is ${age} years old`</span>;
+
+console.<span class="f">log</span>(<span class="f">greet</span>(<span class="s">'Ayesha'</span>));
+console.<span class="f">log</span>(<span class="f">profile</span>({ name: <span class="s">'Rohan'</span>, age: <span class="n">24</span> }));</pre>
+                            <div class="cw-output">
+                                <div class="cw-out-label">▶ Output</div>
+                                <div class="cw-out-line">Good evening, Ayesha!</div>
+                                <div class="cw-out-line">Rohan is 24 years old</div>
+                            </div>
+                        </div>
+
+                        <div id="tab-async" class="code-panel">
+                            <pre><span class="c">// Async/await with error handling</span>
+<span class="k">const</span> <span class="f">fetchUser</span> = <span class="k">async</span> (id) <span class="k">=></span> {
+  <span class="k">try</span> {
+    <span class="k">const</span> res = <span class="k">await</span> <span class="f">fetch</span>(
+      <span class="s">`https://api.example.com/users/${id}`</span>
+    );
+    <span class="k">if</span> (!res.<span class="f">ok</span>) <span class="k">throw new</span> <span class="f">Error</span>(<span class="s">'Not found'</span>);
+    <span class="k">const</span> { name, email } = <span class="k">await</span> res.<span class="f">json</span>();
+    <span class="k">return</span> { name, email };
+  } <span class="k">catch</span> (err) {
+    console.<span class="f">error</span>(<span class="s">`Error: ${err.message}`</span>);
+  }
+};
+
+<span class="c">// Promise.all — run in parallel</span>
+<span class="k">const</span> users = <span class="k">await</span> Promise.<span class="f">all</span>(
+  [<span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span>].<span class="f">map</span>(<span class="f">fetchUser</span>)
+);</pre>
+                            <div class="cw-output">
+                                <div class="cw-out-label">▶ Output</div>
+                                <div class="cw-out-line">Fetching 3 users in parallel...</div>
+                                <div class="cw-out-line">[ { name: 'Alice' }, { name: 'Bob' }, ... ]</div>
+                            </div>
+                        </div>
+
+                        <div id="tab-arrays" class="code-panel">
+                            <pre><span class="c">// Array methods — map, filter, reduce</span>
+<span class="k">const</span> products = [
+  { name: <span class="s">'Laptop'</span>, price: <span class="n">999</span>, inStock: <span class="k">true</span>  },
+  { name: <span class="s">'Mouse'</span>,  price: <span class="n">49</span>,  inStock: <span class="k">false</span> },
+  { name: <span class="s">'Desk'</span>,   price: <span class="n">349</span>, inStock: <span class="k">true</span>  },
+];
+
+<span class="k">const</span> total = products
+  .<span class="f">filter</span>(p <span class="k">=></span> p.inStock)
+  .<span class="f">map</span>(p <span class="k">=></span> p.price)
+  .<span class="f">reduce</span>((sum, p) <span class="k">=></span> sum + p, <span class="n">0</span>);
+
+console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
+<span class="c">// Optional chaining + nullish coalescing</span>
+<span class="k">const</span> first = products[<span class="n">0</span>]?.name ?? <span class="s">'Unknown'</span>;</pre>
+                            <div class="cw-output">
+                                <div class="cw-out-label">▶ Output</div>
+                                <div class="cw-out-line">Total: $1348</div>
+                                <div class="cw-out-line">first → 'Laptop'</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features-section" id="features">
+        <div class="section-inner">
+            <div class="section-tag">// why zero2hero</div>
+            <h2 class="section-title">Everything you need,<br>nothing you don't</h2>
+            <div class="features-grid">
+
+                <div class="feat-card">
+                    <div class="feat-icon" style="background:rgba(124,111,239,0.1)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a594ff" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                    </div>
+                    <div class="feat-name">Instant execution</div>
+                    <div class="feat-desc">Code runs in milliseconds. No compilation step, no waiting — results appear
+                        as fast as you can think.</div>
+                </div>
+
+                <div class="feat-card">
+                    <div class="feat-icon" style="background:rgba(56,189,248,0.1)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                    </div>
+                    <div class="feat-name">Syntax highlighting</div>
+                    <div class="feat-desc">Full color-coded syntax for JS, TS, JSX, HTML and JSON. Easy on the eyes,
+                        easy on the brain.</div>
+                </div>
+
+                <div class="feat-card">
+                    <div class="feat-icon" style="background:rgba(62,207,142,0.1)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                    </div>
+                    <div class="feat-name">Live error messages</div>
+                    <div class="feat-desc">Errors are explained clearly, not dumped raw. Understand what went wrong and
+                        how to fix it.</div>
+                </div>
+
+                <div class="feat-card">
+                    <div class="feat-icon" style="background:rgba(245,166,35,0.1)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                    </div>
+                    <div class="feat-name">Works on any device</div>
+                    <div class="feat-desc">Fully responsive — code on your laptop or your phone. No install, no account,
+                        just a browser.</div>
+                </div>
+
+                <div class="feat-card">
+                    <div class="feat-icon" style="background:rgba(255,107,107,0.1)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                            <polyline points="16 6 12 2 8 6" />
+                            <line x1="12" y1="2" x2="12" y2="15" />
+                        </svg>
+                    </div>
+                    <div class="feat-name">Share your code</div>
+                    <div class="feat-desc">Every snippet gets a permanent link. Share code with your study group, team,
+                        or teacher in one click.</div>
+                </div>
+
+                <div class="feat-card">
+                    <div class="feat-icon" style="background:rgba(168,85,247,0.1)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 20V10" />
+                            <path d="M12 20V4" />
+                            <path d="M6 20v-6" />
+                        </svg>
+                    </div>
+                    <div class="feat-name">Zero tracking</div>
+                    <div class="feat-desc">We don't collect your code, your data, or your email. Your work stays yours,
+                        always.</div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="testi-section" id="reviews">
+        <div class="section-inner">
+            <div class="section-tag">// from the community</div>
+            <h2 class="section-title">Trusted by developers<br>at every level</h2>
+            <div class="testi-grid">
+
+                <div class="testi-card">
+                    <div class="testi-stars">★★★★★</div>
+                    <p class="testi-text">Finally a JS playground that doesn't feel like it was designed in 2012. The
+                        notebook mode is exactly what I needed to explain closures to my students.</p>
+                    <div class="testi-author">
+                        <div class="testi-avatar av1">SP</div>
+                        <div>
+                            <div class="testi-name">Sneha Patel</div>
+                            <div class="testi-role">CS Lecturer, Pune</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testi-card">
+                    <div class="testi-stars">★★★★★</div>
+                    <p class="testi-text">I switched from CodePen because the TypeScript editor here actually shows me
+                        type errors in real time. Zero config, it just works.</p>
+                    <div class="testi-author">
+                        <div class="testi-avatar av2">AK</div>
+                        <div>
+                            <div class="testi-name">Arjun Khanna</div>
+                            <div class="testi-role">Frontend Dev, Bangalore</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testi-card">
+                    <div class="testi-stars">★★★★★</div>
+                    <p class="testi-text">As a self-taught developer, having everything in one clean tool kept me
+                        focused. I went from zero JS to my first job in 8 months.</p>
+                    <div class="testi-author">
+                        <div class="testi-avatar av3">MR</div>
+                        <div>
+                            <div class="testi-name">Maya Reddy</div>
+                            <div class="testi-role">Junior Dev, Remote</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testi-card">
+                    <div class="testi-stars">★★★★★</div>
+                    <p class="testi-text">The JSON viewer saved me hours of debugging a nasty API response. Clean tree
+                        view, instant validation — bookmark this immediately.</p>
+                    <div class="testi-author">
+                        <div class="testi-avatar av4">RJ</div>
+                        <div>
+                            <div class="testi-name">Rahul Joshi</div>
+                            <div class="testi-role">Backend Engineer, Delhi</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testi-card">
+                    <div class="testi-stars">★★★★★</div>
+                    <p class="testi-text">I run coding bootcamps and this is now our primary tool for live demos.
+                        Students can follow along without fighting with local environments.</p>
+                    <div class="testi-author">
+                        <div class="testi-avatar av5">NK</div>
+                        <div>
+                            <div class="testi-name">Nisha Kapoor</div>
+                            <div class="testi-role">Bootcamp Instructor</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testi-card">
+                    <div class="testi-stars">★★★★★</div>
+                    <p class="testi-text">The React editor is surprisingly capable. I built a full working counter app
+                        prototype to pitch to my team — no setup, no drama.</p>
+                    <div class="testi-author">
+                        <div class="testi-avatar av6">DS</div>
+                        <div>
+                            <div class="testi-name">Dev Sharma</div>
+                            <div class="testi-role">Product Designer, Mumbai</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- TRUST -->
+    <section class="trust-section">
+        <div class="trust-inner">
+            <div class="trust-label">Why you can trust this tool</div>
+            <div class="trust-row">
+                <div class="trust-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Runs entirely in your browser
+                </div>
+                <div class="trust-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    No account required
+                </div>
+                <div class="trust-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a594ff" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    Your code is never stored
+                </div>
+                <div class="trust-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Free forever, no hidden plan
+                </div>
+                <div class="trust-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                    Open web standards only
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="section-tag" style="text-align:center">// ready when you are</div>
+        <h2 class="cta-title">Stop reading.<br>Start coding.</h2>
+        <p class="cta-sub">No download. No signup. Just open a tool and go.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative">
+            <a href="src/editor/index.html" class="btn-primary">Open JS Editor →</a>
+            <a href="src/notebook/index.html" class="btn-ghost">Try the Notebook</a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-logo">js.zero2hero · 2025</div>
+        <div class="footer-links">
+            <a href="#">About</a>
+            <a href="#">GitHub</a>
+            <a href="#">Privacy</a>
+            <a href="#">Contact</a>
+        </div>
+        <div class="footer-copy">Built for learners. Made with ♥</div>
+    </footer>
+
+    <script>
+        function switchTab(name, btn) {
+            document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.cw-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            btn.classList.add('active');
+        }
+    </script>
 </body>
 
 </html>
