@@ -162,25 +162,7 @@ class JSONEditor {
       });
     });
 
-    // Add click to copy functionality
-    const nodeContents = this.elements.treeView.querySelectorAll('.tree-node-content');
-    nodeContents.forEach(node => {
-      node.addEventListener('click', (e) => {
-        if (!e.target.closest('.tree-toggle')) {
-          const key = node.querySelector('.tree-key')?.textContent;
-          const value = node.querySelector('.tree-value')?.textContent;
-
-          let textToCopy = key ? `${key}: ${value}` : value;
-          navigator.clipboard.writeText(textToCopy).then(() => {
-            const originalHTML = node.innerHTML;
-            node.innerHTML = `<i class="fas fa-check"></i> Copied!`;
-            setTimeout(() => {
-              node.innerHTML = originalHTML;
-            }, 1500);
-          });
-        }
-      });
-    });
+    
   }
 
   async loadFromURL() {

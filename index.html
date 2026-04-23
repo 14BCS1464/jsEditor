@@ -5,11 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JS Zero to Hero</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         *,
         *::before,
@@ -20,638 +18,194 @@
         }
 
         :root {
-            --bg: #0a0a0f;
-            --surface: #111118;
-            --card: #16161f;
-            --border: rgba(255, 255, 255, 0.07);
-            --accent: #7c3aed;
-            --accent2: #06b6d4;
-            --accent3: #f59e0b;
-            --text: #f0eeff;
-            --muted: #8880a8;
-            --green: #10b981;
-        }
-
-        html {
-            scroll-behavior: smooth;
+            --bg: #0f0f13;
+            --card: #16161c;
+            --border: #1e1e26;
+            --text: #e2e0ea;
+            --sub: #5a5870;
+            --dim: #2a2838;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* ── CANVAS BACKGROUND ── */
-        #bg-canvas {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        /* ── NAV ── */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 18px 48px;
-            background: rgba(10, 10, 15, 0.7);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo {
-            font-family: 'DM Mono', monospace;
-            font-size: 1rem;
-            color: var(--accent2);
-            letter-spacing: 0.05em;
-        }
-
-        .logo span {
-            color: var(--accent);
-        }
-
-        .nav-pills {
-            display: flex;
-            gap: 8px;
-        }
-
-        .nav-pill {
-            padding: 7px 16px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--muted);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.25s;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .nav-pill:hover {
-            border-color: var(--accent2);
-            color: var(--accent2);
-            background: rgba(6, 182, 212, 0.08);
-        }
-
-        /* ── HERO ── */
-        .hero {
-            position: relative;
-            z-index: 1;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 120px 24px 80px;
+            padding: 40px 20px 60px;
+        }
+
+        /* Header */
+        .header {
             text-align: center;
+            margin-bottom: 48px;
+            animation: fade 0.5s ease forwards;
         }
 
-        .hero-eyebrow {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--accent2);
-            letter-spacing: 0.25em;
+        .wordmark {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--sub);
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            margin-bottom: 28px;
-            opacity: 0;
-            animation: fadeUp 0.7s 0.1s forwards;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .hero-eyebrow::before,
-        .hero-eyebrow::after {
-            content: '';
-            display: block;
-            width: 32px;
-            height: 1px;
-            background: var(--accent2);
+            margin-bottom: 18px;
         }
 
         h1 {
-            font-size: clamp(3.2rem, 8vw, 7rem);
-            font-weight: 800;
-            line-height: 1.0;
-            letter-spacing: -0.03em;
-            margin-bottom: 28px;
-            opacity: 0;
-            animation: fadeUp 0.8s 0.25s forwards;
-        }
-
-        h1 .line1 {
-            display: block;
-            color: var(--text);
-        }
-
-        h1 .line2 {
-            display: block;
-            background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-sub {
-            max-width: 520px;
-            font-size: 1.05rem;
-            color: var(--muted);
-            line-height: 1.75;
-            margin-bottom: 48px;
-            opacity: 0;
-            animation: fadeUp 0.8s 0.4s forwards;
-        }
-
-        /* ── TERMINAL SNIPPET ── */
-        .terminal {
-            font-family: 'DM Mono', monospace;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 20px 24px;
-            font-size: 0.82rem;
-            text-align: left;
-            max-width: 420px;
-            width: 100%;
-            margin: 0 auto 48px;
-            opacity: 0;
-            animation: fadeUp 0.8s 0.55s forwards;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .terminal::before {
-            content: '● ● ●';
-            display: block;
-            color: var(--muted);
-            margin-bottom: 14px;
-            font-size: 0.6rem;
-            letter-spacing: 4px;
-        }
-
-        .terminal .t-comment {
-            color: #4b5563;
-        }
-
-        .terminal .t-key {
-            color: var(--accent2);
-        }
-
-        .terminal .t-val {
-            color: var(--accent3);
-        }
-
-        .terminal .t-fn {
-            color: var(--accent);
-        }
-
-        .terminal .t-str {
-            color: var(--green);
-        }
-
-        .terminal .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 14px;
-            background: var(--accent2);
-            vertical-align: middle;
-            animation: blink 1s step-start infinite;
-        }
-
-        @keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
-
-        /* ── CTA BUTTONS ── */
-        .cta-row {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-            justify-content: center;
-            opacity: 0;
-            animation: fadeUp 0.8s 0.7s forwards;
-        }
-
-        .cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 28px;
-            border-radius: 100px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 700;
-            text-decoration: none;
-            letter-spacing: 0.04em;
-            transition: all 0.25s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5);
-        }
-
-        .cta-primary:hover {
-            background: #6d28d9;
-            box-shadow: 0 0 32px rgba(124, 58, 237, 0.5);
-            transform: translateY(-2px);
-        }
-
-        .cta-secondary {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .cta-secondary:hover {
-            border-color: var(--accent2);
-            color: var(--accent2);
-            background: rgba(6, 182, 212, 0.07);
-            transform: translateY(-2px);
-        }
-
-        .cta-cyan {
-            background: rgba(6, 182, 212, 0.12);
-            color: var(--accent2);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-        }
-
-        .cta-cyan:hover {
-            background: rgba(6, 182, 212, 0.22);
-            box-shadow: 0 0 24px rgba(6, 182, 212, 0.25);
-            transform: translateY(-2px);
-        }
-
-        /* ── STATS BAR ── */
-        .stats-bar {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            justify-content: center;
-            gap: 0;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .stat-item {
-            flex: 1;
-            max-width: 220px;
-            padding: 28px 24px;
-            text-align: center;
-            border-right: 1px solid var(--border);
-            opacity: 0;
-            animation: fadeUp 0.6s forwards;
-        }
-
-        .stat-item:last-child {
-            border-right: none;
-        }
-
-        .stat-item:nth-child(1) {
-            animation-delay: 0.2s;
-        }
-
-        .stat-item:nth-child(2) {
-            animation-delay: 0.3s;
-        }
-
-        .stat-item:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        .stat-item:nth-child(4) {
-            animation-delay: 0.5s;
-        }
-
-        .stat-num {
             font-size: 2rem;
-            font-weight: 800;
+            font-weight: 600;
             letter-spacing: -0.03em;
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-top: 4px;
-        }
-
-        /* ── SECTION ── */
-        section {
-            position: relative;
-            z-index: 1;
-            padding: 100px 24px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-tag {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.7rem;
-            color: var(--accent2);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            margin-bottom: 14px;
-        }
-
-        h2 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin-bottom: 16px;
-            line-height: 1.1;
-        }
-
-        .section-sub {
-            color: var(--muted);
-            font-size: 1.05rem;
-            max-width: 500px;
-            line-height: 1.7;
-            margin-bottom: 60px;
-        }
-
-        /* ── CARDS GRID ── */
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1px;
-            background: var(--border);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            overflow: hidden;
-        }
-
-        .card {
-            background: var(--card);
-            padding: 36px 32px;
-            transition: background 0.25s;
-            cursor: default;
-        }
-
-        .card:hover {
-            background: #1c1c28;
-        }
-
-        .card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-        }
-
-        .icon-purple {
-            background: rgba(124, 58, 237, 0.15);
-            color: var(--accent);
-        }
-
-        .icon-cyan {
-            background: rgba(6, 182, 212, 0.12);
-            color: var(--accent2);
-        }
-
-        .icon-amber {
-            background: rgba(245, 158, 11, 0.12);
-            color: var(--accent3);
-        }
-
-        .icon-green {
-            background: rgba(16, 185, 129, 0.12);
-            color: var(--green);
-        }
-
-        .icon-pink {
-            background: rgba(236, 72, 153, 0.12);
-            color: #ec4899;
-        }
-
-        .icon-red {
-            background: rgba(239, 68, 68, 0.12);
-            color: #ef4444;
-        }
-
-        .card h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            letter-spacing: -0.02em;
-        }
-
-        .card p {
-            color: var(--muted);
-            font-size: 0.9rem;
-            line-height: 1.65;
-            margin-bottom: 20px;
-        }
-
-        .card-tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .tag {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.68rem;
-            padding: 4px 10px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-            color: var(--muted);
-            letter-spacing: 0.04em;
-        }
-
-        /* ── PATHS SECTION ── */
-        .paths {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-top: 0;
-        }
-
-        @media (max-width: 700px) {
-            .paths {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .path-card {
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 36px;
-            background: var(--card);
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            transition: all 0.25s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .path-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .path-card.purple::after {
-            background: radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.12), transparent 60%);
-        }
-
-        .path-card.cyan::after {
-            background: radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1), transparent 60%);
-        }
-
-        .path-card.amber::after {
-            background: radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.1), transparent 60%);
-        }
-
-        .path-card.green::after {
-            background: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1), transparent 60%);
-        }
-
-        .path-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .path-card:hover::after {
-            opacity: 1;
-        }
-
-        .path-top {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .path-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-        }
-
-        .path-arrow {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            color: var(--muted);
-            transition: all 0.25s;
-        }
-
-        .path-card:hover .path-arrow {
-            border-color: var(--accent2);
-            color: var(--accent2);
-            background: rgba(6, 182, 212, 0.1);
-        }
-
-        .path-card h3 {
-            font-size: 1.2rem;
-            font-weight: 700;
+            color: var(--text);
             margin-bottom: 8px;
         }
 
-        .path-card p {
-            color: var(--muted);
-            font-size: 0.88rem;
-            line-height: 1.6;
+        .tagline {
+            font-size: 0.85rem;
+            font-weight: 300;
+            color: var(--sub);
         }
 
-        /* ── FOOTER CTA ── */
-        .footer-cta {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 100px 24px;
-            background: linear-gradient(180deg, transparent, rgba(124, 58, 237, 0.06) 50%, transparent);
-            border-top: 1px solid var(--border);
+        /* Group */
+        .group {
+            width: 100%;
+            max-width: 720px;
+            margin-bottom: 32px;
+            animation: fade 0.5s ease forwards;
+            opacity: 0;
         }
 
-        .footer-cta .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            border-radius: 100px;
-            border: 1px solid rgba(124, 58, 237, 0.4);
-            background: rgba(124, 58, 237, 0.1);
-            color: #a78bfa;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
+        .group:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .group:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .group-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--sub);
+            letter-spacing: 0.18em;
             text-transform: uppercase;
-            margin-bottom: 28px;
+            margin-bottom: 10px;
+            padding-left: 1px;
         }
 
-        .footer-cta h2 {
-            font-size: clamp(2.4rem, 6vw, 4.5rem);
-            margin-bottom: 20px;
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 8px;
         }
 
-        .footer-cta p {
-            color: var(--muted);
-            max-width: 440px;
-            margin: 0 auto 40px;
-            font-size: 1.05rem;
-            line-height: 1.7;
+        .grid.col3 {
+            grid-template-columns: repeat(3, 1fr);
         }
 
-        footer {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 24px;
-            border-top: 1px solid var(--border);
-            font-size: 0.8rem;
-            color: var(--muted);
-            font-family: 'DM Mono', monospace;
+        .grid.col4 {
+            grid-template-columns: repeat(4, 1fr);
         }
 
-        /* ── ANIMS ── */
-        @keyframes fadeUp {
+        /* Card */
+        a.card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.18s, background 0.18s;
+        }
+
+        a.card:hover {
+            border-color: #2e2c42;
+            background: #1a1a22;
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.85rem;
+        }
+
+        /* soft icon colors */
+        .ic-js {
+            background: #1c1830;
+            color: #8b76f5;
+        }
+
+        .ic-simple {
+            background: #0f1f2a;
+            color: #4aa8cc;
+        }
+
+        .ic-nb {
+            background: #1f1a10;
+            color: #b88a3a;
+        }
+
+        .ic-react {
+            background: #0f1d28;
+            color: #3d9fd4;
+        }
+
+        .ic-ts {
+            background: #0d1f1a;
+            color: #3ab08a;
+        }
+
+        .ic-html {
+            background: #1f1710;
+            color: #c07040;
+        }
+
+        .ic-json {
+            background: #1f1020;
+            color: #a85ab0;
+        }
+
+        .card-text {}
+
+        .card-name {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .card-desc {
+            font-size: 0.72rem;
+            font-weight: 300;
+            color: var(--sub);
+            line-height: 1.4;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--dim);
+            letter-spacing: 0.1em;
+            animation: fade 0.5s 0.35s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fade {
             from {
                 opacity: 0;
-                transform: translateY(24px);
+                transform: translateY(10px);
             }
 
             to {
@@ -660,48 +214,19 @@
             }
         }
 
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.7s, transform 0.7s;
-        }
-
-        .reveal.visible {
-            opacity: 1;
-            transform: none;
-        }
-
-        /* ── SCROLLBAR ── */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #2d2d40;
-            border-radius: 3px;
-        }
-
-        @media (max-width: 768px) {
-            nav {
-                padding: 16px 20px;
+        @media (max-width: 600px) {
+            .grid.col3 {
+                grid-template-columns: 1fr;
             }
 
-            .nav-pills {
-                display: none;
+            .grid.col4 {
+                grid-template-columns: 1fr 1fr;
             }
+        }
 
-            .stats-bar {
-                flex-wrap: wrap;
-            }
-
-            .stat-item {
-                flex: 1 1 50%;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
+        @media (max-width: 360px) {
+            .grid.col4 {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -709,159 +234,120 @@
 
 <body>
 
-    <canvas id="bg-canvas"></canvas>
+    <div class="header">
+        <div class="wordmark">js.zero2hero</div>
+        <h1>Pick your tool</h1>
+        <p class="tagline">Write, run, and learn JavaScript.</p>
+    </div>
 
-    <!-- NAV -->
-    <nav>
-        <div class="logo"><span>//</span> js<span>.</span>zero2hero</div>
-        <div class="nav-pills">
-            <a href="src/questions.html" class="nav-pill">Interview</a>
-            <a href="src/editor/index.html" class="nav-pill">Practice</a>
-            <a href="src/dsa/index.html" class="nav-pill">DSA</a>
-            <a href="src/systemDesign/index.html" class="nav-pill">System Design</a>
-            <a href="src/notes/index.html" class="nav-pill">Online Notes</a>
-        </div>
-    </nav>
+    <!-- JS Group -->
+    <div class="group">
+        <div class="group-label">JavaScript</div>
+        <div class="grid col3">
 
-    <!-- HERO -->
-    <div class="hero">
-        <div class="hero-eyebrow">Complete Learning Path</div>
-        <h1>
-            <span class="line1">JavaScript</span>
-            <span class="line2">Zero to Hero</span>
-        </h1>
-        <p class="hero-sub">
-            Master modern JavaScript and React Native from the ground up — interview prep, DSA challenges, system
-            design, and hands-on practice.
-        </p>
-        <div class="terminal">
-            <div class="t-comment">// your journey starts here</div>
-            <br>
-            <div><span class="t-key">const</span> developer = {</div>
-            <div>&nbsp;&nbsp;<span class="t-key">level</span>: <span class="t-str">"beginner"</span>,</div>
-            <div>&nbsp;&nbsp;<span class="t-key">goal</span>: <span class="t-str">"hero"</span>,</div>
-            <div>&nbsp;&nbsp;<span class="t-fn">start</span>: () =&gt; <span class="t-val">🚀</span></div>
-            <div>}; <span class="cursor"></span></div>
-        </div>
-        <div class="cta-row">
-            <a class="cta cta-primary" href="src/editor/index.html">
-                <i class="fas fa-play"></i> Start Learning
+            <a href="src/editor/index.html" class="card">
+                <div class="card-icon ic-js">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6" />
+                        <polyline points="8 6 2 12 8 18" />
+                    </svg>
+                </div>
+                <div class="card-text">
+                    <div class="card-name">JS Editor</div>
+                    <div class="card-desc">Full editor with console</div>
+                </div>
             </a>
-            <a class="cta cta-cyan" href="src/questions.html">
-                <i class="fas fa-question-circle"></i> Interview Prep
+
+
+
+            <a href="src/notebook/index.html" class="card">
+                <div class="card-icon ic-nb">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <line x1="9" y1="9" x2="15" y2="9" />
+                        <line x1="9" y1="13" x2="15" y2="13" />
+                        <line x1="9" y1="17" x2="12" y2="17" />
+                    </svg>
+                </div>
+                <div class="card-text">
+                    <div class="card-name">JS Notebook</div>
+                    <div class="card-desc">Cell-based code blocks</div>
+                </div>
             </a>
-            <a class="cta cta-secondary" href="src/dsa/index.html">
-                <i class="fas fa-code"></i> DSA Practice
-            </a>
+
         </div>
     </div>
 
-    <!-- STATS BAR -->
+    <!-- More Editors Group -->
+    <div class="group">
+        <div class="group-label">More Editors</div>
+        <div class="grid col4">
 
-
-    <!-- WHAT YOU'LL LEARN -->
-
-
-    <!-- LEARNING PATHS -->
-
-
-    <!-- FOOTER CTA -->
-    <div class="footer-cta">
-        <div class="badge">🚀 Start for free</div>
-        <h2 class="reveal">Ready to become<br>a JS <span
-                style="background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">hero?</span>
-        </h2>
-        <p class="reveal">Join thousands of developers who went from zero knowledge to landing their dream jobs.</p>
-        <div class="cta-row reveal">
-            <a class="cta cta-primary" href="src/editor/index.html">
-                <i class="fas fa-play"></i> Start Learning Free
+            <a href="src/react/index.html" class="card">
+                <div class="card-icon ic-react">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="2" />
+                        <ellipse cx="12" cy="12" rx="10" ry="3.5" />
+                        <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(60 12 12)" />
+                        <ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(120 12 12)" />
+                    </svg>
+                </div>
+                <div class="card-text">
+                    <div class="card-name">React Editor</div>
+                    <div class="card-desc">JSX with live reload</div>
+                </div>
             </a>
-            <a class="cta cta-secondary" href="src/systemDesign/practice.html">
-                <i class="fas fa-drafting-compass"></i> System Practice
+
+            <a href="src/typescript/index.html" class="card">
+                <div class="card-icon ic-ts">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 7 4 4 20 4 20 7" />
+                        <line x1="9" y1="20" x2="15" y2="20" />
+                        <line x1="12" y1="4" x2="12" y2="20" />
+                    </svg>
+                </div>
+                <div class="card-text">
+                    <div class="card-name">TypeScript Editor</div>
+                    <div class="card-desc">Typed JS, transpiled</div>
+                </div>
             </a>
+
+            <a href="src/html/index.html" class="card">
+                <div class="card-icon ic-html">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 3h16l-1.5 14L12 20l-6.5-3L4 3z" />
+                    </svg>
+                </div>
+                <div class="card-text">
+                    <div class="card-name">HTML Editor</div>
+                    <div class="card-desc">HTML, CSS & JS preview</div>
+                </div>
+            </a>
+
+            <a href="src/json/index.html" class="card">
+                <div class="card-icon ic-json">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1" />
+                        <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1" />
+                    </svg>
+                </div>
+                <div class="card-text">
+                    <div class="card-name">JSON Viewer</div>
+                    <div class="card-desc">Format & validate JSON</div>
+                </div>
+            </a>
+
         </div>
     </div>
 
-    <footer>// built with 💜 for developers &nbsp;·&nbsp; js.zero2hero &nbsp;·&nbsp; 2025</footer>
+    <div class="footer"> js.zero2hero · 2025</div>
 
-    <script>
-        /* ── PARTICLE CANVAS ── */
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-
-        let W, H, particles = [];
-
-        function resize() {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-        }
-        resize();
-        window.addEventListener('resize', resize);
-
-        class Particle {
-            constructor() { this.reset(); }
-            reset() {
-                this.x = Math.random() * W;
-                this.y = Math.random() * H;
-                this.r = Math.random() * 1.4 + 0.3;
-                this.vx = (Math.random() - 0.5) * 0.25;
-                this.vy = (Math.random() - 0.5) * 0.25;
-                this.alpha = Math.random() * 0.5 + 0.1;
-                const cols = ['#7c3aed', '#06b6d4', '#f59e0b', '#10b981'];
-                this.color = cols[Math.floor(Math.random() * cols.length)];
-            }
-            update() {
-                this.x += this.vx; this.y += this.vy;
-                if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = this.alpha;
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-        }
-
-        for (let i = 0; i < 120; i++) particles.push(new Particle());
-
-        function drawLines() {
-            const dist = 120;
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const d = Math.sqrt(dx * dx + dy * dy);
-                    if (d < dist) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = '#7c3aed';
-                        ctx.globalAlpha = (1 - d / dist) * 0.08;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                        ctx.globalAlpha = 1;
-                    }
-                }
-            }
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, W, H);
-            particles.forEach(p => { p.update(); p.draw(); });
-            drawLines();
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        /* ── SCROLL REVEAL ── */
-        const revealEls = document.querySelectorAll('.reveal');
-        const io = new IntersectionObserver(entries => {
-            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-        }, { threshold: 0.12 });
-        revealEls.forEach(el => io.observe(el));
-    </script>
 </body>
 
 </html>

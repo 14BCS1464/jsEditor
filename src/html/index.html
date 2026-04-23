@@ -22,19 +22,11 @@
                 <span class="gradient-text" id="editor-title">Advanced <span class="language-dynamic">HTML</span>
                     Editor</span>
             </h2>
-            <div style="padding: 15px; gap: 20px;align-self: center;">
+            <div style="padding: 10px; gap: 20px;align-self: center;">
                 <button id="run" onclick="runCode()">▶️ Run </button>
                 <button id="addfile">Add </button>
                 <button id="download">Download </button>
-                <button id='download' title="Toggle Preview" onclick="togglePreview()">
-                    Toggle Preview
-                </button>
-                <button id='download' title="Refresh" onclick="refreshPreview()">
-                    Refresh
-                </button>
-                <button id='download' title="Responsive" onclick="responsivePreview()">
-                    Responsive
-                </button>
+
 
             </div>
         </div>
@@ -42,32 +34,6 @@
 
     <!-- Main Container -->
     <div class="main-container">
-
-        <div class="language-panel">
-            <div class="language-title">Languages</div>
-            <ul id="languageList">
-
-
-                <li data-lang="javascript" onclick="chooseLanguage(event)"><i class="fab fa-js"></i> JavaScript</li>
-                <li data-lang="typescript" onclick="chooseLanguage(event)"><i class="fas fa-code"></i> TypeScript</li>
-                <li active="true" data-lang="html" onclick="chooseLanguage(event)"><i class="fab fa-html5"></i> HTML
-                </li>
-                <li data-lang="react" onclick="chooseLanguage(event)"><i class="fab fa-react"></i> React</li>
-                <li data-lang="json" onclick="chooseLanguage(event)"><i class="fas fa-file-code"></i>
-                    JSON</li>
-
-            </ul>
-            <div class="language-ad">
-                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-5234145234173840"
-                    data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
-
-                <script>
-                    (adsbygoogle = window.adsbygoogle || []).push({});
-                </script>
-            </div>
-        </div>
-
-
         <!-- Editor Area -->
         <div class="editor-area">
             <!-- Tabs -->

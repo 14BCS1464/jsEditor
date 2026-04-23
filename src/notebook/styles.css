@@ -911,13 +911,14 @@
 
  .qview-desc.md-rendered {
      font-family: 'Inter', sans-serif;
+
  }
 
  .qview-desc.md-rendered h1,
  .qview-desc.md-rendered h2,
  .qview-desc.md-rendered h3 {
      color: var(--cyan);
-     margin: 12px 0 6px;
+     margin: 3px 6px;
  }
 
  .qview-desc.md-rendered p {
@@ -931,6 +932,7 @@
      font-family: 'JetBrains Mono', monospace;
      color: #2A5A50;
      font-size: 0.85em;
+
  }
 
  .qview-desc.md-rendered pre {
@@ -958,7 +960,7 @@
 
  .qview-desc.md-rendered blockquote {
      border-left: 3px solid var(--cyan);
-     padding-left: 12px;
+     padding-left: 30px;
      color: var(--text2);
      margin: 8px 0;
  }
