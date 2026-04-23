@@ -1479,10 +1479,10 @@
  }
 
  .desc-preview {
-     min-height: 48px;
      color: var(--text);
-     font-size: 0.85rem;
+     font-size: 0.65em;
      line-height: 1.7;
+     padding: 20px;
  }
 
  .desc-preview h1,
@@ -1502,7 +1502,7 @@
      border-radius: 3px;
      font-family: 'JetBrains Mono', monospace;
      color: #2A5A50;
-     font-size: 0.85em;
+     font-size: 0.65em;
  }
 
  .desc-preview pre {
