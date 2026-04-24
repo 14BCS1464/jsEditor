@@ -126,6 +126,7 @@ body>* {
     width: 42px;
     height: 22px;
     flex-shrink: 0;
+    margin: 10px;
 }
 
 .switch input {
