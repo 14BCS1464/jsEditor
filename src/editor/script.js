@@ -470,14 +470,13 @@ require(["vs/editor/editor.main"], async function () {
         const code = editor.getValue();
         const safetyCheck = isSafeCode(code);
 
+        // ✅ FIXED: was calling runCodeSafely() on unsafe code — now we block it
         if (!safetyCheck.safe) {
-            runCodeSafely();
+            addLogEntry(`⛔ Auto-execution blocked: ${safetyCheck.reason}`, 'warn');
             return;
         }
 
-        if (autoExecuteTimer) {
-            clearTimeout(autoExecuteTimer);
-        }
+        if (autoExecuteTimer) clearTimeout(autoExecuteTimer);
 
         autoExecuteTimer = setTimeout(() => {
             try {
@@ -487,7 +486,6 @@ require(["vs/editor/editor.main"], async function () {
             }
         }, EXECUTION_DELAY);
     }
-
     function runCodeSafely(code) {
         const startTime = Date.now();
         let executionTimer = null;
@@ -778,195 +776,291 @@ require(["vs/editor/editor.main"], async function () {
 
 
 
+    // function runCode() {
+    //     const code = editor.getValue();
+    //     if (!code) return;
+
+    //     outputElement.innerHTML = "";
+    //     logCount = 0;
+
+    //     const originalConsole = { ...console };
+
+    //     const seenObjects = new WeakSet();
+    //     const MAX_OUTPUT_SIZE = 100000;
+    //     let currentOutputSize = 0;
+
+    //     function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+    //         if (currentOutputSize > MAX_OUTPUT_SIZE) {
+    //             return '<span class="object-error">[Output truncated: Too large]</span>';
+    //         }
+
+    //         if (depth > maxDepth) return '<span class="object-depth">...</span>';
+    //         if (obj === null) return '<span class="object-null">null</span>';
+    //         if (obj === undefined) return '<span class="object-undefined">undefined</span>';
+    //         if (typeof obj !== 'object') {
+    //             if (typeof obj === 'string') return `<span class="object-string">"${obj}"</span>`;
+    //             if (typeof obj === 'number') return `<span class="object-number">${obj}</span>`;
+    //             if (typeof obj === 'boolean') return `<span class="object-boolean">${obj}</span>`;
+    //             return `<span class="object-value">${obj}</span>`;
+    //         }
+
+    //         if (seen.has(obj)) {
+    //             return '<span class="object-circular">[Circular Reference]</span>';
+    //         }
+    //         seen.add(obj);
+
+    //         let output = '<div class="object-inspector">';
+    //         output += `<span class="object-type">[${obj.constructor?.name || 'Object'}]</span> {`;
+    //         currentOutputSize += output.length;
+
+    //         const props = Object.getOwnPropertyNames(obj);
+    //         if (props.length > 0) {
+    //             output += '<ul style="margin: 0; padding-left: 20px;">';
+    //             for (const prop of props) {
+    //                 let value;
+    //                 try {
+    //                     value = obj[prop];
+    //                 } catch (e) {
+    //                     value = `<span class="object-error">[Error: ${e.message}]</span>`;
+    //                 }
+    //                 const valueDisplay = typeof value === 'object' && value !== null
+    //                     ? createObjectInspector(value, depth + 1, maxDepth, seen)
+    //                     : createObjectInspector(value, depth + 1, maxDepth, seen);
+    //                 output += `<li><span class="object-key">${prop}</span>: ${valueDisplay}</li>`;
+    //                 currentOutputSize += valueDisplay.length;
+    //                 if (currentOutputSize > MAX_OUTPUT_SIZE) {
+    //                     output += '<li><span class="object-error">[Output truncated: Too large]</span></li>';
+    //                     break;
+    //                 }
+    //             }
+    //             output += '</ul>';
+    //         }
+
+    //         let proto = Object.getPrototypeOf(obj);
+    //         if (proto && depth < maxDepth) {
+    //             output += '<details style="margin-top: 8px; padding-left: 20px;">';
+    //             output += `<summary><span class="object-proto">[[Prototype]]: [${proto.constructor?.name || 'Object'}]</span></summary>`;
+    //             output += createObjectInspector(proto, depth + 1, maxDepth, new WeakSet());
+    //             output += '</details>';
+    //             currentOutputSize += output.length;
+    //         }
+
+    //         output += '}</div>';
+    //         return output;
+    //     }
+
+    //     console.log = function (...args) {
+    //         currentOutputSize = 0;
+    //         let content = args.map(arg => {
+    //             if (typeof arg === 'object' && arg !== null) {
+    //                 return createObjectInspector(arg, 0, 3, new WeakSet());
+    //             } else if (arg === undefined) {
+    //                 return '<span class="object-undefined">undefined</span>';
+    //             } else if (arg === null) {
+    //                 return '<span class="object-null">null</span>';
+    //             } else if (typeof arg === 'string') {
+    //                 return `<span class="object-string">"${arg}"</span>`;
+    //             } else if (typeof arg === 'number') {
+    //                 return `<span class="object-number">${arg}</span>`;
+    //             } else if (typeof arg === 'boolean') {
+    //                 return `<span class="object-boolean">${arg}</span>`;
+    //             } else {
+    //                 return `<span class="object-value">${arg}</span>`;
+    //             }
+    //         }).join(' ');
+    //         addLogEntry(content, 'log');
+    //     };
+
+    //     console.dir = function (obj) {
+    //         currentOutputSize = 0;
+    //         const content = createObjectInspector(obj, 0, 5, new WeakSet());
+    //         addLogEntry(content, 'dir');
+    //     };
+
+    //     console.table = function (data, columns) {
+    //         if (!data) return;
+    //         currentOutputSize = 0;
+
+    //         let output = '<table style="border-collapse: collapse; width: 100%; font-size: 12px;">';
+    //         const isArray = Array.isArray(data);
+    //         const rows = isArray ? data : [data];
+    //         const keys = columns || (rows[0] ? Object.keys(rows[0]) : []);
+
+    //         output += '<thead><tr>';
+    //         if (isArray) output += '<th style="border: 1px solid #ccc; padding: 8px;">(index)</th>';
+    //         for (const key of keys) {
+    //             output += `<th style="border: 1px solid #ccc; padding: 8px;">${key}</th>`;
+    //         }
+    //         output += '</tr></thead>';
+
+    //         output += '<tbody>';
+    //         for (let i = 0; i < rows.length && currentOutputSize < MAX_OUTPUT_SIZE; i++) {
+    //             const row = rows[i];
+    //             output += '<tr>';
+    //             if (isArray) output += `<td style="border: 1px solid #ccc; padding: 8px;">${i}</td>`;
+    //             for (const key of keys) {
+    //                 const value = row[key];
+    //                 const display = typeof value === 'object' && value !== null
+    //                     ? createObjectInspector(value, 0, 1, new WeakSet())
+    //                     : createObjectInspector(value, 0, 1, new WeakSet());
+    //                 output += `<td style="border: 1px solid #ccc; padding: 8px;">${display}</td>`;
+    //                 currentOutputSize += display.length;
+    //                 if (currentOutputSize > MAX_OUTPUT_SIZE) {
+    //                     output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) +
+    //                         '" style="border: 1px solid #ccc; padding: 8px;">[Output truncated: Too large]</td></tr>';
+    //                     break;
+    //                 }
+    //             }
+    //             output += '</tr>';
+    //         }
+    //         output += '</tbody></table>';
+
+    //         addLogEntry(output, 'table');
+    //     };
+
+    //     console.error = function (...args) {
+    //         currentOutputSize = 0;
+    //         const content = args.map(arg => {
+    //             if (arg instanceof Error) {
+    //                 return `<strong>${arg.name}:</strong> ${arg.message}<br><pre style="margin-top: 8px; font-size: 11px; opacity: 0.8;">${arg.stack}</pre>`;
+    //             }
+    //             return String(arg);
+    //         }).join(' ');
+    //         addLogEntry(content, 'error');
+    //     };
+
+    //     console.warn = function (...args) {
+    //         currentOutputSize = 0;
+    //         const content = args.join(' ');
+    //         addLogEntry(content, 'warn');
+    //     };
+
+    //     console.info = function (...args) {
+    //         currentOutputSize = 0;
+    //         const content = args.join(' ');
+    //         addLogEntry(content, 'info');
+    //     };
+
+    //     window.onunhandledrejection = function (event) {
+    //         console.error("Unhandled Promise Rejection:", event.reason);
+    //     };
+
+    //     try {
+    //         const result = eval(code);
+
+    //         if (result instanceof Promise) {
+    //             result.catch(error => {
+    //                 console.error(error);
+    //             });
+    //         }
+    //     } catch (error) {
+    //         console.error(error);
+    //     } finally {
+    //         setTimeout(() => {
+    //             console.log = originalConsole.log;
+    //             console.error = originalConsole.error;
+    //             console.warn = originalConsole.warn;
+    //             console.info = originalConsole.info;
+    //             console.dir = originalConsole.dir;
+    //             console.table = originalConsole.table;
+    //         }, 1000);
+    //     }
+    // }
+
+    let activeWorker = null; // track running worker globally (put this near your other globals)
+
     function runCode() {
         const code = editor.getValue();
         if (!code) return;
 
-        outputElement.innerHTML = "";
+        // Kill any previously running worker
+        if (activeWorker) {
+            activeWorker.terminate();
+            activeWorker = null;
+            addLogEntry('⚠️ Previous execution terminated', 'warn');
+        }
+
+        outputElement.innerHTML = '';
         logCount = 0;
 
-        const originalConsole = { ...console };
+        // Build the worker script — intercept console inside it
+        const workerScript = `
+        const _logs = [];
 
-        const seenObjects = new WeakSet();
-        const MAX_OUTPUT_SIZE = 100000;
-        let currentOutputSize = 0;
-
-        function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
-            if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                return '<span class="object-error">[Output truncated: Too large]</span>';
-            }
-
-            if (depth > maxDepth) return '<span class="object-depth">...</span>';
-            if (obj === null) return '<span class="object-null">null</span>';
-            if (obj === undefined) return '<span class="object-undefined">undefined</span>';
-            if (typeof obj !== 'object') {
-                if (typeof obj === 'string') return `<span class="object-string">"${obj}"</span>`;
-                if (typeof obj === 'number') return `<span class="object-number">${obj}</span>`;
-                if (typeof obj === 'boolean') return `<span class="object-boolean">${obj}</span>`;
-                return `<span class="object-value">${obj}</span>`;
-            }
-
-            if (seen.has(obj)) {
-                return '<span class="object-circular">[Circular Reference]</span>';
-            }
-            seen.add(obj);
-
-            let output = '<div class="object-inspector">';
-            output += `<span class="object-type">[${obj.constructor?.name || 'Object'}]</span> {`;
-            currentOutputSize += output.length;
-
-            const props = Object.getOwnPropertyNames(obj);
-            if (props.length > 0) {
-                output += '<ul style="margin: 0; padding-left: 20px;">';
-                for (const prop of props) {
-                    let value;
-                    try {
-                        value = obj[prop];
-                    } catch (e) {
-                        value = `<span class="object-error">[Error: ${e.message}]</span>`;
-                    }
-                    const valueDisplay = typeof value === 'object' && value !== null
-                        ? createObjectInspector(value, depth + 1, maxDepth, seen)
-                        : createObjectInspector(value, depth + 1, maxDepth, seen);
-                    output += `<li><span class="object-key">${prop}</span>: ${valueDisplay}</li>`;
-                    currentOutputSize += valueDisplay.length;
-                    if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                        output += '<li><span class="object-error">[Output truncated: Too large]</span></li>';
-                        break;
-                    }
-                }
-                output += '</ul>';
-            }
-
-            let proto = Object.getPrototypeOf(obj);
-            if (proto && depth < maxDepth) {
-                output += '<details style="margin-top: 8px; padding-left: 20px;">';
-                output += `<summary><span class="object-proto">[[Prototype]]: [${proto.constructor?.name || 'Object'}]</span></summary>`;
-                output += createObjectInspector(proto, depth + 1, maxDepth, new WeakSet());
-                output += '</details>';
-                currentOutputSize += output.length;
-            }
-
-            output += '}</div>';
-            return output;
-        }
-
-        console.log = function (...args) {
-            currentOutputSize = 0;
-            let content = args.map(arg => {
-                if (typeof arg === 'object' && arg !== null) {
-                    return createObjectInspector(arg, 0, 3, new WeakSet());
-                } else if (arg === undefined) {
-                    return '<span class="object-undefined">undefined</span>';
-                } else if (arg === null) {
-                    return '<span class="object-null">null</span>';
-                } else if (typeof arg === 'string') {
-                    return `<span class="object-string">"${arg}"</span>`;
-                } else if (typeof arg === 'number') {
-                    return `<span class="object-number">${arg}</span>`;
-                } else if (typeof arg === 'boolean') {
-                    return `<span class="object-boolean">${arg}</span>`;
-                } else {
-                    return `<span class="object-value">${arg}</span>`;
-                }
-            }).join(' ');
-            addLogEntry(content, 'log');
+        const console = {
+            _send(type, args) {
+                self.postMessage({ type, args: args.map(a => {
+                    try { return JSON.parse(JSON.stringify(a)); }
+                    catch(e) { return String(a); }
+                })});
+            },
+            log(...a)   { this._send('log', a); },
+            warn(...a)  { this._send('warn', a); },
+            error(...a) { this._send('error', a); },
+            info(...a)  { this._send('info', a); },
+            table(a)    { this._send('table', [a]); },
         };
 
-        console.dir = function (obj) {
-            currentOutputSize = 0;
-            const content = createObjectInspector(obj, 0, 5, new WeakSet());
-            addLogEntry(content, 'dir');
-        };
-
-        console.table = function (data, columns) {
-            if (!data) return;
-            currentOutputSize = 0;
-
-            let output = '<table style="border-collapse: collapse; width: 100%; font-size: 12px;">';
-            const isArray = Array.isArray(data);
-            const rows = isArray ? data : [data];
-            const keys = columns || (rows[0] ? Object.keys(rows[0]) : []);
-
-            output += '<thead><tr>';
-            if (isArray) output += '<th style="border: 1px solid #ccc; padding: 8px;">(index)</th>';
-            for (const key of keys) {
-                output += `<th style="border: 1px solid #ccc; padding: 8px;">${key}</th>`;
-            }
-            output += '</tr></thead>';
-
-            output += '<tbody>';
-            for (let i = 0; i < rows.length && currentOutputSize < MAX_OUTPUT_SIZE; i++) {
-                const row = rows[i];
-                output += '<tr>';
-                if (isArray) output += `<td style="border: 1px solid #ccc; padding: 8px;">${i}</td>`;
-                for (const key of keys) {
-                    const value = row[key];
-                    const display = typeof value === 'object' && value !== null
-                        ? createObjectInspector(value, 0, 1, new WeakSet())
-                        : createObjectInspector(value, 0, 1, new WeakSet());
-                    output += `<td style="border: 1px solid #ccc; padding: 8px;">${display}</td>`;
-                    currentOutputSize += display.length;
-                    if (currentOutputSize > MAX_OUTPUT_SIZE) {
-                        output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) +
-                            '" style="border: 1px solid #ccc; padding: 8px;">[Output truncated: Too large]</td></tr>';
-                        break;
-                    }
+        self.addEventListener('message', (e) => {
+            try {
+                const result = eval(e.data);
+                if (result instanceof Promise) {
+                    result
+                        .then(v => { if (v !== undefined) console.log(v); })
+                        .catch(err => console.error(String(err)));
                 }
-                output += '</tr>';
+            } catch(err) {
+                self.postMessage({ type: 'error', args: [err.name + ': ' + err.message] });
+            } finally {
+                self.postMessage({ type: '__done__', args: [] });
             }
-            output += '</tbody></table>';
+        });
+    `;
 
-            addLogEntry(output, 'table');
-        };
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        activeWorker = new Worker(workerUrl);
+        URL.revokeObjectURL(workerUrl);
 
-        console.error = function (...args) {
-            currentOutputSize = 0;
+        // Timeout — kill worker if it runs too long (catches infinite loops)
+        const killTimer = setTimeout(() => {
+            if (activeWorker) {
+                activeWorker.terminate();
+                activeWorker = null;
+                addLogEntry('⏱️ Execution killed: took longer than 5 seconds (infinite loop?)', 'error');
+            }
+        }, 5000);
+
+        activeWorker.onmessage = (e) => {
+            const { type, args } = e.data;
+
+            if (type === '__done__') {
+                clearTimeout(killTimer);
+                activeWorker = null;
+                return;
+            }
+
+            // Render the message
             const content = args.map(arg => {
-                if (arg instanceof Error) {
-                    return `<strong>${arg.name}:</strong> ${arg.message}<br><pre style="margin-top: 8px; font-size: 11px; opacity: 0.8;">${arg.stack}</pre>`;
-                }
+                if (arg === null) return '<span class="object-null">null</span>';
+                if (arg === undefined) return '<span class="object-undefined">undefined</span>';
+                if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
+                if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
+                if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
+                if (typeof arg === 'object') return `<pre style="margin:0">${JSON.stringify(arg, null, 2)}</pre>`;
                 return String(arg);
             }).join(' ');
-            addLogEntry(content, 'error');
+
+            addLogEntry(content, type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log');
         };
 
-        console.warn = function (...args) {
-            currentOutputSize = 0;
-            const content = args.join(' ');
-            addLogEntry(content, 'warn');
+        activeWorker.onerror = (e) => {
+            clearTimeout(killTimer);
+            //addLogEntry(`❌ ${e.message}`, 'error');
+            activeWorker = null;
         };
 
-        console.info = function (...args) {
-            currentOutputSize = 0;
-            const content = args.join(' ');
-            addLogEntry(content, 'info');
-        };
-
-        window.onunhandledrejection = function (event) {
-            console.error("Unhandled Promise Rejection:", event.reason);
-        };
-
-        try {
-            const result = eval(code);
-
-            if (result instanceof Promise) {
-                result.catch(error => {
-                    console.error(error);
-                });
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setTimeout(() => {
-                console.log = originalConsole.log;
-                console.error = originalConsole.error;
-                console.warn = originalConsole.warn;
-                console.info = originalConsole.info;
-                console.dir = originalConsole.dir;
-                console.table = originalConsole.table;
-            }, 1000);
-        }
+        activeWorker.postMessage(code);
     }
 
     window.clearOutput = function () {
