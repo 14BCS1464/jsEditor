@@ -465,7 +465,7 @@ require(["vs/editor/editor.main"], async function () {
     }
 
     function safeAutoExecute() {
-        if (!autoExecuteEnabled || isRateLimited()) return;
+        if ( isRateLimited()) return;
 
         const code = editor.getValue();
         const safetyCheck = isSafeCode(code);
