@@ -25,7 +25,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/lint.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    
+    <style>
+    .practice-btn{background:rgba(0,188,212,0.08);border:1px solid rgba(0,188,212,0.25);color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:0.62rem;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all .15s ease;letter-spacing:.3px;white-space:nowrap}
+    .practice-btn:hover{background:rgba(0,188,212,0.16);border-color:var(--cyan)}
+    #practice-modal .modal{width:820px;max-width:95vw}
+    #practice-editor-container{margin-top:10px}
+    .practice-note{font-size:0.6rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:10px;line-height:1.6;padding:8px 10px;border:1px dashed var(--border2);border-radius:6px;background:rgba(0,188,212,0.04)
+    </style>
 </head>
 
 <body>
@@ -391,6 +397,44 @@
         </div>
     </div>
 
+    <!-- PRACTICE MODAL (session-only sandbox — never syncs to any real cell) -->
+    <div class="modal-overlay" id="practice-modal">
+        <div class="modal modal-wide" id="practice-modal-inner">
+            <div class="qview-header">
+                <div class="qview-title" id="practice-title">⚡ Practice Sandbox</div>
+                <button class="btn btn-ghost btn-sm" onclick="closePracticeModal()">✕ Close</button>
+            </div>
+            <div class="practice-note">
+                // Session-only scratch editor, seeded from <strong id="practice-source-label" style="color:var(--cyan)">Cell [01]</strong>.
+                Anything you run or edit here stays local to this modal — it never syncs back to the notebook and is lost on reload.
+            </div>
+            <div class="qv-editor-topbar">
+                <div class="qv-editor-cell-selector">
+                    <span class="qv-editor-cell-label">Sandbox</span>
+                    <span class="qv-sync-status" style="color:var(--muted)">● Not synced</span>
+                </div>
+                <div class="qv-editor-actions">
+                    <button class="qv-fmt-btn" onclick="practiceFormatCode()" title="Format code">✦ Fmt</button>
+                    <button class="qv-fmt-btn" onclick="practiceResetCode()" title="Reset sandbox to the current cell's code">↺ Reset</button>
+                    <button class="qv-run-btn" id="practice-run-btn" onclick="practiceRunCode()">▶ Run</button>
+                </div>
+            </div>
+            <div id="practice-editor-container">
+                <div class="qv-editor-cm-wrap" id="practice-cm-wrap"></div>
+                <div class="qv-editor-output" id="practice-editor-output">
+                    <div class="qv-editor-out-header">
+                        <span>▸ Output</span>
+                        <span style="display:flex;align-items:center;gap:8px">
+                            <span id="practice-out-time" style="color:var(--cyan)"></span>
+                            <button class="qv-editor-out-clear" onclick="practiceClearOutput()">✕ Clear</button>
+                        </span>
+                    </div>
+                    <div class="qv-editor-out-content" id="practice-out-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- RENAME MODAL -->
     <div class="modal-overlay" id="rename-modal">
         <div class="modal" style="width:400px">
@@ -684,6 +728,7 @@
     let cellFontSizeIdx = {}, cellDescMode = {}, cellImportance = {};
     let pendingDeleteFn = null, deleteConfirmKeyword = 'DELETE';
     let qvEditor = null, qvLinkedCellId = null, qvEditorDirty = false;
+    let practiceEditor = null, practiceCellId = null, practiceSessions = {};
 
     if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
     function renderMD(src) { if (!window.marked) return escH(src).replace(/\n/g,'<br>'); try { return marked.parse(src||''); } catch(e){ return escH(src); } }
@@ -746,6 +791,90 @@
         const elapsed=(performance.now()-t0).toFixed(1)+'ms'; if(timeEl)timeEl.textContent=elapsed; btn.classList.remove('running');btn.textContent='▶ Run';
     }
     function qvClearOutput() { const o=document.getElementById('qv-editor-output'); const c=document.getElementById('qv-out-content'); if(o)o.classList.remove('visible'); if(c)c.innerHTML=''; const t=document.getElementById('qv-out-time'); if(t)t.textContent=''; }
+
+    // ════════════════════════════════════════
+    //  PRACTICE SANDBOX (session-only, never syncs to any cell)
+    // ════════════════════════════════════════
+    function practiceInitEditor() {
+        const wrap = document.getElementById('practice-cm-wrap'); if (!wrap) return;
+        if (practiceEditor) { practiceEditor.toTextArea(); practiceEditor = null; }
+        wrap.innerHTML = '';
+        const ta = document.createElement('textarea'); wrap.appendChild(ta);
+        practiceEditor = CodeMirror.fromTextArea(ta, { mode:'javascript', theme:'solarized light', lineNumbers:true, matchBrackets:true, autoCloseBrackets:true, indentUnit:2, tabSize:2, indentWithTabs:false, extraKeys:{ 'Ctrl-Enter':()=>practiceRunCode(), 'Cmd-Enter':()=>practiceRunCode(), 'Ctrl-/':cm=>cm.execCommand('toggleComment'), 'Alt-Shift-F':()=>practiceFormatCode() } });
+        practiceEditor.on('change', () => { if (practiceCellId !== null) practiceSessions[practiceCellId] = practiceEditor.getValue(); });
+    }
+    function openPracticeModal(cellId) {
+        const cell = cells.find(c => c.id === cellId); if (!cell) return;
+        practiceCellId = cellId;
+        const idx = cells.findIndex(c => c.id === cellId);
+        const label = 'Cell [' + String(idx+1).padStart(2,'0') + '] — ' + cell.lang.toUpperCase();
+        const labelEl = document.getElementById('practice-source-label'); if (labelEl) labelEl.textContent = label;
+        if (!practiceEditor) practiceInitEditor();
+        const realEditor = cellEditors[cellId];
+        const currentCellCode = realEditor ? realEditor.getValue() : (cell.code || '');
+        // Seed from a saved session if one exists for this cell, otherwise snapshot the live cell code.
+        const seedCode = practiceSessions[cellId] !== undefined ? practiceSessions[cellId] : currentCellCode;
+        practiceEditor.setValue(seedCode);
+        practiceSessions[cellId] = seedCode;
+        practiceClearOutput();
+        openModal('practice-modal');
+        setTimeout(() => { if (practiceEditor) { practiceEditor.refresh(); practiceEditor.focus(); } }, 120);
+    }
+    function closePracticeModal() { closeModal('practice-modal'); }
+    function practiceResetCode() {
+        if (practiceCellId === null || practiceCellId === undefined) return;
+        const realEditor = cellEditors[practiceCellId];
+        const cell = cells.find(c => c.id === practiceCellId);
+        const code = realEditor ? realEditor.getValue() : (cell ? cell.code || '' : '');
+        practiceEditor.setValue(code);
+        practiceSessions[practiceCellId] = code;
+        practiceClearOutput();
+        showToast('↺ Sandbox reset to current cell code','success');
+    }
+    async function practiceFormatCode() {
+        if (!practiceEditor) return; const original = practiceEditor.getValue();
+        try {
+            let formatted;
+            if (window.prettier && window.prettierPlugins?.babel) { formatted = prettier.format(original, { parser:'babel', plugins:[prettierPlugins.babel], semi:true, singleQuote:true, tabWidth:2, trailingComma:'es5', printWidth:80, arrowParens:'avoid' }); }
+            else { formatted = basicFormat(original); }
+            if (formatted && formatted !== original) { const cursor = practiceEditor.getCursor(); practiceEditor.setValue(formatted); practiceEditor.setCursor(cursor); showToast('✨ Code formatted','success'); }
+            else { showToast('// Already clean','success'); }
+        } catch (err) { showToast('Format error: '+err.message.split('\n')[0],'error'); }
+    }
+    function practiceClearOutput() {
+        const o = document.getElementById('practice-editor-output'); const c = document.getElementById('practice-out-content');
+        if (o) o.classList.remove('visible'); if (c) c.innerHTML = '';
+        const t = document.getElementById('practice-out-time'); if (t) t.textContent = '';
+    }
+    async function practiceRunCode() {
+        if (!practiceEditor) return;
+        const btn = document.getElementById('practice-run-btn'); btn.classList.add('running'); btn.textContent = '⏳ Running…';
+        const code = practiceEditor.getValue();
+        const cell = (practiceCellId !== null && practiceCellId !== undefined) ? cells.find(c => c.id === practiceCellId) : null;
+        const lang = cell ? cell.lang : 'javascript';
+        const outEl = document.getElementById('practice-editor-output'); const contentEl = document.getElementById('practice-out-content'); const timeEl = document.getElementById('practice-out-time');
+        outEl.classList.add('visible'); contentEl.innerHTML = ''; contentEl.className = 'qv-editor-out-content'; if (timeEl) timeEl.textContent = '';
+        const t0 = performance.now();
+        const emit = (type, str) => { const div = document.createElement('div'); const clsMap = { error:'error-line', warn:'warn-line', info:'info-line', return:'return-line', timer:'timer-line' }; div.className = clsMap[type] || 'log-line'; const prefix = type==='error'?'✖ ':type==='warn'?'⚠ ':type==='timer'?'⏱ ':''; div.textContent = prefix + (str||''); contentEl.appendChild(div); outEl.scrollTop = outEl.scrollHeight; };
+        const _t = {}, _c = {};
+        const sc = { log:(...a)=>emit('log',a.map(serializeVal).join(' ')), error:(...a)=>emit('error',a.map(serializeVal).join(' ')), warn:(...a)=>emit('warn',a.map(serializeVal).join(' ')), info:(...a)=>emit('info',a.map(serializeVal).join(' ')), debug:(...a)=>emit('info',a.map(serializeVal).join(' ')), dir:(...a)=>emit('log',a.map(serializeVal).join(' ')), clear:()=>{contentEl.innerHTML='';}, table:(data)=>{try{emit('log',JSON.stringify(data,null,2));}catch(e){emit('log',serializeVal(data));}}, time:(l='default')=>{_t[l]=performance.now();}, timeEnd:(l='default')=>{const t=_t[l]; emit('timer', l+': '+(t!==undefined?(performance.now()-t).toFixed(3)+'ms':'n/a')); delete _t[l];}, count:(l='default')=>{_c[l]=(_c[l]||0)+1; emit('log', l+': '+_c[l]);}, assert:(ok,...a)=>{ if(!ok) emit('error','Assertion failed: '+a.map(serializeVal).join(' ')); } };
+        try {
+            let jsCode = code;
+            if (lang === 'typescript' && window.ts) { try { jsCode = ts.transpileModule(code, { compilerOptions:{ target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.None, strict:false } }).outputText; } catch (tsErr) { emit('error','[TypeScript] '+tsErr.message); } }
+            const AsyncFn = Object.getPrototypeOf(async function(){}).constructor;
+            const fn = new AsyncFn('console', '"use strict";\n' + jsCode);
+            const ret = await fn(sc);
+            if (ret !== undefined && ret !== null) emit('return', '→ ' + serializeVal(ret));
+            if (contentEl.children.length === 0) emit('info', '// (no output)');
+            contentEl.classList.add('has-success');
+        } catch (err) {
+            emit('error', err instanceof Error ? err.name + ': ' + err.message : String(err));
+            contentEl.classList.add('has-error');
+        }
+        const elapsed = (performance.now() - t0).toFixed(1) + 'ms'; if (timeEl) timeEl.textContent = elapsed;
+        btn.classList.remove('running'); btn.textContent = '▶ Run';
+    }
+
     function switchQVTab(tab) {
         activeQVTab=tab; const tabIds=['editor','overview','tests'];
         document.querySelectorAll('.qv-tab').forEach((b,i)=>b.classList.toggle('active',tabIds[i]===tab));
@@ -833,6 +962,7 @@
         '<div class="tl-right"><div class="font-size-ctrl"><button class="fs-btn" onclick="setFontSize('+id+',-1)">A−</button><span class="fs-display" id="fsize-'+id+'">'+fontSize+'px</span><button class="fs-btn" onclick="setFontSize('+id+',+1)">A+</button></div>'+
         '<button class="format-btn" id="fmtbtn-'+id+'" onclick="formatCell('+id+')" title="Format">✦ Fmt</button>'+
         '<button class="ai-btn" id="aibtn-'+id+'" onclick="openAIPanel('+id+')" title="AI Help">✦ AI</button>'+
+        '<button class="practice-btn" id="practicebtn-'+id+'" onclick="openPracticeModal('+id+')" title="Open an isolated practice sandbox — never syncs back to this cell">⚡ Practice</button>'+
         '<button class="copy-btn" id="copybtn-'+id+'" onclick="copyCell('+id+')" title="Copy">⎘ Copy</button>'+
         '<button class="run-btn" id="runbtn-'+id+'" onclick="runCell('+id+')">▶ Run</button>'+
         '<button class="stop-btn" id="stopbtn-'+id+'" onclick="stopCell('+id+')" title="Stop">■ Stop</button>'+
