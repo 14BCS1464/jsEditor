@@ -28,8 +28,18 @@
     <style>
     .practice-btn{background:rgba(0,188,212,0.08);border:1px solid rgba(0,188,212,0.25);color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:0.62rem;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all .15s ease;letter-spacing:.3px;white-space:nowrap}
     .practice-btn:hover{background:rgba(0,188,212,0.16);border-color:var(--cyan)}
-    #practice-modal .modal{width:820px;max-width:95vw}
-    #practice-editor-container{margin-top:10px}
+    #practice-modal .modal {
+    width: 95vw;
+    height: 95vh;
+    max-width: none;
+    max-height: none;
+}
+
+#practice-editor-container {
+    margin-top: 10px;
+    height: calc(100vh - 80px); /* Adjust based on your header/footer */
+    overflow: auto;
+}
     .practice-note{font-size:0.6rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:10px;line-height:1.6;padding:8px 10px;border:1px dashed var(--border2);border-radius:6px;background:rgba(0,188,212,0.04)
     </style>
 </head>
@@ -958,7 +968,7 @@
         const div=document.createElement('div');div.className='cell';div.id='cell-'+id;
         div.innerHTML=buildBannerHTML(id,linkedQId)+
         '<div class="cell-desc" id="celldesc-'+id+'"><div class="desc-label" onclick="toggleDesc('+id+')"><span>▸</span> Solution Notes <span style="font-size:0.45rem;color:var(--plasma);margin-left:6px">MD</span><span class="desc-toggle-arrow">▾</span></div><div class="desc-body"><div class="desc-toolbar"><button class="desc-mode-btn '+(cellDescMode[id]==='edit'?'active':'')+'" id="dmode-edit-'+id+'" onclick="setDescMode('+id+',\'edit\')">✎ Edit</button><button class="desc-mode-btn '+(cellDescMode[id]==='preview'?'active':'')+'" id="dmode-prev-'+id+'" onclick="setDescMode('+id+',\'preview\')">👁 Preview</button><span class="desc-mode-hint">Markdown supported</span></div><textarea class="desc-ta" id="desc-'+id+'" placeholder="// Describe your approach, complexity, edge cases…" style="display:'+(cellDescMode[id]==='edit'?'block':'none')+'">'+(description||'')+'</textarea><div class="desc-preview" id="descprev-'+id+'" style="display:'+(cellDescMode[id]==='preview'?'block':'none')+'">'+(description?renderMD(description):'<span style="color:var(--muted);font-size:0.75rem">// Nothing to preview yet</span>')+'</div></div></div>'+
-        '<div class="cell-toolbar"><div class="tl-left"><span class="cell-num" id="cnum-'+id+'">[01]</span><div class="lang-toggle"><button class="lang-btn '+(lang==='javascript'?'active':'')+'" onclick="setLang('+id+',\'javascript\')">JS</button><button class="lang-btn '+(lang==='typescript'?'active':'')+'" onclick="setLang('+id+',\'typescript\')">TS</button></div><span class="line-count-badge" id="lcbadge-'+id+'">0 L</span><span class="run-count" id="rcbadge-'+id+'">✦0</span><span class="hint">Ctrl+Enter Run · Ctrl+/ Comment · Alt+Shift+F Format</span></div>'+
+        '<div class="cell-toolbar"><div class="tl-left"><span class="cell-num" id="cnum-'+id+'">[01]</span><div class="lang-toggle"><button class="lang-btn '+(lang==='javascript'?'active':'')+'" onclick="setLang('+id+',\'javascript\')">JS</button><button class="lang-btn '+(lang==='typescript'?'active':'')+'" onclick="setLang('+id+',\'typescript\')">TS</button></div><span class="line-count-badge" id="lcbadge-'+id+'">0 L</span><span class="run-count" id="rcbadge-'+id+'">✦0</span></div>'+
         '<div class="tl-right"><div class="font-size-ctrl"><button class="fs-btn" onclick="setFontSize('+id+',-1)">A−</button><span class="fs-display" id="fsize-'+id+'">'+fontSize+'px</span><button class="fs-btn" onclick="setFontSize('+id+',+1)">A+</button></div>'+
         '<button class="format-btn" id="fmtbtn-'+id+'" onclick="formatCell('+id+')" title="Format">✦ Fmt</button>'+
         '<button class="ai-btn" id="aibtn-'+id+'" onclick="openAIPanel('+id+')" title="AI Help">✦ AI</button>'+
