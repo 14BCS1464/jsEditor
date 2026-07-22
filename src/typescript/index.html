@@ -2,75 +2,83 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TypeScript Online Compiler</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TypeScript Online Compiler</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="https://unpkg.com/typescript@latest/lib/typescript.js"></script>
+<!-- Must load BEFORE loader.js. Pinned version, no-redirect CDN. -->
+<script src="https://cdn.jsdelivr.net/npm/typescript@5.4.5/lib/typescript.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-
-    <!-- Styles -->
-    <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-    <div class="container">
+<div class="container">
 
+<div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+<h2>
+<span class="gradient-text" id="editor-title">Advanced TypeScript Online Compiler</span>
+</h2>
+<div class="button-group">
+<button id="btn-run" class="success"><i class="fas fa-play"></i> Run Code</button>
+<button id="btn-format" class="secondary"><i class="fas fa-indent"></i> Format</button>
+<button id="btn-clear" class="warning"><i class="fas fa-broom"></i> Clear</button>
+<button id="btn-save" class="secondary"><i class="fas fa-save"></i> Save</button>
+<button id="btn-share" class="secondary"><i class="fas fa-share"></i> Share</button>
+<button id="btn-check-types" class="secondary"><i class="fas fa-check"></i> Check Types</button>
+</div>
+</div>
 
-        <div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
-            <h2>
-                <span class="gradient-text" id="editor-title">Advanced TypeScript Online Compiler</span>
-            </h2>
-            <div class="button-group">
-                <button id="btn-run" class="success"><i class="fas fa-play"></i> Run Code</button>
-                <button id="btn-format" class="secondary"><i class="fas fa-indent"></i> Format</button>
-                <button id="btn-clear" class="warning"><i class="fas fa-broom"></i> Clear</button>
+<div class="status-bar">
+    <span id="status">Checking types...</span>
+    <span id="line-info">Ln 1, Col 1</span>
+</div>
 
-            </div>
+<div class="main-content">
+
+<div class="editor-section">
+<div class="editor-container">
+<div id="editor"></div>
+</div>
+</div>
+
+<div class="output-section">
+
+    <!-- ============ TYPESCRIPT ERRORS PANEL ============ -->
+    <div class="panel ts-errors-panel">
+        <div class="section-header">
+            <span class="panel-title">
+                <i class="fas fa-triangle-exclamation"></i> TypeScript Errors
+                <span id="ts-error-count" class="count-badge">0</span>
+            </span>
         </div>
-
-
-        <div class="main-content">
-
-            <div class="editor-section">
-                <div class="editor-container">
-
-                    <div id="editor">
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="output-section">
-                <div class="section-header">
-
-                    <div class="button-group">
-                        <button id="btn-clear-output" class="danger">Clear</button>
-                        <button id="btn-copy-output" class="secondary">Copy</button>
-                    </div>
-                </div>
-                <div id="output"></div>
-            </div>
-        </div>
-
-        <!-- <div class="status-bar">
-
-            <div id="loader" class="loader" style="display:none"></div>
-            <span>TypeScript v5.3.3</span>
-        </div> -->
-
-        <div id="toast" class="toast"></div>
-
-        <div id="snippets-panel" class="snippets-panel"></div>
+        <div id="ts-errors-list"></div>
     </div>
 
+    <!-- ============ CONSOLE OUTPUT PANEL ============ -->
+    <div class="panel console-output-panel">
+        <div class="section-header">
+            <span class="panel-title"><i class="fas fa-terminal"></i> Console Output</span>
+            <div class="button-group">
+                <button id="btn-clear-output" class="danger">Clear</button>
+                <button id="btn-copy-output" class="secondary">Copy</button>
+            </div>
+        </div>
+        <div id="output"></div>
+    </div>
 
+</div>
+</div>
 
+<div id="toast" class="toast"></div>
 
-    <script src="script.js"></script>
+<div id="snippets-panel" class="snippets-panel"></div>
+</div>
+
+<script src="script.js"></script>
 </body>
 
 </html>

@@ -2,11 +2,22 @@ let editor;
 let outputElement;
 let lineInfoElement;
 let toast;
+let tsErrorsListEl;
+let tsErrorCountEl;
+let tsReady = false;
+let currentWorker = null;
+let liveDebounceTimer = null;
+
+const EXEC_TIMEOUT_MS = 3000; // kill execution if it runs longer than this
 
 document.addEventListener("DOMContentLoaded", async () => {
     outputElement = document.getElementById("output");
     lineInfoElement = document.getElementById("line-info");
     toast = document.getElementById("toast");
+    tsErrorsListEl = document.getElementById("ts-errors-list");
+    tsErrorCountEl = document.getElementById("ts-error-count");
+
+    checkTsAvailability();
 
     await loadMonacoEditor();
     setupEventListeners();
@@ -15,6 +26,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     showToast("TypeScript Editor Ready with Real-time Validation!", "success");
 });
+
+/* ===============================
+   TYPESCRIPT COMPILER READINESS (for runtime transpile only —
+   Monaco's own type CHECKING uses its internal TS worker and
+   does not depend on this global `ts`)
+================================ */
+function checkTsAvailability() {
+    if (typeof ts !== "undefined") {
+        tsReady = true;
+        return;
+    }
+    let attempts = 0;
+    const interval = setInterval(() => {
+        attempts++;
+        if (typeof ts !== "undefined") {
+            tsReady = true;
+            clearInterval(interval);
+        } else if (attempts > 50) { // ~10s timeout
+            clearInterval(interval);
+            showToast("TypeScript compiler failed to load — check your network/CDN access", "error", 5000);
+        }
+    }, 200);
+}
 
 /* ===============================
    MONACO EDITOR WITH INSTANT VALIDATION
@@ -30,42 +64,28 @@ interface Person {
     email: string;
 }
 
-// ❌ ERROR: Type 'string' is not assignable to type 'number'
+// ❌ This SHOULD show a TypeScript error in the panel on the right:
+// Type 'number' is not assignable to type 'string'
 const person1: Person = {
-    name: "Alice",
-    age: "25",  // Change this to a number to fix!
+    name: 42,          // <- try fixing this to a string
+    age: 25,
     email: "alice@example.com"
 };
 
-// ❌ ERROR: Property 'email' is missing
-const person2: Person = {
-    name: "Bob",
-    age: 30
-    // Add email to fix this error!
-};
-
-// Function with type checking
 function greet(name: string, age: number): string {
     return \`Hello \${name}, you are \${age} years old\`;
 }
 
-// ✅ Correct usage
 const msg1 = greet("Charlie", 28);
-
-// ❌ ERROR: Argument of type 'number' is not assignable to parameter of type 'string'
-const msg2 = greet(123, 28);
-
-// ❌ ERROR: Expected 2 arguments, but got 1
-const msg3 = greet("David");
-
 console.log(msg1);
-console.log("Try fixing the errors above!");`;
+console.log("Fix the red error above and watch the panel clear!");`;
 
         require.config({
             paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs" }
         });
 
         require(["vs/editor/editor.main"], () => {
+            // Controls WHICH rules TS checks.
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                 target: monaco.languages.typescript.ScriptTarget.ES2020,
                 module: monaco.languages.typescript.ModuleKind.ESNext,
@@ -75,6 +95,7 @@ console.log("Try fixing the errors above!");`;
                 strictNullChecks: true,
                 strictFunctionTypes: true,
                 strictBindCallApply: true,
+                strictPropertyInitialization: true,
                 noImplicitThis: true,
                 alwaysStrict: true,
                 esModuleInterop: true,
@@ -82,6 +103,8 @@ console.log("Try fixing the errors above!");`;
                 checkJs: false
             });
 
+            // Turns semantic (type) validation ON. Keep noSemanticValidation
+            // false or interface/type mismatches will never be flagged.
             monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
                 noSemanticValidation: false,
                 noSyntaxValidation: false,
@@ -115,19 +138,31 @@ console.log("Try fixing the errors above!");`;
                 updateLineInfo(e.position);
             });
 
+            // Fallback trigger — kept as a secondary signal, but the
+            // debounced content-change handler below is the primary,
+            // authoritative path now.
             monaco.editor.onDidChangeMarkers(([resource]) => {
                 if (editor.getModel() && editor.getModel().uri.toString() === resource.toString()) {
                     updateErrorDisplay();
+                    renderTypeScriptErrors();
                 }
             });
 
             editor.onDidChangeModelContent(() => {
                 autoSaveCode();
+                clearTimeout(liveDebounceTimer);
+                liveDebounceTimer = setTimeout(() => {
+                    updateErrorDisplay();
+                    renderTypeScriptErrors();
+                    executeCode({ silent: true });
+                }, 500);
             });
 
             setTimeout(() => {
                 updateErrorDisplay();
-            }, 500);
+                renderTypeScriptErrors();
+                executeCode({ silent: true });
+            }, 800); // give the TS worker time to spin up on first load
 
             resolve();
         });
@@ -135,16 +170,78 @@ console.log("Try fixing the errors above!");`;
 }
 
 /* ===============================
-   UPDATE ERROR DISPLAY
+   DIRECT TYPESCRIPT DIAGNOSTICS
+   Pulls straight from the TS language service via
+   getTypeScriptWorker() — more reliable than trusting
+   getModelMarkers(), which depends on Monaco's internal
+   marker-publish timing and can lag or miss updates.
 ================================ */
-function updateErrorDisplay() {
+async function getTypeScriptDiagnostics() {
+    if (!editor || !editor.getModel()) return [];
+    const model = editor.getModel();
+
+    try {
+        const workerGetter = await monaco.languages.typescript.getTypeScriptWorker();
+        const client = await workerGetter(model.uri);
+
+        const [syntactic, semantic] = await Promise.all([
+            client.getSyntacticDiagnostics(model.uri.toString()),
+            client.getSemanticDiagnostics(model.uri.toString())
+        ]);
+
+        return [...syntactic, ...semantic];
+    } catch (e) {
+        console.error("Failed to fetch TS diagnostics:", e);
+        return [];
+    }
+}
+
+function diagnosticToDisplay(diag, model) {
+    const startPos = model.getPositionAt(diag.start);
+    const endPos = model.getPositionAt(diag.start + diag.length);
+
+    // messageText can be a plain string OR a nested DiagnosticMessageChain
+    const message = typeof diag.messageText === "string"
+        ? diag.messageText
+        : flattenDiagnosticMessage(diag.messageText);
+
+    // ts.DiagnosticCategory: 0 = Warning, 1 = Error, 2 = Suggestion, 3 = Message
+    const isError = diag.category === 1;
+
+    return {
+        startLineNumber: startPos.lineNumber,
+        startColumn: startPos.column,
+        endLineNumber: endPos.lineNumber,
+        endColumn: endPos.column,
+        message,
+        code: diag.code,
+        category: diag.category,
+        isError
+    };
+}
+
+// Manual fallback flattener in case the global `ts` isn't loaded yet
+// when diagnostics first arrive (avoids a hard dependency on it here).
+function flattenDiagnosticMessage(messageText, indent = "") {
+    if (typeof messageText === "string") return indent + messageText;
+    let result = indent + messageText.messageText;
+    if (messageText.next) {
+        for (const next of messageText.next) {
+            result += "\n" + flattenDiagnosticMessage(next, indent + "  ");
+        }
+    }
+    return result;
+}
+
+/* ===============================
+   STATUS PILL (top bar summary)
+================================ */
+async function updateErrorDisplay() {
     if (!editor || !editor.getModel()) return;
 
-    const model = editor.getModel();
-    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-
-    const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
-    const warnings = markers.filter(m => m.severity === monaco.MarkerSeverity.Warning);
+    const diagnostics = await getTypeScriptDiagnostics();
+    const errors = diagnostics.filter(d => d.category === 1);
+    const warnings = diagnostics.filter(d => d.category === 0);
 
     const statusEl = document.getElementById('status');
     if (statusEl) {
@@ -158,10 +255,72 @@ function updateErrorDisplay() {
     }
 }
 
-function updateLineInfo(position) {
-    if (!position || !lineInfoElement) return;
+/* ===============================
+   TYPESCRIPT ERRORS PANEL
+   Lists every diagnostic with line:col, message, and TS code.
+   Clicking an item jumps the editor cursor to that location.
+================================ */
+async function renderTypeScriptErrors() {
+    if (!editor || !editor.getModel() || !tsErrorsListEl) return;
 
     const model = editor.getModel();
+    const diagnostics = await getTypeScriptDiagnostics();
+    const display = diagnostics
+        .map(d => diagnosticToDisplay(d, model))
+        .sort((a, b) => a.startLineNumber - b.startLineNumber);
+
+    const errorCount = display.filter(d => d.isError).length;
+    const warningCount = display.length - errorCount;
+
+    if (tsErrorCountEl) {
+        tsErrorCountEl.textContent = errorCount + warningCount;
+        tsErrorCountEl.className = "count-badge " +
+            (errorCount > 0 ? "has-errors" : warningCount > 0 ? "has-warnings" : "clean");
+    }
+
+    tsErrorsListEl.innerHTML = "";
+
+    if (display.length === 0) {
+        const noErr = document.createElement("div");
+        noErr.className = "ts-no-errors";
+        noErr.textContent = "✅ No TypeScript errors — types are valid";
+        tsErrorsListEl.appendChild(noErr);
+        return;
+    }
+
+    display.forEach(d => {
+        const item = document.createElement("div");
+        item.className = `ts-error-item ${d.isError ? "severity-error" : "severity-warning"}`;
+
+        const icon = d.isError ? "❌" : "⚠️";
+        const codeStr = d.code ? ` <span class="ts-error-code">TS${d.code}</span>` : "";
+
+        item.innerHTML = `
+            <span class="ts-error-location">${icon} Ln ${d.startLineNumber}:${d.startColumn}</span>
+            <span class="ts-error-message">${escapeHtml(d.message)}${codeStr}</span>
+        `;
+
+        item.addEventListener("click", () => {
+            editor.revealLineInCenter(d.startLineNumber);
+            editor.setPosition({ lineNumber: d.startLineNumber, column: d.startColumn });
+            editor.focus();
+        });
+
+        tsErrorsListEl.appendChild(item);
+    });
+}
+
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function updateLineInfo(position) {
+    if (!position || !lineInfoElement || !editor) return;
+
+    const model = editor.getModel();
+    if (!model) return;
     const markers = monaco.editor.getModelMarkers({ resource: model.uri });
 
     let errorInfo = '';
@@ -177,19 +336,19 @@ function updateLineInfo(position) {
 }
 
 /* ===============================
-   RUN CODE
+   RUN CODE (manual button click)
 ================================ */
-function runCode() {
-    outputElement.innerHTML = "";
-
-    const model = editor.getModel();
-    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-    const errors = markers.filter(m => m.severity === monaco.MarkerSeverity.Error);
+async function runCode() {
+    const diagnostics = await getTypeScriptDiagnostics();
+    const errors = diagnostics.filter(d => d.category === 1);
 
     if (errors.length > 0) {
-        const errorList = errors.slice(0, 3).map(e =>
-            `Line ${e.startLineNumber}: ${e.message.substring(0, 60)}`
-        ).join('\n');
+        const model = editor.getModel();
+        const errorList = errors.slice(0, 3).map(d => {
+            const pos = model.getPositionAt(d.start);
+            const msg = typeof d.messageText === "string" ? d.messageText : flattenDiagnosticMessage(d.messageText);
+            return `Line ${pos.lineNumber}: ${msg.substring(0, 60)}`;
+        }).join('\n');
 
         const runAnyway = confirm(
             `⚠️ Found ${errors.length} TypeScript error(s):\n\n${errorList}\n\nRun anyway?`
@@ -201,46 +360,124 @@ function runCode() {
         }
     }
 
-    executeCode();
-}
-
-function executeCode() {
-    try {
-        const jsCode = ts.transpile(editor.getValue(), {
-            target: ts.ScriptTarget.ES2020,
-            module: ts.ModuleKind.ESNext
-        });
-
-        const customConsole = {
-            log: (...args) => renderLog(args, "log"),
-            error: (...args) => renderLog(args, "error"),
-            warn: (...args) => renderLog(args, "warn"),
-            info: (...args) => renderLog(args, "info")
-        };
-
-        const executeFunction = new Function(
-            'console', 'Date', 'Math', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean',
-            `try {
-                ${jsCode}
-                console.log("✅ Code executed successfully");
-            } catch (error) {
-                console.error("Runtime Error:", error.message);
-                throw error;
-            }`
-        );
-
-        executeFunction(customConsole, Date, Math, JSON, Array, Object, String, Number, Boolean);
-        showToast("Execution completed", "success");
-
-    } catch (error) {
-        renderLog([`❌ Execution Error: ${error.message}`], "error");
-        showToast("Execution failed", "error");
-        console.error(error);
-    }
+    executeCode({ silent: false });
 }
 
 /* ===============================
-   CONSOLE OUTPUT
+   EXECUTE CODE — IN A WEB WORKER
+   (keeps UI responsive; infinite loops get terminated
+    instead of freezing the tab)
+================================ */
+function executeCode({ silent = false } = {}) {
+    if (typeof ts === "undefined") {
+        if (!silent) {
+            renderLog(["❌ TypeScript compiler is not loaded yet. Please wait a moment and try again."], "error");
+            showToast("TypeScript compiler not ready", "error");
+        }
+        return;
+    }
+
+    let jsCode;
+    try {
+        jsCode = ts.transpile(editor.getValue(), {
+            target: ts.ScriptTarget.ES2020,
+            module: ts.ModuleKind.ESNext
+        });
+    } catch (err) {
+        outputElement.innerHTML = "";
+        renderLog([`❌ Compile Error: ${err.message}`], "error");
+        if (!silent) showToast("Compile failed", "error");
+        return;
+    }
+
+    runInWorker(jsCode, silent);
+}
+
+function runInWorker(jsCode, silent) {
+    if (currentWorker) {
+        currentWorker.terminate();
+        currentWorker = null;
+    }
+
+    outputElement.innerHTML = "";
+
+    const workerSource = `
+        function safeSerialize(value) {
+            try { JSON.stringify(value); return value; }
+            catch (e) { return String(value); }
+        }
+        function makeLogger(type) {
+            return function(...args) {
+                self.postMessage({ kind: 'log', logType: type, args: args.map(safeSerialize) });
+            };
+        }
+        const console = {
+            log: makeLogger('log'),
+            error: makeLogger('error'),
+            warn: makeLogger('warn'),
+            info: makeLogger('info')
+        };
+        self.onmessage = function(e) {
+            try {
+                const fn = new Function('console','Date','Math','JSON','Array','Object','String','Number','Boolean', e.data);
+                fn(console, Date, Math, JSON, Array, Object, String, Number, Boolean);
+                self.postMessage({ kind: 'done' });
+            } catch (err) {
+                self.postMessage({ kind: 'error', message: err.message });
+            }
+        };
+    `;
+
+    const blob = new Blob([workerSource], { type: "application/javascript" });
+    const workerUrl = URL.createObjectURL(blob);
+    const worker = new Worker(workerUrl);
+    currentWorker = worker;
+
+    const timeoutId = setTimeout(() => {
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        if (currentWorker === worker) currentWorker = null;
+        renderLog([`⏱️ Stopped: execution exceeded ${EXEC_TIMEOUT_MS / 1000}s — likely an infinite loop.`], "error");
+        if (!silent) showToast("Execution timed out (infinite loop?)", "error", 4000);
+    }, EXEC_TIMEOUT_MS);
+
+    worker.onmessage = (e) => {
+        const { kind, logType, args, message } = e.data;
+
+        if (kind === "log") {
+            renderLog(args, logType);
+        } else if (kind === "done") {
+            clearTimeout(timeoutId);
+            worker.terminate();
+            URL.revokeObjectURL(workerUrl);
+            if (currentWorker === worker) currentWorker = null;
+           // renderLog(["✅ Code executed successfully"], "log");
+            if (!silent) showToast("Execution completed", "success");
+        } else if (kind === "error") {
+            clearTimeout(timeoutId);
+            worker.terminate();
+            URL.revokeObjectURL(workerUrl);
+            if (currentWorker === worker) currentWorker = null;
+            renderLog([`❌ Runtime Error: ${message}`], "error");
+            if (!silent) showToast("Execution failed", "error");
+        }
+    };
+
+    worker.onerror = (err) => {
+        clearTimeout(timeoutId);
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        if (currentWorker === worker) currentWorker = null;
+        renderLog([`❌ Worker Error: ${err.message}`], "error");
+        if (!silent) showToast("Execution failed", "error");
+    };
+
+    worker.postMessage(jsCode);
+}
+
+/* ===============================
+   CONSOLE OUTPUT (runtime logs only — TS errors live in
+   the separate panel now, never mixed in here)
 ================================ */
 function renderLog(args, type) {
     const entry = document.createElement("div");
@@ -285,30 +522,62 @@ function renderLog(args, type) {
    EVENT LISTENERS
 ================================ */
 function setupEventListeners() {
-    document.getElementById("btn-run").onclick = runCode;
+    // Safe binder: never throws if an element is missing from the DOM
+    const on = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.onclick = handler;
+        } else {
+            console.warn(`setupEventListeners: #${id} not found in DOM, skipping.`);
+        }
+    };
 
-    document.getElementById("btn-clear").onclick = () => {
+    on("btn-run", runCode);
+
+    on("btn-clear", () => {
         editor.setValue("");
         outputElement.innerHTML = "";
         showToast("Editor cleared", "info");
-    };
+    });
 
-    document.getElementById("btn-save").onclick = saveCode;
-    document.getElementById("btn-share").onclick = shareCode;
+    on("btn-save", saveCode);
+    on("btn-share", shareCode);
 
-    document.getElementById("btn-check-types").onclick = () => {
-        updateErrorDisplay();
+    on("btn-check-types", async () => {
+        await updateErrorDisplay();
+        await renderTypeScriptErrors();
         showToast("Type checking complete!", "info");
-    };
+    });
 
-    // ✅ FIX: Use relative paths so navigation works when opening files locally
+    on("btn-clear-output", () => {
+        outputElement.innerHTML = "";
+        showToast("Output cleared", "info");
+    });
+
+    on("btn-copy-output", () => {
+        const text = outputElement.innerText;
+        if (!text) {
+            showToast("Nothing to copy", "warning");
+            return;
+        }
+        navigator.clipboard.writeText(text)
+            .then(() => showToast("Output copied to clipboard!", "success"))
+            .catch(() => showToast("Failed to copy output", "error"));
+    });
+
+    on("btn-format", () => {
+        if (editor) {
+            editor.getAction("editor.action.formatDocument")?.run();
+        }
+    });
+
+    // Language switcher (only runs if #languageList exists in the DOM)
     const languageList = document.getElementById("languageList");
     if (languageList) {
         languageList.addEventListener("click", (e) => {
             const item = e.target.closest("li");
             if (!item || !item.dataset.lang) return;
 
-            // Paths relative to THIS file's location (src/typescript/)
             const routes = {
                 javascript: "../editor/index.html",
                 typescript: "index.html",
@@ -377,70 +646,3 @@ function showToast(message, type = "info", duration = 2000) {
     toast.className = `toast ${type} show`;
     setTimeout(() => toast.classList.remove('show'), duration);
 }
-
-/* ===============================
-   LOAD TEST EXAMPLES BUTTON
-================================ */
-setTimeout(() => {
-    const testButton = document.createElement('button');
-    testButton.style.cssText = `
-        position: fixed; bottom: 20px; left: 20px;
-        background: linear-gradient(135deg, #6c5ce7, #00cec9);
-        color: white; border: none; padding: 12px 20px;
-        border-radius: 8px; cursor: pointer; font-weight: 600;
-        z-index: 1000; box-shadow: 0 4px 15px rgba(108,92,231,0.4);
-        transition: all 0.3s ease;
-    `;
-    testButton.textContent = '🧪 Load Test Examples';
-
-    testButton.onmouseover = () => {
-        testButton.style.transform = 'translateY(-2px)';
-        testButton.style.boxShadow = '0 6px 20px rgba(108,92,231,0.6)';
-    };
-    testButton.onmouseout = () => {
-        testButton.style.transform = 'translateY(0)';
-        testButton.style.boxShadow = '0 4px 15px rgba(108,92,231,0.4)';
-    };
-
-    testButton.onclick = () => {
-        const testCode = `// REAL-TIME TYPE CHECKING TEST
-interface Product {
-    id: number;
-    name: string;
-    price: number;
-    inStock: boolean;
-}
-
-// ❌ ERROR: Type 'string' is not assignable to type 'number'
-const product1: Product = {
-    id: "123",   // Should be a number - fix this!
-    name: "Laptop",
-    price: 999,
-    inStock: true
-};
-
-// ❌ ERROR: Property 'inStock' is missing
-const product2: Product = {
-    id: 456,
-    name: "Mouse",
-    price: 29.99
-    // Add inStock property to fix!
-};
-
-function calculateTotal(price: number, quantity: number): number {
-    return price * quantity;
-}
-
-const total1 = calculateTotal(99, 2);          // ✅ OK
-const total2 = calculateTotal("50", 3);        // ❌ string arg
-const total3 = calculateTotal(100);            // ❌ missing arg
-
-console.log("Total:", total1);
-console.log("Fix the errors above and watch them disappear!");`;
-
-        editor.setValue(testCode);
-        showToast("Test examples loaded - Try fixing the errors!", "info", 4000);
-    };
-
-    document.body.appendChild(testButton);
-}, 1000);
