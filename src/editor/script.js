@@ -330,7 +330,7 @@ require(["vs/editor/editor.main"], async function () {
     editor = monaco.editor.create(document.getElementById("editor"), {
         value: initialCode,
         language: "javascript",
-        theme: "vs-dark",
+        theme: "vs-light",
         automaticLayout: true,
         minimap: {
             enabled: true
