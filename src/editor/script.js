@@ -18,6 +18,11 @@ const FONT_MIN = 8;
 const FONT_MAX = 32;
 const FONT_STEP = 1;
 
+// --- Multi-tab state (top-level so it's visible to saveCodeToStorage() too) ---
+let tabs = [];          // { id, name, model, viewState }
+let activeTabId = null;
+let tabCounter = 0;
+const TABS_STORAGE_KEY = 'jsEditorTabs';
 
 function getOrCreateRoomId() {
     const params = new URLSearchParams(window.location.search);
@@ -53,48 +58,6 @@ function createSaveIndicator() {
     return indicator;
 }
 function getSocketUrl() {
-    // const hostname = window.location.hostname;
-    // const protocol = window.location.protocol;
-
-    // // Development environments
-    // if (hostname === "localhost" || 
-    //     hostname === "127.0.0.1" || 
-    //     hostname.includes("local")) {
-    //     return "http://localhost:4000";
-    // }
-
-    // // Your Elastic Beanstalk environment (production)
-    // if (hostname.includes("jseditor-env") || 
-    //     hostname.includes("elasticbeanstalk")) {
-    //     return "https://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com";
-    // }
-
-    // // Your production domain (adjust as needed)
-    // if (hostname === "thejseditors.com" || 
-    //     hostname === "www.thejseditors.com") {
-    //     return "https://api.thejseditors.com"; // Or your production API endpoint
-    // }
-
-    // // Fallback: Use same protocol and port as current page
-    // // If your frontend is on port 3000 and backend on 4000, this won't work in production
-    // // Better to have an environment variable or config
-    // const port = window.location.port;
-    // const baseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
-
-    // // Try to guess the API URL based on common patterns
-    // if (port === "3000") {
-    //     // React dev server typically on 3000, backend on 4000
-    //     return "http://localhost:4000";
-    // } else if (port === "5173") {
-    //     // Vite dev server typically on 5173, backend on 4000
-    //     return "http://localhost:4000";
-    // } else if (!port || port === "80" || port === "443") {
-    //     // Production - use same domain with API prefix
-    //     return `${protocol}//${hostname}/api`;
-    // }
-
-    // Default fallback
-    //return "http://localhost:4000";
     return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
 }
 const socketUrl = getSocketUrl();
@@ -106,31 +69,17 @@ async function initializeSocket() {
     try {
 
         socket = await io(socketUrl, {
-            // Conservative settings for maximum compatibility
             secure: true,
             transports: ['polling', 'websocket'],
-            upgrade: true, // Don't attempt to upgrade to WebSocket
-            forceNew: true, // Always create new connection
-            timeout: 10000, // 10 second timeout
+            upgrade: true,
+            forceNew: true,
+            timeout: 10000,
             pingTimeout: 30000,
             pingInterval: 15000,
-            reconnection: true, // We'll handle reconnection manually
+            reconnection: true,
             reconnectionAttempts: 0,
-
-            // Query parameters
-            // query: {
-            //     roomId: roomId,
-            //     client: 'editor',
-
-            //     timestamp: Date.now()
-            // },
-
-            // // Path (important!)
-            // path: '/socket.io/',
-
-            // Security
             withCredentials: false,
-            rejectUnauthorized: false // Only for testi
+            rejectUnauthorized: false
         });
 
 
@@ -142,10 +91,8 @@ async function initializeSocket() {
         });
 
         socket.on("connect_error", (error) => {
-
             updateConnectionStatus(false);
             addLogEntry(`Connection error: ${error}`, 'error');
-
             console.error("❌ Connection error:", error);
         });
 
@@ -167,15 +114,12 @@ async function initializeSocket() {
         socket.on("init-code", (code) => {
             console.log("📥 Received init-code:", code ? "Code received" : "Empty");
             if (editor && typeof editor.setValue === "function") {
-                const current = editor.getValue();
-
                 isRemoteChange = true;
                 const pos = editor.getPosition();
                 editor.setValue(code.code || '');
                 if (pos) editor.setPosition(pos);
                 setTimeout(() => { isRemoteChange = false; }, 100);
                 console.log("Received the initial code from server.");
-
             }
         });
 
@@ -183,7 +127,6 @@ async function initializeSocket() {
         socket.on("code-update", (data) => {
             const { code, updatedBy } = data;
 
-            // Critical: Skip updates from ourselves
             if (updatedBy === socket.id) {
                 console.log('🔄 Ignoring self-update');
                 return;
@@ -193,32 +136,24 @@ async function initializeSocket() {
 
             const currentCode = editor.getValue();
 
-            // Only update if different
             if (currentCode !== code) {
-                // Save current state
                 const cursorState = editor.saveViewState();
 
-                // Apply update
                 isRemoteChange = true;
                 editor.setValue(code);
                 isRemoteChange = false;
 
-                // Restore cursor if possible
                 if (cursorState) {
                     setTimeout(() => {
                         editor.restoreViewState(cursorState);
                     }, 10);
                 }
 
-                // Update tracking
                 lastSentCode = code;
-
-                // Auto-save this remote update
                 saveCodeToStorage();
             }
         });
 
-        // Handle connection/disconnection
         socket.on("user-joined", (data) => {
             console.log(`👤 User ${data.socketId} joined the room`);
         });
@@ -227,35 +162,28 @@ async function initializeSocket() {
             console.log(`👤 User ${data.socketId} left the room`);
         });
 
-        // Optional: Add typing indicator
         let typingTimer = null;
         editor.onDidChangeModelContent(() => {
             if (isRemoteChange) return;
 
-            // Send typing start
             socket.emit("typing-start", { roomId });
 
-            // Clear previous timer
             if (typingTimer) clearTimeout(typingTimer);
 
-            // Send typing end after 1 second of inactivity
             typingTimer = setTimeout(() => {
                 socket.emit("typing-end", { roomId });
             }, 1000);
         });
 
         socket.on("user-typing", (data) => {
-            // Show typing indicator for other users
             if (data.socketId !== socket.id) {
                 console.log(`✍️ User ${data.socketId} is typing...`);
-                // Update UI to show typing indicator
             }
         });
 
     } catch (error) {
         console.error("Socket initialization error:", error);
         addLogEntry(`Socket error: ${error.message}`, 'error');
-        //alert(`Socket error: ${error.message}`);
     }
 }
 
@@ -274,11 +202,13 @@ function addLogEntry(content, type = 'log') {
     outputElement.appendChild(logEntry);
     outputElement.scrollTop = outputElement.scrollHeight;
 }
+
 function saveCodeToStorage() {
+    persistTabs(); // saves all open tabs' latest content
     const code = editor.getValue();
 
     try {
-        localStorage.setItem('jsEditorCode', code);
+        localStorage.setItem('jsEditorCode', code); // legacy key, kept for backward compatibility
         const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
         saveIndicator.style.opacity = '1';
         setTimeout(() => {
@@ -317,7 +247,7 @@ function updateConnectionStatus(isConnected) {
         statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
     }
 }
-// Simple random ID generator
+
 function generateRoomId(length = 6) {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     let id = "";
@@ -327,21 +257,162 @@ function generateRoomId(length = 6) {
     return id;
 }
 
+// --- Multi-tab functions (top-level) ---
+
+function createTab(name, content = '') {
+    tabCounter++;
+    const id = `tab_${Date.now()}_${tabCounter}`;
+    const model = monaco.editor.createModel(content, 'javascript');
+
+    const tab = { id, name, model, viewState: null };
+    tabs.push(tab);
+    return tab;
+}
+
+function renderTabs() {
+    const tabList = document.getElementById('tabList');
+    if (!tabList) return; // guard in case the tab bar HTML hasn't been added yet
+    tabList.innerHTML = '';
+
+    tabs.forEach(tab => {
+        const el = document.createElement('div');
+        el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+        el.dataset.tabId = tab.id;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'tab-name';
+        nameSpan.textContent = tab.name;
+        nameSpan.title = tab.name;
+        nameSpan.addEventListener('dblclick', () => renameTab(tab.id));
+
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'tab-close';
+        closeBtn.textContent = '×';
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeTab(tab.id);
+        });
+
+        el.appendChild(nameSpan);
+        el.appendChild(closeBtn);
+        el.addEventListener('click', () => switchToTab(tab.id));
+
+        tabList.appendChild(el);
+    });
+}
+
+function switchToTab(id) {
+    if (id === activeTabId) return;
+
+    if (activeTabId) {
+        const currentTab = tabs.find(t => t.id === activeTabId);
+        if (currentTab) currentTab.viewState = editor.saveViewState();
+    }
+
+    const nextTab = tabs.find(t => t.id === id);
+    if (!nextTab) return;
+
+    activeTabId = id;
+    isRemoteChange = true; // avoid triggering socket/save logic during the swap
+    editor.setModel(nextTab.model);
+    if (nextTab.viewState) editor.restoreViewState(nextTab.viewState);
+    isRemoteChange = false;
+
+    editor.focus();
+    renderTabs();
+    persistTabs();
+}
+
+function addNewTab() {
+    const name = `untitled-${tabs.length + 1}.js`;
+    const tab = createTab(name, '');
+    switchToTab(tab.id);
+    persistTabs();
+}
+
+function closeTab(id) {
+    const index = tabs.findIndex(t => t.id === id);
+    if (index === -1) return;
+
+    if (tabs.length === 1) {
+        addLogEntry('⚠️ Cannot close the last tab', 'warn');
+        return;
+    }
+
+    const wasActive = id === activeTabId;
+    tabs[index].model.dispose();
+    tabs.splice(index, 1);
+
+    if (wasActive) {
+        const fallback = tabs[Math.max(0, index - 1)];
+        activeTabId = null; // force switchToTab to actually run
+        switchToTab(fallback.id);
+    } else {
+        renderTabs();
+    }
+
+    persistTabs();
+}
+
+function renameTab(id) {
+    const tab = tabs.find(t => t.id === id);
+    if (!tab) return;
+    const newName = prompt('Rename file:', tab.name);
+    if (newName && newName.trim()) {
+        tab.name = newName.trim();
+        renderTabs();
+        persistTabs();
+    }
+}
+
+function persistTabs() {
+    try {
+        const data = tabs.map(t => ({
+            id: t.id,
+            name: t.name,
+            content: t.model.getValue()
+        }));
+        localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify({ tabs: data, activeTabId }));
+    } catch (e) {
+        console.error('Failed to persist tabs:', e);
+    }
+}
+
+function loadTabs() {
+    try {
+        const raw = localStorage.getItem(TABS_STORAGE_KEY);
+        if (!raw) return false;
+
+        const { tabs: savedTabs, activeTabId: savedActiveId } = JSON.parse(raw);
+        if (!savedTabs || !savedTabs.length) return false;
+
+        savedTabs.forEach(t => {
+            tabCounter++;
+            const model = monaco.editor.createModel(t.content, 'javascript');
+            tabs.push({ id: t.id, name: t.name, model, viewState: null });
+        });
+
+        activeTabId = savedActiveId && tabs.some(t => t.id === savedActiveId)
+            ? savedActiveId
+            : tabs[0].id;
+
+        return true;
+    } catch (e) {
+        console.error('Failed to load tabs:', e);
+        return false;
+    }
+}
+
 
 require(["vs/editor/editor.main"], async function () {
-    const savedCode = localStorage.getItem('jsEditorCode');
-
-    const initialCode = savedCode || `console.log("Ready for Interview ....")`;
-    
 
     let currentFontSize = parseInt(localStorage.getItem('jsEditorFontSize'), 10) || 14;
 
     const fontSizeLabel = document.getElementById('fontSizeLabel');
     if (fontSizeLabel) fontSizeLabel.textContent = currentFontSize;
 
+    // Create the editor WITHOUT value/language — the active tab's model supplies both
     editor = monaco.editor.create(document.getElementById("editor"), {
-        value: initialCode,
-        language: "javascript",
         theme: "vs-light",
         automaticLayout: true,
         minimap: {
@@ -357,6 +428,20 @@ require(["vs/editor/editor.main"], async function () {
             horizontalScrollbarSize: 10
         }
     });
+
+    // Load saved tabs, or migrate the old single-file save into tab 1
+    const hadSavedTabs = loadTabs();
+    if (!hadSavedTabs) {
+        const savedCode = localStorage.getItem('jsEditorCode');
+        const initialCode = savedCode || `console.log("Ready for Interview ....")`;
+        const tab = createTab('main.js', initialCode);
+        activeTabId = tab.id;
+    }
+
+    editor.setModel(tabs.find(t => t.id === activeTabId).model);
+    renderTabs();
+
+    document.getElementById('newTabBtn')?.addEventListener('click', addNewTab);
 
     const outputElement = document.getElementById("output");
 
@@ -385,54 +470,6 @@ require(["vs/editor/editor.main"], async function () {
             /\.innerHTML\s*=/gi
         ]
     };
-
-    // const container = document.querySelector('.container');
-    // const rowLayoutBtn = document.getElementById('rowLayout');
-    // const columnLayoutBtn = document.getElementById('columnLayout');
-
-    // const savedLayout = localStorage.getItem('editorLayout') || 'row';
-    // if (savedLayout === 'column') {
-    //     container.classList.add('column-layout');
-    //     rowLayoutBtn.classList.remove('active');
-    //     columnLayoutBtn.classList.add('active');
-    // }
-
-    // rowLayoutBtn.addEventListener('click', function () {
-    //     container.classList.remove('column-layout');
-    //     rowLayoutBtn.classList.add('active');
-    //     columnLayoutBtn.classList.remove('active');
-    //     localStorage.setItem('editorLayout', 'row');
-    //     setTimeout(() => editor.layout(), 100);
-    // });
-
-    // columnLayoutBtn.addEventListener('click', function () {
-    //     container.classList.add('column-layout');
-    //     rowLayoutBtn.classList.remove('active');
-    //     columnLayoutBtn.classList.add('active');
-    //     localStorage.setItem('editorLayout', 'column');
-    //     setTimeout(() => editor.layout(), 100);
-    // });
-
-
-
-    function createSaveIndicator() {
-        const indicator = document.createElement('div');
-        indicator.id = 'saveIndicator';
-        indicator.textContent = '💾 Saved';
-        indicator.style.position = 'absolute';
-        indicator.style.bottom = '10px';
-        indicator.style.right = '10px';
-        indicator.style.background = 'rgba(0, 184, 148, 0.8)';
-        indicator.style.color = 'white';
-        indicator.style.padding = '5px 10px';
-        indicator.style.borderRadius = '4px';
-        indicator.style.fontSize = '12px';
-        indicator.style.transition = 'opacity 0.3s ease';
-        indicator.style.opacity = '0';
-        indicator.style.zIndex = '1000';
-        document.getElementById('editor').appendChild(indicator);
-        return indicator;
-    }
 
     function isRateLimited() {
         const now = Date.now();
@@ -475,6 +512,7 @@ require(["vs/editor/editor.main"], async function () {
 
         return { safe: true };
     }
+
     function setFontSize(size) {
         currentFontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, size));
         editor.updateOptions({ fontSize: currentFontSize });
@@ -485,16 +523,15 @@ require(["vs/editor/editor.main"], async function () {
             console.error('Failed to save font size:', e);
         }
     }
-    
+
     document.getElementById('fontIncrease')?.addEventListener('click', () => {
         setFontSize(currentFontSize + FONT_STEP);
     });
-    
+
     document.getElementById('fontDecrease')?.addEventListener('click', () => {
         setFontSize(currentFontSize - FONT_STEP);
     });
-    
-    // Optional: keyboard shortcuts (Ctrl/Cmd + '=' / '-')
+
     document.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
             e.preventDefault();
@@ -505,13 +542,13 @@ require(["vs/editor/editor.main"], async function () {
             setFontSize(currentFontSize - FONT_STEP);
         }
     });
+
     function safeAutoExecute() {
         if (!autoExecuteEnabled || isRateLimited()) return;
 
         const code = editor.getValue();
         const safetyCheck = isSafeCode(code);
 
-        // ✅ FIXED: was calling runCodeSafely() on unsafe code — now we block it
         if (!safetyCheck.safe) {
             addLogEntry(`⛔ Auto-execution blocked: ${safetyCheck.reason}`, 'warn');
             return;
@@ -527,6 +564,7 @@ require(["vs/editor/editor.main"], async function () {
             }
         }, EXECUTION_DELAY);
     }
+
     function runCodeSafely(code) {
         const startTime = Date.now();
         let executionTimer = null;
@@ -554,58 +592,23 @@ require(["vs/editor/editor.main"], async function () {
         }
     }
 
-    function createAutoExecuteToggle() {
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'autoExecute';
-        toggleBtn.innerHTML = '🔄 Auto-Execute: ON';
-        toggleBtn.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
-        toggleBtn.style.color = 'white';
-
-        toggleBtn.addEventListener('click', function () {
-            autoExecuteEnabled = !autoExecuteEnabled;
-            if (autoExecuteEnabled) {
-                this.innerHTML = '🔄 Auto-Execute: ON';
-                this.style.background = 'linear-gradient(135deg, #00b894, #20bf6b)';
-                addLogEntry('✅ Auto-execution enabled', 'info');
-                safeAutoExecute();
-            } else {
-                this.innerHTML = '⏸️ Auto-Execute: OFF';
-                this.style.background = 'linear-gradient(135deg, #ff7675, #d63031)';
-                if (autoExecuteTimer) {
-                    clearTimeout(autoExecuteTimer);
-                }
-                addLogEntry('⏸️ Auto-execution disabled', 'warn');
-            }
-        });
-
-        controlsDiv.appendChild(toggleBtn);
-    }
-
-    //createAutoExecuteToggle();
-
-
-
     editor.onDidChangeModelContent((event) => {
-        // Skip if this is a remote change
         if (isRemoteChange) return;
 
         const code = editor.getValue();
 
-        // Debounce the socket emission to prevent flooding
         if (debounceSendTimer) {
             clearTimeout(debounceSendTimer);
         }
 
         debounceSendTimer = setTimeout(() => {
-            // Only send if code actually changed
             if (code !== lastSentCode) {
                 try {
                     socket.emit("code-change", {
                         roomId,
                         code,
                         timestamp: Date.now(),
-                        senderId: socket.id // Include sender ID for filtering
+                        senderId: socket.id
                     });
                     lastSentCode = code;
                     console.log('📤 Sent code update');
@@ -613,9 +616,8 @@ require(["vs/editor/editor.main"], async function () {
                     console.error("Error emitting code-change:", e);
                 }
             }
-        }, 150); // 150ms debounce for socket sends
+        }, 150);
 
-        // Auto-save with separate debounce
         if (saveTimer) {
             clearTimeout(saveTimer);
         }
@@ -624,7 +626,6 @@ require(["vs/editor/editor.main"], async function () {
             console.log('💾 Auto-saved to local storage');
         }, 1000);
 
-        // Auto-execute with separate debounce
         if (autoExecuteEnabled && code.trim()) {
             if (changeTimer) {
                 clearTimeout(changeTimer);
@@ -815,206 +816,12 @@ require(["vs/editor/editor.main"], async function () {
         }
     };
 
-
-
-    // function runCode() {
-    //     const code = editor.getValue();
-    //     if (!code) return;
-
-    //     outputElement.innerHTML = "";
-    //     logCount = 0;
-
-    //     const originalConsole = { ...console };
-
-    //     const seenObjects = new WeakSet();
-    //     const MAX_OUTPUT_SIZE = 100000;
-    //     let currentOutputSize = 0;
-
-    //     function createObjectInspector(obj, depth = 0, maxDepth = 3, seen = new WeakSet()) {
-    //         if (currentOutputSize > MAX_OUTPUT_SIZE) {
-    //             return '<span class="object-error">[Output truncated: Too large]</span>';
-    //         }
-
-    //         if (depth > maxDepth) return '<span class="object-depth">...</span>';
-    //         if (obj === null) return '<span class="object-null">null</span>';
-    //         if (obj === undefined) return '<span class="object-undefined">undefined</span>';
-    //         if (typeof obj !== 'object') {
-    //             if (typeof obj === 'string') return `<span class="object-string">"${obj}"</span>`;
-    //             if (typeof obj === 'number') return `<span class="object-number">${obj}</span>`;
-    //             if (typeof obj === 'boolean') return `<span class="object-boolean">${obj}</span>`;
-    //             return `<span class="object-value">${obj}</span>`;
-    //         }
-
-    //         if (seen.has(obj)) {
-    //             return '<span class="object-circular">[Circular Reference]</span>';
-    //         }
-    //         seen.add(obj);
-
-    //         let output = '<div class="object-inspector">';
-    //         output += `<span class="object-type">[${obj.constructor?.name || 'Object'}]</span> {`;
-    //         currentOutputSize += output.length;
-
-    //         const props = Object.getOwnPropertyNames(obj);
-    //         if (props.length > 0) {
-    //             output += '<ul style="margin: 0; padding-left: 20px;">';
-    //             for (const prop of props) {
-    //                 let value;
-    //                 try {
-    //                     value = obj[prop];
-    //                 } catch (e) {
-    //                     value = `<span class="object-error">[Error: ${e.message}]</span>`;
-    //                 }
-    //                 const valueDisplay = typeof value === 'object' && value !== null
-    //                     ? createObjectInspector(value, depth + 1, maxDepth, seen)
-    //                     : createObjectInspector(value, depth + 1, maxDepth, seen);
-    //                 output += `<li><span class="object-key">${prop}</span>: ${valueDisplay}</li>`;
-    //                 currentOutputSize += valueDisplay.length;
-    //                 if (currentOutputSize > MAX_OUTPUT_SIZE) {
-    //                     output += '<li><span class="object-error">[Output truncated: Too large]</span></li>';
-    //                     break;
-    //                 }
-    //             }
-    //             output += '</ul>';
-    //         }
-
-    //         let proto = Object.getPrototypeOf(obj);
-    //         if (proto && depth < maxDepth) {
-    //             output += '<details style="margin-top: 8px; padding-left: 20px;">';
-    //             output += `<summary><span class="object-proto">[[Prototype]]: [${proto.constructor?.name || 'Object'}]</span></summary>`;
-    //             output += createObjectInspector(proto, depth + 1, maxDepth, new WeakSet());
-    //             output += '</details>';
-    //             currentOutputSize += output.length;
-    //         }
-
-    //         output += '}</div>';
-    //         return output;
-    //     }
-
-    //     console.log = function (...args) {
-    //         currentOutputSize = 0;
-    //         let content = args.map(arg => {
-    //             if (typeof arg === 'object' && arg !== null) {
-    //                 return createObjectInspector(arg, 0, 3, new WeakSet());
-    //             } else if (arg === undefined) {
-    //                 return '<span class="object-undefined">undefined</span>';
-    //             } else if (arg === null) {
-    //                 return '<span class="object-null">null</span>';
-    //             } else if (typeof arg === 'string') {
-    //                 return `<span class="object-string">"${arg}"</span>`;
-    //             } else if (typeof arg === 'number') {
-    //                 return `<span class="object-number">${arg}</span>`;
-    //             } else if (typeof arg === 'boolean') {
-    //                 return `<span class="object-boolean">${arg}</span>`;
-    //             } else {
-    //                 return `<span class="object-value">${arg}</span>`;
-    //             }
-    //         }).join(' ');
-    //         addLogEntry(content, 'log');
-    //     };
-
-    //     console.dir = function (obj) {
-    //         currentOutputSize = 0;
-    //         const content = createObjectInspector(obj, 0, 5, new WeakSet());
-    //         addLogEntry(content, 'dir');
-    //     };
-
-    //     console.table = function (data, columns) {
-    //         if (!data) return;
-    //         currentOutputSize = 0;
-
-    //         let output = '<table style="border-collapse: collapse; width: 100%; font-size: 12px;">';
-    //         const isArray = Array.isArray(data);
-    //         const rows = isArray ? data : [data];
-    //         const keys = columns || (rows[0] ? Object.keys(rows[0]) : []);
-
-    //         output += '<thead><tr>';
-    //         if (isArray) output += '<th style="border: 1px solid #ccc; padding: 8px;">(index)</th>';
-    //         for (const key of keys) {
-    //             output += `<th style="border: 1px solid #ccc; padding: 8px;">${key}</th>`;
-    //         }
-    //         output += '</tr></thead>';
-
-    //         output += '<tbody>';
-    //         for (let i = 0; i < rows.length && currentOutputSize < MAX_OUTPUT_SIZE; i++) {
-    //             const row = rows[i];
-    //             output += '<tr>';
-    //             if (isArray) output += `<td style="border: 1px solid #ccc; padding: 8px;">${i}</td>`;
-    //             for (const key of keys) {
-    //                 const value = row[key];
-    //                 const display = typeof value === 'object' && value !== null
-    //                     ? createObjectInspector(value, 0, 1, new WeakSet())
-    //                     : createObjectInspector(value, 0, 1, new WeakSet());
-    //                 output += `<td style="border: 1px solid #ccc; padding: 8px;">${display}</td>`;
-    //                 currentOutputSize += display.length;
-    //                 if (currentOutputSize > MAX_OUTPUT_SIZE) {
-    //                     output += '<tr><td colspan="' + (keys.length + (isArray ? 1 : 0)) +
-    //                         '" style="border: 1px solid #ccc; padding: 8px;">[Output truncated: Too large]</td></tr>';
-    //                     break;
-    //                 }
-    //             }
-    //             output += '</tr>';
-    //         }
-    //         output += '</tbody></table>';
-
-    //         addLogEntry(output, 'table');
-    //     };
-
-    //     console.error = function (...args) {
-    //         currentOutputSize = 0;
-    //         const content = args.map(arg => {
-    //             if (arg instanceof Error) {
-    //                 return `<strong>${arg.name}:</strong> ${arg.message}<br><pre style="margin-top: 8px; font-size: 11px; opacity: 0.8;">${arg.stack}</pre>`;
-    //             }
-    //             return String(arg);
-    //         }).join(' ');
-    //         addLogEntry(content, 'error');
-    //     };
-
-    //     console.warn = function (...args) {
-    //         currentOutputSize = 0;
-    //         const content = args.join(' ');
-    //         addLogEntry(content, 'warn');
-    //     };
-
-    //     console.info = function (...args) {
-    //         currentOutputSize = 0;
-    //         const content = args.join(' ');
-    //         addLogEntry(content, 'info');
-    //     };
-
-    //     window.onunhandledrejection = function (event) {
-    //         console.error("Unhandled Promise Rejection:", event.reason);
-    //     };
-
-    //     try {
-    //         const result = eval(code);
-
-    //         if (result instanceof Promise) {
-    //             result.catch(error => {
-    //                 console.error(error);
-    //             });
-    //         }
-    //     } catch (error) {
-    //         console.error(error);
-    //     } finally {
-    //         setTimeout(() => {
-    //             console.log = originalConsole.log;
-    //             console.error = originalConsole.error;
-    //             console.warn = originalConsole.warn;
-    //             console.info = originalConsole.info;
-    //             console.dir = originalConsole.dir;
-    //             console.table = originalConsole.table;
-    //         }, 1000);
-    //     }
-    // }
-
-    let activeWorker = null; // track running worker globally (put this near your other globals)
+    let activeWorker = null;
 
     function runCode() {
         const code = editor.getValue();
         if (!code) return;
 
-        // Kill any previously running worker
         if (activeWorker) {
             activeWorker.terminate();
             activeWorker = null;
@@ -1024,7 +831,6 @@ require(["vs/editor/editor.main"], async function () {
         outputElement.innerHTML = '';
         logCount = 0;
 
-        // Build the worker script — intercept console inside it
         const workerScript = `
         const _logs = [];
 
@@ -1063,7 +869,6 @@ require(["vs/editor/editor.main"], async function () {
         activeWorker = new Worker(workerUrl);
         URL.revokeObjectURL(workerUrl);
 
-        // Timeout — kill worker if it runs too long (catches infinite loops)
         const killTimer = setTimeout(() => {
             if (activeWorker) {
                 activeWorker.terminate();
@@ -1081,7 +886,6 @@ require(["vs/editor/editor.main"], async function () {
                 return;
             }
 
-            // Render the message
             const content = args.map(arg => {
                 if (arg === null) return '<span class="object-null">null</span>';
                 if (arg === undefined) return '<span class="object-undefined">undefined</span>';
@@ -1097,7 +901,6 @@ require(["vs/editor/editor.main"], async function () {
 
         activeWorker.onerror = (e) => {
             clearTimeout(killTimer);
-            //addLogEntry(`❌ ${e.message}`, 'error');
             activeWorker = null;
         };
 
@@ -1208,39 +1011,34 @@ require(["vs/editor/editor.main"], async function () {
             formatCode();
         }
     });
+
     languageList.addEventListener("click", (e) => {
         const item = e.target.closest("li");
         if (!item) return;
 
-        const langKey = item.dataset.lang; // "javascript", "typescript", etc.
+        const langKey = item.dataset.lang;
         if (!langKey) return;
 
         console.log("Selected language:", langKey);
         language = langKey
 
-        // UI: active state
         document
             .querySelectorAll("#languageList li")
             .forEach(li => li.classList.remove("active"));
 
         item.classList.add("active");
 
-        // // Switch Monaco language
         switchLanguage(langKey);
     });
 
     function switchLanguage(lang) {
-
-
         switch (lang) {
             case "javascript":
                 window.location.href = "/src/editor/index.html";
                 break;
-
             case "typescript":
-                window.location.href = "/src/typescript/index.html"; // Leading slash!
+                window.location.href = "/src/typescript/index.html";
                 break;
-
             case "html":
                 window.location.href = "/src/html/index.html";
                 break;
@@ -1250,16 +1048,15 @@ require(["vs/editor/editor.main"], async function () {
             case "json":
                 window.location.href = "/src/jsonformatter/index.html";
                 break;
-
-
             default:
                 console.warn(`No runner defined for ${lang}`);
         }
     }
+
     const toggle = document.getElementById("autoExecuteToggle");
     const label = document.getElementById("autoExecuteLabel");
 
-    toggle.addEventListener("change", function () {
+    toggle?.addEventListener("change", function () {
         autoExecuteEnabled = this.checked;
 
         if (autoExecuteEnabled) {
@@ -1304,7 +1101,6 @@ require(["vs/editor/editor.main"], async function () {
                 addLogEntry(`Room: ${roomId}`, 'info');
 
                 if (socket.connected) {
-                    // Test emit
                     socket.emit("test", {
                         message: "Debug test",
                         timestamp: Date.now(),
@@ -1325,11 +1121,8 @@ require(["vs/editor/editor.main"], async function () {
         console.log('Page URL:', window.location.href);
         console.log('Protocol:', window.location.protocol);
         console.log('Socket.IO loaded:', typeof io !== 'undefined');
-
-        // Test WebSocket support
         console.log('WebSocket supported:', 'WebSocket' in window);
 
-        // Test connection to your server
         const testWs = new WebSocket('wss://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com');
 
         testWs.onopen = () => {
@@ -1343,9 +1136,8 @@ require(["vs/editor/editor.main"], async function () {
         };
     }
 
-
     addDebugButton()
-    // Add copy room URL button
+
     function addCopyRoomButton() {
         const copyBtn = document.createElement('button');
         copyBtn.textContent = '📋 Copy Room URL';

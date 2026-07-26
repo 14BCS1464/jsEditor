@@ -1077,3 +1077,207 @@ button:focus-visible {
         box-shadow: none;
     }
 }
+
+/* ===== Tab Bar Container ===== */
+.tab-bar {
+    display: flex;
+    align-items: flex-end;
+
+    padding: 8px 8px 0 8px;
+    gap: 4px;
+    position: relative;
+    height: 46px;
+  
+}
+
+.tab-list {
+    display: flex;
+    align-items: flex-end;
+    flex: 1;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #4a4a6a transparent;
+    padding-bottom: 0;
+}
+
+.tab-list::-webkit-scrollbar {
+    height: 3px;
+}
+
+.tab-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tab-list::-webkit-scrollbar-thumb {
+    background: #4a4a6a;
+  
+}
+
+.tab-list::-webkit-scrollbar-thumb:hover {
+    background: #6c6c96;
+}
+
+/* ===== Individual Tab — rounded top like a browser tab ===== */
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    min-width: 120px;
+    max-width: 190px;
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-weight: 500;
+    color: #9a9ab8;
+    background: #26263e;
+    border-radius: 10px 10px 0 0;
+    position: relative;
+
+    user-select: none;
+    transform: translateY(0);
+}
+
+.tab:hover:not(.active) {
+    background: #30304e;
+    color: #c5c5e0;
+    transform: translateY(-1px);
+}
+
+.tab.active {
+    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+    color: #1a1a2e;
+   
+    z-index: 2;
+}
+
+/* Glowing gradient bar on top of the active tab */
+.tab.active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(90deg, #00d9a3, #00b894, #20bf6b);
+}
+
+/* Rounded "notch" effect connecting active tab smoothly to editor below */
+.tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: #fafafa;
+}
+
+.tab-icon {
+    font-size: 13px;
+    opacity: 0.8;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 2px rgba(255, 214, 0, 0.4));
+}
+
+.tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    letter-spacing: 0.2px;
+}
+
+.tab.unsaved .tab-name::after {
+    content: " ●";
+    font-size: 8px;
+    color: #ff7675;
+    vertical-align: middle;
+}
+
+.tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    color: inherit;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+    opacity: 0.6;
+    transform: scale(1);
+}
+
+.tab-close:hover {
+    opacity: 1 !important;
+    background: rgba(214, 48, 49, 0.15);
+    color: #d63031 !important;
+    transform: scale(1.15) !important;
+}
+
+/* ===== New Tab Button ===== */
+.new-tab-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    margin-bottom: 6px;
+    margin-left: 2px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(183, 171, 171, 0.06);
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 300;
+    color: #9a9ab8;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.new-tab-btn:hover {
+    background: linear-gradient(135deg, #00d9a3, #00b894);
+    color: #ffffff;
+    transform: rotate(90deg) scale(1.08);
+    box-shadow: 0 4px 14px rgba(0, 184, 148, 0.4);
+}
+
+.new-tab-btn:active {
+    transform: rotate(90deg) scale(0.92);
+}
+
+/* ===== Scroll edge fades ===== */
+.tab-bar::before,
+.tab-bar::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.tab-bar::before {
+    left: 8px;
+    background: linear-gradient(90deg, #1a1a2e, transparent);
+}
+
+.tab-bar::after {
+    right: 44px;
+    background: linear-gradient(270deg, #1a1a2e, transparent);
+}
