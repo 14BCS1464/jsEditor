@@ -1235,28 +1235,80 @@ color: #000016;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
+
     height: 34px;
     flex-shrink: 0;
-    margin-bottom: 6px;
-    margin-left: 2px;
+
     border: none;
-    border-radius: 50%;
+
     background: rgba(255, 255, 255, 0.06);
     cursor: pointer;
-    font-size: 18px;
-    font-weight: 300;
-    color: #9a9ab8;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #00d9a3, #00b894);
+   
 }
 
 .new-tab-btn:hover {
-    background: linear-gradient(135deg, #00d9a3, #00b894);
+    
     color: #ffffff;
-    transform: rotate(90deg) scale(1.08);
-    box-shadow: 0 4px 14px rgba(0, 184, 148, 0.4);
+
 }
 
 .new-tab-btn:active {
     transform: rotate(90deg) scale(0.92);
+}
+
+/* ===== Font Size Control (pill/segmented style) ===== */
+.font-size-control {
+    display: inline-flex;
+    align-items: center;
+    background: #26263e;
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.font-size-control button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #9a9ab8;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.font-size-control button:hover {
+    background: linear-gradient(135deg, #00d9a3, #00b894);
+    color: #ffffff;
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0, 184, 148, 0.4);
+}
+
+.font-size-control button:active {
+    transform: scale(0.92);
+}
+
+#fontSizeLabel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 26px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e0e0f0;
+    letter-spacing: 0.3px;
+    user-select: none;
 }

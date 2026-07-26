@@ -30,22 +30,23 @@
             </h2>
             <div style="display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
             justify-content: center;">
+              <button id="newTabBtn" class="new-tab-btn" title="New file">New Tab</button>
                 <button id="run">▶️ Run </button>
                 <button id="addfile">Add </button>
                 <button id="download">Download </button>
                 <button id="format">Format </button>
-
-<button id="fontDecrease" title="Decrease font size">A-</button>
-<span id="fontSizeLabel" style="align-self:center; font-size:12px; min-width:28px; text-align:center;">14</span>
-<button id="fontIncrease" title="Increase font size">A+</button>
-
+                <div class="font-size-control">
+                    <button id="fontDecrease" title="Decrease font size">A-</button>
+                    <span id="fontSizeLabel">14</span>
+                    <button id="fontIncrease" title="Increase font size">A+</button>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="tabBar" class="tab-bar">
         <div id="tabList" class="tab-list"></div>
-        <button id="newTabBtn" class="new-tab-btn" title="New file"> + </button>
+      
     </div>
     <div class="container">
         <!-- ✅ Right-side language list -->
