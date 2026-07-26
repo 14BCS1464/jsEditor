@@ -1079,15 +1079,16 @@ button:focus-visible {
 }
 
 /* ===== Tab Bar Container ===== */
+/* ===== Tab Bar Container ===== */
 .tab-bar {
     display: flex;
     align-items: flex-end;
-
+   
     padding: 8px 8px 0 8px;
     gap: 4px;
     position: relative;
     height: 46px;
-  
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .tab-list {
@@ -1104,7 +1105,7 @@ button:focus-visible {
 }
 
 .tab-list::-webkit-scrollbar {
-    height: 3px;
+    height: 5px;
 }
 
 .tab-list::-webkit-scrollbar-track {
@@ -1113,7 +1114,7 @@ button:focus-visible {
 
 .tab-list::-webkit-scrollbar-thumb {
     background: #4a4a6a;
-  
+    border-radius: 10px;
 }
 
 .tab-list::-webkit-scrollbar-thumb:hover {
@@ -1130,14 +1131,14 @@ button:focus-visible {
     max-width: 190px;
     flex-shrink: 0;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-weight: 500;
     color: #9a9ab8;
     background: #26263e;
     border-radius: 10px 10px 0 0;
     position: relative;
-
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     transform: translateY(0);
 }
@@ -1151,7 +1152,7 @@ button:focus-visible {
 .tab.active {
     background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
     color: #1a1a2e;
-   
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.12);
     z-index: 2;
 }
 
@@ -1241,7 +1242,7 @@ button:focus-visible {
     margin-left: 2px;
     border: none;
     border-radius: 50%;
-    background: rgba(183, 171, 171, 0.06);
+    background: rgba(255, 255, 255, 0.06);
     cursor: pointer;
     font-size: 18px;
     font-weight: 300;
@@ -1258,26 +1259,4 @@ button:focus-visible {
 
 .new-tab-btn:active {
     transform: rotate(90deg) scale(0.92);
-}
-
-/* ===== Scroll edge fades ===== */
-.tab-bar::before,
-.tab-bar::after {
-    content: "";
-    position: absolute;
-    top: 8px;
-    bottom: 0;
-    width: 24px;
-    pointer-events: none;
-    z-index: 3;
-}
-
-.tab-bar::before {
-    left: 8px;
-    background: linear-gradient(90deg, #1a1a2e, transparent);
-}
-
-.tab-bar::after {
-    right: 44px;
-    background: linear-gradient(270deg, #1a1a2e, transparent);
 }
