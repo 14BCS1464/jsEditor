@@ -1125,7 +1125,7 @@ button:focus-visible {
 .tab {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: px;
     padding: 10px 14px;
     min-width: 120px;
     max-width: 190px;
@@ -1134,8 +1134,8 @@ button:focus-visible {
     font-size: 13px;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-weight: 500;
-    color: #9a9ab8;
-    background: #26263e;
+    color: #f4f4f9;
+    background: #23dca8;
     border-radius: 10px 10px 0 0;
     position: relative;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1145,13 +1145,13 @@ button:focus-visible {
 
 .tab:hover:not(.active) {
     background: #30304e;
-    color: #c5c5e0;
+    color: #ffffff;
     transform: translateY(-1px);
 }
 
 .tab.active {
     background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-    color: #1a1a2e;
+color: #000016;
     box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.12);
     z-index: 2;
 }
@@ -1165,7 +1165,7 @@ button:focus-visible {
     right: 12px;
     height: 3px;
     border-radius: 0 0 3px 3px;
-    background: linear-gradient(90deg, #00d9a3, #00b894, #20bf6b);
+    background: linear-gradient(90deg, #00d9a3, #de5506, #20bf6b);
 }
 
 /* Rounded "notch" effect connecting active tab smoothly to editor below */
