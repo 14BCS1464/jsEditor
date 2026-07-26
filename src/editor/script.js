@@ -13,6 +13,12 @@ let saveTimer = null;
 let language = 'Javascript'
 let lastSentCode = '';
 let debounceSendTimer = null;
+
+const FONT_MIN = 8;
+const FONT_MAX = 32;
+const FONT_STEP = 1;
+
+
 function getOrCreateRoomId() {
     const params = new URLSearchParams(window.location.search);
     let roomId = params.get("room");
@@ -325,7 +331,13 @@ function generateRoomId(length = 6) {
 require(["vs/editor/editor.main"], async function () {
     const savedCode = localStorage.getItem('jsEditorCode');
 
-    const initialCode = savedCode || `console.log("Developed By sunil...")`;
+    const initialCode = savedCode || `console.log("Ready for Interview ....")`;
+    
+
+    let currentFontSize = parseInt(localStorage.getItem('jsEditorFontSize'), 10) || 14;
+
+    const fontSizeLabel = document.getElementById('fontSizeLabel');
+    if (fontSizeLabel) fontSizeLabel.textContent = currentFontSize;
 
     editor = monaco.editor.create(document.getElementById("editor"), {
         value: initialCode,
@@ -337,7 +349,7 @@ require(["vs/editor/editor.main"], async function () {
         },
         scrollBeyondLastLine: true,
         fontFamily: "'Fira Code', 'Consolas', monospace",
-        fontSize: 14,
+        fontSize: currentFontSize,
         lineNumbers: "on",
         roundedSelection: true,
         scrollbar: {
@@ -463,7 +475,36 @@ require(["vs/editor/editor.main"], async function () {
 
         return { safe: true };
     }
-
+    function setFontSize(size) {
+        currentFontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, size));
+        editor.updateOptions({ fontSize: currentFontSize });
+        if (fontSizeLabel) fontSizeLabel.textContent = currentFontSize;
+        try {
+            localStorage.setItem('jsEditorFontSize', currentFontSize);
+        } catch (e) {
+            console.error('Failed to save font size:', e);
+        }
+    }
+    
+    document.getElementById('fontIncrease')?.addEventListener('click', () => {
+        setFontSize(currentFontSize + FONT_STEP);
+    });
+    
+    document.getElementById('fontDecrease')?.addEventListener('click', () => {
+        setFontSize(currentFontSize - FONT_STEP);
+    });
+    
+    // Optional: keyboard shortcuts (Ctrl/Cmd + '=' / '-')
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+            e.preventDefault();
+            setFontSize(currentFontSize + FONT_STEP);
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+            e.preventDefault();
+            setFontSize(currentFontSize - FONT_STEP);
+        }
+    });
     function safeAutoExecute() {
         if (!autoExecuteEnabled || isRateLimited()) return;
 
