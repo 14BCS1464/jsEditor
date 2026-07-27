@@ -330,41 +330,6 @@ function addNewTab() {
     persistTabs();
 }
 
-function closeTab(id) {
-    const index = tabs.findIndex(t => t.id === id);
-    if (index === -1) return;
-
-    if (tabs.length === 1) {
-        addLogEntry('⚠️ Cannot close the last tab', 'warn');
-        return;
-    }
-
-    const wasActive = id === activeTabId;
-    tabs[index].model.dispose();
-    tabs.splice(index, 1);
-
-    if (wasActive) {
-        const fallback = tabs[Math.max(0, index - 1)];
-        activeTabId = null; // force switchToTab to actually run
-        switchToTab(fallback.id);
-    } else {
-        renderTabs();
-    }
-
-    persistTabs();
-}
-
-function renameTab(id) {
-    const tab = tabs.find(t => t.id === id);
-    if (!tab) return;
-    const newName = prompt('Rename file:', tab.name);
-    if (newName && newName.trim()) {
-        tab.name = newName.trim();
-        renderTabs();
-        persistTabs();
-    }
-}
-
 function persistTabs() {
     try {
         const data = tabs.map(t => ({
@@ -403,6 +368,199 @@ function loadTabs() {
     }
 }
 
+// ========== Custom Modal Helper (top-level) ==========
+function createModal({ title, content, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Cancel' }) {
+    // Remove any existing modal
+    const existing = document.getElementById('customModal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'customModal';
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, sans-serif;
+    `;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: white;
+        border-radius: 10px;
+        padding: 24px;
+        width: 360px;
+        max-width: 90vw;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        animation: modalFadeIn 0.2s ease;
+    `;
+
+    modal.innerHTML = `
+        <h3 style="margin: 0 0 16px; font-size: 18px; color: #2d3436;">${title}</h3>
+        <div id="modalContent" style="margin-bottom: 20px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="modalCancel" style="
+                padding: 8px 16px;
+                border: 1px solid #dfe6e9;
+                background: #f5f6fa;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+            ">${cancelText}</button>
+            <button id="modalConfirm" style="
+                padding: 8px 16px;
+                border: none;
+                background: #6c5ce7;
+                color: white;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+            ">${confirmText}</button>
+        </div>
+    `;
+
+    // Add animation only once
+    if (!document.getElementById('modalFadeInStyle')) {
+        const style = document.createElement('style');
+        style.id = 'modalFadeInStyle';
+        style.textContent = `
+            @keyframes modalFadeIn {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const contentEl = modal.querySelector('#modalContent');
+    contentEl.appendChild(content);
+
+    // Focus first input if present
+    const input = contentEl.querySelector('input');
+    if (input) {
+        setTimeout(() => input.focus(), 50);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') modal.querySelector('#modalConfirm').click();
+            if (e.key === 'Escape') modal.querySelector('#modalCancel').click();
+        });
+    }
+
+    return new Promise((resolve) => {
+        modal.querySelector('#modalConfirm').onclick = () => {
+            const result = onConfirm ? onConfirm() : true;
+            overlay.remove();
+            resolve(result);
+        };
+        modal.querySelector('#modalCancel').onclick = () => {
+            if (onCancel) onCancel();
+            overlay.remove();
+            resolve(null);
+        };
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+                resolve(null);
+            }
+        });
+    });
+}
+
+function renameTab(id) {
+    const tab = tabs.find(t => t.id === id);
+    if (!tab) return;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = tab.name;
+    input.style.cssText = `
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #dfe6e9;
+        border-radius: 6px;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+    `;
+    input.addEventListener('focus', () => input.select());
+
+    createModal({
+        title: 'Rename Tab',
+        content: input,
+        confirmText: 'Rename',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+            const newName = input.value.trim();
+            if (newName) {
+                tab.name = newName;
+                renderTabs();
+                persistTabs();
+            }
+            return true;
+        }
+    });
+}
+
+function closeTab(id) {
+    const index = tabs.findIndex(t => t.id === id);
+    if (index === -1) return;
+
+    if (tabs.length === 1) {
+        addLogEntry('⚠️ Cannot close the last tab', 'warn');
+        return;
+    }
+
+    const tab = tabs[index];
+    const hasContent = tab.model.getValue().trim().length > 0;
+
+    const doClose = () => {
+        const wasActive = id === activeTabId;
+        tabs[index].model.dispose();
+        tabs.splice(index, 1);
+
+        if (wasActive) {
+            const fallback = tabs[Math.max(0, index - 1)];
+            activeTabId = null;
+            switchToTab(fallback.id);
+        } else {
+            renderTabs();
+        }
+
+        persistTabs();
+    };
+
+    if (hasContent) {
+        const message = document.createElement('div');
+        message.innerHTML = `
+            <p style="margin: 0 0 8px; color: #2d3436;">
+                <strong>"${tab.name}"</strong> has unsaved content.
+            </p>
+            <p style="margin: 0; color: #636e72; font-size: 13px;">
+                Are you sure you want to close this tab?
+            </p>
+        `;
+
+        createModal({
+            title: 'Close Tab?',
+            content: message,
+            confirmText: 'Close Tab',
+            cancelText: 'Keep Open',
+            onConfirm: () => {
+                doClose();
+                return true;
+            }
+        });
+    } else {
+        // Empty tab → close immediately
+        doClose();
+    }
+}
 
 require(["vs/editor/editor.main"], async function () {
 
@@ -706,96 +864,6 @@ require(["vs/editor/editor.main"], async function () {
         return `<span class="object-value">${String(obj)}</span>`;
     }
 
-    // function createPrototypeSection(prototype, depth = 4, visitedProtos = new WeakSet()) {
-    //     if (!prototype || depth > 5) return '';
-
-    //     const protoKey = prototype.constructor ? prototype.constructor.name : 'Unknown';
-    //     if (visitedProtos.has(prototype)) {
-    //         return `<div class="prototype-section">
-    //             <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular reference)</div>
-    //         </div>`;
-    //     }
-    //     visitedProtos.add(prototype);
-
-    //     const id = `proto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    //     let html = `<div class="prototype-section">`;
-    //     html += `<div class="prototype-header expandable" onclick="toggleExpand('${id}')">`;
-    //     html += `🔗 [[Prototype]]: ${protoKey}`;
-    //     html += `</div>`;
-    //     html += `<div id="${id}" class="prototype-content collapsed">`;
-
-    //     try {
-    //         const allKeys = Object.getOwnPropertyNames(prototype);
-    //         const descriptors = Object.getOwnPropertyDescriptors(prototype);
-
-    //         const sortedKeys = allKeys
-    //             .filter(key => key !== 'constructor')
-    //             .sort((a, b) => {
-    //                 const aIsFunction = typeof descriptors[a]?.value === 'function';
-    //                 const bIsFunction = typeof descriptors[b]?.value === 'function';
-    //                 if (aIsFunction && !bIsFunction) return -1;
-    //                 if (!aIsFunction && bIsFunction) return 1;
-    //                 return a.localeCompare(b);
-    //             });
-
-    //         let methodCount = 0;
-    //         let propertyCount = 0;
-
-    //         sortedKeys.forEach(key => {
-    //             const descriptor = descriptors[key];
-    //             if (!descriptor) return;
-
-    //             const isMethod = typeof descriptor.value === 'function';
-    //             const isGetter = typeof descriptor.get === 'function';
-    //             const isSetter = typeof descriptor.set === 'function';
-
-    //             if (isMethod) {
-    //                 methodCount++;
-    //                 const params = getFunctionParams(descriptor.value);
-    //                 html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(0, 184, 148, 0.1); border-radius: 4px;">`;
-    //                 html += `<span class="object-key">⚡ ${key}:</span> `;
-    //                 html += `<span class="object-value">ƒ ${key}(${params})</span>`;
-    //                 html += `</div>`;
-    //             } else if (isGetter || isSetter) {
-    //                 propertyCount++;
-    //                 html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(108, 92, 231, 0.1); border-radius: 4px;">`;
-    //                 html += `<span class="object-key">🔧 ${key}:</span> `;
-    //                 if (isGetter && isSetter) {
-    //                     html += `<span class="object-value">[Getter/Setter]</span>`;
-    //                 } else if (isGetter) {
-    //                     html += `<span class="object-value">[Getter]</span>`;
-    //                 } else {
-    //                     html += `<span class="object-value">[Setter]</span>`;
-    //                 }
-    //                 html += `</div>`;
-    //             } else {
-    //                 propertyCount++;
-    //                 html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(255, 118, 117, 0.1); border-radius: 4px;">`;
-    //                 html += `<span class="object-key">📦 ${key}:</span> `;
-    //                 try {
-    //                     html += createObjectInspector(descriptor.value, 0, 1, new WeakSet());
-    //                 } catch (e) {
-    //                     html += `<span class="object-value">[Cannot access]</span>`;
-    //                 }
-    //                 html += `</div>`;
-    //             }
-    //         });
-
-    //         html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
-    //         html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
-    //         html += `</div>`;
-    //     } catch (error) {
-    //         html += `<div style="color: #ff6b6b; font-style: italic;">Error inspecting prototype: ${error.message}</div>`;
-    //     }
-
-    //     const parentProto = Object.getPrototypeOf(prototype);
-    //     if (parentProto && parentProto !== Object.prototype && depth < 4) {
-    //         html += createPrototypeSection(parentProto, depth + 1, visitedProtos);
-    //     }
-
-    //     html += `</div></div>`;
-    //     return html;
-    // }
     function createPrototypeSection(prototype, depth = 5, visitedProtos = new WeakSet()) {
         if (!prototype || depth > 6) return '';
     
@@ -919,100 +987,6 @@ require(["vs/editor/editor.main"], async function () {
 
     let activeWorker = null;
 
-    // function runCode() {
-    //     const code = editor.getValue();
-    //     if (!code) return;
-
-    //     if (activeWorker) {
-    //         activeWorker.terminate();
-    //         activeWorker = null;
-    //         addLogEntry('⚠️ Previous execution terminated', 'warn');
-    //     }
-
-    //     outputElement.innerHTML = '';
-    //     logCount = 0;
-
-    //     const workerScript = `
-    //     const _logs = [];
-
-    //     const console = {
-    //         _send(type, args) {
-    //             self.postMessage({ type, args: args.map(a => {
-    //                 try { return JSON.parse(JSON.stringify(a)); }
-    //                 catch(e) { return String(a); }
-    //             })});
-    //         },
-    //         log(...a)   { this._send('log', a); },
-    //         warn(...a)  { this._send('warn', a); },
-    //         error(...a) { this._send('error', a); },
-    //         info(...a)  { this._send('info', a); },
-    //         table(a)    { this._send('table', [a]); },
-    //     };
-
-    //     self.addEventListener('message', (e) => {
-    //         try {
-    //             const result = eval(e.data);
-    //             if (result instanceof Promise) {
-    //                 result
-    //                     .then(v => { if (v !== undefined) console.log(v); })
-    //                     .catch(err => console.error(String(err)));
-    //             }
-    //         } catch(err) {
-    //             self.postMessage({ type: 'error', args: [err.name + ': ' + err.message] });
-    //         } finally {
-    //             self.postMessage({ type: '__done__', args: [] });
-    //         }
-    //     });
-    // `;
-
-    //     const blob = new Blob([workerScript], { type: 'application/javascript' });
-    //     const workerUrl = URL.createObjectURL(blob);
-    //     activeWorker = new Worker(workerUrl);
-    //     URL.revokeObjectURL(workerUrl);
-
-    //     const killTimer = setTimeout(() => {
-    //         if (activeWorker) {
-    //             activeWorker.terminate();
-    //             activeWorker = null;
-    //             addLogEntry('⏱️ Execution killed: took longer than 5 seconds (infinite loop?)', 'error');
-    //         }
-    //     }, 5000);
-
-    //     activeWorker.onmessage = (e) => {
-    //         const { type, args } = e.data;
-
-    //         if (type === '__done__') {
-    //             clearTimeout(killTimer);
-    //             activeWorker = null;
-    //             return;
-    //         }
-
-    //         // ★ FIXED: Use rich object inspector (with expandable prototypes)
-    //         const content = args.map(arg => {
-    //             if (arg === null) return '<span class="object-null">null</span>';
-    //             if (arg === undefined) return '<span class="object-undefined">undefined</span>';
-    //             if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
-    //             if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
-    //             if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
-    //             if (typeof arg === 'function') {
-    //                 return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
-    //             }
-    //             if (typeof arg === 'object') {
-    //                 return createObjectInspector(arg);   // ← now uses expandable inspector + prototype
-    //             }
-    //             return String(arg);
-    //         }).join(' ');
-
-    //         addLogEntry(content, type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log');
-    //     };
-
-    //     activeWorker.onerror = (e) => {
-    //         clearTimeout(killTimer);
-    //         activeWorker = null;
-    //     };
-
-    //     activeWorker.postMessage(code);
-    // }
     function runCode() {
         const code = editor.getValue();
         if (!code) return;
@@ -1094,13 +1068,16 @@ require(["vs/editor/editor.main"], async function () {
     function downloadCode() {
         const code = editor.getValue();
         if (!code) return;
-
-        let timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "");
-        let fileName = prompt("Enter the file name (including extension):", `advanced_js_${timestamp}.js`);
-
-        if (fileName === null) return;
-        if (!fileName.trim()) fileName = "code.js";
-
+    
+        // Get the active tab name
+        const activeTab = tabs.find(t => t.id === activeTabId);
+        let fileName = activeTab ? activeTab.name : 'code.js';
+    
+        // Ensure it has a .js extension if missing
+        if (!fileName.toLowerCase().endsWith('.js')) {
+            fileName += '.js';
+        }
+    
         const blob = new Blob([code], { type: "text/javascript" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1163,23 +1140,77 @@ require(["vs/editor/editor.main"], async function () {
         document.getElementById("fileInput").click();
     });
 
+    // document.getElementById("fileInput").addEventListener("change", function (event) {
+    //     const file = event.target.files[0];
+    //     if (file && file.name.endsWith('.js')) {
+    //         const reader = new FileReader();
+    //         const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
+
+    //         reader.onload = function (e) {
+    //             const editorValue = editor.getValue() || "";
+    //             const newValue = mergeChoice ? `${editorValue}\n\n${e.target.result}` : e.target.result;
+    //             editor.setValue(newValue);
+    //         };
+    //         reader.readAsText(file);
+    //     } else {
+    //         alert("Please select a valid JavaScript (.js) file.");
+    //     }
+    // });
     document.getElementById("fileInput").addEventListener("change", function (event) {
         const file = event.target.files[0];
-        if (file && file.name.endsWith('.js')) {
-            const reader = new FileReader();
-            const mergeChoice = confirm("Do you want to merge with the existing code?\n\n✅ OK: Merge\n❌ Cancel: Replace");
-
-            reader.onload = function (e) {
-                const editorValue = editor.getValue() || "";
-                const newValue = mergeChoice ? `${editorValue}\n\n${e.target.result}` : e.target.result;
-                editor.setValue(newValue);
-            };
-            reader.readAsText(file);
-        } else {
+        if (!file) return;
+    
+        if (!file.name.endsWith('.js')) {
+            // Simple alert for invalid file type (can also be converted to modal if you want)
             alert("Please select a valid JavaScript (.js) file.");
+            event.target.value = ''; // reset input
+            return;
         }
+    
+        const reader = new FileReader();
+    
+        reader.onload = function (e) {
+            const newContent = e.target.result;
+            const currentCode = editor.getValue() || "";
+    
+            // Create message for the modal
+            const message = document.createElement('div');
+            message.innerHTML = `
+                <p style="margin: 0 0 12px; color: #2d3436; font-size: 14px;">
+                    File <strong>"${file.name}"</strong> is ready.
+                </p>
+                <p style="margin: 0; color: #636e72; font-size: 13px;">
+                    Do you want to <strong>merge</strong> it with the current code or <strong>replace</strong> everything?
+                </p>
+            `;
+    
+            createModal({
+                title: 'Import File',
+                content: message,
+                confirmText: 'Merge',
+                cancelText: 'Replace',
+                onConfirm: () => {
+                    // Merge
+                    const merged = currentCode
+                        ? `${currentCode}\n\n${newContent}`
+                        : newContent;
+                    editor.setValue(merged);
+                    addLogEntry(`✅ Merged "${file.name}" into current tab`, 'info');
+                    return true;
+                },
+                onCancel: () => {
+                    // Replace
+                    editor.setValue(newContent);
+                    addLogEntry(`✅ Replaced content with "${file.name}"`, 'info');
+                }
+            });
+        };
+    
+        reader.readAsText(file);
+    
+        // Reset input so the same file can be selected again later
+        event.target.value = '';
     });
-
     document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();

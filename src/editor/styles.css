@@ -1321,11 +1321,29 @@ color: #000016;
     cursor: pointer;
     user-select: none;
 }
-.expandable::before {
-    content: '▶ ';
+.expandable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-left: 16px;
 }
+
+.expandable::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid #6c5ce7;
+    transform: translateY(-50%);
+    transition: transform 0.15s ease;
+}
+
 .expandable.expanded::before {
-    content: '▼ ';
+    transform: translateY(-50%) rotate(90deg);
 }
 .prototype-section {
     margin-top: 6px;
