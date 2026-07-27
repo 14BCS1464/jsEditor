@@ -667,9 +667,8 @@ require(["vs/editor/editor.main"], async function () {
             html += `<span class="expandable" onclick="toggleExpand('${id}')">Array(${obj.length})</span>`;
             html += `<div id="${id}" class="object-tree collapsed">`;
 
-            obj.slice().reverse().forEach((item, revIndex, arr) => {
-                const origIndex = obj.length - 1 - revIndex;
-                html += `<div><span class="object-key">${origIndex}:</span> ${createObjectInspector(item, depth + 1, maxDepth, seen)}</div>`;
+            obj.forEach((item, index) => {
+                html += `<div><span class="object-key">${index}:</span> ${createObjectInspector(item, depth + 1, maxDepth, seen)}</div>`;
             });
 
             html += `</div></div>`;
@@ -687,15 +686,16 @@ require(["vs/editor/editor.main"], async function () {
 
             const id = `obj_${Date.now()}_${Math.random()}`;
             let html = `<div class="object-inspector">`;
-            html += `<span class="expandable" onclick="toggleExpand('${id}')">${obj.constructor.name || 'Object'}</span>`;
+            html += `<span class="expandable" onclick="toggleExpand('${id}')">${obj.constructor?.name || 'Object'}</span>`;
             html += `<div id="${id}" class="object-tree collapsed">`;
 
             keys.forEach(key => {
                 html += `<div><span class="object-key">${key}:</span> ${createObjectInspector(obj[key], depth + 1, maxDepth, seen)}</div>`;
             });
 
+            // Always show prototype (even Object.prototype)
             const prototype = Object.getPrototypeOf(obj);
-            if (prototype && prototype !== Object.prototype) {
+            if (prototype) {
                 html += createPrototypeSection(prototype, 0, new WeakSet());
             }
 
@@ -706,207 +706,386 @@ require(["vs/editor/editor.main"], async function () {
         return `<span class="object-value">${String(obj)}</span>`;
     }
 
-    function createPrototypeSection(prototype, depth = 7, visitedProtos = new WeakSet()) {
-        if (!prototype || prototype === Object.prototype || depth > 5) return '';
+    // function createPrototypeSection(prototype, depth = 4, visitedProtos = new WeakSet()) {
+    //     if (!prototype || depth > 5) return '';
 
-        const protoKey = prototype.constructor ? prototype.constructor.name : 'Unknown';
+    //     const protoKey = prototype.constructor ? prototype.constructor.name : 'Unknown';
+    //     if (visitedProtos.has(prototype)) {
+    //         return `<div class="prototype-section">
+    //             <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular reference)</div>
+    //         </div>`;
+    //     }
+    //     visitedProtos.add(prototype);
+
+    //     const id = `proto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    //     let html = `<div class="prototype-section">`;
+    //     html += `<div class="prototype-header expandable" onclick="toggleExpand('${id}')">`;
+    //     html += `🔗 [[Prototype]]: ${protoKey}`;
+    //     html += `</div>`;
+    //     html += `<div id="${id}" class="prototype-content collapsed">`;
+
+    //     try {
+    //         const allKeys = Object.getOwnPropertyNames(prototype);
+    //         const descriptors = Object.getOwnPropertyDescriptors(prototype);
+
+    //         const sortedKeys = allKeys
+    //             .filter(key => key !== 'constructor')
+    //             .sort((a, b) => {
+    //                 const aIsFunction = typeof descriptors[a]?.value === 'function';
+    //                 const bIsFunction = typeof descriptors[b]?.value === 'function';
+    //                 if (aIsFunction && !bIsFunction) return -1;
+    //                 if (!aIsFunction && bIsFunction) return 1;
+    //                 return a.localeCompare(b);
+    //             });
+
+    //         let methodCount = 0;
+    //         let propertyCount = 0;
+
+    //         sortedKeys.forEach(key => {
+    //             const descriptor = descriptors[key];
+    //             if (!descriptor) return;
+
+    //             const isMethod = typeof descriptor.value === 'function';
+    //             const isGetter = typeof descriptor.get === 'function';
+    //             const isSetter = typeof descriptor.set === 'function';
+
+    //             if (isMethod) {
+    //                 methodCount++;
+    //                 const params = getFunctionParams(descriptor.value);
+    //                 html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(0, 184, 148, 0.1); border-radius: 4px;">`;
+    //                 html += `<span class="object-key">⚡ ${key}:</span> `;
+    //                 html += `<span class="object-value">ƒ ${key}(${params})</span>`;
+    //                 html += `</div>`;
+    //             } else if (isGetter || isSetter) {
+    //                 propertyCount++;
+    //                 html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(108, 92, 231, 0.1); border-radius: 4px;">`;
+    //                 html += `<span class="object-key">🔧 ${key}:</span> `;
+    //                 if (isGetter && isSetter) {
+    //                     html += `<span class="object-value">[Getter/Setter]</span>`;
+    //                 } else if (isGetter) {
+    //                     html += `<span class="object-value">[Getter]</span>`;
+    //                 } else {
+    //                     html += `<span class="object-value">[Setter]</span>`;
+    //                 }
+    //                 html += `</div>`;
+    //             } else {
+    //                 propertyCount++;
+    //                 html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(255, 118, 117, 0.1); border-radius: 4px;">`;
+    //                 html += `<span class="object-key">📦 ${key}:</span> `;
+    //                 try {
+    //                     html += createObjectInspector(descriptor.value, 0, 1, new WeakSet());
+    //                 } catch (e) {
+    //                     html += `<span class="object-value">[Cannot access]</span>`;
+    //                 }
+    //                 html += `</div>`;
+    //             }
+    //         });
+
+    //         html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
+    //         html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
+    //         html += `</div>`;
+    //     } catch (error) {
+    //         html += `<div style="color: #ff6b6b; font-style: italic;">Error inspecting prototype: ${error.message}</div>`;
+    //     }
+
+    //     const parentProto = Object.getPrototypeOf(prototype);
+    //     if (parentProto && parentProto !== Object.prototype && depth < 4) {
+    //         html += createPrototypeSection(parentProto, depth + 1, visitedProtos);
+    //     }
+
+    //     html += `</div></div>`;
+    //     return html;
+    // }
+    function createPrototypeSection(prototype, depth = 5, visitedProtos = new WeakSet()) {
+        if (!prototype || depth > 6) return '';
+    
+        const protoKey = prototype.constructor ? prototype.constructor.name : (prototype === null ? 'null' : 'Unknown');
+    
         if (visitedProtos.has(prototype)) {
             return `<div class="prototype-section">
-                <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular reference)</div>
+                <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular)</div>
             </div>`;
         }
         visitedProtos.add(prototype);
-
+    
         const id = `proto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         let html = `<div class="prototype-section">`;
         html += `<div class="prototype-header expandable" onclick="toggleExpand('${id}')">`;
         html += `🔗 [[Prototype]]: ${protoKey}`;
         html += `</div>`;
         html += `<div id="${id}" class="prototype-content collapsed">`;
-
+    
         try {
-            const allKeys = Object.getOwnPropertyNames(prototype);
-            const descriptors = Object.getOwnPropertyDescriptors(prototype);
-
-            const sortedKeys = allKeys
-                .filter(key => key !== 'constructor')
-                .sort((a, b) => {
-                    const aIsFunction = typeof descriptors[a]?.value === 'function';
-                    const bIsFunction = typeof descriptors[b]?.value === 'function';
-                    if (aIsFunction && !bIsFunction) return -1;
-                    if (!aIsFunction && bIsFunction) return 1;
-                    return a.localeCompare(b);
-                });
-
-            let methodCount = 0;
-            let propertyCount = 0;
-
-            sortedKeys.forEach(key => {
-                const descriptor = descriptors[key];
-                if (!descriptor) return;
-
-                const isMethod = typeof descriptor.value === 'function';
-                const isGetter = typeof descriptor.get === 'function';
-                const isSetter = typeof descriptor.set === 'function';
-
-                if (isMethod) {
-                    methodCount++;
-                    const params = getFunctionParams(descriptor.value);
-                    html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(0, 184, 148, 0.1); border-radius: 4px;">`;
-                    html += `<span class="object-key">⚡ ${key}:</span> `;
-                    html += `<span class="object-value">ƒ ${key}(${params})</span>`;
-                    html += `</div>`;
-                } else if (isGetter || isSetter) {
-                    propertyCount++;
-                    html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(108, 92, 231, 0.1); border-radius: 4px;">`;
-                    html += `<span class="object-key">🔧 ${key}:</span> `;
-                    if (isGetter && isSetter) {
-                        html += `<span class="object-value">[Getter/Setter]</span>`;
-                    } else if (isGetter) {
-                        html += `<span class="object-value">[Getter]</span>`;
+            if (prototype === null) {
+                html += `<div style="color:#aaa; font-style:italic;">null</div>`;
+            } else {
+                const allKeys = Object.getOwnPropertyNames(prototype);
+                const descriptors = Object.getOwnPropertyDescriptors(prototype);
+    
+                const sortedKeys = allKeys
+                    .filter(key => key !== 'constructor')
+                    .sort((a, b) => {
+                        const aIsFunction = typeof descriptors[a]?.value === 'function';
+                        const bIsFunction = typeof descriptors[b]?.value === 'function';
+                        if (aIsFunction && !bIsFunction) return -1;
+                        if (!aIsFunction && bIsFunction) return 1;
+                        return a.localeCompare(b);
+                    });
+    
+                let methodCount = 0;
+                let propertyCount = 0;
+    
+                sortedKeys.forEach(key => {
+                    const descriptor = descriptors[key];
+                    if (!descriptor) return;
+    
+                    const isMethod = typeof descriptor.value === 'function';
+                    const isGetter = typeof descriptor.get === 'function';
+                    const isSetter = typeof descriptor.set === 'function';
+    
+                    if (isMethod) {
+                        methodCount++;
+                        const params = getFunctionParams(descriptor.value);
+                        html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(0, 184, 148, 0.1); border-radius: 4px;">`;
+                        html += `<span class="object-key">⚡ ${key}:</span> `;
+                        html += `<span class="object-value">ƒ ${key}(${params})</span>`;
+                        html += `</div>`;
+                    } else if (isGetter || isSetter) {
+                        propertyCount++;
+                        html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(108, 92, 231, 0.1); border-radius: 4px;">`;
+                        html += `<span class="object-key">🔧 ${key}:</span> `;
+                        if (isGetter && isSetter) {
+                            html += `<span class="object-value">[Getter/Setter]</span>`;
+                        } else if (isGetter) {
+                            html += `<span class="object-value">[Getter]</span>`;
+                        } else {
+                            html += `<span class="object-value">[Setter]</span>`;
+                        }
+                        html += `</div>`;
                     } else {
-                        html += `<span class="object-value">[Setter]</span>`;
+                        propertyCount++;
+                        html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(255, 118, 117, 0.1); border-radius: 4px;">`;
+                        html += `<span class="object-key">📦 ${key}:</span> `;
+                        try {
+                            html += createObjectInspector(descriptor.value, 0, 1, new WeakSet());
+                        } catch (e) {
+                            html += `<span class="object-value">[Cannot access]</span>`;
+                        }
+                        html += `</div>`;
                     }
-                    html += `</div>`;
-                } else {
-                    propertyCount++;
-                    html += `<div style="margin: 4px 0; padding: 4px 8px; background: rgba(255, 118, 117, 0.1); border-radius: 4px;">`;
-                    html += `<span class="object-key">📦 ${key}:</span> `;
-                    try {
-                        html += createObjectInspector(descriptor.value, 0, 1, new WeakSet());
-                    } catch (e) {
-                        html += `<span class="object-value">[Cannot access]</span>`;
-                    }
-                    html += `</div>`;
-                }
-            });
-
-            html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
-            html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
-            html += `</div>`;
+                });
+    
+                html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
+                html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
+                html += `</div>`;
+            }
         } catch (error) {
             html += `<div style="color: #ff6b6b; font-style: italic;">Error inspecting prototype: ${error.message}</div>`;
         }
-
+    
+        // ★ Continue the chain until null
         const parentProto = Object.getPrototypeOf(prototype);
-        if (parentProto && parentProto !== Object.prototype && depth < 4) {
+        if (parentProto !== undefined) {          // keeps going until null
             html += createPrototypeSection(parentProto, depth + 1, visitedProtos);
         }
-
+    
         html += `</div></div>`;
         return html;
     }
-
     function getFunctionParams(func) {
-        const funcStr = func.toString();
-        const match = funcStr.match(/\(([^)]*)\)/);
-        return match ? match[1] : '';
+        try {
+            const funcStr = func.toString();
+            const match = funcStr.match(/\(([^)]*)\)/);
+            return match ? match[1] : '';
+        } catch (e) {
+            return '';
+        }
     }
 
     window.toggleExpand = function (id) {
         const element = document.getElementById(id);
+        if (!element) return;
+
         const trigger = element.previousElementSibling;
 
         if (element.classList.contains('collapsed')) {
             element.classList.remove('collapsed');
-            trigger.classList.add('expanded');
+            if (trigger) trigger.classList.add('expanded');
         } else {
             element.classList.add('collapsed');
-            trigger.classList.remove('expanded');
+            if (trigger) trigger.classList.remove('expanded');
         }
     };
 
     let activeWorker = null;
 
+    // function runCode() {
+    //     const code = editor.getValue();
+    //     if (!code) return;
+
+    //     if (activeWorker) {
+    //         activeWorker.terminate();
+    //         activeWorker = null;
+    //         addLogEntry('⚠️ Previous execution terminated', 'warn');
+    //     }
+
+    //     outputElement.innerHTML = '';
+    //     logCount = 0;
+
+    //     const workerScript = `
+    //     const _logs = [];
+
+    //     const console = {
+    //         _send(type, args) {
+    //             self.postMessage({ type, args: args.map(a => {
+    //                 try { return JSON.parse(JSON.stringify(a)); }
+    //                 catch(e) { return String(a); }
+    //             })});
+    //         },
+    //         log(...a)   { this._send('log', a); },
+    //         warn(...a)  { this._send('warn', a); },
+    //         error(...a) { this._send('error', a); },
+    //         info(...a)  { this._send('info', a); },
+    //         table(a)    { this._send('table', [a]); },
+    //     };
+
+    //     self.addEventListener('message', (e) => {
+    //         try {
+    //             const result = eval(e.data);
+    //             if (result instanceof Promise) {
+    //                 result
+    //                     .then(v => { if (v !== undefined) console.log(v); })
+    //                     .catch(err => console.error(String(err)));
+    //             }
+    //         } catch(err) {
+    //             self.postMessage({ type: 'error', args: [err.name + ': ' + err.message] });
+    //         } finally {
+    //             self.postMessage({ type: '__done__', args: [] });
+    //         }
+    //     });
+    // `;
+
+    //     const blob = new Blob([workerScript], { type: 'application/javascript' });
+    //     const workerUrl = URL.createObjectURL(blob);
+    //     activeWorker = new Worker(workerUrl);
+    //     URL.revokeObjectURL(workerUrl);
+
+    //     const killTimer = setTimeout(() => {
+    //         if (activeWorker) {
+    //             activeWorker.terminate();
+    //             activeWorker = null;
+    //             addLogEntry('⏱️ Execution killed: took longer than 5 seconds (infinite loop?)', 'error');
+    //         }
+    //     }, 5000);
+
+    //     activeWorker.onmessage = (e) => {
+    //         const { type, args } = e.data;
+
+    //         if (type === '__done__') {
+    //             clearTimeout(killTimer);
+    //             activeWorker = null;
+    //             return;
+    //         }
+
+    //         // ★ FIXED: Use rich object inspector (with expandable prototypes)
+    //         const content = args.map(arg => {
+    //             if (arg === null) return '<span class="object-null">null</span>';
+    //             if (arg === undefined) return '<span class="object-undefined">undefined</span>';
+    //             if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
+    //             if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
+    //             if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
+    //             if (typeof arg === 'function') {
+    //                 return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
+    //             }
+    //             if (typeof arg === 'object') {
+    //                 return createObjectInspector(arg);   // ← now uses expandable inspector + prototype
+    //             }
+    //             return String(arg);
+    //         }).join(' ');
+
+    //         addLogEntry(content, type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log');
+    //     };
+
+    //     activeWorker.onerror = (e) => {
+    //         clearTimeout(killTimer);
+    //         activeWorker = null;
+    //     };
+
+    //     activeWorker.postMessage(code);
+    // }
     function runCode() {
         const code = editor.getValue();
         if (!code) return;
-
-        if (activeWorker) {
-            activeWorker.terminate();
-            activeWorker = null;
-            addLogEntry('⚠️ Previous execution terminated', 'warn');
-        }
-
+    
         outputElement.innerHTML = '';
         logCount = 0;
-
-        const workerScript = `
-        const _logs = [];
-
-        const console = {
-            _send(type, args) {
-                self.postMessage({ type, args: args.map(a => {
-                    try { return JSON.parse(JSON.stringify(a)); }
-                    catch(e) { return String(a); }
-                })});
-            },
-            log(...a)   { this._send('log', a); },
-            warn(...a)  { this._send('warn', a); },
-            error(...a) { this._send('error', a); },
-            info(...a)  { this._send('info', a); },
-            table(a)    { this._send('table', [a]); },
+    
+        // ---- Safe console override ----
+        const originalConsole = {
+            log: console.log,
+            warn: console.warn,
+            error: console.error,
+            info: console.info,
+            table: console.table
         };
-
-        self.addEventListener('message', (e) => {
-            try {
-                const result = eval(e.data);
-                if (result instanceof Promise) {
-                    result
-                        .then(v => { if (v !== undefined) console.log(v); })
-                        .catch(err => console.error(String(err)));
-                }
-            } catch(err) {
-                self.postMessage({ type: 'error', args: [err.name + ': ' + err.message] });
-            } finally {
-                self.postMessage({ type: '__done__', args: [] });
-            }
-        });
-    `;
-
-        const blob = new Blob([workerScript], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(blob);
-        activeWorker = new Worker(workerUrl);
-        URL.revokeObjectURL(workerUrl);
-
-        const killTimer = setTimeout(() => {
-            if (activeWorker) {
-                activeWorker.terminate();
-                activeWorker = null;
-                addLogEntry('⏱️ Execution killed: took longer than 5 seconds (infinite loop?)', 'error');
-            }
-        }, 5000);
-
-        activeWorker.onmessage = (e) => {
-            const { type, args } = e.data;
-
-            if (type === '__done__') {
-                clearTimeout(killTimer);
-                activeWorker = null;
-                return;
-            }
-
+    
+        const createSafeConsole = (type) => (...args) => {
             const content = args.map(arg => {
                 if (arg === null) return '<span class="object-null">null</span>';
                 if (arg === undefined) return '<span class="object-undefined">undefined</span>';
                 if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
                 if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
                 if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
-                if (typeof arg === 'object') return `<pre style="margin:0">${JSON.stringify(arg, null, 2)}</pre>`;
+                if (typeof arg === 'function') {
+                    return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
+                }
+                if (typeof arg === 'object') {
+                    return createObjectInspector(arg);   // real object → real prototype chain
+                }
                 return String(arg);
             }).join(' ');
-
-            addLogEntry(content, type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log');
+    
+            addLogEntry(content, type);
         };
-
-        activeWorker.onerror = (e) => {
-            clearTimeout(killTimer);
-            activeWorker = null;
-        };
-
-        activeWorker.postMessage(code);
+    
+        console.log = createSafeConsole('log');
+        console.warn = createSafeConsole('warn');
+        console.error = createSafeConsole('error');
+        console.info = createSafeConsole('info');
+        console.table = createSafeConsole('table');
+    
+        // ---- Timeout protection ----
+        let finished = false;
+        const timer = setTimeout(() => {
+            if (!finished) {
+                addLogEntry('⏱️ Execution killed: took longer than 5 seconds', 'error');
+                // restore console
+                Object.assign(console, originalConsole);
+            }
+        }, 5000);
+    
+        try {
+            // Execute the code
+            const result = eval(code);
+    
+            if (result instanceof Promise) {
+                result
+                    .then(v => {
+                        if (v !== undefined) console.log(v);
+                    })
+                    .catch(err => console.error(err));
+            } else if (result !== undefined) {
+                console.log(result);
+            }
+        } catch (err) {
+            console.error(err.name + ': ' + err.message);
+        } finally {
+            finished = true;
+            clearTimeout(timer);
+            // restore original console
+            Object.assign(console, originalConsole);
+        }
     }
-
     window.clearOutput = function () {
         outputElement.innerHTML = "";
         logCount = 0;
