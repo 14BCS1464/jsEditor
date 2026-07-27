@@ -706,7 +706,7 @@ require(["vs/editor/editor.main"], async function () {
         return `<span class="object-value">${String(obj)}</span>`;
     }
 
-    function createPrototypeSection(prototype, depth = 0, visitedProtos = new WeakSet()) {
+    function createPrototypeSection(prototype, depth = 7, visitedProtos = new WeakSet()) {
         if (!prototype || prototype === Object.prototype || depth > 5) return '';
 
         const protoKey = prototype.constructor ? prototype.constructor.name : 'Unknown';
