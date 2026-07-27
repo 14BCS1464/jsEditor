@@ -322,8 +322,67 @@ function switchToTab(id) {
     renderTabs();
     persistTabs();
 }
+function showToast(message, type = 'warn') {
+    // Remove existing toast if any
+    const existing = document.getElementById('customToast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'customToast';
+    toast.textContent = message;
+
+    const bgColor = type === 'error' ? 'rgba(214, 48, 49, 0.95)' :
+                    type === 'success' ? 'rgba(0, 184, 148, 0.95)' :
+                    'rgba(253, 203, 110, 0.95)'; // warn
+
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${bgColor};
+        color: #2d3436;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: toastIn 0.25s ease;
+    `;
+
+    // Add animation style once
+    if (!document.getElementById('toastStyle')) {
+        const style = document.createElement('style');
+        style.id = 'toastStyle';
+        style.textContent = `
+            @keyframes toastIn {
+                from { opacity: 0; transform: translate(-50%, 20px); }
+                to { opacity: 1; transform: translate(-50%, 0); }
+            }
+            @keyframes toastOut {
+                from { opacity: 1; transform: translate(-50%, 0); }
+                to { opacity: 0; transform: translate(-50%, 20px); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 2.5s
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.25s ease forwards';
+        setTimeout(() => toast.remove(), 250);
+    }, 2500);
+}
 
 function addNewTab() {
+    if (tabs.length >= 10) {
+        showToast('⚠️ Maximum 10 tabs allowed', 'warn');
+        return;
+    }
+
     const name = `untitled-${tabs.length + 1}.js`;
     const tab = createTab(name, '');
     switchToTab(tab.id);
