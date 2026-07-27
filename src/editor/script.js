@@ -1125,49 +1125,43 @@ require(["vs/editor/editor.main"], async function () {
     };
 
     function downloadCode() {
-        const code = editor.getValue();
-        if (!code) return;
-    
-        // Get the active tab name
-        const activeTab = tabs.find(t => t.id === activeTabId);
-        let fileName = activeTab ? activeTab.name : 'code.js';
-    
-        // Ensure it has a .js extension if missing
-        if (!fileName.toLowerCase().endsWith('.js')) {
-            fileName += '.js';
-        }
-    
-        const blob = new Blob([code], { type: "text/javascript" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    function formatCode() {
         try {
             const code = editor.getValue();
-            if (!code.trim()) return;
-
-            if (typeof window.js_beautify === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js';
-                script.onload = function () {
-                    applyFormatting(code);
-                };
-                document.head.appendChild(script);
-            } else {
-                applyFormatting(code);
+            if (!code || !code.trim()) {
+                showToast('⚠️ Nothing to download – editor is empty', 'warn');
+                return;
             }
-        } catch (error) {
-            addLogEntry(`⚠️ Formatting error: ${error.message}`, 'error');
+    
+            // Get active tab name
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            let fileName = activeTab?.name || 'code.js';
+    
+            // Ensure .js extension
+            if (!fileName.toLowerCase().endsWith('.js')) {
+                fileName += '.js';
+            }
+    
+            const blob = new Blob([code], { type: 'text/javascript;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+    
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+    
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+    
+            // Cleanup
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+    
+            showToast(`✅ Downloaded as "${fileName}"`, 'success');
+        } catch (err) {
+            console.error('Download failed:', err);
+            showToast('❌ Download failed', 'error');
         }
     }
-
     function applyFormatting(code) {
         const beautifyFn = window.js_beautify || window.beautify;
 
