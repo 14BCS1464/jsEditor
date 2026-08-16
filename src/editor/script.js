@@ -640,6 +640,8 @@ require(["vs/editor/editor.main"], async function () {
         fontSize: currentFontSize,
         lineNumbers: "on",
         roundedSelection: true,
+        formatOnType: true,
+        formatOnPaste: true,
         scrollbar: {
             verticalScrollbarSize: 10,
             horizontalScrollbarSize: 10
@@ -1053,7 +1055,7 @@ require(["vs/editor/editor.main"], async function () {
         outputElement.innerHTML = '';
         logCount = 0;
     
-        // ---- Safe console override ----
+        // ---- Save originals ----
         const originalConsole = {
             log: console.log,
             warn: console.warn,
@@ -1073,7 +1075,7 @@ require(["vs/editor/editor.main"], async function () {
                     return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
                 }
                 if (typeof arg === 'object') {
-                    return createObjectInspector(arg);   // real object → real prototype chain
+                    return createObjectInspector(arg);
                 }
                 return String(arg);
             }).join(' ');
@@ -1087,36 +1089,43 @@ require(["vs/editor/editor.main"], async function () {
         console.info = createSafeConsole('info');
         console.table = createSafeConsole('table');
     
-        // ---- Timeout protection ----
         let finished = false;
-        const timer = setTimeout(() => {
+        let timer = null;
+    
+        function restoreConsole() {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timer);
+            Object.assign(console, originalConsole);
+        }
+    
+        // Safety kill-switch
+        timer = setTimeout(() => {
             if (!finished) {
                 addLogEntry('⏱️ Execution killed: took longer than 5 seconds', 'error');
-                // restore console
-                Object.assign(console, originalConsole);
+                restoreConsole();
             }
         }, 5000);
     
         try {
-            // Execute the code
             const result = eval(code);
     
             if (result instanceof Promise) {
+                // ASYNC: wait for it to finish before restoring console
                 result
                     .then(v => {
                         if (v !== undefined) console.log(v);
                     })
-                    .catch(err => console.error(err));
-            } else if (result !== undefined) {
-                console.log(result);
+                    .catch(err => console.error(err))
+                    .finally(() => restoreConsole());
+            } else {
+                // SYNC: restore immediately
+                if (result !== undefined) console.log(result);
+                restoreConsole();
             }
         } catch (err) {
             console.error(err.name + ': ' + err.message);
-        } finally {
-            finished = true;
-            clearTimeout(timer);
-            // restore original console
-            Object.assign(console, originalConsole);
+            restoreConsole();
         }
     }
     window.clearOutput = function () {
@@ -1187,7 +1196,7 @@ require(["vs/editor/editor.main"], async function () {
 
     document.getElementById("run").addEventListener("click", runCode);
     document.getElementById("download").addEventListener("click", downloadCode);
-    document.getElementById("format").addEventListener("click", formatCode);
+    document.getElementById("format").addEventListener("click", applyFormatting);
 
     document.getElementById("addfile").addEventListener("click", function () {
         document.getElementById("fileInput").click();
