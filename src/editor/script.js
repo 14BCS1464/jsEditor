@@ -17,24 +17,6 @@ let debounceSendTimer = null;
 const FONT_MIN = 8;
 const FONT_MAX = 32;
 const FONT_STEP = 1;
-const SAFETY_LIMITS = {
-    maxCodeLength: 10000,
-    maxOutputLines: 1000,
-    maxExecutionTime: 5000,
-    dangerousPatterns: [
-        /while\s*\(\s*true\s*\)/gi,
-        /for\s*\(\s*;\s*;\s*\)/gi,
-        /setInterval/gi,
-        /alert\s*\(/gi,
-        /confirm\s*\(/gi,
-        /prompt\s*\(/gi,
-        /document\.write/gi,
-        /eval\s*\(/gi,
-        /Function\s*\(/gi,
-        /setTimeout.*setTimeout/gi,
-        /\.innerHTML\s*=/gi
-    ]
-};
 
 // --- Multi-tab state (top-level so it's visible to saveCodeToStorage() too) ---
 let tabs = [];          // { id, name, model, viewState }
@@ -204,28 +186,19 @@ async function initializeSocket() {
         addLogEntry(`Socket error: ${error.message}`, 'error');
     }
 }
+
 function addLogEntry(content, type = 'log') {
     const outputElement = document.getElementById("output");
-
-    if (logCount >= SAFETY_LIMITS.maxOutputLines) {
-        if (logCount === SAFETY_LIMITS.maxOutputLines) {
-            const capEntry = document.createElement('div');
-            capEntry.className = 'log-entry warn';
-            capEntry.textContent = `⚠️ Output limit (${SAFETY_LIMITS.maxOutputLines} lines) reached — further output suppressed for this run.`;
-            outputElement.appendChild(capEntry);
-        }
-        logCount++;
-        return; // no more DOM work once capped
-    }
-
     logCount++;
     const timestamp = new Date().toLocaleTimeString();
+
     const logEntry = document.createElement('div');
     logEntry.className = `log-entry ${type}`;
     logEntry.innerHTML = `
         <div class="log-timestamp">[${timestamp}] #${logCount}</div>
         <div>${content}</div>
     `;
+
     outputElement.appendChild(logEntry);
     outputElement.scrollTop = outputElement.scrollHeight;
 }
@@ -698,7 +671,24 @@ require(["vs/editor/editor.main"], async function () {
     const MAX_EXECUTIONS_PER_MINUTE = 20;
     const EXECUTION_DELAY = 300;
 
-
+    const SAFETY_LIMITS = {
+        maxCodeLength: 10000,
+        maxOutputLines: 1000,
+        maxExecutionTime: 5000,
+        dangerousPatterns: [
+            /while\s*\(\s*true\s*\)/gi,
+            /for\s*\(\s*;\s*;\s*\)/gi,
+            /setInterval/gi,
+            /alert\s*\(/gi,
+            /confirm\s*\(/gi,
+            /prompt\s*\(/gi,
+            /document\.write/gi,
+            /eval\s*\(/gi,
+            /Function\s*\(/gi,
+            /setTimeout.*setTimeout/gi,
+            /\.innerHTML\s*=/gi
+        ]
+    };
 
     function isRateLimited() {
         const now = Date.now();
@@ -1055,33 +1045,13 @@ require(["vs/editor/editor.main"], async function () {
             if (trigger) trigger.classList.remove('expanded');
         }
     };
-    function injectLoopGuards(code, maxIterations = 50000) {
-        let processed = code;
-    
-        processed = processed.replace(/while\s*\(([\s\S]*?)\)\s*\{/g, (match, cond) => {
-            const guard = '__lg_' + Math.random().toString(36).slice(2, 8);
-            return `let ${guard} = 0; while (${cond}) { if (++${guard} > ${maxIterations}) throw new Error("⛔ Infinite loop detected: while loop exceeded ${maxIterations.toLocaleString()} iterations");`;
-        });
-    
-        processed = processed.replace(/for\s*\(([\s\S]*?)\)\s*\{/g, (match, clause) => {
-            const guard = '__lg_' + Math.random().toString(36).slice(2, 8);
-            return `let ${guard} = 0; for (${clause}) { if (++${guard} > ${maxIterations}) throw new Error("⛔ Infinite loop detected: for loop exceeded ${maxIterations.toLocaleString()} iterations");`;
-        });
-    
-        processed = processed.replace(/do\s*\{/g, () => {
-            const guard = '__lg_' + Math.random().toString(36).slice(2, 8);
-            return `let ${guard} = 0; do { if (++${guard} > ${maxIterations}) throw new Error("⛔ Infinite loop detected: do-while loop exceeded ${maxIterations.toLocaleString()} iterations");`;
-        });
-    
-        return processed;
-    }
+
     let activeWorker = null;
 
     function runCode() {
         const code = editor.getValue();
-        
         if (!code) return;
-      //  const protectedCode = injectLoopGuards(code, 50000);
+    
         outputElement.innerHTML = '';
         logCount = 0;
     
