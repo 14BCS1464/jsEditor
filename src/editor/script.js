@@ -1081,7 +1081,7 @@ require(["vs/editor/editor.main"], async function () {
         const code = editor.getValue();
         
         if (!code) return;
-        const protectedCode = injectLoopGuards(code, 50000);
+      //  const protectedCode = injectLoopGuards(code, 50000);
         outputElement.innerHTML = '';
         logCount = 0;
     
@@ -1138,7 +1138,7 @@ require(["vs/editor/editor.main"], async function () {
         }, 5000);
     
         try {
-            const result = eval(protectedCode);
+            const result = eval(code);
     
             if (result instanceof Promise) {
                 // ASYNC: wait for it to finish before restoring console
