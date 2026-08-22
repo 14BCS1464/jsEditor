@@ -35,6 +35,7 @@ const SAFETY_LIMITS = {
         /\.innerHTML\s*=/gi
     ]
 };
+
 // --- Multi-tab state (top-level so it's visible to saveCodeToStorage() too) ---
 let tabs = [];          // { id, name, model, viewState }
 let activeTabId = null;
@@ -1080,7 +1081,7 @@ require(["vs/editor/editor.main"], async function () {
         const code = editor.getValue();
         
         if (!code) return;
-        const protectedCode = injectLoopGuards(code, maxIterations);
+        const protectedCode = injectLoopGuards(code, 50000);
         outputElement.innerHTML = '';
         logCount = 0;
     
