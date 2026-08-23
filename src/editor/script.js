@@ -1032,168 +1032,339 @@ require(["vs/editor/editor.main"], async function () {
 
     let activeWorker = null;
 
-    function runCode(code) {
-        // Accept code from caller (auto-execute / manual), fallback to editor.
-        // Guard against being called directly as a DOM event handler, in which
-        // case `code` would be a MouseEvent/PointerEvent object, not a string —
-        // that used to throw inside `.trim()` below and silently abort with
-        // nothing shown in the output panel.
-        if (typeof code !== 'string') code = editor.getValue();
-        if (!code || !code.trim()) return;
+    // function runCode(code) {
+    //     // Accept code from caller (auto-execute / manual), fallback to editor.
+    //     // Guard against being called directly as a DOM event handler, in which
+    //     // case `code` would be a MouseEvent/PointerEvent object, not a string —
+    //     // that used to throw inside `.trim()` below and silently abort with
+    //     // nothing shown in the output panel.
+    //     if (typeof code !== 'string') code = editor.getValue();
+    //     if (!code || !code.trim()) return;
     
-        // Safety check — now applies to BOTH manual and auto execution
-        const safetyCheck = isSafeCode(code);
-        if (!safetyCheck.safe) {
-            addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
-            return;
-        }
+    //     // Safety check — now applies to BOTH manual and auto execution
+    //     const safetyCheck = isSafeCode(code);
+    //     if (!safetyCheck.safe) {
+    //         addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
+    //         return;
+    //     }
     
-        // Guard against log overflow
-        if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
-            clearOutput();
-            addLogEntry('🧹 Output cleared due to size limit', 'info');
-        }
+    //     // Guard against log overflow
+    //     if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
+    //         clearOutput();
+    //         addLogEntry('🧹 Output cleared due to size limit', 'info');
+    //     }
     
-        outputElement.innerHTML = '';
-        logCount = 0;
+    //     outputElement.innerHTML = '';
+    //     logCount = 0;
     
-        const originalConsole = {
-            log: console.log, warn: console.warn, error: console.error,
-            info: console.info, table: console.table
-        };
-        const originalSetTimeout = window.setTimeout;
-        const originalSetInterval = window.setInterval;
-        const originalClearTimeout = window.clearTimeout;
-        const originalClearInterval = window.clearInterval;
+    //     const originalConsole = {
+    //         log: console.log, warn: console.warn, error: console.error,
+    //         info: console.info, table: console.table
+    //     };
+    //     const originalSetTimeout = window.setTimeout;
+    //     const originalSetInterval = window.setInterval;
+    //     const originalClearTimeout = window.clearTimeout;
+    //     const originalClearInterval = window.clearInterval;
     
-        let pendingTimers = 0;
-        let syncDone = false;
-        let finished = false;
-        let hardKill = null;
-        const activeTimerIds = new Set();
+    //     let pendingTimers = 0;
+    //     let syncDone = false;
+    //     let finished = false;
+    //     let hardKill = null;
+    //     const activeTimerIds = new Set();
     
-        function restore() {
-            if (finished) return;
-            finished = true;
-            if (hardKill) originalClearTimeout(hardKill);
-            Object.assign(console, originalConsole);
-            window.setTimeout = originalSetTimeout;
-            window.setInterval = originalSetInterval;
-            window.clearTimeout = originalClearTimeout;
-            window.clearInterval = originalClearInterval;
-        }
+    //     function restore() {
+    //         if (finished) return;
+    //         finished = true;
+    //         if (hardKill) originalClearTimeout(hardKill);
+    //         Object.assign(console, originalConsole);
+    //         window.setTimeout = originalSetTimeout;
+    //         window.setInterval = originalSetInterval;
+    //         window.clearTimeout = originalClearTimeout;
+    //         window.clearInterval = originalClearInterval;
+    //     }
     
-        function tryRestore() {
-            if (finished || !syncDone || pendingTimers > 0) return;
-            restore();
-        }
+    //     function tryRestore() {
+    //         if (finished || !syncDone || pendingTimers > 0) return;
+    //         restore();
+    //     }
     
-        // Wrap setTimeout so we know when scheduled callbacks have actually run
-        window.setTimeout = function (fn, delay, ...args) {
-            pendingTimers++;
-            const id = originalSetTimeout((...cbArgs) => {
-                if (!activeTimerIds.has(id)) return; // was cleared early
-                activeTimerIds.delete(id);
-                try {
-                    if (typeof fn === 'function') fn(...cbArgs);
-                } catch (err) {
-                    console.error(err.name + ': ' + err.message);
-                } finally {
-                    pendingTimers--;
-                    tryRestore();
-                }
-            }, delay, ...args);
-            activeTimerIds.add(id);
-            return id;
-        };
+    //     // Wrap setTimeout so we know when scheduled callbacks have actually run
+    //     window.setTimeout = function (fn, delay, ...args) {
+    //         pendingTimers++;
+    //         const id = originalSetTimeout((...cbArgs) => {
+    //             if (!activeTimerIds.has(id)) return; // was cleared early
+    //             activeTimerIds.delete(id);
+    //             try {
+    //                 if (typeof fn === 'function') fn(...cbArgs);
+    //             } catch (err) {
+    //                 console.error(err.name + ': ' + err.message);
+    //             } finally {
+    //                 pendingTimers--;
+    //                 tryRestore();
+    //             }
+    //         }, delay, ...args);
+    //         activeTimerIds.add(id);
+    //         return id;
+    //     };
     
-        // Wrap clearTimeout so cleared timers don't leak pendingTimers
-        window.clearTimeout = function (id) {
-            if (activeTimerIds.has(id)) {
-                activeTimerIds.delete(id);
+    //     // Wrap clearTimeout so cleared timers don't leak pendingTimers
+    //     window.clearTimeout = function (id) {
+    //         if (activeTimerIds.has(id)) {
+    //             activeTimerIds.delete(id);
+    //             pendingTimers--;
+    //             tryRestore();
+    //         }
+    //         return originalClearTimeout(id);
+    //     };
+    
+    //     // Wrap setInterval with a hard cap so it can't run forever with hijacked console
+    //     window.setInterval = function (fn, delay, ...args) {
+    //         let count = 0;
+    //         const MAX_RUNS = 50;
+    //         const id = originalSetInterval((...cbArgs) => {
+    //             count++;
+    //             if (count > MAX_RUNS) {
+    //                 originalClearInterval(id);
+    //                 console.warn('Interval auto-stopped after max iterations');
+    //                 return;
+    //             }
+    //             try {
+    //                 if (typeof fn === 'function') fn(...cbArgs);
+    //             } catch (err) {
+    //                 console.error(err.name + ': ' + err.message);
+    //             }
+    //         }, delay, ...args);
+    //         return id;
+    //     };
+    
+    //     // ★ CRITICAL: schedule hardKill with ORIGINAL setTimeout (before it was wrapped)
+    //     hardKill = originalSetTimeout(() => {
+    //         if (!finished) {
+    //             addLogEntry('⏱️ Execution timeout — console restored', 'error');
+    //             restore();
+    //         }
+    //     }, SAFETY_LIMITS.maxExecutionTime);
+    
+    //     const createSafeConsole = (type) => (...args) => {
+    //         const content = args.map(arg => {
+    //             if (arg === null) return '<span class="object-null">null</span>';
+    //             if (arg === undefined) return '<span class="object-undefined">undefined</span>';
+    //             if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
+    //             if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
+    //             if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
+    //             if (typeof arg === 'function') {
+    //                 try {
+    //                     return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
+    //                 } catch (e) {
+    //                     return `<span class="object-value">ƒ [function]</span>`;
+    //                 }
+    //             }
+    //             if (typeof arg === 'object') return createObjectInspector(arg);
+    //             return String(arg);
+    //         }).join(' ');
+    //         addLogEntry(content, type);
+    //     };
+    
+    //     console.log = createSafeConsole('log');
+    //     console.warn = createSafeConsole('warn');
+    //     console.error = createSafeConsole('error');
+    //     console.info = createSafeConsole('info');
+    //     console.table = createSafeConsole('table');
+    
+    //     try {
+    //         const result = eval(code);
+    //         if (result instanceof Promise) {
+    //             pendingTimers++; // treat the promise like a pending async op
+    //             result
+    //                 .then(v => { if (v !== undefined) console.log(v); })
+    //                 .catch(err => console.error(err.name + ': ' + err.message))
+    //                 .finally(() => {
+    //                     pendingTimers--;
+    //                     syncDone = true;
+    //                     tryRestore();
+    //                 });
+    //         } else {
+    //             if (result !== undefined) console.log(result);
+    //             syncDone = true;
+    //             tryRestore();
+    //         }
+    //     } catch (err) {
+    //         console.error(err.name + ': ' + err.message);
+    //         syncDone = true;
+    //         tryRestore();
+    //     }
+    // }
+
+    // Track timeouts globally so we can nuke them between runs
+let _executionTimeoutIds = [];
+let _executionIntervalIds = [];
+
+function runCode(code) {
+    // Guard: DOM event handlers pass an Event object, not a string
+    if (typeof code !== 'string') code = editor.getValue();
+    if (!code || !code.trim()) return;
+
+    // Safety check — applies to BOTH manual and auto execution
+    const safetyCheck = isSafeCode(code);
+    if (!safetyCheck.safe) {
+        addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
+        return;
+    }
+
+    // Guard against log overflow
+    if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
+        clearOutput();
+        addLogEntry('🧹 Output cleared due to size limit', 'info');
+    }
+
+    // ── CRITICAL: Kill any pending timers from the PREVIOUS execution ──
+    _executionTimeoutIds.forEach(id => clearTimeout(id));
+    _executionIntervalIds.forEach(id => clearInterval(id));
+    _executionTimeoutIds = [];
+    _executionIntervalIds = [];
+
+    outputElement.innerHTML = '';
+    logCount = 0;
+
+    const originalConsole = {
+        log: console.log, warn: console.warn, error: console.error,
+        info: console.info, table: console.table
+    };
+    const originalSetTimeout = window.setTimeout;
+    const originalSetInterval = window.setInterval;
+    const originalClearTimeout = window.clearTimeout;
+    const originalClearInterval = window.clearInterval;
+
+    let pendingTimers = 0;
+    let syncDone = false;
+    let finished = false;
+    let hardKill = null;
+
+    function restore() {
+        if (finished) return;
+        finished = true;
+        if (hardKill) originalClearTimeout(hardKill);
+        Object.assign(console, originalConsole);
+        window.setTimeout = originalSetTimeout;
+        window.setInterval = originalSetInterval;
+        window.clearTimeout = originalClearTimeout;
+        window.clearInterval = originalClearInterval;
+    }
+
+    function tryRestore() {
+        if (finished || !syncDone || pendingTimers > 0) return;
+        restore();
+    }
+
+    // Wrap setTimeout — track IDs and count pending callbacks
+    window.setTimeout = function (fn, delay, ...args) {
+        pendingTimers++;
+        const id = originalSetTimeout((...cbArgs) => {
+            // Remove from tracking array once fired
+            _executionTimeoutIds = _executionTimeoutIds.filter(tid => tid !== id);
+            try {
+                if (typeof fn === 'function') fn(...cbArgs);
+            } catch (err) {
+                console.error(err.name + ': ' + err.message);
+            } finally {
                 pendingTimers--;
                 tryRestore();
             }
-            return originalClearTimeout(id);
-        };
-    
-        // Wrap setInterval with a hard cap so it can't run forever with hijacked console
-        window.setInterval = function (fn, delay, ...args) {
-            let count = 0;
-            const MAX_RUNS = 50;
-            const id = originalSetInterval((...cbArgs) => {
-                count++;
-                if (count > MAX_RUNS) {
-                    originalClearInterval(id);
-                    console.warn('Interval auto-stopped after max iterations');
-                    return;
-                }
+        }, delay, ...args);
+        _executionTimeoutIds.push(id);
+        return id;
+    };
+
+    // Wrap clearTimeout — keep counts accurate
+    window.clearTimeout = function (id) {
+        _executionTimeoutIds = _executionTimeoutIds.filter(tid => tid !== id);
+        return originalClearTimeout(id);
+    };
+
+    // Wrap setInterval — hard cap + tracking
+    window.setInterval = function (fn, delay, ...args) {
+        let count = 0;
+        const MAX_RUNS = 50;
+        const id = originalSetInterval((...cbArgs) => {
+            count++;
+            if (count > MAX_RUNS) {
+                originalClearInterval(id);
+                _executionIntervalIds = _executionIntervalIds.filter(iid => iid !== id);
+                console.warn('Interval auto-stopped after max iterations');
+                return;
+            }
+            try {
+                if (typeof fn === 'function') fn(...cbArgs);
+            } catch (err) {
+                console.error(err.name + ': ' + err.message);
+            }
+        }, delay, ...args);
+        _executionIntervalIds.push(id);
+        return id;
+    };
+
+    window.clearInterval = function (id) {
+        _executionIntervalIds = _executionIntervalIds.filter(iid => iid !== id);
+        return originalClearInterval(id);
+    };
+
+    // Absolute safety net — restore console after maxExecutionTime
+    hardKill = originalSetTimeout(() => {
+        if (!finished) {
+            addLogEntry('⏱️ Execution timeout — console restored', 'error');
+            restore();
+        }
+    }, SAFETY_LIMITS.maxExecutionTime);
+
+    const createSafeConsole = (type) => (...args) => {
+        const content = args.map(arg => {
+            if (arg === null) return '<span class="object-null">null</span>';
+            if (arg === undefined) return '<span class="object-undefined">undefined</span>';
+            if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
+            if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
+            if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
+            if (typeof arg === 'function') {
                 try {
-                    if (typeof fn === 'function') fn(...cbArgs);
-                } catch (err) {
-                    console.error(err.name + ': ' + err.message);
+                    return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
+                } catch (e) {
+                    return `<span class="object-value">ƒ [function]</span>`;
                 }
-            }, delay, ...args);
-            return id;
-        };
-    
-        // ★ CRITICAL: schedule hardKill with ORIGINAL setTimeout (before it was wrapped)
-        hardKill = originalSetTimeout(() => {
-            if (!finished) {
-                addLogEntry('⏱️ Execution timeout — console restored', 'error');
-                restore();
             }
-        }, SAFETY_LIMITS.maxExecutionTime);
-    
-        const createSafeConsole = (type) => (...args) => {
-            const content = args.map(arg => {
-                if (arg === null) return '<span class="object-null">null</span>';
-                if (arg === undefined) return '<span class="object-undefined">undefined</span>';
-                if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
-                if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
-                if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
-                if (typeof arg === 'function') {
-                    try {
-                        return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
-                    } catch (e) {
-                        return `<span class="object-value">ƒ [function]</span>`;
-                    }
-                }
-                if (typeof arg === 'object') return createObjectInspector(arg);
-                return String(arg);
-            }).join(' ');
-            addLogEntry(content, type);
-        };
-    
-        console.log = createSafeConsole('log');
-        console.warn = createSafeConsole('warn');
-        console.error = createSafeConsole('error');
-        console.info = createSafeConsole('info');
-        console.table = createSafeConsole('table');
-    
-        try {
-            const result = eval(code);
-            if (result instanceof Promise) {
-                pendingTimers++; // treat the promise like a pending async op
-                result
-                    .then(v => { if (v !== undefined) console.log(v); })
-                    .catch(err => console.error(err.name + ': ' + err.message))
-                    .finally(() => {
-                        pendingTimers--;
-                        syncDone = true;
-                        tryRestore();
-                    });
-            } else {
-                if (result !== undefined) console.log(result);
-                syncDone = true;
-                tryRestore();
-            }
-        } catch (err) {
-            console.error(err.name + ': ' + err.message);
+            if (typeof arg === 'object') return createObjectInspector(arg);
+            return String(arg);
+        }).join(' ');
+        addLogEntry(content, type);
+    };
+
+    console.log = createSafeConsole('log');
+    console.warn = createSafeConsole('warn');
+    console.error = createSafeConsole('error');
+    console.info = createSafeConsole('info');
+    console.table = createSafeConsole('table');
+
+    try {
+        const result = eval(code);
+        if (result instanceof Promise) {
+            pendingTimers++;
+            result
+                .then(v => { if (v !== undefined) console.log(v); })
+                .catch(err => console.error(err.name + ': ' + err.message))
+                .finally(() => {
+                    pendingTimers--;
+                    syncDone = true;
+                    tryRestore();
+                });
+        } else {
+            if (result !== undefined) console.log(result);
             syncDone = true;
             tryRestore();
         }
+    } catch (err) {
+        console.error(err.name + ': ' + err.message);
+        syncDone = true;
+        tryRestore();
     }
+}
     window.clearOutput = function () {
         outputElement.innerHTML = "";
         logCount = 0;
