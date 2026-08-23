@@ -1048,6 +1048,151 @@ require(["vs/editor/editor.main"], async function () {
 
     let activeWorker = null;
 
+    // function runCode() {
+    //     const code = editor.getValue();
+    //     if (!code) return;
+    
+    //     outputElement.innerHTML = '';
+    //     logCount = 0;
+    
+    //     // ---- Save originals ----
+    //     const originalConsole = {
+    //         log: console.log,
+    //         warn: console.warn,
+    //         error: console.error,
+    //         info: console.info,
+    //         table: console.table
+    //     };
+    
+    //     const createSafeConsole = (type) => (...args) => {
+    //         const content = args.map(arg => {
+    //             if (arg === null) return '<span class="object-null">null</span>';
+    //             if (arg === undefined) return '<span class="object-undefined">undefined</span>';
+    //             if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
+    //             if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
+    //             if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
+    //             if (typeof arg === 'function') {
+    //                 return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
+    //             }
+    //             if (typeof arg === 'object') {
+    //                 return createObjectInspector(arg);
+    //             }
+    //             return String(arg);
+    //         }).join(' ');
+    
+    //         addLogEntry(content, type);
+    //     };
+    
+    //     console.log = createSafeConsole('log');
+    //     console.warn = createSafeConsole('warn');
+    //     console.error = createSafeConsole('error');
+    //     console.info = createSafeConsole('info');
+    //     console.table = createSafeConsole('table');
+    
+    //     let finished = false;
+    //     let timer = null;
+    
+    //     function restoreConsole() {
+    //         if (finished) return;
+    //         finished = true;
+    //         clearTimeout(timer);
+    //         Object.assign(console, originalConsole);
+    //     }
+    
+    //     // Safety kill-switch
+    //     timer = setTimeout(() => {
+    //         if (!finished) {
+    //             addLogEntry('⏱️ Execution killed: took longer than 5 seconds', 'error');
+    //             restoreConsole();
+    //         }
+    //     }, 5000);
+    
+    //     try {
+    //         const result = eval(code);
+    
+    //         if (result instanceof Promise) {
+    //             // ASYNC: wait for it to finish before restoring console
+    //             result
+    //                 .then(v => {
+    //                     if (v !== undefined) console.log(v);
+    //                 })
+    //                 .catch(err => console.error(err))
+    //                 .finally(() => restoreConsole());
+    //         } else {
+    //             // SYNC: restore immediately
+    //             if (result !== undefined) console.log(result);
+    //             restoreConsole();
+    //         }
+    //     } catch (err) {
+    //         console.error(err.name + ': ' + err.message);
+    //         restoreConsole();
+    //     }
+    // }
+
+    // function runCode() {
+    //     const code = editor.getValue();
+    //     if (!code) return;
+    
+    //     outputElement.innerHTML = '';
+    //     logCount = 0;
+    
+    //     if (activeWorker) {
+    //         activeWorker.terminate();
+    //         activeWorker = null;
+    //     }
+    
+    //     const workerSrc = `
+    //         self.onmessage = function(e) {
+    //             const logs = [];
+    //             const wrap = (type) => (...args) => {
+    //                 logs.push({ type, args: args.map(a => {
+    //                     try { return JSON.parse(JSON.stringify(a)); }
+    //                     catch { return String(a); }
+    //                 })});
+    //             };
+    //             console.log = wrap('log');
+    //             console.warn = wrap('warn');
+    //             console.error = wrap('error');
+    //             console.info = wrap('info');
+    
+    //             try {
+    //                 const result = eval(e.data);
+    //                 if (result !== undefined) console.log(result);
+    //                 self.postMessage({ ok: true, logs });
+    //             } catch (err) {
+    //                 console.error(err.name + ': ' + err.message);
+    //                 self.postMessage({ ok: false, logs });
+    //             }
+    //         };
+    //     `;
+    //     const blob = new Blob([workerSrc], { type: 'application/javascript' });
+    //     activeWorker = new Worker(URL.createObjectURL(blob));
+    
+    //     const killTimer = setTimeout(() => {
+    //         addLogEntry('⏱️ Execution killed: took longer than 5 seconds', 'error');
+    //         activeWorker.terminate();
+    //         activeWorker = null;
+    //     }, SAFETY_LIMITS.maxExecutionTime);
+    
+    //     activeWorker.onmessage = (e) => {
+    //         clearTimeout(killTimer);
+    //         e.data.logs.forEach(l => {
+    //             const content = l.args.map(a => typeof a === 'object' ? createObjectInspector(a) : String(a)).join(' ');
+    //             addLogEntry(content, l.type);
+    //         });
+    //         activeWorker.terminate();
+    //         activeWorker = null;
+    //     };
+    
+    //     activeWorker.onerror = (err) => {
+    //         clearTimeout(killTimer);
+    //         addLogEntry(`Worker error: ${err.message}`, 'error');
+    //         activeWorker.terminate();
+    //         activeWorker = null;
+    //     };
+    
+    //     activeWorker.postMessage(code);
+    // }
     function runCode() {
         const code = editor.getValue();
         if (!code) return;
@@ -1055,14 +1200,12 @@ require(["vs/editor/editor.main"], async function () {
         outputElement.innerHTML = '';
         logCount = 0;
     
-        // ---- Save originals ----
         const originalConsole = {
-            log: console.log,
-            warn: console.warn,
-            error: console.error,
-            info: console.info,
-            table: console.table
+            log: console.log, warn: console.warn, error: console.error,
+            info: console.info, table: console.table
         };
+        const originalSetTimeout = window.setTimeout;
+        const originalSetInterval = window.setInterval;
     
         const createSafeConsole = (type) => (...args) => {
             const content = args.map(arg => {
@@ -1071,15 +1214,10 @@ require(["vs/editor/editor.main"], async function () {
                 if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
                 if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
                 if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
-                if (typeof arg === 'function') {
-                    return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
-                }
-                if (typeof arg === 'object') {
-                    return createObjectInspector(arg);
-                }
+                if (typeof arg === 'function') return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
+                if (typeof arg === 'object') return createObjectInspector(arg);
                 return String(arg);
             }).join(' ');
-    
             addLogEntry(content, type);
         };
     
@@ -1089,43 +1227,61 @@ require(["vs/editor/editor.main"], async function () {
         console.info = createSafeConsole('info');
         console.table = createSafeConsole('table');
     
+        let pendingTimers = 0;
+        let syncDone = false;
         let finished = false;
-        let timer = null;
     
-        function restoreConsole() {
-            if (finished) return;
+        function tryRestore() {
+            if (finished || !syncDone || pendingTimers > 0) return;
             finished = true;
-            clearTimeout(timer);
             Object.assign(console, originalConsole);
+            window.setTimeout = originalSetTimeout;
+            window.setInterval = originalSetInterval;
+            clearTimeout(hardKill);
         }
     
-        // Safety kill-switch
-        timer = setTimeout(() => {
+        // Wrap setTimeout so we know when scheduled callbacks have actually run
+        window.setTimeout = function (fn, delay, ...args) {
+            pendingTimers++;
+            return originalSetTimeout(() => {
+                try { fn(...args); }
+                catch (err) { console.error(err.name + ': ' + err.message); }
+                finally { pendingTimers--; tryRestore(); }
+            }, delay);
+        };
+        // (Leave setInterval un-wrapped for capture-purposes, or apply the same
+        // pattern with a max-fire-count if you want intervals logged too — but
+        // an interval that never clears would keep the console wrapped forever,
+        // so cap it.)
+    
+        // Absolute safety net — never keep console wrapped past maxExecutionTime
+        const hardKill = setTimeout(() => {
             if (!finished) {
                 addLogEntry('⏱️ Execution killed: took longer than 5 seconds', 'error');
-                restoreConsole();
+                finished = true;
+                Object.assign(console, originalConsole);
+                window.setTimeout = originalSetTimeout;
+                window.setInterval = originalSetInterval;
             }
-        }, 5000);
+        }, SAFETY_LIMITS.maxExecutionTime);
     
         try {
             const result = eval(code);
-    
             if (result instanceof Promise) {
-                // ASYNC: wait for it to finish before restoring console
+                pendingTimers++; // treat the promise like a pending async op
                 result
-                    .then(v => {
-                        if (v !== undefined) console.log(v);
-                    })
-                    .catch(err => console.error(err))
-                    .finally(() => restoreConsole());
+                    .then(v => { if (v !== undefined) console.log(v); })
+                    .catch(err => console.error(err.name + ': ' + err.message))
+                    .finally(() => { pendingTimers--; syncDone = true; tryRestore(); });
             } else {
-                // SYNC: restore immediately
                 if (result !== undefined) console.log(result);
-                restoreConsole();
+                syncDone = true;
+                tryRestore();
             }
         } catch (err) {
             console.error(err.name + ': ' + err.message);
-            restoreConsole();
+            syncDone = true;
+            tryRestore();
         }
     }
     window.clearOutput = function () {
