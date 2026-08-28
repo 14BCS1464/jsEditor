@@ -3,42 +3,173 @@ require.config({
         vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs"
     }
 });
-const roomId = getOrCreateRoomId();
-let socket = null;
-let isRemoteChange = false; // Flag to prevent infinite loops
-let editor = null; // Global editor reference
+
+let editor = null;
 let logCount = 0;
 let changeTimer = null;
 let saveTimer = null;
-let language = 'Javascript'
-let lastSentCode = '';
-let debounceSendTimer = null;
+let language = 'javascript';
+
+// ===== SAFETY LIMITS =====
+const SAFETY_LIMITS = {
+    maxCodeLength: 10000,
+    maxOutputLines: 1000,
+    maxExecutionTime: 5000,
+    maxIntervalRuns: 50
+};
+
+const WORKER_SOURCE = `
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function getFunctionParams(func) {
+    try {
+        const funcStr = func.toString();
+        const match = funcStr.match(/\\(([^)]*)\\)/);
+        return match ? escapeHtml(match[1]) : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+let inspectIdCounter = 0;
+
+function createObjectInspector(obj, depth, maxDepth, seen) {
+    depth = depth || 0;
+    maxDepth = maxDepth === undefined ? 5 : maxDepth;
+    seen = seen || new WeakSet();
+
+    if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
+    if (obj === null) return '<span class="object-null">null</span>';
+    if (obj === undefined) return '<span class="object-undefined">undefined</span>';
+
+    const type = typeof obj;
+
+    if (type === 'string') return '<span class="object-string">"' + escapeHtml(obj) + '"</span>';
+    if (type === 'number') return '<span class="object-number">' + obj + '</span>';
+    if (type === 'boolean') return '<span class="object-boolean">' + obj + '</span>';
+    if (type === 'function') {
+        return '<span class="object-value">\\u0192 ' + escapeHtml(obj.name || 'anonymous') +
+            '(' + getFunctionParams(obj) + ')</span>';
+    }
+
+    if (Array.isArray(obj)) {
+        if (obj.length === 0) return '<span class="object-value">[]</span>';
+        const id = 'inspect_' + (inspectIdCounter++);
+        let html = '<div class="object-inspector">';
+        html += '<span class="expandable" onclick="toggleExpand(\\'' + id + '\\')">Array(' + obj.length + ')</span>';
+        html += '<div id="' + id + '" class="object-tree collapsed">';
+        obj.forEach(function (item, index) {
+            html += '<div><span class="object-key">' + index + ':</span> ' +
+                createObjectInspector(item, depth + 1, maxDepth, seen) + '</div>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    if (type === 'object') {
+        if (seen.has(obj)) return '<span class="object-circular">[Circular Reference]</span>';
+        seen.add(obj);
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '<span class="object-value">{}</span>';
+        const id = 'inspect_' + (inspectIdCounter++);
+        let html = '<div class="object-inspector">';
+        html += '<span class="expandable" onclick="toggleExpand(\\'' + id + '\\')">' +
+            escapeHtml((obj.constructor && obj.constructor.name) || 'Object') + '</span>';
+        html += '<div id="' + id + '" class="object-tree collapsed">';
+        keys.forEach(function (key) {
+            html += '<div><span class="object-key">' + escapeHtml(key) + ':</span> ' +
+                createObjectInspector(obj[key], depth + 1, maxDepth, seen) + '</div>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    return '<span class="object-value">' + escapeHtml(String(obj)) + '</span>';
+}
+
+let logLineCount = 0;
+const MAX_OUTPUT_LINES = ${SAFETY_LIMITS.maxOutputLines};
+let floodWarned = false;
+
+function emit(type, args) {
+    if (logLineCount > MAX_OUTPUT_LINES) {
+        if (!floodWarned) {
+            floodWarned = true;
+            self.postMessage({ kind: 'log', logType: 'warn', html: '\\u{1F9F9} Output truncated -- too many log lines' });
+            self.postMessage({ kind: 'flood' });
+        }
+        return;
+    }
+    logLineCount++;
+    const content = args.map(function (arg) {
+        return createObjectInspector(arg, 0, 5, new WeakSet());
+    }).join(' ');
+    self.postMessage({ kind: 'log', logType: type, html: content });
+}
+
+console.log = function () { emit('log', Array.prototype.slice.call(arguments)); };
+console.warn = function () { emit('warn', Array.prototype.slice.call(arguments)); };
+console.error = function () { emit('error', Array.prototype.slice.call(arguments)); };
+console.info = function () { emit('info', Array.prototype.slice.call(arguments)); };
+console.table = function () { emit('log', Array.prototype.slice.call(arguments)); };
+
+const MAX_INTERVAL_RUNS = ${SAFETY_LIMITS.maxIntervalRuns};
+const _origSetInterval = self.setInterval;
+self.setInterval = function (fn, delay) {
+    let count = 0;
+    const args = Array.prototype.slice.call(arguments, 2);
+    const id = _origSetInterval(function () {
+        count++;
+        if (count > MAX_INTERVAL_RUNS) {
+            self.clearInterval(id);
+            console.warn('Interval auto-stopped after max iterations');
+            return;
+        }
+        try {
+            if (typeof fn === 'function') fn.apply(null, args);
+        } catch (err) {
+            console.error(err.name + ': ' + err.message);
+        }
+    }, delay);
+    return id;
+};
+
+self.onmessage = function (e) {
+    const code = e.data.code;
+    try {
+        const result = (0, eval)(code);
+        if (result && typeof result.then === 'function') {
+            result
+                .then(function (v) { if (v !== undefined) console.log(v); })
+                .catch(function (err) { console.error(err.name + ': ' + err.message); })
+                .finally(function () { self.postMessage({ kind: 'sync-done' }); });
+        } else {
+            if (result !== undefined) console.log(result);
+            self.postMessage({ kind: 'sync-done' });
+        }
+    } catch (err) {
+        console.error(err.name + ': ' + err.message);
+        self.postMessage({ kind: 'sync-done', error: true });
+    }
+};
+`;
 
 const FONT_MIN = 8;
 const FONT_MAX = 32;
 const FONT_STEP = 1;
 
-// --- Multi-tab state (top-level so it's visible to saveCodeToStorage() too) ---
-let tabs = [];          // { id, name, model, viewState }
+// --- Multi-tab state ---
+let tabs = [];
 let activeTabId = null;
 let tabCounter = 0;
 const TABS_STORAGE_KEY = 'jsEditorTabs';
 
-function getOrCreateRoomId() {
-    const params = new URLSearchParams(window.location.search);
-    let roomId = params.get("room");
-
-    if (!roomId) {
-        roomId = generateRoomId();
-        params.set("room", roomId);
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-    }
-
-    return roomId;
-}
-
-// Initialize Socket.IO connection
 function createSaveIndicator() {
     const indicator = document.createElement('div');
     indicator.id = 'saveIndicator';
@@ -57,138 +188,11 @@ function createSaveIndicator() {
     document.getElementById('editor').appendChild(indicator);
     return indicator;
 }
-function getSocketUrl() {
-    return "http://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com"
-}
-const socketUrl = getSocketUrl();
-const isSecure = socketUrl.startsWith('https://');
-async function initializeSocket() {
-
-    if (socket) return;
-
-    try {
-
-        socket = await io(socketUrl, {
-            secure: true,
-            transports: ['polling', 'websocket'],
-            upgrade: true,
-            forceNew: true,
-            timeout: 10000,
-            pingTimeout: 30000,
-            pingInterval: 15000,
-            reconnection: true,
-            reconnectionAttempts: 0,
-            withCredentials: false,
-            rejectUnauthorized: false
-        });
-
-
-        socket.on("connect", () => {
-            console.log("✅ Connected to server. Socket ID:", socket.id);
-            socket.emit("join-room", { roomId });
-            updateConnectionStatus(true);
-            console.log("✅ Connected to the server. Collaborative editing is enabled!");
-        });
-
-        socket.on("connect_error", (error) => {
-            updateConnectionStatus(false);
-            addLogEntry(`Connection error: ${error}`, 'error');
-            console.error("❌ Connection error:", error);
-        });
-
-        socket.on("disconnect", (reason) => {
-            console.log("⚠️ Disconnected:", reason);
-            updateConnectionStatus(false);
-            addLogEntry(`Disconnected: ${reason}`, 'warn');
-            console.log(`Disconnected from server: ${reason}`);
-        });
-
-        socket.on("reconnect", (attemptNumber) => {
-            console.log("🔄 Reconnected after", attemptNumber, "attempts");
-            socket.emit("join-room", { roomId });
-            updateConnectionStatus(true);
-            console.log(`🔄 Reconnected to the server after ${attemptNumber} attempt(s).`);
-        });
-
-        // Initialize with existing code
-        socket.on("init-code", (code) => {
-            console.log("📥 Received init-code:", code ? "Code received" : "Empty");
-            if (editor && typeof editor.setValue === "function") {
-                isRemoteChange = true;
-                const pos = editor.getPosition();
-                editor.setValue(code.code || '');
-                if (pos) editor.setPosition(pos);
-                setTimeout(() => { isRemoteChange = false; }, 100);
-                console.log("Received the initial code from server.");
-            }
-        });
-
-        // Handle code updates from other users
-        socket.on("code-update", (data) => {
-            const { code, updatedBy } = data;
-
-            if (updatedBy === socket.id) {
-                console.log('🔄 Ignoring self-update');
-                return;
-            }
-
-            console.log(`📥 Update from ${updatedBy}, length: ${code.length}`);
-
-            const currentCode = editor.getValue();
-
-            if (currentCode !== code) {
-                const cursorState = editor.saveViewState();
-
-                isRemoteChange = true;
-                editor.setValue(code);
-                isRemoteChange = false;
-
-                if (cursorState) {
-                    setTimeout(() => {
-                        editor.restoreViewState(cursorState);
-                    }, 10);
-                }
-
-                lastSentCode = code;
-                saveCodeToStorage();
-            }
-        });
-
-        socket.on("user-joined", (data) => {
-            console.log(`👤 User ${data.socketId} joined the room`);
-        });
-
-        socket.on("user-left", (data) => {
-            console.log(`👤 User ${data.socketId} left the room`);
-        });
-
-        let typingTimer = null;
-        editor.onDidChangeModelContent(() => {
-            if (isRemoteChange) return;
-
-            socket.emit("typing-start", { roomId });
-
-            if (typingTimer) clearTimeout(typingTimer);
-
-            typingTimer = setTimeout(() => {
-                socket.emit("typing-end", { roomId });
-            }, 1000);
-        });
-
-        socket.on("user-typing", (data) => {
-            if (data.socketId !== socket.id) {
-                console.log(`✍️ User ${data.socketId} is typing...`);
-            }
-        });
-
-    } catch (error) {
-        console.error("Socket initialization error:", error);
-        addLogEntry(`Socket error: ${error.message}`, 'error');
-    }
-}
 
 function addLogEntry(content, type = 'log') {
     const outputElement = document.getElementById("output");
+    if (!outputElement) return;
+
     logCount++;
     const timestamp = new Date().toLocaleTimeString();
 
@@ -204,11 +208,11 @@ function addLogEntry(content, type = 'log') {
 }
 
 function saveCodeToStorage() {
-    persistTabs(); // saves all open tabs' latest content
-    const code = editor.getValue();
+    persistTabs();
+    const code = editor ? editor.getValue() : '';
 
     try {
-        localStorage.setItem('jsEditorCode', code); // legacy key, kept for backward compatibility
+        localStorage.setItem('jsEditorCode', code);
         const saveIndicator = document.getElementById('saveIndicator') || createSaveIndicator();
         saveIndicator.style.opacity = '1';
         setTimeout(() => {
@@ -219,51 +223,36 @@ function saveCodeToStorage() {
     }
 }
 
-function updateConnectionStatus(isConnected) {
-    let statusElement = document.getElementById('connectionStatus');
-    if (!statusElement) {
-        statusElement = document.createElement('div');
-        statusElement.id = 'connectionStatus';
-        statusElement.style.position = 'fixed';
-        statusElement.style.bottom = '10px';
-        statusElement.style.left = '10px';
-        statusElement.style.padding = '5px 10px';
-        statusElement.style.borderRadius = '4px';
-        statusElement.style.fontSize = '12px';
-        statusElement.style.zIndex = '1000';
-        statusElement.style.fontFamily = 'monospace';
-        document.body.appendChild(statusElement);
-    }
+// --- Worker management ---
+let currentWorker = null;
+let currentHardKillTimer = null;
+let workerBlobUrl = null;
 
-    if (isConnected) {
-        statusElement.textContent = `🟢 Connected (Room: ${roomId})`;
-        statusElement.style.background = 'rgba(0, 184, 148, 0.9)';
-        statusElement.style.color = 'white';
-        statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    } else {
-        statusElement.textContent = '🔴 Disconnected';
-        statusElement.style.background = 'rgba(214, 48, 49, 0.9)';
-        statusElement.style.color = 'white';
-        statusElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+function spawnWorker() {
+    if (!workerBlobUrl) {
+        const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
+        workerBlobUrl = URL.createObjectURL(blob);
+    }
+    return new Worker(workerBlobUrl);
+}
+
+function terminateCurrentWorker(reason) {
+    if (currentHardKillTimer) {
+        clearTimeout(currentHardKillTimer);
+        currentHardKillTimer = null;
+    }
+    if (currentWorker) {
+        currentWorker.terminate();
+        currentWorker = null;
+        if (reason) addLogEntry(reason, 'warn');
     }
 }
 
-function generateRoomId(length = 6) {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let id = "";
-    for (let i = 0; i < length; i++) {
-        id += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return id;
-}
-
-// --- Multi-tab functions (top-level) ---
-
+// --- Multi-tab functions ---
 function createTab(name, content = '') {
     tabCounter++;
     const id = `tab_${Date.now()}_${tabCounter}`;
     const model = monaco.editor.createModel(content, 'javascript');
-
     const tab = { id, name, model, viewState: null };
     tabs.push(tab);
     return tab;
@@ -271,7 +260,7 @@ function createTab(name, content = '') {
 
 function renderTabs() {
     const tabList = document.getElementById('tabList');
-    if (!tabList) return; // guard in case the tab bar HTML hasn't been added yet
+    if (!tabList) return;
     tabList.innerHTML = '';
 
     tabs.forEach(tab => {
@@ -296,7 +285,6 @@ function renderTabs() {
         el.appendChild(nameSpan);
         el.appendChild(closeBtn);
         el.addEventListener('click', () => switchToTab(tab.id));
-
         tabList.appendChild(el);
     });
 }
@@ -313,17 +301,15 @@ function switchToTab(id) {
     if (!nextTab) return;
 
     activeTabId = id;
-    isRemoteChange = true; // avoid triggering socket/save logic during the swap
     editor.setModel(nextTab.model);
     if (nextTab.viewState) editor.restoreViewState(nextTab.viewState);
-    isRemoteChange = false;
 
     editor.focus();
     renderTabs();
     persistTabs();
 }
+
 function showToast(message, type = 'warn') {
-    // Remove existing toast if any
     const existing = document.getElementById('customToast');
     if (existing) existing.remove();
 
@@ -333,7 +319,7 @@ function showToast(message, type = 'warn') {
 
     const bgColor = type === 'error' ? 'rgba(214, 48, 49, 0.95)' :
                     type === 'success' ? 'rgba(0, 184, 148, 0.95)' :
-                    'rgba(253, 203, 110, 0.95)'; // warn
+                    'rgba(253, 203, 110, 0.95)';
 
     toast.style.cssText = `
         position: fixed;
@@ -351,7 +337,6 @@ function showToast(message, type = 'warn') {
         animation: toastIn 0.25s ease;
     `;
 
-    // Add animation style once
     if (!document.getElementById('toastStyle')) {
         const style = document.createElement('style');
         style.id = 'toastStyle';
@@ -369,8 +354,6 @@ function showToast(message, type = 'warn') {
     }
 
     document.body.appendChild(toast);
-
-    // Auto remove after 2.5s
     setTimeout(() => {
         toast.style.animation = 'toastOut 0.25s ease forwards';
         setTimeout(() => toast.remove(), 250);
@@ -382,7 +365,6 @@ function addNewTab() {
         showToast('⚠️ Maximum 10 tabs allowed', 'warn');
         return;
     }
-
     const name = `untitled-${tabs.length + 1}.js`;
     const tab = createTab(name, '');
     switchToTab(tab.id);
@@ -427,9 +409,7 @@ function loadTabs() {
     }
 }
 
-// ========== Custom Modal Helper (top-level) ==========
 function createModal({ title, content, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Cancel' }) {
-    // Remove any existing modal
     const existing = document.getElementById('customModal');
     if (existing) existing.remove();
 
@@ -481,7 +461,6 @@ function createModal({ title, content, onConfirm, onCancel, confirmText = 'OK', 
         </div>
     `;
 
-    // Add animation only once
     if (!document.getElementById('modalFadeInStyle')) {
         const style = document.createElement('style');
         style.id = 'modalFadeInStyle';
@@ -500,7 +479,6 @@ function createModal({ title, content, onConfirm, onCancel, confirmText = 'OK', 
     const contentEl = modal.querySelector('#modalContent');
     contentEl.appendChild(content);
 
-    // Focus first input if present
     const input = contentEl.querySelector('input');
     if (input) {
         setTimeout(() => input.focus(), 50);
@@ -521,7 +499,6 @@ function createModal({ title, content, onConfirm, onCancel, confirmText = 'OK', 
             overlay.remove();
             resolve(null);
         };
-        // Close on overlay click
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 overlay.remove();
@@ -590,7 +567,6 @@ function closeTab(id) {
         } else {
             renderTabs();
         }
-
         persistTabs();
     };
 
@@ -616,25 +592,21 @@ function closeTab(id) {
             }
         });
     } else {
-        // Empty tab → close immediately
         doClose();
     }
 }
 
-require(["vs/editor/editor.main"], async function () {
+require(["vs/editor/editor.main"], function () {
 
     let currentFontSize = parseInt(localStorage.getItem('jsEditorFontSize'), 10) || 14;
 
     const fontSizeLabel = document.getElementById('fontSizeLabel');
     if (fontSizeLabel) fontSizeLabel.textContent = currentFontSize;
 
-    // Create the editor WITHOUT value/language — the active tab's model supplies both
     editor = monaco.editor.create(document.getElementById("editor"), {
         theme: "vs-light",
         automaticLayout: true,
-        minimap: {
-            enabled: true
-        },
+        minimap: { enabled: true },
         scrollBeyondLastLine: true,
         fontFamily: "'Fira Code', 'Consolas', monospace",
         fontSize: currentFontSize,
@@ -648,7 +620,7 @@ require(["vs/editor/editor.main"], async function () {
         }
     });
 
-    // Load saved tabs, or migrate the old single-file save into tab 1
+    // Load tabs or create default
     const hadSavedTabs = loadTabs();
     if (!hadSavedTabs) {
         const savedCode = localStorage.getItem('jsEditorCode');
@@ -671,25 +643,6 @@ require(["vs/editor/editor.main"], async function () {
     const MAX_EXECUTIONS_PER_MINUTE = 20;
     const EXECUTION_DELAY = 300;
 
-    const SAFETY_LIMITS = {
-        maxCodeLength: 10000,
-        maxOutputLines: 1000,
-        maxExecutionTime: 5000,
-        dangerousPatterns: [
-            /while\s*\(\s*true\s*\)/gi,
-            /for\s*\(\s*;\s*;\s*\)/gi,
-            /setInterval/gi,
-            /alert\s*\(/gi,
-            /confirm\s*\(/gi,
-            /prompt\s*\(/gi,
-            /document\.write/gi,
-            /eval\s*\(/gi,
-            /Function\s*\(/gi,
-            /setTimeout.*setTimeout/gi,
-            /\.innerHTML\s*=/gi
-        ]
-    };
-
     function isRateLimited() {
         const now = Date.now();
         if (now - lastExecutionTime < 60000) {
@@ -698,37 +651,13 @@ require(["vs/editor/editor.main"], async function () {
             executionCount = 1;
             lastExecutionTime = now;
         }
-
-        if (executionCount > MAX_EXECUTIONS_PER_MINUTE) {
-            return true;
-        }
-        return false;
+        return executionCount > MAX_EXECUTIONS_PER_MINUTE;
     }
 
     function isSafeCode(code) {
         if (!code || code.length > SAFETY_LIMITS.maxCodeLength) {
             return { safe: false, reason: 'Code too long or empty' };
         }
-
-        for (const pattern of SAFETY_LIMITS.dangerousPatterns) {
-            if (pattern.test(code)) {
-                return {
-                    safe: false,
-                    reason: `Potentially dangerous pattern detected: ${pattern.source}`
-                };
-            }
-        }
-
-        const loopCount = (code.match(/for\s*\(|while\s*\(|do\s*{/gi) || []).length;
-        if (loopCount > 5) {
-            return { safe: false, reason: 'Too many loops detected' };
-        }
-
-        const functionCallCount = (code.match(/\w+\s*\(/gi) || []).length;
-        if (functionCallCount > 50) {
-            return { safe: false, reason: 'Too many function calls detected' };
-        }
-
         return { safe: true };
     }
 
@@ -761,19 +690,20 @@ require(["vs/editor/editor.main"], async function () {
             setFontSize(currentFontSize - FONT_STEP);
         }
     });
+
     function safeAutoExecute() {
         if (!autoExecuteEnabled || isRateLimited()) return;
-    
+
         const code = editor.getValue();
         const safetyCheck = isSafeCode(code);
-    
+
         if (!safetyCheck.safe) {
             addLogEntry(`⛔ Auto-execution blocked: ${safetyCheck.reason}`, 'warn');
             return;
         }
-    
+
         if (autoExecuteTimer) clearTimeout(autoExecuteTimer);
-    
+
         autoExecuteTimer = setTimeout(() => {
             try {
                 runCodeSafely(code);
@@ -783,105 +713,51 @@ require(["vs/editor/editor.main"], async function () {
         }, EXECUTION_DELAY);
     }
 
-    function runCodeSafely(code) {
-        if (!code) code = editor.getValue();
-        const startTime = Date.now();
-        try {
-            runCode(code);
-        } finally {
-            const executionTime = Date.now() - startTime;
-            if (executionTime > 1000) {
-                addLogEntry(`⏱️ Execution time: ${executionTime}ms`, 'info');
-            }
-        }
-    }
-    editor.onDidChangeModelContent((event) => {
-        if (isRemoteChange) return;
-
+    editor.onDidChangeModelContent(() => {
         const code = editor.getValue();
 
-        if (debounceSendTimer) {
-            clearTimeout(debounceSendTimer);
-        }
-
-        debounceSendTimer = setTimeout(() => {
-            if (code !== lastSentCode) {
-                try {
-                    socket.emit("code-change", {
-                        roomId,
-                        code,
-                        timestamp: Date.now(),
-                        senderId: socket.id
-                    });
-                    lastSentCode = code;
-                    console.log('📤 Sent code update');
-                } catch (e) {
-                    console.error("Error emitting code-change:", e);
-                }
-            }
-        }, 150);
-
-        if (saveTimer) {
-            clearTimeout(saveTimer);
-        }
+        if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             saveCodeToStorage();
-            console.log('💾 Auto-saved to local storage');
         }, 1000);
 
         if (autoExecuteEnabled && code.trim()) {
-            if (changeTimer) {
-                clearTimeout(changeTimer);
-            }
+            if (changeTimer) clearTimeout(changeTimer);
             changeTimer = setTimeout(() => {
                 safeAutoExecute();
-                console.log('⚡ Auto-executed');
             }, 800);
         }
     });
 
-
     function createObjectInspector(obj, depth = 0, maxDepth = 5, seen = new WeakSet()) {
         if (depth > maxDepth) return '<span class="object-value">[Object]</span>';
-
         if (obj === null) return '<span class="object-null">null</span>';
         if (obj === undefined) return '<span class="object-undefined">undefined</span>';
 
         const type = typeof obj;
 
-        if (type === 'string') {
-            return `<span class="object-string">"${obj}"</span>`;
-        }
-        if (type === 'number') {
-            return `<span class="object-number">${obj}</span>`;
-        }
-        if (type === 'boolean') {
-            return `<span class="object-boolean">${obj}</span>`;
-        }
+        if (type === 'string') return `<span class="object-string">"${obj}"</span>`;
+        if (type === 'number') return `<span class="object-number">${obj}</span>`;
+        if (type === 'boolean') return `<span class="object-boolean">${obj}</span>`;
         if (type === 'function') {
             return `<span class="object-value">ƒ ${obj.name || 'anonymous'}(${getFunctionParams(obj)})</span>`;
         }
 
         if (Array.isArray(obj)) {
             if (obj.length === 0) return '<span class="object-value">[]</span>';
-
             const id = `array_${Date.now()}_${Math.random()}`;
             let html = `<div class="object-inspector">`;
             html += `<span class="expandable" onclick="toggleExpand('${id}')">Array(${obj.length})</span>`;
             html += `<div id="${id}" class="object-tree collapsed">`;
-
             obj.forEach((item, index) => {
                 html += `<div><span class="object-key">${index}:</span> ${createObjectInspector(item, depth + 1, maxDepth, seen)}</div>`;
             });
-
             html += `</div></div>`;
             return html;
         }
 
         if (type === 'object') {
-            if (seen.has(obj)) {
-                return '<span class="object-circular">[Circular Reference]</span>';
-            }
+            if (seen.has(obj)) return '<span class="object-circular">[Circular Reference]</span>';
             seen.add(obj);
 
             const keys = Object.keys(obj);
@@ -896,7 +772,6 @@ require(["vs/editor/editor.main"], async function () {
                 html += `<div><span class="object-key">${key}:</span> ${createObjectInspector(obj[key], depth + 1, maxDepth, seen)}</div>`;
             });
 
-            // Always show prototype (even Object.prototype)
             const prototype = Object.getPrototypeOf(obj);
             if (prototype) {
                 html += createPrototypeSection(prototype, 0, new WeakSet());
@@ -911,30 +786,30 @@ require(["vs/editor/editor.main"], async function () {
 
     function createPrototypeSection(prototype, depth = 5, visitedProtos = new WeakSet()) {
         if (!prototype || depth > 6) return '';
-    
+
         const protoKey = prototype.constructor ? prototype.constructor.name : (prototype === null ? 'null' : 'Unknown');
-    
+
         if (visitedProtos.has(prototype)) {
             return `<div class="prototype-section">
                 <div class="prototype-header">🔗 [[Prototype]]: ${protoKey} (circular)</div>
             </div>`;
         }
         visitedProtos.add(prototype);
-    
+
         const id = `proto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         let html = `<div class="prototype-section">`;
         html += `<div class="prototype-header expandable" onclick="toggleExpand('${id}')">`;
         html += `🔗 [[Prototype]]: ${protoKey}`;
         html += `</div>`;
         html += `<div id="${id}" class="prototype-content collapsed">`;
-    
+
         try {
             if (prototype === null) {
                 html += `<div style="color:#aaa; font-style:italic;">null</div>`;
             } else {
                 const allKeys = Object.getOwnPropertyNames(prototype);
                 const descriptors = Object.getOwnPropertyDescriptors(prototype);
-    
+
                 const sortedKeys = allKeys
                     .filter(key => key !== 'constructor')
                     .sort((a, b) => {
@@ -944,18 +819,18 @@ require(["vs/editor/editor.main"], async function () {
                         if (!aIsFunction && bIsFunction) return 1;
                         return a.localeCompare(b);
                     });
-    
+
                 let methodCount = 0;
                 let propertyCount = 0;
-    
+
                 sortedKeys.forEach(key => {
                     const descriptor = descriptors[key];
                     if (!descriptor) return;
-    
+
                     const isMethod = typeof descriptor.value === 'function';
                     const isGetter = typeof descriptor.get === 'function';
                     const isSetter = typeof descriptor.set === 'function';
-    
+
                     if (isMethod) {
                         methodCount++;
                         const params = getFunctionParams(descriptor.value);
@@ -987,7 +862,7 @@ require(["vs/editor/editor.main"], async function () {
                         html += `</div>`;
                     }
                 });
-    
+
                 html += `<div style="margin-top: 10px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; font-size: 11px; color: #a0a0a0;">`;
                 html += `📊 Summary: ${methodCount} methods, ${propertyCount} properties`;
                 html += `</div>`;
@@ -995,16 +870,16 @@ require(["vs/editor/editor.main"], async function () {
         } catch (error) {
             html += `<div style="color: #ff6b6b; font-style: italic;">Error inspecting prototype: ${error.message}</div>`;
         }
-    
-        // ★ Continue the chain until null
+
         const parentProto = Object.getPrototypeOf(prototype);
-        if (parentProto !== undefined) {          // keeps going until null
+        if (parentProto !== undefined) {
             html += createPrototypeSection(parentProto, depth + 1, visitedProtos);
         }
-    
+
         html += `</div></div>`;
         return html;
     }
+
     function getFunctionParams(func) {
         try {
             const funcStr = func.toString();
@@ -1030,344 +905,66 @@ require(["vs/editor/editor.main"], async function () {
         }
     };
 
-    let activeWorker = null;
+    function runCode(code) {
+        if (typeof code !== 'string') code = editor.getValue();
+        if (!code || !code.trim()) return;
 
-    // function runCode(code) {
-    //     // Accept code from caller (auto-execute / manual), fallback to editor.
-    //     // Guard against being called directly as a DOM event handler, in which
-    //     // case `code` would be a MouseEvent/PointerEvent object, not a string —
-    //     // that used to throw inside `.trim()` below and silently abort with
-    //     // nothing shown in the output panel.
-    //     if (typeof code !== 'string') code = editor.getValue();
-    //     if (!code || !code.trim()) return;
-    
-    //     // Safety check — now applies to BOTH manual and auto execution
-    //     const safetyCheck = isSafeCode(code);
-    //     if (!safetyCheck.safe) {
-    //         addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
-    //         return;
-    //     }
-    
-    //     // Guard against log overflow
-    //     if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
-    //         clearOutput();
-    //         addLogEntry('🧹 Output cleared due to size limit', 'info');
-    //     }
-    
-    //     outputElement.innerHTML = '';
-    //     logCount = 0;
-    
-    //     const originalConsole = {
-    //         log: console.log, warn: console.warn, error: console.error,
-    //         info: console.info, table: console.table
-    //     };
-    //     const originalSetTimeout = window.setTimeout;
-    //     const originalSetInterval = window.setInterval;
-    //     const originalClearTimeout = window.clearTimeout;
-    //     const originalClearInterval = window.clearInterval;
-    
-    //     let pendingTimers = 0;
-    //     let syncDone = false;
-    //     let finished = false;
-    //     let hardKill = null;
-    //     const activeTimerIds = new Set();
-    
-    //     function restore() {
-    //         if (finished) return;
-    //         finished = true;
-    //         if (hardKill) originalClearTimeout(hardKill);
-    //         Object.assign(console, originalConsole);
-    //         window.setTimeout = originalSetTimeout;
-    //         window.setInterval = originalSetInterval;
-    //         window.clearTimeout = originalClearTimeout;
-    //         window.clearInterval = originalClearInterval;
-    //     }
-    
-    //     function tryRestore() {
-    //         if (finished || !syncDone || pendingTimers > 0) return;
-    //         restore();
-    //     }
-    
-    //     // Wrap setTimeout so we know when scheduled callbacks have actually run
-    //     window.setTimeout = function (fn, delay, ...args) {
-    //         pendingTimers++;
-    //         const id = originalSetTimeout((...cbArgs) => {
-    //             if (!activeTimerIds.has(id)) return; // was cleared early
-    //             activeTimerIds.delete(id);
-    //             try {
-    //                 if (typeof fn === 'function') fn(...cbArgs);
-    //             } catch (err) {
-    //                 console.error(err.name + ': ' + err.message);
-    //             } finally {
-    //                 pendingTimers--;
-    //                 tryRestore();
-    //             }
-    //         }, delay, ...args);
-    //         activeTimerIds.add(id);
-    //         return id;
-    //     };
-    
-    //     // Wrap clearTimeout so cleared timers don't leak pendingTimers
-    //     window.clearTimeout = function (id) {
-    //         if (activeTimerIds.has(id)) {
-    //             activeTimerIds.delete(id);
-    //             pendingTimers--;
-    //             tryRestore();
-    //         }
-    //         return originalClearTimeout(id);
-    //     };
-    
-    //     // Wrap setInterval with a hard cap so it can't run forever with hijacked console
-    //     window.setInterval = function (fn, delay, ...args) {
-    //         let count = 0;
-    //         const MAX_RUNS = 50;
-    //         const id = originalSetInterval((...cbArgs) => {
-    //             count++;
-    //             if (count > MAX_RUNS) {
-    //                 originalClearInterval(id);
-    //                 console.warn('Interval auto-stopped after max iterations');
-    //                 return;
-    //             }
-    //             try {
-    //                 if (typeof fn === 'function') fn(...cbArgs);
-    //             } catch (err) {
-    //                 console.error(err.name + ': ' + err.message);
-    //             }
-    //         }, delay, ...args);
-    //         return id;
-    //     };
-    
-    //     // ★ CRITICAL: schedule hardKill with ORIGINAL setTimeout (before it was wrapped)
-    //     hardKill = originalSetTimeout(() => {
-    //         if (!finished) {
-    //             addLogEntry('⏱️ Execution timeout — console restored', 'error');
-    //             restore();
-    //         }
-    //     }, SAFETY_LIMITS.maxExecutionTime);
-    
-    //     const createSafeConsole = (type) => (...args) => {
-    //         const content = args.map(arg => {
-    //             if (arg === null) return '<span class="object-null">null</span>';
-    //             if (arg === undefined) return '<span class="object-undefined">undefined</span>';
-    //             if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
-    //             if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
-    //             if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
-    //             if (typeof arg === 'function') {
-    //                 try {
-    //                     return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
-    //                 } catch (e) {
-    //                     return `<span class="object-value">ƒ [function]</span>`;
-    //                 }
-    //             }
-    //             if (typeof arg === 'object') return createObjectInspector(arg);
-    //             return String(arg);
-    //         }).join(' ');
-    //         addLogEntry(content, type);
-    //     };
-    
-    //     console.log = createSafeConsole('log');
-    //     console.warn = createSafeConsole('warn');
-    //     console.error = createSafeConsole('error');
-    //     console.info = createSafeConsole('info');
-    //     console.table = createSafeConsole('table');
-    
-    //     try {
-    //         const result = eval(code);
-    //         if (result instanceof Promise) {
-    //             pendingTimers++; // treat the promise like a pending async op
-    //             result
-    //                 .then(v => { if (v !== undefined) console.log(v); })
-    //                 .catch(err => console.error(err.name + ': ' + err.message))
-    //                 .finally(() => {
-    //                     pendingTimers--;
-    //                     syncDone = true;
-    //                     tryRestore();
-    //                 });
-    //         } else {
-    //             if (result !== undefined) console.log(result);
-    //             syncDone = true;
-    //             tryRestore();
-    //         }
-    //     } catch (err) {
-    //         console.error(err.name + ': ' + err.message);
-    //         syncDone = true;
-    //         tryRestore();
-    //     }
-    // }
-
-    // Track timeouts globally so we can nuke them between runs
-let _executionTimeoutIds = [];
-let _executionIntervalIds = [];
-
-function runCode(code) {
-    // Guard: DOM event handlers pass an Event object, not a string
-    if (typeof code !== 'string') code = editor.getValue();
-    if (!code || !code.trim()) return;
-
-    // Safety check — applies to BOTH manual and auto execution
-    const safetyCheck = isSafeCode(code);
-    if (!safetyCheck.safe) {
-        addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
-        return;
-    }
-
-    // Guard against log overflow
-    if (outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
-        clearOutput();
-        addLogEntry('🧹 Output cleared due to size limit', 'info');
-    }
-
-    // ── CRITICAL: Kill any pending timers from the PREVIOUS execution ──
-    _executionTimeoutIds.forEach(id => clearTimeout(id));
-    _executionIntervalIds.forEach(id => clearInterval(id));
-    _executionTimeoutIds = [];
-    _executionIntervalIds = [];
-
-    outputElement.innerHTML = '';
-    logCount = 0;
-
-    const originalConsole = {
-        log: console.log, warn: console.warn, error: console.error,
-        info: console.info, table: console.table
-    };
-    const originalSetTimeout = window.setTimeout;
-    const originalSetInterval = window.setInterval;
-    const originalClearTimeout = window.clearTimeout;
-    const originalClearInterval = window.clearInterval;
-
-    let pendingTimers = 0;
-    let syncDone = false;
-    let finished = false;
-    let hardKill = null;
-
-    function restore() {
-        if (finished) return;
-        finished = true;
-        if (hardKill) originalClearTimeout(hardKill);
-        Object.assign(console, originalConsole);
-        window.setTimeout = originalSetTimeout;
-        window.setInterval = originalSetInterval;
-        window.clearTimeout = originalClearTimeout;
-        window.clearInterval = originalClearInterval;
-    }
-
-    function tryRestore() {
-        if (finished || !syncDone || pendingTimers > 0) return;
-        restore();
-    }
-
-    // Wrap setTimeout — track IDs and count pending callbacks
-    window.setTimeout = function (fn, delay, ...args) {
-        pendingTimers++;
-        const id = originalSetTimeout((...cbArgs) => {
-            // Remove from tracking array once fired
-            _executionTimeoutIds = _executionTimeoutIds.filter(tid => tid !== id);
-            try {
-                if (typeof fn === 'function') fn(...cbArgs);
-            } catch (err) {
-                console.error(err.name + ': ' + err.message);
-            } finally {
-                pendingTimers--;
-                tryRestore();
-            }
-        }, delay, ...args);
-        _executionTimeoutIds.push(id);
-        return id;
-    };
-
-    // Wrap clearTimeout — keep counts accurate
-    window.clearTimeout = function (id) {
-        _executionTimeoutIds = _executionTimeoutIds.filter(tid => tid !== id);
-        return originalClearTimeout(id);
-    };
-
-    // Wrap setInterval — hard cap + tracking
-    window.setInterval = function (fn, delay, ...args) {
-        let count = 0;
-        const MAX_RUNS = 50;
-        const id = originalSetInterval((...cbArgs) => {
-            count++;
-            if (count > MAX_RUNS) {
-                originalClearInterval(id);
-                _executionIntervalIds = _executionIntervalIds.filter(iid => iid !== id);
-                console.warn('Interval auto-stopped after max iterations');
-                return;
-            }
-            try {
-                if (typeof fn === 'function') fn(...cbArgs);
-            } catch (err) {
-                console.error(err.name + ': ' + err.message);
-            }
-        }, delay, ...args);
-        _executionIntervalIds.push(id);
-        return id;
-    };
-
-    window.clearInterval = function (id) {
-        _executionIntervalIds = _executionIntervalIds.filter(iid => iid !== id);
-        return originalClearInterval(id);
-    };
-
-    // Absolute safety net — restore console after maxExecutionTime
-    hardKill = originalSetTimeout(() => {
-        if (!finished) {
-            addLogEntry('⏱️ Execution timeout — console restored', 'error');
-            restore();
+        const safetyCheck = isSafeCode(code);
+        if (!safetyCheck.safe) {
+            addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
+            return;
         }
-    }, SAFETY_LIMITS.maxExecutionTime);
 
-    const createSafeConsole = (type) => (...args) => {
-        const content = args.map(arg => {
-            if (arg === null) return '<span class="object-null">null</span>';
-            if (arg === undefined) return '<span class="object-undefined">undefined</span>';
-            if (typeof arg === 'string') return `<span class="object-string">"${arg}"</span>`;
-            if (typeof arg === 'number') return `<span class="object-number">${arg}</span>`;
-            if (typeof arg === 'boolean') return `<span class="object-boolean">${arg}</span>`;
-            if (typeof arg === 'function') {
-                try {
-                    return `<span class="object-value">ƒ ${arg.name || 'anonymous'}(${getFunctionParams(arg)})</span>`;
-                } catch (e) {
-                    return `<span class="object-value">ƒ [function]</span>`;
+        terminateCurrentWorker();
+
+        if (outputElement && outputElement.children.length > SAFETY_LIMITS.maxOutputLines) {
+            clearOutput();
+            addLogEntry('🧹 Output cleared due to size limit', 'info');
+        }
+        if (outputElement) {
+            outputElement.innerHTML = '';
+            logCount = 0;
+        }
+
+        const startTime = Date.now();
+        currentWorker = spawnWorker();
+
+        currentWorker.onmessage = (e) => {
+            const msg = e.data;
+            if (msg.kind === 'log') {
+                addLogEntry(msg.html, msg.logType);
+            } else if (msg.kind === 'flood') {
+                terminateCurrentWorker();
+            } else if (msg.kind === 'sync-done') {
+                const executionTime = Date.now() - startTime;
+                if (executionTime > 1000) {
+                    addLogEntry(`⏱️ Execution time: ${executionTime}ms`, 'info');
                 }
             }
-            if (typeof arg === 'object') return createObjectInspector(arg);
-            return String(arg);
-        }).join(' ');
-        addLogEntry(content, type);
-    };
+        };
 
-    console.log = createSafeConsole('log');
-    console.warn = createSafeConsole('warn');
-    console.error = createSafeConsole('error');
-    console.info = createSafeConsole('info');
-    console.table = createSafeConsole('table');
+        currentWorker.onerror = (err) => {
+            addLogEntry(`Worker error: ${err.message}`, 'error');
+            terminateCurrentWorker();
+        };
 
-    try {
-        const result = eval(code);
-        if (result instanceof Promise) {
-            pendingTimers++;
-            result
-                .then(v => { if (v !== undefined) console.log(v); })
-                .catch(err => console.error(err.name + ': ' + err.message))
-                .finally(() => {
-                    pendingTimers--;
-                    syncDone = true;
-                    tryRestore();
-                });
-        } else {
-            if (result !== undefined) console.log(result);
-            syncDone = true;
-            tryRestore();
-        }
-    } catch (err) {
-        console.error(err.name + ': ' + err.message);
-        syncDone = true;
-        tryRestore();
+        currentHardKillTimer = setTimeout(() => {
+            terminateCurrentWorker('⏱️ Execution timeout — stopped');
+        }, SAFETY_LIMITS.maxExecutionTime);
+
+        currentWorker.postMessage({ code });
     }
-}
+
+    function runCodeSafely(code) {
+        if (!code) code = editor.getValue();
+        runCode(code);
+    }
+
     window.clearOutput = function () {
-        outputElement.innerHTML = "";
-        logCount = 0;
+        if (outputElement) {
+            outputElement.innerHTML = "";
+            logCount = 0;
+        }
     };
 
     function downloadCode() {
@@ -1377,40 +974,35 @@ function runCode(code) {
                 showToast('⚠️ Nothing to download – editor is empty', 'warn');
                 return;
             }
-    
-            // Get active tab name
+
             const activeTab = tabs.find(t => t.id === activeTabId);
             let fileName = activeTab?.name || 'code.js';
-    
-            // Ensure .js extension
+
             if (!fileName.toLowerCase().endsWith('.js')) {
                 fileName += '.js';
             }
-    
+
             const blob = new Blob([code], { type: 'text/javascript;charset=utf-8' });
             const url = URL.createObjectURL(blob);
-    
+
             const a = document.createElement('a');
             a.href = url;
             a.download = fileName;
             a.style.display = 'none';
-    
+
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-    
-            // Cleanup
+
             setTimeout(() => URL.revokeObjectURL(url), 100);
-    
             showToast(`✅ Downloaded as "${fileName}"`, 'success');
         } catch (err) {
             console.error('Download failed:', err);
             showToast('❌ Download failed', 'error');
         }
     }
+
     function applyFormatting(code) {
-        // Guard: if called directly as a DOM event handler, `code` would be
-        // the click event, not a string — fall back to the editor's content.
         if (typeof code !== 'string') code = editor.getValue();
 
         const beautifyFn = window.js_beautify || window.beautify;
@@ -1426,7 +1018,6 @@ function runCode(code) {
                 end_with_newline: true,
                 brace_style: "collapse,preserve-inline"
             });
-
             editor.setValue(formattedCode);
             addLogEntry('✅ Code formatted successfully!', 'info');
         } else {
@@ -1435,35 +1026,29 @@ function runCode(code) {
         }
     }
 
-    // Wrapped in arrow functions so the click event isn't passed through as
-    // the `code` argument — see the guards inside runCode/applyFormatting too,
-    // kept as defense-in-depth in case either is ever wired up directly again.
-    document.getElementById("run").addEventListener("click", () => runCode());
-    document.getElementById("download").addEventListener("click", downloadCode);
-    document.getElementById("format").addEventListener("click", () => applyFormatting());
+    document.getElementById("run")?.addEventListener("click", () => runCode());
+    document.getElementById("download")?.addEventListener("click", downloadCode);
+    document.getElementById("format")?.addEventListener("click", () => applyFormatting());
 
-    document.getElementById("addfile").addEventListener("click", function () {
-        document.getElementById("fileInput").click();
+    document.getElementById("addfile")?.addEventListener("click", function () {
+        document.getElementById("fileInput")?.click();
     });
 
-    document.getElementById("fileInput").addEventListener("change", function (event) {
+    document.getElementById("fileInput")?.addEventListener("change", function (event) {
         const file = event.target.files[0];
         if (!file) return;
-    
+
         if (!file.name.endsWith('.js')) {
-            // Simple alert for invalid file type (can also be converted to modal if you want)
             alert("Please select a valid JavaScript (.js) file.");
-            event.target.value = ''; // reset input
+            event.target.value = '';
             return;
         }
-    
+
         const reader = new FileReader();
-    
         reader.onload = function (e) {
             const newContent = e.target.result;
             const currentCode = editor.getValue() || "";
-    
-            // Create message for the modal
+
             const message = document.createElement('div');
             message.innerHTML = `
                 <p style="margin: 0 0 12px; color: #2d3436; font-size: 14px;">
@@ -1473,34 +1058,29 @@ function runCode(code) {
                     Do you want to <strong>merge</strong> it with the current code or <strong>replace</strong> everything?
                 </p>
             `;
-    
+
             createModal({
                 title: 'Import File',
                 content: message,
                 confirmText: 'Merge',
                 cancelText: 'Replace',
                 onConfirm: () => {
-                    // Merge
-                    const merged = currentCode
-                        ? `${currentCode}\n\n${newContent}`
-                        : newContent;
+                    const merged = currentCode ? `${currentCode}\n\n${newContent}` : newContent;
                     editor.setValue(merged);
                     addLogEntry(`✅ Merged "${file.name}" into current tab`, 'info');
                     return true;
                 },
                 onCancel: () => {
-                    // Replace
                     editor.setValue(newContent);
                     addLogEntry(`✅ Replaced content with "${file.name}"`, 'info');
                 }
             });
         };
-    
+
         reader.readAsText(file);
-    
-        // Reset input so the same file can be selected again later
         event.target.value = '';
     });
+
     document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
@@ -1509,28 +1089,24 @@ function runCode(code) {
         if (e.altKey && e.shiftKey && e.key === 'F') {
             e.preventDefault();
             applyFormatting();
-          //  formatCode();
         }
     });
 
-    languageList.addEventListener("click", (e) => {
-        const item = e.target.closest("li");
-        if (!item) return;
+    const languageList = document.getElementById("languageList");
+    if (languageList) {
+        languageList.addEventListener("click", (e) => {
+            const item = e.target.closest("li");
+            if (!item) return;
 
-        const langKey = item.dataset.lang;
-        if (!langKey) return;
+            const langKey = item.dataset.lang;
+            if (!langKey) return;
 
-        console.log("Selected language:", langKey);
-        language = langKey
-
-        document
-            .querySelectorAll("#languageList li")
-            .forEach(li => li.classList.remove("active"));
-
-        item.classList.add("active");
-
-        switchLanguage(langKey);
-    });
+            language = langKey;
+            document.querySelectorAll("#languageList li").forEach(li => li.classList.remove("active"));
+            item.classList.add("active");
+            switchLanguage(langKey);
+        });
+    }
 
     function switchLanguage(lang) {
         switch (lang) {
@@ -1561,116 +1137,15 @@ function runCode(code) {
         autoExecuteEnabled = this.checked;
 
         if (autoExecuteEnabled) {
-            label.textContent = "Auto-Execute: ON";
+            if (label) label.textContent = "Auto-Execute: ON";
             addLogEntry("✅ Auto-execution enabled", "info");
             safeAutoExecute();
         } else {
-            label.textContent = "Auto-Execute: OFF";
-
-            if (autoExecuteTimer) {
-                clearTimeout(autoExecuteTimer);
-            }
-
+            if (label) label.textContent = "Auto-Execute: OFF";
+            if (autoExecuteTimer) clearTimeout(autoExecuteTimer);
             addLogEntry("⏸️ Auto-execution disabled", "warn");
         }
     });
-
-    function addDebugButton() {
-        const debugBtn = document.createElement('button');
-        debugBtn.textContent = '🔧 Debug Socket';
-        debugBtn.style.marginLeft = '10px';
-        debugBtn.style.padding = '8px 12px';
-        debugBtn.style.background = 'linear-gradient(135deg, #6c5ce7, #a29bfe)';
-        debugBtn.style.color = 'white';
-        debugBtn.style.border = 'none';
-        debugBtn.style.borderRadius = '4px';
-        debugBtn.style.cursor = 'pointer';
-
-        debugBtn.addEventListener('click', () => {
-            debugSocketConnection();
-            if (socket) {
-                const status = {
-                    connected: socket.connected,
-                    id: socket.id,
-                    roomId: roomId,
-                    listeners: socket._callbacks
-                };
-                console.log('Socket debug info:', status);
-
-                addLogEntry(`Socket: ${socket.connected ? 'Connected' : 'Disconnected'}`,
-                    socket.connected ? 'info' : 'error');
-                addLogEntry(`Room: ${roomId}`, 'info');
-
-                if (socket.connected) {
-                    socket.emit("test", {
-                        message: "Debug test",
-                        timestamp: Date.now(),
-                        roomId: roomId
-                    });
-                }
-            } else {
-                addLogEntry('Socket not initialized', 'error');
-            }
-        });
-
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        controlsDiv.appendChild(debugBtn);
-    }
-
-    function debugSocketConnection() {
-        console.log('=== Socket.IO Debug Info ===');
-        console.log('Page URL:', window.location.href);
-        console.log('Protocol:', window.location.protocol);
-        console.log('Socket.IO loaded:', typeof io !== 'undefined');
-        console.log('WebSocket supported:', 'WebSocket' in window);
-
-        const testWs = new WebSocket('wss://jseditor-env.eba-vmtwmwci.ap-south-1.elasticbeanstalk.com');
-
-        testWs.onopen = () => {
-            console.log('✅ Raw WebSocket connection successful');
-            testWs.close();
-        };
-
-        testWs.onerror = (error) => {
-            console.log('❌ Raw WebSocket connection failed');
-            console.log('Error:', error);
-        };
-    }
-
-    addDebugButton()
-
-    function addCopyRoomButton() {
-        const copyBtn = document.createElement('button');
-        copyBtn.textContent = '📋 Copy Room URL';
-        copyBtn.style.marginLeft = '10px';
-        copyBtn.style.padding = '8px 12px';
-        copyBtn.style.background = 'linear-gradient(135deg, #fd79a8, #e84393)';
-        copyBtn.style.color = 'white';
-        copyBtn.style.border = 'none';
-        copyBtn.style.borderRadius = '4px';
-        copyBtn.style.cursor = 'pointer';
-
-        copyBtn.addEventListener('click', () => {
-            initializeSocket().then((response) => {
-                if (response) {
-                    const url = window.location.href;
-                    navigator.clipboard.writeText(url).then(() => {
-                        addLogEntry(`Room URL copied to clipboard: ${url}`, 'info');
-                    }).catch(err => {
-                        addLogEntry(`Failed to copy URL: ${err}`, 'error');
-                    });
-                }
-            }).catch(err => {
-                addLogEntry(`Failed to copy URL: ${err}`, 'error');
-                alert(`Failed to copy URL: ${err}`);
-            });
-        });
-
-        const controlsDiv = document.getElementById('controls').querySelector('div');
-        controlsDiv.appendChild(copyBtn);
-    }
-
-    addCopyRoomButton();
 
     monaco.languages.registerCompletionItemProvider("javascript", {
         provideCompletionItems: () => {
