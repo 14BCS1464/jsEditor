@@ -96,6 +96,10 @@
     .rn-input::placeholder { color: var(--rn-placeholder, #94a3b8); }
   @keyframes rn-slide-up{from{transform:translateY(100%)}to{transform:none}}
     @keyframes rn-fade{from{opacity:0}to{opacity:1}}
+  #phone-frame *::-webkit-scrollbar{display:none}
+    #phone-frame *{scrollbar-width:none}
+    @keyframes rn-shake{0%,100%{translate:0}20%{translate:-4px 2px}40%{translate:4px -2px}60%{translate:-3px -2px}80%{translate:3px 2px}}
+    .rn-shake{animation:rn-shake .4s}
   </style>
 </head>
 <body class="h-full flex flex-col font-sans overflow-hidden">
@@ -659,9 +663,9 @@
       const KeyboardAvoidingView = View;
 
       // FIX: StatusBar was a plain object, so <StatusBar /> crashed. Now a component with static helpers.
-      const StatusBar = () => null;
-      StatusBar.setBarStyle = () => {};
-      StatusBar.setBackgroundColor = () => {};
+      const StatusBar = (p) => { React.useEffect(() => { window.setStatusBar && window.setStatusBar(p); }); return null; };
+      StatusBar.setBarStyle = (s) => window.setStatusBar && window.setStatusBar({ barStyle: s });
+      StatusBar.setBackgroundColor = (c) => window.setStatusBar && window.setStatusBar({ backgroundColor: c });
       StatusBar.setHidden = () => {};
 
       const StyleSheet = {
@@ -697,12 +701,7 @@
         }
       };
 
-      const Alert = {
-        alert: (title, message) => {
-          console.log('[Alert] ' + title + (message ? ': ' + message : ''));
-          window.alert(title + (message ? '\n\n' + message : ''));
-        }
-      };
+      const Alert = { alert: (title, message, buttons) => window.showNativeAlert(title, message, buttons) };
 
       const Keyboard = { dismiss: () => {} };
 
@@ -987,7 +986,7 @@
 
       // ----- Misc APIs -----
       const Linking = { openURL: async (u) => { window.open(u, '_blank'); }, canOpenURL: async () => true, getInitialURL: async () => null, addEventListener: () => ({ remove() {} }) };
-      const Vibration = { vibrate: (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} console.log('[Vibration]', p || 400); }, cancel: () => {} };
+      const Vibration = { vibrate: (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} console.log('[Vibration]', p || 400); window.shakePhone && window.shakePhone(); }, cancel: () => {} };
       const Share = { share: async (o) => { if (navigator.share) { try { await navigator.share({ title: o.title, text: o.message, url: o.url }); } catch (e) {} } else console.log('[Share]', o.message || o.url); return { action: 'sharedAction' }; } };
       const PixelRatio = { get: () => 3, getFontScale: () => 1, roundToNearestPixel: (x) => Math.round(x * 3) / 3, getPixelSizeForLayoutSize: (x) => x * 3 };
       const LayoutAnimation = { configureNext: () => {}, create: () => ({}), Presets: { easeInEaseOut: {}, linear: {}, spring: {} }, Types: {}, Properties: {} };
@@ -1643,6 +1642,7 @@ const styles = StyleSheet.create({
         reactRoot = null;
       }
       mountNode.innerHTML = '';
+      if (window.setStatusBar) window.setStatusBar(null);
 
       try {
         if (typeof Babel === 'undefined') {
@@ -1681,6 +1681,7 @@ const styles = StyleSheet.create({
         reactRoot.render(
           window.React.createElement(ErrorBoundary, null, window.React.createElement(App))
         );
+        setTimeout(paintStatusBar, 100);
 
       } catch (err) {
         console.error(err.message);
@@ -1762,7 +1763,14 @@ const styles = StyleSheet.create({
       sb.style.paddingTop = d.type === 'island' ? '14px' : '2px';
       document.getElementById('modal-root').style.top = d.sb + 'px';
       document.getElementById('resolution-display').innerText = d.n + ' • ' + w + ' x ' + h;
+      const ios = d.os === 'iphone';
+      frame.style.borderColor = '#18181b';
+      frame.style.boxShadow = '0 0 0 2px #52525b, 0 25px 50px -12px rgba(0,0,0,.7), 0 0 30px rgba(97,218,251,.12)';
+      sb.style.fontSize = ios ? '15px' : '13px';
+      sb.style.paddingLeft = sb.style.paddingRight = ios ? '30px' : '18px';
+      sb.querySelectorAll('i').forEach((i) => { i.style.fontSize = ios ? '13px' : '12px'; });
       fitDevice();
+      paintStatusBar();
     }
 
     function fitDevice() {
@@ -1796,6 +1804,7 @@ const styles = StyleSheet.create({
 
       isDarkPreview = !isDarkPreview;
       if (window.rnAppearance) window.rnAppearance.set(isDarkPreview ? 'dark' : 'light');
+      setTimeout(paintStatusBar, 0);
       const kbp = document.getElementById('kb-panel'); kbp.style.background = isDarkPreview ? '#1f2937' : '#d1d5db'; kbp.style.color = isDarkPreview ? '#f1f5f9' : '#111827';
       if (isDarkPreview) {
         screen.style.backgroundColor = '#020617';
@@ -1807,6 +1816,129 @@ const styles = StyleSheet.create({
         icon.className = 'fa-solid fa-moon text-xs';
       }
     }
+
+    // ---------- Status bar that follows the app's background ----------
+    let sbOverride = null;
+    function setStatusBar(o) { sbOverride = o; paintStatusBar(); }
+    window.setStatusBar = setStatusBar;
+
+    function paintStatusBar() {
+      const sb = document.getElementById('status-bar');
+      const screen = document.getElementById('emulator-screen');
+      const hic = document.getElementById('home-indicator-container');
+      const hi = document.getElementById('home-indicator');
+      if (!sb || !screen) return;
+      const o = sbOverride || {};
+      let bg = o.backgroundColor || null;
+      if (!bg) {
+        const first = document.getElementById('app-root').firstElementChild;
+        const c = first ? getComputedStyle(first).backgroundColor : '';
+        if (c && !/rgba\(.*,\s*0\)|transparent/.test(c)) bg = c;
+      }
+      bg = bg || screen.style.backgroundColor;
+      let light;
+      if (o.barStyle === 'light-content' || o.style === 'light') light = true;
+      else if (o.barStyle === 'dark-content' || o.style === 'dark') light = false;
+      else {
+        const m = (bg.match(/[\d.]+/g) || [255, 255, 255]).map(Number);
+        light = (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) < 140;
+      }
+      sb.style.background = bg;
+      sb.style.color = light ? '#ffffff' : '#0f172a';
+      hic.style.background = bg;
+      hi.style.background = light ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.45)';
+      hi.style.display = deviceKey === 'iphonese' ? 'none' : '';
+    }
+
+    // ---------- Native-looking Alert ----------
+    window.showNativeAlert = (title, message, buttons) => {
+      console.log('[Alert] ' + title + (message ? ': ' + message : ''));
+      const root = document.getElementById('modal-root');
+      const ios = currentDevice === 'iphone', dark = isDarkPreview;
+      const btns = buttons && buttons.length ? buttons : [{ text: 'OK' }];
+      const line = 'rgba(128,128,128,.35)';
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;pointer-events:auto;animation:rn-fade .15s;z-index:5';
+      const box = document.createElement('div');
+      box.style.cssText = 'width:' + (ios ? 270 : 280) + 'px;background:' + (dark ? '#2c2c2e' : '#fff') + ';color:' + (dark ? '#fff' : '#111') + ';border-radius:' + (ios ? 14 : 28) + 'px;overflow:hidden;font-family:Inter,sans-serif;' + (ios ? 'text-align:center;' : 'padding:24px 24px 8px;box-shadow:0 8px 24px rgba(0,0,0,.4);');
+      const head = document.createElement('div');
+      head.style.cssText = ios ? 'padding:18px 16px 14px' : 'padding:0 0 16px';
+      head.innerHTML = '<div style="font-weight:600;font-size:' + (ios ? 17 : 22) + 'px">' + escapeHtml(title) + '</div>' + (message ? '<div style="font-size:' + (ios ? 13 : 14) + 'px;margin-top:4px;opacity:.85">' + escapeHtml(message) + '</div>' : '');
+      box.appendChild(head);
+      const row = document.createElement('div');
+      row.style.cssText = ios ? 'display:flex;' + (btns.length > 2 ? 'flex-direction:column;' : '') + 'border-top:1px solid ' + line : 'display:flex;justify-content:flex-end;gap:8px;padding-bottom:8px';
+      btns.forEach((b, i) => {
+        const el = document.createElement('div');
+        el.textContent = b.text;
+        const red = b.style === 'destructive', bold = b.style === 'cancel';
+        el.style.cssText = ios
+          ? 'flex:1;padding:12px;font-size:17px;cursor:pointer;color:' + (red ? '#ff3b30' : '#0a84ff') + ';font-weight:' + (bold ? 600 : 400) + ';' + (i > 0 ? (btns.length <= 2 ? 'border-left' : 'border-top') + ':1px solid ' + line : '')
+          : 'padding:10px 12px;font-size:14px;font-weight:500;cursor:pointer;color:' + (red ? '#ef4444' : '#6750a4');
+        el.onclick = () => { ov.remove(); b.onPress && b.onPress(); };
+        row.appendChild(el);
+      });
+      box.appendChild(row);
+      ov.appendChild(box);
+      root.appendChild(ov);
+    };
+
+    // ---------- Vibration shake ----------
+    window.shakePhone = () => {
+      const f = document.getElementById('phone-frame');
+      f.classList.remove('rn-shake'); void f.offsetWidth; f.classList.add('rn-shake');
+    };
+
+    // ---------- Touch simulation: finger dot, drag-to-scroll with momentum ----------
+    (function touchSim() {
+      const frame = document.getElementById('phone-frame'), screen = document.getElementById('emulator-screen');
+      const dot = document.createElement('div');
+      dot.style.cssText = 'position:absolute;width:38px;height:38px;border-radius:50%;background:rgba(140,140,140,.35);border:2px solid rgba(255,255,255,.65);pointer-events:none;z-index:60;display:none;transform:translate(-50%,-50%)';
+      frame.appendChild(dot);
+      const scale = () => window.__deviceScale || 1;
+      const pos = (e) => { const r = frame.getBoundingClientRect(); dot.style.left = ((e.clientX - r.left) / scale()) + 'px'; dot.style.top = ((e.clientY - r.top) / scale()) + 'px'; };
+      const scrollable = (el) => {
+        while (el && el !== frame) {
+          const cs = getComputedStyle(el);
+          if (/(auto|scroll)/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1) return { el, axis: 'y' };
+          if (/(auto|scroll)/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) return { el, axis: 'x' };
+          el = el.parentElement;
+        }
+        return null;
+      };
+      let drag = null, suppress = false;
+      frame.addEventListener('mousedown', (e) => {
+        if (e.button) return;
+        dot.style.display = 'block'; pos(e);
+        const field = /^(INPUT|TEXTAREA)$/.test(e.target.tagName);
+        if (screen.contains(e.target) && !field) drag = { sc: scrollable(e.target), x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, v: 0 };
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (dot.style.display === 'none') return;
+        pos(e);
+        if (!drag) return;
+        if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) { drag.moved = true; getSelection().removeAllRanges(); }
+        if (drag.moved && drag.sc) {
+          const dx = (e.clientX - drag.lx) / scale(), dy = (e.clientY - drag.ly) / scale();
+          if (drag.sc.axis === 'y') { drag.sc.el.scrollTop -= dy; drag.v = -dy; } else { drag.sc.el.scrollLeft -= dx; drag.v = -dx; }
+        }
+        drag.lx = e.clientX; drag.ly = e.clientY;
+      });
+      window.addEventListener('mouseup', () => {
+        dot.style.display = 'none';
+        if (!drag) return;
+        const d = drag; drag = null;
+        if (!d.moved) return;
+        suppress = true; setTimeout(() => { suppress = false; }, 0);
+        if (d.sc) {
+          let v = d.v;
+          const f = () => { v *= 0.95; if (Math.abs(v) < 0.3) return; if (d.sc.axis === 'y') d.sc.el.scrollTop += v; else d.sc.el.scrollLeft += v; requestAnimationFrame(f); };
+          f();
+        }
+      });
+      frame.addEventListener('click', (e) => { if (suppress) { e.stopPropagation(); e.preventDefault(); } }, true);
+    })();
+
+    setInterval(paintStatusBar, 800);
 
     applyDevice();
     new ResizeObserver(fitDevice).observe(document.getElementById('phone-wrap').parentElement);
