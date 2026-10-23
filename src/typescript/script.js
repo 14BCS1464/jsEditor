@@ -7,8 +7,9 @@ let tsErrorCountEl;
 let tsReady = false;
 let currentWorker = null;
 let liveDebounceTimer = null;
+let isEditorReady = false;
 
-const EXEC_TIMEOUT_MS = 3000; // kill execution if it runs longer than this
+const EXEC_TIMEOUT_MS = 3000;
 
 document.addEventListener("DOMContentLoaded", async () => {
     outputElement = document.getElementById("output");
@@ -18,7 +19,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     tsErrorCountEl = document.getElementById("ts-error-count");
 
     checkTsAvailability();
-
     await loadMonacoEditor();
     setupEventListeners();
     loadSavedCode();
@@ -28,9 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ===============================
-   TYPESCRIPT COMPILER READINESS (for runtime transpile only —
-   Monaco's own type CHECKING uses its internal TS worker and
-   does not depend on this global `ts`)
+   TYPESCRIPT COMPILER READINESS
 ================================ */
 function checkTsAvailability() {
     if (typeof ts !== "undefined") {
@@ -43,9 +41,9 @@ function checkTsAvailability() {
         if (typeof ts !== "undefined") {
             tsReady = true;
             clearInterval(interval);
-        } else if (attempts > 50) { // ~10s timeout
+        } else if (attempts > 50) {
             clearInterval(interval);
-            showToast("TypeScript compiler failed to load — check your network/CDN access", "error", 5000);
+            showToast("TypeScript compiler failed to load", "error", 5000);
         }
     }, 200);
 }
@@ -54,9 +52,10 @@ function checkTsAvailability() {
    MONACO EDITOR WITH INSTANT VALIDATION
 ================================ */
 function loadMonacoEditor() {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
         const savedCode = localStorage.getItem("typescript_code");
-        const initialCode = savedCode || `// REAL-TIME TYPE CHECKING - Try typing and see instant errors!
+        const initialCode = savedCode || `// ✅ REAL-TIME TYPE CHECKING IS NOW ACTIVE!
+// Try typing below — you'll see red squiggles and suggestions instantly.
 
 interface Person {
     name: string;
@@ -64,10 +63,9 @@ interface Person {
     email: string;
 }
 
-// ❌ This SHOULD show a TypeScript error in the panel on the right:
-// Type 'number' is not assignable to type 'string'
+// ❌ INTENTIONAL ERROR: Type 'number' is not assignable to type 'string'
 const person1: Person = {
-    name: 42,          // <- try fixing this to a string
+    name: 42,          // <- hover here or look at the right panel
     age: 25,
     email: "alice@example.com"
 };
@@ -76,16 +74,22 @@ function greet(name: string, age: number): string {
     return \`Hello \${name}, you are \${age} years old\`;
 }
 
+// Try typing 'greet(' to see parameter suggestions!
 const msg1 = greet("Charlie", 28);
 console.log(msg1);
-console.log("Fix the red error above and watch the panel clear!");`;
+
+// Try typing below to see autocomplete:
+// const arr: number[] = [1, 2, 3];
+// arr.  <-- press Ctrl+Space after the dot`;
 
         require.config({
-            paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs" }
+            paths: {
+                vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"
+            }
         });
 
         require(["vs/editor/editor.main"], () => {
-            // Controls WHICH rules TS checks.
+            // ── 1. Compiler Options (STRICT mode for maximum type safety) ──
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                 target: monaco.languages.typescript.ScriptTarget.ES2020,
                 module: monaco.languages.typescript.ModuleKind.ESNext,
@@ -100,11 +104,12 @@ console.log("Fix the red error above and watch the panel clear!");`;
                 alwaysStrict: true,
                 esModuleInterop: true,
                 allowJs: false,
-                checkJs: false
+                checkJs: false,
+                noEmit: true,
+                skipLibCheck: true
             });
 
-            // Turns semantic (type) validation ON. Keep noSemanticValidation
-            // false or interface/type mismatches will never be flagged.
+            // ── 2. Diagnostics Options (ENABLE semantic validation!) ──
             monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
                 noSemanticValidation: false,
                 noSyntaxValidation: false,
@@ -112,14 +117,16 @@ console.log("Fix the red error above and watch the panel clear!");`;
                 diagnosticCodesToIgnore: []
             });
 
+            // ── 3. Eager sync so types update faster ──
             monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
 
+            // ── 4. Create Editor ──
             editor = monaco.editor.create(document.getElementById("editor"), {
                 value: initialCode,
                 language: "typescript",
                 theme: "vs-dark",
                 fontSize: 15,
-                fontFamily: "'Cascadia Code', 'Consolas', monospace",
+                fontFamily: "'Cascadia Code', 'Consolas', 'Fira Code', monospace",
                 automaticLayout: true,
                 minimap: { enabled: true },
                 scrollBeyondLastLine: false,
@@ -130,39 +137,38 @@ console.log("Fix the red error above and watch the panel clear!");`;
                 formatOnPaste: true,
                 quickSuggestions: true,
                 suggestOnTriggerCharacters: true,
+                parameterHints: { enabled: true },
                 hover: { enabled: true },
-                lightbulb: { enabled: true }
+                lightbulb: { enabled: true },
+                inlayHints: { enabled: true }
             });
 
-            editor.onDidChangeCursorPosition(e => {
-                updateLineInfo(e.position);
-            });
+            isEditorReady = true;
 
-            // Fallback trigger — kept as a secondary signal, but the
-            // debounced content-change handler below is the primary,
-            // authoritative path now.
-            monaco.editor.onDidChangeMarkers(([resource]) => {
-                if (editor.getModel() && editor.getModel().uri.toString() === resource.toString()) {
-                    updateErrorDisplay();
-                    renderTypeScriptErrors();
-                }
-            });
+            // ── 5. Event Listeners ──
+            editor.onDidChangeCursorPosition(e => updateLineInfo(e.position));
 
+            // PRIMARY: content change → debounced validation
             editor.onDidChangeModelContent(() => {
                 autoSaveCode();
                 clearTimeout(liveDebounceTimer);
                 liveDebounceTimer = setTimeout(() => {
-                    updateErrorDisplay();
-                    renderTypeScriptErrors();
-                    executeCode({ silent: true });
-                }, 500);
+                    refreshAllDiagnostics();
+                }, 400);
             });
 
+            // SECONDARY: marker change (catches edge cases)
+            monaco.editor.onDidChangeMarkers(([resource]) => {
+                if (editor.getModel()?.uri.toString() === resource.toString()) {
+                    refreshAllDiagnostics();
+                }
+            });
+
+            // ── 6. Initial validation after worker warms up ──
             setTimeout(() => {
-                updateErrorDisplay();
-                renderTypeScriptErrors();
+                refreshAllDiagnostics();
                 executeCode({ silent: true });
-            }, 800); // give the TS worker time to spin up on first load
+            }, 1200);
 
             resolve();
         });
@@ -170,11 +176,8 @@ console.log("Fix the red error above and watch the panel clear!");`;
 }
 
 /* ===============================
-   DIRECT TYPESCRIPT DIAGNOSTICS
-   Pulls straight from the TS language service via
-   getTypeScriptWorker() — more reliable than trusting
-   getModelMarkers(), which depends on Monaco's internal
-   marker-publish timing and can lag or miss updates.
+   DIAGNOSTICS (THE CORE FIX)
+   Pulls directly from Monaco's TS Language Service Worker
 ================================ */
 async function getTypeScriptDiagnostics() {
     if (!editor || !editor.getModel()) return [];
@@ -200,13 +203,11 @@ function diagnosticToDisplay(diag, model) {
     const startPos = model.getPositionAt(diag.start);
     const endPos = model.getPositionAt(diag.start + diag.length);
 
-    // messageText can be a plain string OR a nested DiagnosticMessageChain
     const message = typeof diag.messageText === "string"
         ? diag.messageText
         : flattenDiagnosticMessage(diag.messageText);
 
-    // ts.DiagnosticCategory: 0 = Warning, 1 = Error, 2 = Suggestion, 3 = Message
-    const isError = diag.category === 1;
+    const isError = diag.category === 1; // 1 = Error
 
     return {
         startLineNumber: startPos.lineNumber,
@@ -220,8 +221,6 @@ function diagnosticToDisplay(diag, model) {
     };
 }
 
-// Manual fallback flattener in case the global `ts` isn't loaded yet
-// when diagnostics first arrive (avoids a hard dependency on it here).
 function flattenDiagnosticMessage(messageText, indent = "") {
     if (typeof messageText === "string") return indent + messageText;
     let result = indent + messageText.messageText;
@@ -234,7 +233,15 @@ function flattenDiagnosticMessage(messageText, indent = "") {
 }
 
 /* ===============================
-   STATUS PILL (top bar summary)
+   UNIFIED REFRESH
+================================ */
+async function refreshAllDiagnostics() {
+    await updateErrorDisplay();
+    await renderTypeScriptErrors();
+}
+
+/* ===============================
+   STATUS PILL
 ================================ */
 async function updateErrorDisplay() {
     if (!editor || !editor.getModel()) return;
@@ -250,15 +257,13 @@ async function updateErrorDisplay() {
         } else if (warnings.length > 0) {
             statusEl.innerHTML = `<span style="color: #ffaa44;">⚠️ ${warnings.length} warning${warnings.length !== 1 ? 's' : ''}</span>`;
         } else {
-            statusEl.innerHTML = `<span style="color: #4CAF50;">✅ No errors</span>`;
+            statusEl.innerHTML = `<span style="color: #3fb950;">✅ No errors — types are valid</span>`;
         }
     }
 }
 
 /* ===============================
    TYPESCRIPT ERRORS PANEL
-   Lists every diagnostic with line:col, message, and TS code.
-   Clicking an item jumps the editor cursor to that location.
 ================================ */
 async function renderTypeScriptErrors() {
     if (!editor || !editor.getModel() || !tsErrorsListEl) return;
@@ -273,7 +278,7 @@ async function renderTypeScriptErrors() {
     const warningCount = display.length - errorCount;
 
     if (tsErrorCountEl) {
-        tsErrorCountEl.textContent = errorCount + warningCount;
+        tsErrorCountEl.textContent = display.length;
         tsErrorCountEl.className = "count-badge " +
             (errorCount > 0 ? "has-errors" : warningCount > 0 ? "has-warnings" : "clean");
     }
@@ -283,7 +288,7 @@ async function renderTypeScriptErrors() {
     if (display.length === 0) {
         const noErr = document.createElement("div");
         noErr.className = "ts-no-errors";
-        noErr.textContent = "✅ No TypeScript errors — types are valid";
+        noErr.innerHTML = "✅ No TypeScript errors — types are valid!<br><span style='color:#8b949e;font-size:0.8rem'>Start typing to see real-time checks</span>";
         tsErrorsListEl.appendChild(noErr);
         return;
     }
@@ -296,7 +301,7 @@ async function renderTypeScriptErrors() {
         const codeStr = d.code ? ` <span class="ts-error-code">TS${d.code}</span>` : "";
 
         item.innerHTML = `
-            <span class="ts-error-location">${icon} Ln ${d.startLineNumber}:${d.startColumn}</span>
+            <span class="ts-error-location">${icon} Line ${d.startLineNumber}, Col ${d.startColumn}</span>
             <span class="ts-error-message">${escapeHtml(d.message)}${codeStr}</span>
         `;
 
@@ -321,8 +326,8 @@ function updateLineInfo(position) {
 
     const model = editor.getModel();
     if (!model) return;
-    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
 
+    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
     let errorInfo = '';
     markers.forEach(marker => {
         if (marker.startLineNumber === position.lineNumber) {
@@ -336,7 +341,7 @@ function updateLineInfo(position) {
 }
 
 /* ===============================
-   RUN CODE (manual button click)
+   RUN CODE
 ================================ */
 async function runCode() {
     const diagnostics = await getTypeScriptDiagnostics();
@@ -364,9 +369,7 @@ async function runCode() {
 }
 
 /* ===============================
-   EXECUTE CODE — IN A WEB WORKER
-   (keeps UI responsive; infinite loops get terminated
-    instead of freezing the tab)
+   EXECUTE CODE IN WEB WORKER
 ================================ */
 function executeCode({ silent = false } = {}) {
     if (typeof ts === "undefined") {
@@ -451,7 +454,6 @@ function runInWorker(jsCode, silent) {
             worker.terminate();
             URL.revokeObjectURL(workerUrl);
             if (currentWorker === worker) currentWorker = null;
-           // renderLog(["✅ Code executed successfully"], "log");
             if (!silent) showToast("Execution completed", "success");
         } else if (kind === "error") {
             clearTimeout(timeoutId);
@@ -476,8 +478,7 @@ function runInWorker(jsCode, silent) {
 }
 
 /* ===============================
-   CONSOLE OUTPUT (runtime logs only — TS errors live in
-   the separate panel now, never mixed in here)
+   CONSOLE OUTPUT
 ================================ */
 function renderLog(args, type) {
     const entry = document.createElement("div");
@@ -522,14 +523,9 @@ function renderLog(args, type) {
    EVENT LISTENERS
 ================================ */
 function setupEventListeners() {
-    // Safe binder: never throws if an element is missing from the DOM
     const on = (id, handler) => {
         const el = document.getElementById(id);
-        if (el) {
-            el.onclick = handler;
-        } else {
-            console.warn(`setupEventListeners: #${id} not found in DOM, skipping.`);
-        }
+        if (el) el.onclick = handler;
     };
 
     on("btn-run", runCode);
@@ -544,8 +540,7 @@ function setupEventListeners() {
     on("btn-share", shareCode);
 
     on("btn-check-types", async () => {
-        await updateErrorDisplay();
-        await renderTypeScriptErrors();
+        await refreshAllDiagnostics();
         showToast("Type checking complete!", "info");
     });
 
@@ -570,28 +565,6 @@ function setupEventListeners() {
             editor.getAction("editor.action.formatDocument")?.run();
         }
     });
-
-    // Language switcher (only runs if #languageList exists in the DOM)
-    const languageList = document.getElementById("languageList");
-    if (languageList) {
-        languageList.addEventListener("click", (e) => {
-            const item = e.target.closest("li");
-            if (!item || !item.dataset.lang) return;
-
-            const routes = {
-                javascript: "../editor/index.html",
-                typescript: "index.html",
-                html: "../html/index.html",
-                react: "../react/index.html",
-                json: "../jsonformatter/index.html"
-            };
-
-            const dest = routes[item.dataset.lang];
-            if (dest) {
-                window.location.href = dest;
-            }
-        });
-    }
 }
 
 /* ===============================
@@ -607,7 +580,7 @@ function saveCode() {
 }
 
 function loadSavedCode() {
-    // Already loaded during editor initialisation
+    // Handled in loadMonacoEditor
 }
 
 function loadCodeFromURL() {

@@ -1,84 +1,600 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TypeScript Online Compiler</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript Online Compiler</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Runtime TS compiler (for Execute button only) -->
+    <script src="https://cdn.jsdelivr.net/npm/typescript@5.4.5/lib/typescript.js"></script>
 
-<!-- Must load BEFORE loader.js. Pinned version, no-redirect CDN. -->
-<script src="https://cdn.jsdelivr.net/npm/typescript@5.4.5/lib/typescript.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <!-- MonacoEnvironment MUST be set BEFORE loader.js -->
+    <script>
+        window.MonacoEnvironment = {
+            getWorkerUrl: function(workerId, label) {
+                const base = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min';
+                // data: URL wrapper bypasses CORS so the worker can load cross-origin scripts
+                return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+                    self.MonacoEnvironment = { baseUrl: '${base}' };
+                    importScripts('${base}/vs/base/worker/workerMain.js');
+                `)}`;
+            }
+        };
+    </script>
 
-<link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0d1117; color: #c9d1d9;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh; overflow: hidden;
+        }
+        .container {
+            display: flex; flex-direction: column;
+            height: 100vh; padding: 12px; gap: 10px;
+        }
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #58a6ff, #a371f7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: 1.5rem; font-weight: 700;
+        }
+        .button-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        button {
+            padding: 8px 16px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 0.85rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        button.success { background: #238636; color: white; }
+        button.success:hover { background: #2ea043; }
+        button.secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+        button.secondary:hover { background: #30363d; }
+        button.warning { background: #9e6a03; color: white; }
+        button.warning:hover { background: #bb8009; }
+        button.danger { background: #da3633; color: white; }
+        button.danger:hover { background: #f85149; }
+
+        .status-bar {
+            display: flex; justify-content: space-between;
+            background: #161b22; padding: 6px 14px;
+            border-radius: 6px; font-size: 0.8rem; border: 1px solid #30363d;
+        }
+        #status { font-weight: 600; }
+
+        .main-content { display: flex; gap: 12px; flex: 1; min-height: 0; }
+        .editor-section { flex: 1.4; display: flex; flex-direction: column; min-width: 0; }
+        .editor-container {
+            flex: 1; border: 1px solid #30363d;
+            border-radius: 8px; overflow: hidden;
+        }
+        #editor { width: 100%; height: 100%; }
+
+        .output-section {
+            flex: 1; display: flex; flex-direction: column;
+            gap: 10px; min-width: 320px; max-width: 480px;
+        }
+        .panel {
+            background: #161b22; border: 1px solid #30363d;
+            border-radius: 8px; display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; background: #0d1117;
+            border-bottom: 1px solid #30363d;
+        }
+        .panel-title {
+            font-weight: 600; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .count-badge {
+            background: #30363d; padding: 2px 8px;
+            border-radius: 12px; font-size: 0.75rem; margin-left: 6px;
+        }
+        .count-badge.has-errors { background: #da3633; color: white; }
+        .count-badge.has-warnings { background: #9e6a03; color: white; }
+        .count-badge.clean { background: #238636; color: white; }
+
+        #ts-errors-list { flex: 1; overflow-y: auto; padding: 8px; }
+        .ts-no-errors {
+            color: #3fb950; text-align: center;
+            padding: 20px; font-size: 0.9rem;
+        }
+        .ts-error-item {
+            padding: 10px 12px; border-radius: 6px; margin-bottom: 6px;
+            cursor: pointer; font-size: 0.82rem; line-height: 1.4;
+            transition: background 0.15s;
+        }
+        .ts-error-item:hover { filter: brightness(1.15); }
+        .severity-error { background: rgba(218, 54, 51, 0.12); border-left: 3px solid #da3633; }
+        .severity-warning { background: rgba(158, 106, 3, 0.12); border-left: 3px solid #9e6a03; }
+        .ts-error-location { display: block; font-weight: 700; margin-bottom: 4px; font-size: 0.78rem; }
+        .ts-error-message { color: #c9d1d9; }
+        .ts-error-code { color: #8b949e; font-size: 0.75rem; font-family: monospace; }
+
+        #output {
+            flex: 1; overflow-y: auto; padding: 10px;
+            font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.85rem;
+        }
+        .console-entry { margin-bottom: 10px; }
+        .console-header {
+            display: flex; gap: 10px; align-items: center;
+            margin-bottom: 4px; opacity: 0.7; font-size: 0.75rem;
+        }
+        .badge {
+            padding: 2px 8px; border-radius: 4px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .badge.log { background: #1f6feb; color: white; }
+        .badge.error { background: #da3633; color: white; }
+        .badge.warn { background: #9e6a03; color: white; }
+        .badge.info { background: #1f6feb; color: white; }
+        .console-body { padding-left: 8px; color: #e6edf3; }
+        .console-body pre {
+            background: #0d1117; padding: 8px;
+            border-radius: 4px; overflow-x: auto; margin-top: 4px;
+        }
+
+        .toast {
+            position: fixed; bottom: 20px; right: 20px;
+            padding: 12px 20px; border-radius: 8px; color: white;
+            font-weight: 600; opacity: 0; transform: translateY(20px);
+            transition: all 0.3s; z-index: 1000; pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: #238636; }
+        .toast.error { background: #da3633; }
+        .toast.warning { background: #9e6a03; }
+        .toast.info { background: #1f6feb; }
+
+        @media (max-width: 900px) {
+            .main-content { flex-direction: column; }
+            .output-section { max-width: none; }
+        }
+    </style>
 </head>
-
 <body>
-<div class="container">
-
-<div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
-<h2>
-<span class="gradient-text" id="editor-title">Advanced TypeScript Online Compiler</span>
-</h2>
-<div class="button-group">
-<button id="btn-run" class="success"><i class="fas fa-play"></i> Run Code</button>
-<button id="btn-format" class="secondary"><i class="fas fa-indent"></i> Format</button>
-<button id="btn-clear" class="warning"><i class="fas fa-broom"></i> Clear</button>
-<button id="btn-save" class="secondary"><i class="fas fa-save"></i> Save</button>
-<button id="btn-share" class="secondary"><i class="fas fa-share"></i> Share</button>
-<button id="btn-check-types" class="secondary"><i class="fas fa-check"></i> Check Types</button>
-</div>
-</div>
-
-<div class="status-bar">
-    <span id="status">Checking types...</span>
-    <span id="line-info">Ln 1, Col 1</span>
-</div>
-
-<div class="main-content">
-
-<div class="editor-section">
-<div class="editor-container">
-<div id="editor"></div>
-</div>
-</div>
-
-<div class="output-section">
-
-    <!-- ============ TYPESCRIPT ERRORS PANEL ============ -->
-    <div class="panel ts-errors-panel">
-        <div class="section-header">
-            <span class="panel-title">
-                <i class="fas fa-triangle-exclamation"></i> TypeScript Errors
-                <span id="ts-error-count" class="count-badge">0</span>
-            </span>
-        </div>
-        <div id="ts-errors-list"></div>
-    </div>
-
-    <!-- ============ CONSOLE OUTPUT PANEL ============ -->
-    <div class="panel console-output-panel">
-        <div class="section-header">
-            <span class="panel-title"><i class="fas fa-terminal"></i> Console Output</span>
+    <div class="container">
+        <div class="top-bar">
+            <h2><span class="gradient-text">Advanced TypeScript Online Compiler</span></h2>
             <div class="button-group">
-                <button id="btn-clear-output" class="danger">Clear</button>
-                <button id="btn-copy-output" class="secondary">Copy</button>
+                <button id="btn-run" class="success"><i class="fas fa-play"></i> Run Code</button>
+                <button id="btn-format" class="secondary"><i class="fas fa-indent"></i> Format</button>
+                <button id="btn-clear" class="warning"><i class="fas fa-broom"></i> Clear</button>
+                <button id="btn-save" class="secondary"><i class="fas fa-save"></i> Save</button>
+                <button id="btn-share" class="secondary"><i class="fas fa-share"></i> Share</button>
+                <button id="btn-check-types" class="secondary"><i class="fas fa-check"></i> Check Types</button>
             </div>
         </div>
-        <div id="output"></div>
+
+        <div class="status-bar">
+            <span id="status">Initializing TypeScript...</span>
+            <span id="line-info">Ln 1, Col 1</span>
+        </div>
+
+        <div class="main-content">
+            <div class="editor-section">
+                <div class="editor-container">
+                    <div id="editor"></div>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="panel" style="flex: 1;">
+                    <div class="section-header">
+                        <span class="panel-title">
+                            <i class="fas fa-triangle-exclamation"></i> TypeScript Errors
+                            <span id="ts-error-count" class="count-badge">0</span>
+                        </span>
+                    </div>
+                    <div id="ts-errors-list"></div>
+                </div>
+
+                <div class="panel" style="flex: 1;">
+                    <div class="section-header">
+                        <span class="panel-title"><i class="fas fa-terminal"></i> Console Output</span>
+                        <div class="button-group">
+                            <button id="btn-clear-output" class="danger" style="padding:4px 10px;font-size:0.75rem;">Clear</button>
+                            <button id="btn-copy-output" class="secondary" style="padding:4px 10px;font-size:0.75rem;">Copy</button>
+                        </div>
+                    </div>
+                    <div id="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast" class="toast"></div>
     </div>
 
-</div>
-</div>
+<script>
+/* ============================================================
+   TYPESCRIPT ONLINE COMPILER — FIXED TYPE CHECKING
+   ============================================================ */
+let editor;
+let outputElement, lineInfoElement, toastEl;
+let tsErrorsListEl, tsErrorCountEl;
+let currentWorker = null;
+let liveDebounceTimer = null;
+let monacoReady = false;
 
-<div id="toast" class="toast"></div>
+const EXEC_TIMEOUT_MS = 3000;
 
-<div id="snippets-panel" class="snippets-panel"></div>
-</div>
+const INITIAL_CODE = `// ✅ REAL-TIME TYPE CHECKING IS ACTIVE!
+// You should see a RED squiggly under "1000" immediately.
 
-<script src="script.js"></script>
+let ss: string = 1000   // ❌ ERROR: Type 'number' is not assignable to type 'string'
+console.log(ss)
+
+// Try hovering over "1000" to see the tooltip.
+// Try pressing Ctrl+Space for autocomplete!
+`;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    outputElement   = document.getElementById("output");
+    lineInfoElement = document.getElementById("line-info");
+    toastEl         = document.getElementById("toast");
+    tsErrorsListEl  = document.getElementById("ts-errors-list");
+    tsErrorCountEl  = document.getElementById("ts-error-count");
+
+    await initMonaco();
+    setupEventListeners();
+    loadCodeFromURL();
+
+    // Wait for TS worker to warm up, then force first check
+    setTimeout(() => {
+        refreshAllDiagnostics();
+        executeCode({ silent: true });
+    }, 1500);
+
+    showToast("Editor Ready — TypeScript validation active!", "success");
+});
+
+/* ===============================
+   MONACO INITIALIZATION
+================================ */
+function initMonaco() {
+    return new Promise((resolve) => {
+        require.config({
+            paths: {
+                vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"
+            }
+        });
+
+        require(["vs/editor/editor.main"], () => {
+            // ── 1. Strict compiler options ──
+            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                target: monaco.languages.typescript.ScriptTarget.ES2020,
+                module: monaco.languages.typescript.ModuleKind.ESNext,
+                lib: ["es2020", "dom"],
+                strict: true,
+                noImplicitAny: true,
+                strictNullChecks: true,
+                strictFunctionTypes: true,
+                strictBindCallApply: true,
+                strictPropertyInitialization: true,
+                noImplicitThis: true,
+                alwaysStrict: true,
+                esModuleInterop: true,
+                noEmit: true,
+                skipLibCheck: true
+            });
+
+            // ── 2. ENABLE semantic validation (critical!) ──
+            monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                noSemanticValidation: false,
+                noSyntaxValidation: false,
+                noSuggestionDiagnostics: false,
+                diagnosticCodesToIgnore: []
+            });
+
+            monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+
+            // ── 3. Create editor ──
+            editor = monaco.editor.create(document.getElementById("editor"), {
+                value: localStorage.getItem("typescript_code") || INITIAL_CODE,
+                language: "typescript",
+                theme: "vs-dark",
+                fontSize: 15,
+                fontFamily: "'Cascadia Code', 'Consolas', 'Fira Code', monospace",
+                automaticLayout: true,
+                minimap: { enabled: true },
+                scrollBeyondLastLine: false,
+                wordWrap: "on",
+                tabSize: 2,
+                insertSpaces: true,
+                formatOnType: true,
+                formatOnPaste: true,
+                quickSuggestions: true,
+                suggestOnTriggerCharacters: true,
+                parameterHints: { enabled: true },
+                hover: { enabled: true },
+                lightbulb: { enabled: true }
+            });
+
+            monacoReady = true;
+
+            // ── 4. Live validation ──
+            editor.onDidChangeModelContent(() => {
+                localStorage.setItem("typescript_code", editor.getValue());
+                clearTimeout(liveDebounceTimer);
+                liveDebounceTimer = setTimeout(() => refreshAllDiagnostics(), 400);
+            });
+
+            editor.onDidChangeCursorPosition(e => updateLineInfo(e.position));
+
+            // Monaco publishes markers AFTER its TS worker finishes checking.
+            // This is MORE reliable than manually querying the worker.
+            monaco.editor.onDidChangeMarkers(([resource]) => {
+                if (editor.getModel()?.uri.toString() === resource.toString()) {
+                    refreshAllDiagnostics();
+                }
+            });
+
+            resolve();
+        });
+    });
+}
+
+/* ===============================
+   DIAGNOSTICS — Read from Monaco Markers
+   This is exactly what draws the red squiggles in the editor.
+================================ */
+function getDiagnosticsFromMarkers() {
+    const model = editor.getModel();
+    if (!model) return [];
+
+    // getModelMarkers returns the LIVE markers Monaco is currently showing
+    const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+
+    return markers.map(m => ({
+        startLineNumber: m.startLineNumber,
+        startColumn: m.startColumn,
+        endLineNumber: m.endLineNumber,
+        endColumn: m.endColumn,
+        message: m.message,
+        code: m.code,
+        isError: m.severity === monaco.MarkerSeverity.Error,
+        isWarning: m.severity === monaco.MarkerSeverity.Warning
+    }));
+}
+
+/* ===============================
+   RENDER ERRORS
+================================ */
+function refreshAllDiagnostics() {
+    if (!monacoReady) return;
+
+    const display = getDiagnosticsFromMarkers()
+        .sort((a, b) => a.startLineNumber - b.startLineNumber);
+
+    const errors   = display.filter(d => d.isError);
+    const warnings = display.filter(d => d.isWarning);
+
+    // Status bar
+    const statusEl = document.getElementById("status");
+    if (statusEl) {
+        if (errors.length) {
+            statusEl.innerHTML = `<span style="color:#ff4444;">❌ ${errors.length} error${errors.length>1?'s':''}</span>`;
+        } else if (warnings.length) {
+            statusEl.innerHTML = `<span style="color:#ffaa44;">⚠️ ${warnings.length} warning${warnings.length>1?'s':''}</span>`;
+        } else {
+            statusEl.innerHTML = `<span style="color:#3fb950;">✅ No errors — types are valid</span>`;
+        }
+    }
+
+    // Badge
+    if (tsErrorCountEl) {
+        tsErrorCountEl.textContent = display.length;
+        tsErrorCountEl.className = "count-badge " +
+            (errors.length ? "has-errors" : warnings.length ? "has-warnings" : "clean");
+    }
+
+    // List
+    tsErrorsListEl.innerHTML = "";
+    if (display.length === 0) {
+        tsErrorsListEl.innerHTML = `
+            <div class="ts-no-errors">
+                ✅ No TypeScript errors — types are valid!<br>
+                <span style="color:#8b949e;font-size:0.8rem;">Try typing <code>let x: string = 42</code> to see it work</span>
+            </div>`;
+        return;
+    }
+
+    display.forEach(d => {
+        const item = document.createElement("div");
+        item.className = `ts-error-item ${d.isError ? "severity-error" : "severity-warning"}`;
+        const icon = d.isError ? "❌" : "⚠️";
+        const codeStr = d.code ? ` <span class="ts-error-code">TS${d.code}</span>` : "";
+        item.innerHTML = `
+            <span class="ts-error-location">${icon} Line ${d.startLineNumber}, Col ${d.startColumn}</span>
+            <span class="ts-error-message">${escapeHtml(d.message)}${codeStr}</span>
+        `;
+        item.addEventListener("click", () => {
+            editor.revealLineInCenter(d.startLineNumber);
+            editor.setPosition({ lineNumber: d.startLineNumber, column: d.startColumn });
+            editor.focus();
+        });
+        tsErrorsListEl.appendChild(item);
+    });
+}
+
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function updateLineInfo(pos) {
+    if (!pos || !lineInfoElement) return;
+    lineInfoElement.textContent = `Ln ${pos.lineNumber}, Col ${pos.column}`;
+}
+
+/* ===============================
+   RUN / EXECUTE CODE
+================================ */
+async function runCode() {
+    const markers = getDiagnosticsFromMarkers();
+    const errors = markers.filter(m => m.isError);
+
+    if (errors.length > 0) {
+        const msg = errors.slice(0, 3).map(e =>
+            `Line ${e.startLineNumber}: ${e.message.substring(0, 60)}`
+        ).join("\n");
+
+        if (!confirm(`⚠️ ${errors.length} TypeScript error(s):\n\n${msg}\n\nRun anyway?`)) {
+            showToast("Execution cancelled", "warning");
+            return;
+        }
+    }
+    executeCode({ silent: false });
+}
+
+function executeCode({ silent = false } = {}) {
+    if (typeof ts === "undefined") {
+        if (!silent) {
+            renderLog(["❌ TypeScript compiler not loaded"], "error");
+            showToast("TS compiler not ready", "error");
+        }
+        return;
+    }
+
+    let jsCode;
+    try {
+        jsCode = ts.transpile(editor.getValue(), {
+            target: ts.ScriptTarget.ES2020,
+            module: ts.ModuleKind.ESNext
+        });
+    } catch (err) {
+        outputElement.innerHTML = "";
+        renderLog([`❌ Compile Error: ${err.message}`], "error");
+        if (!silent) showToast("Compile failed", "error");
+        return;
+    }
+
+    runInWorker(jsCode, silent);
+}
+
+function runInWorker(jsCode, silent) {
+    if (currentWorker) { currentWorker.terminate(); currentWorker = null; }
+    outputElement.innerHTML = "";
+
+    const src = `
+        function safeSerialize(v){ try{JSON.stringify(v);return v;}catch(e){return String(v);} }
+        function makeLogger(t){ return function(...a){ self.postMessage({kind:'log',logType:t,args:a.map(safeSerialize)}); }; }
+        const console={log:makeLogger('log'),error:makeLogger('error'),warn:makeLogger('warn'),info:makeLogger('info')};
+        self.onmessage=function(e){
+            try{ const fn=new Function('console','Date','Math','JSON','Array','Object','String','Number','Boolean',e.data);
+                fn(console,Date,Math,JSON,Array,Object,String,Number,Boolean);
+                self.postMessage({kind:'done'});
+            }catch(err){ self.postMessage({kind:'error',message:err.message}); }
+        };
+    `;
+    const blob = new Blob([src], { type: "application/javascript" });
+    const url  = URL.createObjectURL(blob);
+    const worker = new Worker(url);
+    currentWorker = worker;
+
+    const timeoutId = setTimeout(() => {
+        worker.terminate(); URL.revokeObjectURL(url);
+        if (currentWorker === worker) currentWorker = null;
+        renderLog([`⏱️ Execution timed out after ${EXEC_TIMEOUT_MS/1000}s`], "error");
+        if (!silent) showToast("Timed out (infinite loop?)", "error", 4000);
+    }, EXEC_TIMEOUT_MS);
+
+    worker.onmessage = (e) => {
+        const { kind, logType, args, message } = e.data;
+        if (kind === "log") renderLog(args, logType);
+        else if (kind === "done") {
+            clearTimeout(timeoutId); worker.terminate(); URL.revokeObjectURL(url);
+            if (currentWorker === worker) currentWorker = null;
+            if (!silent) showToast("Execution completed", "success");
+        } else if (kind === "error") {
+            clearTimeout(timeoutId); worker.terminate(); URL.revokeObjectURL(url);
+            if (currentWorker === worker) currentWorker = null;
+            renderLog([`❌ Runtime Error: ${message}`], "error");
+            if (!silent) showToast("Execution failed", "error");
+        }
+    };
+    worker.onerror = (err) => {
+        clearTimeout(timeoutId); worker.terminate(); URL.revokeObjectURL(url);
+        if (currentWorker === worker) currentWorker = null;
+        renderLog([`❌ Worker Error: ${err.message}`], "error");
+        if (!silent) showToast("Execution failed", "error");
+    };
+    worker.postMessage(jsCode);
+}
+
+function renderLog(args, type) {
+    const entry = document.createElement("div"); entry.className = "console-entry";
+    const header = document.createElement("div"); header.className = "console-header";
+    header.innerHTML = `<span class="badge ${type}">${type.toUpperCase()}</span><span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+    const body = document.createElement("div"); body.className = "console-body";
+    args.forEach(arg => {
+        const el = document.createElement("div");
+        if (typeof arg === "object" && arg !== null) {
+            const details = document.createElement("details");
+            const summary = document.createElement("summary");
+            summary.textContent = Array.isArray(arg) ? `Array(${arg.length})` : "Object";
+            const pre = document.createElement("pre");
+            pre.textContent = JSON.stringify(arg, null, 2);
+            details.appendChild(summary); details.appendChild(pre);
+            el.appendChild(details);
+        } else {
+            el.textContent = String(arg);
+        }
+        body.appendChild(el);
+    });
+    entry.appendChild(header); entry.appendChild(body);
+    outputElement.appendChild(entry);
+    outputElement.scrollTop = outputElement.scrollHeight;
+}
+
+/* ===============================
+   EVENT LISTENERS
+================================ */
+function setupEventListeners() {
+    const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+
+    on("btn-run", runCode);
+    on("btn-clear", () => { editor.setValue(""); outputElement.innerHTML = ""; showToast("Cleared", "info"); });
+    on("btn-save", () => { localStorage.setItem("typescript_code", editor.getValue()); showToast("Saved", "success"); });
+    on("btn-share", shareCode);
+    on("btn-check-types", async () => { refreshAllDiagnostics(); showToast("Type check complete", "info"); });
+    on("btn-clear-output", () => { outputElement.innerHTML = ""; showToast("Output cleared", "info"); });
+    on("btn-copy-output", () => {
+        const text = outputElement.innerText;
+        if (!text) { showToast("Nothing to copy", "warning"); return; }
+        navigator.clipboard.writeText(text).then(() => showToast("Copied!", "success")).catch(() => showToast("Copy failed", "error"));
+    });
+    on("btn-format", () => editor?.getAction("editor.action.formatDocument")?.run());
+}
+
+function loadCodeFromURL() {
+    const code = new URLSearchParams(location.search).get("code");
+    if (!code) return;
+    try { editor.setValue(decodeURIComponent(atob(code))); showToast("Loaded from URL", "success"); }
+    catch (e) { showToast("Failed to load URL code", "error"); }
+}
+
+function shareCode() {
+    const encoded = btoa(encodeURIComponent(editor.getValue()));
+    const url = `${location.origin}${location.pathname}?code=${encoded}`;
+    navigator.clipboard.writeText(url).then(() => showToast("Share URL copied!", "success", 3000)).catch(() => showToast("Copy failed", "error"));
+}
+
+function showToast(msg, type = "info", duration = 2000) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.className = `toast ${type} show`;
+    setTimeout(() => toastEl.classList.remove("show"), duration);
+}
+</script>
 </body>
-
 </html>

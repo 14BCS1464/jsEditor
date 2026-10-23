@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Native Web Playground & Emulator</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- React, ReactDOM, Babel (pinned versions from cdnjs) -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.development.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+
+  <!-- Monaco Editor CSS (FIX: correct file name + data-name) -->
+  <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/editor/editor.main.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: '#61dafb',
+            darkBg: '#0f172a',
+            panelBg: '#1e293b',
+            editorBg: '#0d1117'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* FIX: select-none on body can block typing in Safari. Allow selection in editor areas. */
+    textarea, input, #monaco-editor, #monaco-editor * {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .monaco-editor, .monaco-editor-background, .monaco-editor .inputarea.ime-input {
+      background-color: #0d1117 !important;
+    }
+
+    .emulator-screen::-webkit-scrollbar { width: 4px; }
+    .emulator-screen::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 4px;
+    }
+
+    .phone-shadow {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(97, 218, 251, 0.15);
+    }
+
+    .iphone-notch {
+      width: 120px;
+      height: 24px;
+      background: #000;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+    }
+
+    .android-punchhole {
+      width: 14px;
+      height: 14px;
+      background: #000;
+      border-radius: 50%;
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+    }
+
+    /* FIX: animate-spin-slow was used but never defined */
+    @keyframes rn-spin-slow { to { transform: rotate(360deg); } }
+    .animate-spin-slow { animation: rn-spin-slow 8s linear infinite; }
+
+    /* Placeholder color for RN TextInput */
+    .rn-input::placeholder { color: var(--rn-placeholder, #94a3b8); }
+  @keyframes rn-slide-up{from{transform:translateY(100%)}to{transform:none}}
+    @keyframes rn-fade{from{opacity:0}to{opacity:1}}
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-hidden">
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-20 select-none">
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+        <i class="fa-brands fa-react text-xl animate-spin-slow"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-wide flex items-center gap-2">
+          React Native Web <span class="text-xs bg-cyan-500/20 text-cyan-300 font-semibold px-2 py-0.5 rounded-full border border-cyan-500/30">Playground</span>
+        </h1>
+        <p class="text-[10px] text-slate-400">Live In-Browser Transpiler & Emulator</p>
+      </div>
+    </div>
+
+    <!-- Template Selector -->
+    <div class="hidden md:flex items-center space-x-2 bg-slate-900 border border-slate-800 p-1 rounded-lg text-xs">
+      <span class="text-slate-400 px-2 font-medium">Templates:</span>
+      <button onclick="loadTemplate('basic')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Basic UI</button>
+      <button onclick="loadTemplate('counter')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Counter & State</button>
+      <button onclick="loadTemplate('todo')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Todo List</button>
+      <button onclick="loadTemplate('card')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Profile Card</button>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center space-x-2">
+      <button onclick="formatCode()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+        <span class="hidden sm:inline">Format</span>
+      </button>
+
+      <button onclick="runCode()" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition active:scale-95">
+        <i class="fa-solid fa-play text-[10px]"></i>
+        <span>Run Code</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Split Layout -->
+  <main class="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- Left Panel: Editor & Console -->
+    <section class="w-full md:w-1/2 lg:w-3/5 h-1/2 md:h-full min-h-0 flex flex-col border-r border-slate-800 bg-editorBg relative">
+
+      <div class="h-10 shrink-0 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between px-3 text-xs select-none">
+        <div class="flex items-center space-x-1">
+          <div class="px-3 py-1.5 rounded-t-md bg-editorBg text-cyan-400 font-mono text-xs border-t-2 border-cyan-400 flex items-center space-x-2">
+            <i class="fa-brands fa-react"></i>
+            <span>App.jsx</span>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3 text-slate-400">
+          <span id="editor-engine" class="text-[11px] text-slate-500">Loading editor…</span>
+          <span id="auto-run-indicator" class="text-[11px] flex items-center gap-1.5 text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Auto-Compile Active
+          </span>
+          <button onclick="clearConsole()" title="Clear Console" class="hover:text-white transition">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- FIX: min-h-0 + overflow-hidden so the editor can shrink inside the flex column -->
+      <div id="monaco-editor" class="flex-1 min-h-0 w-full overflow-hidden relative"></div>
+
+      <!-- Console Dock -->
+      <div id="console-dock" class="h-36 shrink-0 bg-slate-950 border-t border-slate-800 flex flex-col transition-all duration-200">
+        <div class="h-8 shrink-0 bg-slate-900/80 px-3 flex items-center justify-between border-b border-slate-800/60 cursor-pointer select-none" onclick="toggleConsole()">
+          <div class="flex items-center space-x-2 text-xs text-slate-300 font-medium">
+            <i class="fa-solid fa-terminal text-slate-400"></i>
+            <span>Console Log Terminal</span>
+            <span id="log-count" class="bg-slate-800 text-slate-400 text-[10px] px-1.5 rounded-full">0</span>
+          </div>
+          <button class="text-slate-400 hover:text-white text-xs">
+            <i id="console-toggle-icon" class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+
+        <div id="console-logs" class="flex-1 p-2 font-mono text-xs overflow-y-auto space-y-1 text-slate-300 bg-slate-950/90">
+          <div class="text-slate-500 italic text-[11px]">[System]: Console output ready...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Device Emulator -->
+    <section class="w-full md:w-1/2 lg:w-2/5 h-1/2 md:h-full min-h-0 bg-slate-900 flex flex-col items-center justify-between p-4 relative overflow-hidden">
+
+      <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-30 pointer-events-none"></div>
+
+      <div class="w-full max-w-sm flex items-center justify-between bg-slate-950/80 backdrop-blur border border-slate-800 p-2 rounded-xl z-10 mb-2 shadow-lg text-xs text-slate-300 select-none">
+        <select id="device-select" onchange="setDevice(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none"><option value="iphone15">iPhone 15 Pro</option><option value="iphonese">iPhone SE</option><option value="pixel8">Pixel 8</option><option value="ipad">iPad mini</option></select>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="toggleTheme()" title="Toggle Preview Theme (Dark/Light)" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i id="theme-icon" class="fa-solid fa-moon text-xs"></i>
+          </button>
+
+          <button onclick="toggleOrientation()" title="Rotate Device" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-rotate text-xs"></i>
+          </button>
+
+          <button onclick="runCode()" title="Reload App" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-arrows-rotate text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 flex items-center justify-center w-full my-auto z-10">
+        <div id="phone-wrap" style="position:relative;width:360px;height:640px"><div id="phone-frame" class="absolute transition-all duration-300 ease-out bg-black border-[10px] border-slate-800 rounded-[48px] phone-shadow flex flex-col overflow-hidden select-none" style="left:0;top:0;transform-origin:top left;width:360px;height:640px;">
+
+          <div id="modal-root" style="position:absolute;top:32px;left:0;right:0;bottom:20px;z-index:45;pointer-events:none;overflow:hidden"></div>
+          <div id="phone-notch" class="iphone-notch flex items-center justify-center">
+            <div class="w-12 h-1 bg-slate-900 rounded-full"></div>
+          </div>
+
+          <div id="status-bar" class="h-8 shrink-0 px-6 pt-1 flex items-center justify-between text-[10px] font-semibold text-slate-400 z-40">
+            <span id="status-time">9:41</span>
+            <div class="flex items-center space-x-1.5">
+              <i class="fa-solid fa-signal text-[9px]"></i>
+              <i class="fa-solid fa-wifi text-[9px]"></i>
+              <i class="fa-solid fa-battery-full text-xs"></i>
+            </div>
+          </div>
+
+          <!-- FIX: explicit light colors (text no longer inherits near-white from <html>) -->
+          <div id="emulator-screen" class="emulator-screen flex-1 min-h-0 overflow-y-auto relative w-full flex flex-col" style="background-color:#ffffff;color:#0f172a;">
+            <div id="app-root" class="w-full min-h-full flex flex-col"></div>
+          </div>
+
+          <div id="kb-panel" style="display:none;flex-direction:column;gap:8px;padding:8px 4px;background:#d1d5db;color:#111827;flex-shrink:0;z-index:40"></div>
+          <div id="home-indicator-container" class="h-5 shrink-0 w-full flex items-center justify-center bg-transparent z-40">
+            <div id="home-indicator" class="w-32 h-1 bg-slate-400/50 rounded-full"></div>
+          </div>
+
+        </div></div>
+      </div>
+
+      <div class="z-10 text-[11px] text-slate-500 font-mono flex items-center gap-2">
+        <span id="resolution-display">340 x 620 px</span>
+        <span>•</span>
+        <span>React Native Web Engine v0.19</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Monaco AMD loader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+
+  <script>
+    // ==========================================
+    // 0. SMALL HELPERS + CONSOLE (installed first)
+    // ==========================================
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const safeStringify = (v) => {
+      try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }
+    };
+
+    const formatConsoleArgs = (args) => {
+      let list = [...args];
+      if (typeof list[0] === 'string' && /%[sdifoOjc]/.test(list[0])) {
+        const first = list.shift();
+        const replaced = first.replace(/%[sdifoOjc]/g, (m) => {
+          if (!list.length) return m;
+          const v = list.shift();
+          if (m === '%c') return '';
+          return typeof v === 'object' && v !== null ? safeStringify(v) : String(v);
+        });
+        list = [replaced, ...list];
+      }
+      return list.map((a) => {
+        if (a instanceof Error) return a.message;
+        if (typeof a === 'object' && a !== null) return safeStringify(a);
+        return String(a);
+      }).join(' ');
+    };
+
+    // FIX: console is intercepted immediately (was window.onload, so early logs/errors were lost)
+    const installConsole = () => {
+      const logContainer = document.getElementById('console-logs');
+      const logCountBadge = document.getElementById('log-count');
+      let count = 0;
+      const original = { log: console.log, warn: console.warn, error: console.error, info: console.info };
+
+      const appendLog = (type, args) => {
+        count++;
+        logCountBadge.innerText = count;
+
+        let color = 'text-slate-300';
+        let icon = 'fa-circle-info text-cyan-400';
+        if (type === 'error') { color = 'text-rose-400'; icon = 'fa-circle-xmark text-rose-500'; }
+        else if (type === 'warn') { color = 'text-amber-300'; icon = 'fa-triangle-exclamation text-amber-400'; }
+
+        const item = document.createElement('div');
+        item.className = 'flex items-start gap-2 border-b border-slate-900/50 pb-1';
+
+        const i = document.createElement('i');
+        i.className = `fa-solid ${icon} text-[10px] mt-1`;
+
+        // FIX: textContent instead of innerHTML so messages can't break the layout
+        const span = document.createElement('span');
+        span.className = `${color} flex-1 break-all whitespace-pre-wrap`;
+        span.textContent = formatConsoleArgs(args);
+
+        item.appendChild(i);
+        item.appendChild(span);
+        logContainer.appendChild(item);
+        logContainer.scrollTop = logContainer.scrollHeight;
+      };
+
+      ['log', 'info', 'warn', 'error'].forEach((method) => {
+        console[method] = (...args) => {
+          try { original[method].apply(console, args); } catch (e) {}
+          appendLog(method === 'info' ? 'log' : method, args);
+        };
+      });
+
+      window.addEventListener('error', (e) => appendLog('error', [e.message || 'Script error']));
+      window.addEventListener('unhandledrejection', (e) => appendLog('error', ['Unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)]));
+    };
+    installConsole();
+
+    // ==========================================
+    // 1. REACT NATIVE WEB PRIMITIVES SYSTEM
+    // ==========================================
+    const createRNPrimitives = () => {
+      const React = window.React;
+
+      const hexToRgba = (color, opacity) => {
+        if (typeof color !== 'string' || color[0] !== '#') return color;
+        let hex = color.slice(1);
+        if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+        const n = parseInt(hex.slice(0, 6), 16);
+        if (isNaN(n)) return color;
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${opacity})`;
+      };
+
+      // Convert RN style objects into valid web CSS
+      const processStyles = (styleObj) => {
+        if (!styleObj) return {};
+        if (Array.isArray(styleObj)) {
+          return styleObj.reduce((acc, curr) => ({ ...acc, ...processStyles(curr) }), {});
+        }
+        if (typeof styleObj !== 'object') return {};
+
+        const css = { ...styleObj };
+        const has = (k) => css[k] !== undefined && css[k] !== null;
+
+        const expand = (key, targets) => {
+          if (!has(key)) return;
+          targets.forEach((t) => { if (!has(t)) css[t] = css[key]; });
+          delete css[key];
+        };
+        expand('marginVertical', ['marginTop', 'marginBottom']);
+        expand('marginHorizontal', ['marginLeft', 'marginRight']);
+        expand('paddingVertical', ['paddingTop', 'paddingBottom']);
+        expand('paddingHorizontal', ['paddingLeft', 'paddingRight']);
+
+        // FIX: unitless lineHeight means "multiplier" on web but "pixels" in RN
+        if (typeof css.lineHeight === 'number') css.lineHeight = `${css.lineHeight}px`;
+
+        // FIX: textDecorationLine is not a CSS property on web
+        if (has('textDecorationLine')) {
+          if (!has('textDecoration')) css.textDecoration = css.textDecorationLine;
+          delete css.textDecorationLine;
+        }
+
+        // FIX: RN shadow props -> CSS box-shadow
+        if (has('shadowColor') || has('shadowRadius') || has('shadowOffset') || has('shadowOpacity')) {
+          if (!has('boxShadow')) {
+            const o = css.shadowOffset || { width: 0, height: 0 };
+            const op = has('shadowOpacity') ? css.shadowOpacity : 1;
+            css.boxShadow = `${o.width || 0}px ${o.height || 0}px ${css.shadowRadius || 0}px ${hexToRgba(css.shadowColor || '#000000', op)}`;
+          }
+        }
+        ['shadowColor', 'shadowOffset', 'shadowOpacity', 'shadowRadius', 'elevation'].forEach((k) => delete css[k]);
+
+        // RN transform arrays -> CSS transform string
+        if (Array.isArray(css.transform)) {
+          css.transform = css.transform.map((t) =>
+            Object.entries(t).map(([k, v]) => {
+              const needsPx = typeof v === 'number' && !/scale|rotate|skew/.test(k);
+              return `${k}(${needsPx ? v + 'px' : v})`;
+            }).join(' ')
+          ).join(' ');
+        }
+
+        return css;
+      };
+
+      // Only pass props that make sense on a DOM node (avoids "unknown prop" warnings)
+      const DOM_PROPS = new Set(['id', 'className', 'role', 'title', 'tabIndex', 'onClick', 'onScroll', 'onMouseEnter', 'onMouseLeave', 'onFocus', 'onBlur', 'onKeyDown', 'onKeyUp', 'onMouseDown', 'onMouseMove', 'onMouseUp', 'onTouchStart', 'onTouchMove', 'onTouchEnd']);
+      const domProps = (props) => {
+        const out = {};
+        Object.keys(props).forEach((k) => {
+          if (DOM_PROPS.has(k) || k.startsWith('data-') || k.startsWith('aria-')) out[k] = props[k];
+        });
+        if (props.testID) out['data-testid'] = props.testID;
+        return out;
+      };
+
+      const View = React.forwardRef(({ style, children, pointerEvents, ...props }, ref) => {
+        const baseStyle = {
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+          position: 'relative',
+          borderWidth: 0,
+          borderStyle: 'solid',
+          minWidth: 0,
+          minHeight: 0
+        };
+        const extra = pointerEvents ? { pointerEvents: pointerEvents === 'box-none' ? 'none' : pointerEvents } : {};
+        return React.createElement('div', {
+          ref,
+          style: { ...baseStyle, ...extra, ...processStyles(style) },
+          ...domProps(props)
+        }, children);
+      });
+
+      const Text = React.forwardRef(({ style, children, numberOfLines, onPress, ...props }, ref) => {
+        const baseStyle = {
+          display: 'inline',
+          boxSizing: 'border-box',
+          color: 'inherit',
+          fontFamily: 'Inter, system-ui, sans-serif'
+        };
+
+        let truncateStyle = {};
+        if (numberOfLines) {
+          truncateStyle = {
+            display: '-webkit-box',
+            WebkitLineClamp: numberOfLines,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          };
+        }
+
+        const dom = domProps(props);
+        if (onPress) { dom.onClick = onPress; truncateStyle.cursor = 'pointer'; }
+
+        return React.createElement('span', {
+          ref,
+          style: { ...baseStyle, ...processStyles(style), ...truncateStyle },
+          ...dom
+        }, children);
+      });
+
+      const TouchableOpacity = React.forwardRef(({ style, children, onPress, activeOpacity = 0.7, disabled, ...props }, ref) => {
+        const [isPressed, setIsPressed] = React.useState(false);
+        return React.createElement('div', {
+          ref,
+          onClick: disabled ? undefined : onPress,
+          onMouseDown: () => setIsPressed(true),
+          onMouseUp: () => setIsPressed(false),
+          onMouseLeave: () => setIsPressed(false),
+          onTouchStart: () => setIsPressed(true),
+          onTouchEnd: () => setIsPressed(false),
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+            cursor: disabled ? 'default' : 'pointer',
+            userSelect: 'none',
+            transition: 'opacity 0.15s ease',
+            opacity: isPressed && !disabled ? activeOpacity : (disabled ? 0.5 : 1),
+            borderWidth: 0,
+            borderStyle: 'solid',
+            ...processStyles(style)
+          },
+          ...domProps(props)
+        }, children);
+      });
+
+      const Pressable = React.forwardRef(({ style, children, onPress, disabled, ...props }, ref) => {
+        const [pressed, setPressed] = React.useState(false);
+        const computedStyle = typeof style === 'function' ? style({ pressed }) : style;
+        return React.createElement('div', {
+          ref,
+          onClick: disabled ? undefined : onPress,
+          onMouseDown: () => setPressed(true),
+          onMouseUp: () => setPressed(false),
+          onMouseLeave: () => setPressed(false),
+          onTouchStart: () => setPressed(true),
+          onTouchEnd: () => setPressed(false),
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+            cursor: 'pointer',
+            userSelect: 'none',
+            borderWidth: 0,
+            borderStyle: 'solid',
+            ...processStyles(computedStyle)
+          },
+          ...domProps(props)
+        }, typeof children === 'function' ? children({ pressed }) : children);
+      });
+
+      const ScrollView = React.forwardRef(({ style, contentContainerStyle, children, horizontal, ...props }, ref) => {
+        return React.createElement('div', {
+          ref,
+          style: {
+            display: 'flex',
+            flexDirection: horizontal ? 'row' : 'column',
+            overflowX: horizontal ? 'auto' : 'hidden',
+            overflowY: horizontal ? 'hidden' : 'auto',
+            flex: 1,
+            minHeight: 0,
+            boxSizing: 'border-box',
+            ...processStyles(style)
+          },
+          ...domProps(props)
+        }, React.createElement('div', {
+          style: {
+            display: 'flex',
+            flexDirection: horizontal ? 'row' : 'column',
+            minWidth: horizontal ? 'max-content' : '100%',
+            boxSizing: 'border-box',
+            ...processStyles(contentContainerStyle)
+          }
+        }, children));
+      });
+
+      const renderMaybe = (c) => (c ? (React.isValidElement(c) ? c : React.createElement(c)) : null);
+
+      const FlatList = ({ data = [], renderItem, keyExtractor, style, contentContainerStyle, horizontal, ListHeaderComponent, ListFooterComponent, ListEmptyComponent, ItemSeparatorComponent, ...props }) => {
+        const children = [];
+        if (ListHeaderComponent) children.push(React.createElement(React.Fragment, { key: '__header' }, renderMaybe(ListHeaderComponent)));
+        if (!data.length && ListEmptyComponent) children.push(React.createElement(React.Fragment, { key: '__empty' }, renderMaybe(ListEmptyComponent)));
+        data.forEach((item, index) => {
+          const key = keyExtractor ? keyExtractor(item, index) : (item && item.id != null ? String(item.id) : String(index));
+          children.push(React.createElement(React.Fragment, { key }, renderItem({ item, index })));
+          if (ItemSeparatorComponent && index < data.length - 1) {
+            children.push(React.createElement(React.Fragment, { key: key + '__sep' }, renderMaybe(ItemSeparatorComponent)));
+          }
+        });
+        if (ListFooterComponent) children.push(React.createElement(React.Fragment, { key: '__footer' }, renderMaybe(ListFooterComponent)));
+        return React.createElement(ScrollView, { style, contentContainerStyle, horizontal, ...props }, children);
+      };
+
+      const TextInput = React.forwardRef(({ style, value, defaultValue, onChangeText, onChange, onSubmitEditing, placeholder, placeholderTextColor, secureTextEntry, multiline, keyboardType, editable = true, autoFocus, maxLength, ...props }, ref) => {
+        const isMultiline = !!multiline;
+        const inputModeMap = { 'numeric': 'numeric', 'number-pad': 'numeric', 'decimal-pad': 'decimal', 'email-address': 'email', 'phone-pad': 'tel' };
+        const common = {
+          ref,
+          className: 'rn-input',
+          placeholder,
+          readOnly: !editable,
+          autoFocus,
+          maxLength,
+          inputMode: inputModeMap[keyboardType],
+          onChange: (e) => {
+            if (onChangeText) onChangeText(e.target.value);
+            if (onChange) onChange(e);
+          },
+          style: {
+            outline: 'none',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            borderColor: '#cbd5e1',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '14px',
+            fontFamily: 'inherit',
+            color: 'inherit',
+            boxSizing: 'border-box',
+            backgroundColor: 'transparent',
+            '--rn-placeholder': placeholderTextColor || '#94a3b8',
+            ...(isMultiline ? { resize: 'none', minHeight: '64px' } : {}),
+            ...processStyles(style)
+          },
+          ...domProps(props)
+        };
+        // FIX: only control the input when a value is actually provided
+        if (value !== undefined) common.value = value;
+        else if (defaultValue !== undefined) common.defaultValue = defaultValue;
+
+        if (isMultiline) return React.createElement('textarea', common);
+        common.type = secureTextEntry ? 'password' : 'text';
+        common.onKeyDown = (e) => { if (e.key === 'Enter' && onSubmitEditing) onSubmitEditing(e); };
+        return React.createElement('input', common);
+      });
+
+      const Image = React.forwardRef(({ source, style, resizeMode = 'cover', ...props }, ref) => {
+        const uri = source && typeof source === 'object' && source.uri ? source.uri : (typeof source === 'string' ? source : '');
+        return React.createElement('img', {
+          ref,
+          src: uri || 'https://placehold.co/200x200/1e293b/61dafb?text=Image',
+          style: {
+            objectFit: resizeMode === 'stretch' ? 'fill' : resizeMode,
+            maxWidth: '100%',
+            ...processStyles(style)
+          },
+          onError: (e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/1e293b/61dafb?text=Image+Error'; },
+          ...domProps(props)
+        });
+      });
+
+      const Switch = ({ value, onValueChange, disabled, trackColor = { false: '#767577', true: '#81b0ff' }, thumbColor = '#f4f3f4' }) => {
+        return React.createElement('div', {
+          onClick: () => !disabled && onValueChange && onValueChange(!value),
+          style: {
+            width: '42px',
+            height: '24px',
+            backgroundColor: value ? (trackColor.true || '#3b82f6') : (trackColor.false || '#e2e8f0'),
+            borderRadius: '12px',
+            padding: '2px',
+            boxSizing: 'border-box',
+            cursor: disabled ? 'default' : 'pointer',
+            opacity: disabled ? 0.5 : 1,
+            transition: 'background-color 0.2s',
+            display: 'flex',
+            alignItems: 'center'
+          }
+        }, React.createElement('div', {
+          style: {
+            width: '20px',
+            height: '20px',
+            backgroundColor: thumbColor,
+            borderRadius: '50%',
+            transform: value ? 'translateX(18px)' : 'translateX(0px)',
+            transition: 'transform 0.2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+          }
+        }));
+      };
+
+      const ActivityIndicator = ({ size = 'small', color = '#0000ff', animating = true, style }) => {
+        if (!animating) return null;
+        const dimension = size === 'large' ? 36 : (typeof size === 'number' ? size : 20);
+        return React.createElement('div', {
+          style: {
+            display: 'inline-block',
+            width: dimension + 'px',
+            height: dimension + 'px',
+            boxSizing: 'border-box',
+            border: '3px solid rgba(128,128,128,0.25)',
+            borderTopColor: color,
+            borderRadius: '50%',
+            animation: 'rn-spin 1s linear infinite',
+            ...processStyles(style)
+          }
+        });
+      };
+
+      if (!document.getElementById('rn-spinner-style')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'rn-spinner-style';
+        styleSheet.innerText = '@keyframes rn-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+        document.head.appendChild(styleSheet);
+      }
+
+      const SafeAreaView = View;
+      const KeyboardAvoidingView = View;
+
+      // FIX: StatusBar was a plain object, so <StatusBar /> crashed. Now a component with static helpers.
+      const StatusBar = () => null;
+      StatusBar.setBarStyle = () => {};
+      StatusBar.setBackgroundColor = () => {};
+      StatusBar.setHidden = () => {};
+
+      const StyleSheet = {
+        create: (styles) => styles,
+        flatten: (styles) => processStyles(styles),
+        hairlineWidth: 1,
+        absoluteFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+        absoluteFillObject: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }
+      };
+
+      // FIX: Dimensions now reflect the real emulator screen size
+      const getScreenSize = () => {
+        const el = document.getElementById('emulator-screen');
+        return {
+          width: (el && el.clientWidth) || 320,
+          height: (el && el.clientHeight) || 560,
+          scale: 2,
+          fontScale: 1
+        };
+      };
+      const Dimensions = {
+        get: () => getScreenSize(),
+        addEventListener: () => ({ remove: () => {} })
+      };
+      const useWindowDimensions = () => getScreenSize();
+
+      // FIX: Platform.OS follows the selected device (ios / android)
+      const Platform = {
+        get OS() { return currentDevice === 'iphone' ? 'ios' : 'android'; },
+        select(obj) {
+          const os = this.OS;
+          return obj[os] !== undefined ? obj[os] : (obj.native !== undefined ? obj.native : obj.default);
+        }
+      };
+
+      const Alert = {
+        alert: (title, message) => {
+          console.log('[Alert] ' + title + (message ? ': ' + message : ''));
+          window.alert(title + (message ? '\n\n' + message : ''));
+        }
+      };
+
+      const Keyboard = { dismiss: () => {} };
+
+      return {
+        View, Text, TouchableOpacity, Pressable, ScrollView, FlatList, TextInput, Image,
+        Switch, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, StatusBar, StyleSheet,
+        Dimensions, useWindowDimensions, Platform, Alert, Keyboard,
+        __internals: { processStyles, domProps }
+      };
+    };
+
+
+    // ==========================================
+    // 1b. EXTRA RN APIs: Animated, Modal, SectionList, Keyboard, Appearance, modules...
+    // ==========================================
+    function createRNExtras(RN) {
+      const R = window.React, h = R.createElement;
+      const rm = (c) => (c ? (R.isValidElement(c) ? c : h(c)) : null);
+
+      // ----- Easing -----
+      const bez = (x1, y1, x2, y2) => (t) => {
+        if (t <= 0 || t >= 1) return t;
+        let lo = 0, hi = 1, u = t;
+        for (let i = 0; i < 20; i++) {
+          const x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u;
+          if (x < t) lo = u; else hi = u;
+          u = (lo + hi) / 2;
+        }
+        return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+      };
+      const Easing = {
+        linear: (t) => t, ease: bez(0.42, 0, 1, 1), quad: (t) => t * t, cubic: (t) => t * t * t,
+        sin: (t) => 1 - Math.cos(t * Math.PI / 2), circle: (t) => 1 - Math.sqrt(1 - t * t),
+        exp: (t) => Math.pow(2, 10 * (t - 1)), bezier: bez,
+        bounce: (t) => t < 1 / 2.75 ? 7.5625 * t * t : t < 2 / 2.75 ? (t -= 1.5 / 2.75, 7.5625 * t * t + 0.75) : t < 2.5 / 2.75 ? (t -= 2.25 / 2.75, 7.5625 * t * t + 0.9375) : (t -= 2.625 / 2.75, 7.5625 * t * t + 0.984375),
+        in: (f) => f, out: (f) => (t) => 1 - f(1 - t), inOut: (f) => (t) => t < 0.5 ? f(t * 2) / 2 : 1 - f((1 - t) * 2) / 2
+      };
+
+      // ----- Animated values -----
+      const isNode = (v) => v && typeof v === 'object' && typeof v.__get === 'function';
+      const val = (n) => (isNode(n) ? n.__get() : n);
+      const mix = (a, b, t) => {
+        if (typeof a === 'number') return a + (b - a) * t;
+        const re = /-?\d*\.?\d+/g, na = a.match(re) || [], nb = b.match(re) || [];
+        let i = 0;
+        return a.replace(re, () => { const r = +na[i] + (+nb[i] - +na[i]) * t; i++; return r; });
+      };
+      class Interp {
+        constructor(p, c) { this.p = p; this.c = c; }
+        __get() {
+          const x = val(this.p), { inputRange: I, outputRange: O, easing = (t) => t } = this.c;
+          const ext = (side) => this.c['extrapolate' + side] || this.c.extrapolate || 'extend';
+          let k = 1;
+          while (k < I.length - 1 && x > I[k]) k++;
+          let t = (x - I[k - 1]) / (I[k] - I[k - 1]);
+          if (t < 0 && ext('Left') === 'clamp') t = 0;
+          if (t > 1 && ext('Right') === 'clamp') t = 1;
+          return mix(O[k - 1], O[k], easing(t));
+        }
+        __subscribe(f) { return this.p.__subscribe(f); }
+        interpolate(c) { return new Interp(this, c); }
+      }
+      class Value {
+        constructor(v) { this._v = v; this._ls = new Set(); }
+        __get() { return this._v; }
+        setValue(v) { this._v = v; this._ls.forEach((f) => f()); }
+        __subscribe(f) { this._ls.add(f); return () => this._ls.delete(f); }
+        addListener(f) { const w = () => f({ value: this._v }); this._ls.add(w); return w; }
+        removeListener(w) { this._ls.delete(w); }
+        removeAllListeners() { this._ls.clear(); }
+        interpolate(c) { return new Interp(this, c); }
+        stopAnimation(cb) { this._stop && this._stop(); cb && cb(this._v); }
+        setOffset() {} flattenOffset() {}
+      }
+      class Op {
+        constructor(a, b, f) { this.a = a; this.b = b; this.f = f; }
+        __get() { return this.f(val(this.a), val(this.b)); }
+        __subscribe(fn) { const u = [this.a, this.b].filter(isNode).map((n) => n.__subscribe(fn)); return () => u.forEach((x) => x()); }
+        interpolate(c) { return new Interp(this, c); }
+      }
+
+      // ----- Animation runners -----
+      const mk = (startFn, reset) => ({
+        start(cb) {
+          this._cb = cb;
+          this._cancel = startFn((r) => { this._cancel = null; const c = this._cb; this._cb = null; c && c(r); });
+        },
+        stop() {
+          if (this._cancel) { this._cancel(); this._cancel = null; const c = this._cb; this._cb = null; c && c({ finished: false }); }
+        },
+        reset() { reset && reset(); }
+      });
+      const timing = (value, { toValue, duration = 500, delay = 0, easing = Easing.inOut(Easing.ease) }) => {
+        const v0 = value.__get();
+        const a = mk((done) => {
+          let raf, to;
+          const from = value.__get();
+          to = setTimeout(() => {
+            const t0 = performance.now();
+            const tick = (now) => {
+              const p = Math.min(1, (now - t0) / duration);
+              value.setValue(from + (toValue - from) * easing(p));
+              if (p < 1) raf = requestAnimationFrame(tick); else done({ finished: true });
+            };
+            raf = requestAnimationFrame(tick);
+          }, delay);
+          value._stop = () => a.stop();
+          return () => { clearTimeout(to); cancelAnimationFrame(raf); };
+        }, () => value.setValue(v0));
+        return a;
+      };
+      const spring = (value, { toValue, stiffness = 100, damping = 10, mass = 1, velocity = 0 }) => {
+        const v0 = value.__get();
+        const a = mk((done) => {
+          let x = value.__get(), v = velocity, last = performance.now(), raf;
+          const tick = (now) => {
+            const dt = Math.min(0.064, (now - last) / 1000); last = now;
+            v += ((-stiffness * (x - toValue) - damping * v) / mass) * dt;
+            x += v * dt;
+            value.setValue(x);
+            if (Math.abs(v) < 0.01 && Math.abs(x - toValue) < 0.01) { value.setValue(toValue); done({ finished: true }); }
+            else raf = requestAnimationFrame(tick);
+          };
+          raf = requestAnimationFrame(tick);
+          value._stop = () => a.stop();
+          return () => cancelAnimationFrame(raf);
+        }, () => value.setValue(v0));
+        return a;
+      };
+      const delayAnim = (ms) => mk((done) => { const t = setTimeout(() => done({ finished: true }), ms); return () => clearTimeout(t); });
+      const sequence = (list) => mk((done) => {
+        let i = 0;
+        const next = () => {
+          if (i >= list.length) return done({ finished: true });
+          list[i++].start((r) => (r.finished ? next() : done(r)));
+        };
+        next();
+        return () => list.forEach((a) => a.stop());
+      }, () => list.forEach((a) => a.reset()));
+      const parallel = (list) => mk((done) => {
+        let n = 0, over = false;
+        list.forEach((a) => a.start((r) => { if (over) return; if (!r.finished) { over = true; return done(r); } if (++n === list.length) done({ finished: true }); }));
+        if (!list.length) done({ finished: true });
+        return () => list.forEach((a) => a.stop());
+      }, () => list.forEach((a) => a.reset()));
+      const loop = (a, { iterations = -1 } = {}) => mk((done) => {
+        let n = 0, stopped = false;
+        const go = () => {
+          if (stopped) return;
+          if (iterations !== -1 && n >= iterations) return done({ finished: true });
+          if (n++ > 0) a.reset();
+          a.start((r) => { if (r.finished) go(); });
+        };
+        go();
+        return () => { stopped = true; a.stop(); };
+      });
+
+      // ----- Animated components (re-render when a bound value changes) -----
+      const resolve = (v) => Array.isArray(v) ? v.map(resolve) : isNode(v) ? v.__get() : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, resolve(x)])) : v;
+      const collect = (v, out) => { if (isNode(v)) out.push(v); else if (Array.isArray(v)) v.forEach((x) => collect(x, out)); else if (v && typeof v === 'object') Object.values(v).forEach((x) => collect(x, out)); return out; };
+      const wrap = (C) => R.forwardRef(({ style, ...p }, ref) => {
+        const [, tick] = R.useReducer((x) => x + 1, 0);
+        const nodes = collect(style, []);
+        R.useEffect(() => {
+          let raf;
+          const f = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); };
+          const subs = nodes.map((n) => n.__subscribe(f));
+          return () => { subs.forEach((u) => u()); cancelAnimationFrame(raf); };
+        });
+        return h(C, { ...p, ref, style: resolve(style) });
+      });
+      const Animated = {
+        Value, timing, spring, sequence, parallel, loop, delay: delayAnim,
+        stagger: (ms, list) => parallel(list.map((a, i) => sequence([delayAnim(ms * i), a]))),
+        add: (a, b) => new Op(a, b, (x, y) => x + y), subtract: (a, b) => new Op(a, b, (x, y) => x - y),
+        multiply: (a, b) => new Op(a, b, (x, y) => x * y), divide: (a, b) => new Op(a, b, (x, y) => x / y),
+        event: () => () => {}, createAnimatedComponent: wrap,
+        View: wrap(RN.View), Text: wrap(RN.Text), Image: wrap(RN.Image), ScrollView: wrap(RN.ScrollView), FlatList: wrap(RN.FlatList)
+      };
+
+      // ----- Modal (portal into the phone screen) -----
+      const Modal = ({ visible = true, transparent, animationType = 'none', onRequestClose, onShow, children }) => {
+        const root = document.getElementById('modal-root');
+        R.useEffect(() => { if (visible && onShow) onShow(); }, [visible]);
+        R.useEffect(() => {
+          if (!visible || !onRequestClose) return;
+          const f = (e) => e.key === 'Escape' && onRequestClose();
+          window.addEventListener('keydown', f);
+          return () => window.removeEventListener('keydown', f);
+        }, [visible, onRequestClose]);
+        if (!visible || !root) return null;
+        const anim = animationType === 'slide' ? 'rn-slide-up .3s ease-out' : animationType === 'fade' ? 'rn-fade .25s' : 'none';
+        return ReactDOM.createPortal(h('div', {
+          style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'auto', animation: anim, backgroundColor: transparent ? 'transparent' : (window.__scheme === 'dark' ? '#020617' : '#ffffff'), color: document.getElementById('emulator-screen').style.color }
+        }, children), root);
+      };
+
+      // ----- SectionList -----
+      const SectionList = ({ sections = [], renderItem, renderSectionHeader, renderSectionFooter, keyExtractor, ItemSeparatorComponent, ListHeaderComponent, ListFooterComponent, ListEmptyComponent, style, contentContainerStyle, ...p }) => {
+        const kids = [];
+        const F = (k, c) => h(R.Fragment, { key: k }, c);
+        if (ListHeaderComponent) kids.push(F('__h', rm(ListHeaderComponent)));
+        if (!sections.length && ListEmptyComponent) kids.push(F('__e', rm(ListEmptyComponent)));
+        sections.forEach((s, si) => {
+          if (renderSectionHeader) kids.push(F('sh' + si, renderSectionHeader({ section: s })));
+          s.data.forEach((item, i) => {
+            const ke = s.keyExtractor || keyExtractor;
+            const k = si + '-' + (ke ? ke(item, i) : item && item.id != null ? item.id : i);
+            kids.push(F(k, renderItem({ item, index: i, section: s })));
+            if (ItemSeparatorComponent && i < s.data.length - 1) kids.push(F(k + 's', rm(ItemSeparatorComponent)));
+          });
+          if (renderSectionFooter) kids.push(F('sf' + si, renderSectionFooter({ section: s })));
+        });
+        if (ListFooterComponent) kids.push(F('__f', rm(ListFooterComponent)));
+        return h(RN.ScrollView, { style, contentContainerStyle, ...p }, kids);
+      };
+
+      // ----- Touchables, Button, ImageBackground -----
+      const TouchableHighlight = ({ underlayColor, style, ...p }) => h(RN.Pressable, { ...p, style: ({ pressed }) => [style, pressed && { backgroundColor: underlayColor || '#cccccc' }] });
+      const TouchableWithoutFeedback = ({ onPress, children }) => R.cloneElement(R.Children.only(children), { onClick: onPress });
+      const Button = ({ title, onPress, color, disabled }) => currentDevice === 'android'
+        ? h(RN.TouchableOpacity, { onPress, disabled, style: { backgroundColor: color || '#2196F3', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 2, alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,.3)' } }, h(RN.Text, { style: { color: '#fff', fontWeight: '500', fontSize: 14 } }, String(title).toUpperCase()))
+        : h(RN.TouchableOpacity, { onPress, disabled }, h(RN.Text, { style: { color: color || '#007AFF', fontSize: 18, textAlign: 'center', padding: 8 } }, title));
+      const ImageBackground = ({ source, style, imageStyle, resizeMode, children }) => h(RN.View, { style }, h(RN.Image, { source, resizeMode, style: [{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }, imageStyle] }), children);
+
+      // ----- Appearance -----
+      window.__scheme = 'light';
+      const al = new Set();
+      const Appearance = {
+        getColorScheme: () => window.__scheme,
+        addChangeListener: (f) => { al.add(f); return { remove: () => al.delete(f) }; },
+        set: (s) => { window.__scheme = s; al.forEach((f) => f({ colorScheme: s })); }
+      };
+      window.rnAppearance = Appearance;
+      const useColorScheme = () => {
+        const [s, set] = R.useState(Appearance.getColorScheme());
+        R.useEffect(() => { const l = Appearance.addChangeListener(({ colorScheme }) => set(colorScheme)); return () => l.remove(); }, []);
+        return s;
+      };
+
+      // ----- Keyboard (events + on-screen keyboard) -----
+      const kl = {};
+      const Keyboard = {
+        dismiss: () => { const a = document.activeElement; a && a.blur && a.blur(); },
+        addListener: (ev, f) => { (kl[ev] = kl[ev] || new Set()).add(f); return { remove: () => kl[ev].delete(f) }; },
+        emit: (ev, e) => kl[ev] && kl[ev].forEach((f) => f(e)),
+        isVisible: () => !!window.__kbOpen
+      };
+      (function setupKeyboard() {
+        const screen = document.getElementById('emulator-screen'), panel = document.getElementById('kb-panel');
+        const isField = (el) => el && /^(INPUT|TEXTAREA)$/.test(el.tagName);
+        const setVal = (el, v) => {
+          Object.getOwnPropertyDescriptor(el.constructor.prototype, 'value').set.call(el, v);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const press = (k) => {
+          const el = document.activeElement;
+          if (!isField(el)) return;
+          if (k === '⌫') setVal(el, el.value.slice(0, -1));
+          else if (k === 'return') el.tagName === 'TEXTAREA' ? setVal(el, el.value + '\n') : el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+          else setVal(el, el.value + (k === 'space' ? ' ' : k));
+        };
+        const row = (keys, flexes) => {
+          const r = document.createElement('div');
+          r.style.cssText = 'display:flex;gap:4px;justify-content:center;padding:0 3px';
+          keys.forEach((k, i) => {
+            const b = document.createElement('div');
+            b.textContent = k;
+            b.style.cssText = 'flex:' + ((flexes && flexes[i]) || 1) + ';height:40px;display:flex;align-items:center;justify-content:center;border-radius:6px;font:16px Inter,sans-serif;background:rgba(128,128,128,.35);cursor:pointer;user-select:none';
+            b.onmousedown = (e) => e.preventDefault();
+            b.onclick = () => press(k);
+            r.appendChild(b);
+          });
+          panel.appendChild(r);
+        };
+        row('qwertyuiop'.split('')); row('asdfghjkl'.split('')); row(['z', 'x', 'c', 'v', 'b', 'n', 'm', '⌫'], [1, 1, 1, 1, 1, 1, 1, 1.5]); row(['space', 'return'], [4, 1.5]);
+        const show = () => { if (window.__kbOpen) return; window.__kbOpen = true; panel.style.display = 'flex'; Keyboard.emit('keyboardDidShow', { endCoordinates: { height: panel.offsetHeight } }); };
+        const hide = () => { if (!window.__kbOpen) return; window.__kbOpen = false; panel.style.display = 'none'; Keyboard.emit('keyboardDidHide', {}); };
+        screen.addEventListener('focusin', (e) => isField(e.target) && show());
+        screen.addEventListener('focusout', () => setTimeout(() => !isField(document.activeElement) && hide(), 60));
+      })();
+
+      // ----- Misc APIs -----
+      const Linking = { openURL: async (u) => { window.open(u, '_blank'); }, canOpenURL: async () => true, getInitialURL: async () => null, addEventListener: () => ({ remove() {} }) };
+      const Vibration = { vibrate: (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} console.log('[Vibration]', p || 400); }, cancel: () => {} };
+      const Share = { share: async (o) => { if (navigator.share) { try { await navigator.share({ title: o.title, text: o.message, url: o.url }); } catch (e) {} } else console.log('[Share]', o.message || o.url); return { action: 'sharedAction' }; } };
+      const PixelRatio = { get: () => 3, getFontScale: () => 1, roundToNearestPixel: (x) => Math.round(x * 3) / 3, getPixelSizeForLayoutSize: (x) => x * 3 };
+      const LayoutAnimation = { configureNext: () => {}, create: () => ({}), Presets: { easeInEaseOut: {}, linear: {}, spring: {} }, Types: {}, Properties: {} };
+      const BackHandler = { addEventListener: () => ({ remove() {} }), exitApp: () => console.log('[BackHandler] exitApp') };
+      const AppState = { currentState: 'active', addEventListener: () => ({ remove() {} }) };
+      const I18nManager = { isRTL: false, allowRTL() {}, forceRTL() {} };
+      const RefreshControl = () => null;
+      const PanResponder = {
+        create: (cfg) => {
+          let g = {}, s = () => window.__deviceScale || 1;
+          const move = (e) => { g = { ...g, dx: (e.clientX - g.x0) / s(), dy: (e.clientY - g.y0) / s(), moveX: e.clientX, moveY: e.clientY }; cfg.onPanResponderMove && cfg.onPanResponderMove({ nativeEvent: e }, g); };
+          const up = (e) => {
+            window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up);
+            cfg.onPanResponderRelease && cfg.onPanResponderRelease({ nativeEvent: e }, g);
+            cfg.onPanResponderEnd && cfg.onPanResponderEnd({ nativeEvent: e }, g);
+          };
+          return { panHandlers: { onMouseDown: (e) => {
+            g = { dx: 0, dy: 0, x0: e.clientX, y0: e.clientY, moveX: e.clientX, moveY: e.clientY };
+            cfg.onPanResponderGrant && cfg.onPanResponderGrant({ nativeEvent: e }, g);
+            window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+          } } };
+        }
+      };
+
+      // ----- AsyncStorage (backed by localStorage) + a few common module shims -----
+      const ls = { get: (k) => { try { return localStorage.getItem('rn:' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('rn:' + k, v); } catch (e) {} }, del: (k) => { try { localStorage.removeItem('rn:' + k); } catch (e) {} }, keys: () => { try { return Object.keys(localStorage).filter((k) => k.startsWith('rn:')).map((k) => k.slice(3)); } catch (e) { return []; } } };
+      const AsyncStorage = {
+        getItem: async (k) => ls.get(k), setItem: async (k, v) => ls.set(k, String(v)), removeItem: async (k) => ls.del(k),
+        getAllKeys: async () => ls.keys(), clear: async () => ls.keys().forEach(ls.del),
+        multiGet: async (ks) => ks.map((k) => [k, ls.get(k)]), multiSet: async (ps) => ps.forEach(([k, v]) => ls.set(k, String(v)))
+      };
+      const insets = () => ({ top: 0, bottom: 0, left: 0, right: 0 });
+      const modules = {
+        '@react-native-async-storage/async-storage': { ...AsyncStorage, default: AsyncStorage, __esModule: true },
+        'react-native-safe-area-context': { SafeAreaProvider: ({ children }) => children, SafeAreaView: RN.SafeAreaView, useSafeAreaInsets: insets, __esModule: true },
+        'expo-status-bar': { StatusBar: RN.StatusBar, __esModule: true }
+      };
+
+      return {
+        Animated, Easing, Modal, SectionList, VirtualizedList: RN.FlatList, TouchableHighlight, TouchableWithoutFeedback,
+        TouchableNativeFeedback: RN.TouchableOpacity, Button, ImageBackground, Appearance, useColorScheme, Keyboard,
+        Linking, Vibration, Share, PixelRatio, LayoutAnimation, BackHandler, AppState, I18nManager, RefreshControl,
+        PanResponder, NativeModules: {}, UIManager: {}, __modules: modules
+      };
+    }
+
+
+    // ==========================================
+    // 2. TEMPLATES PRESETS
+    // ==========================================
+    const TEMPLATES = {
+      basic: `import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+
+export default function App() {
+  return (
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Hello React Native!</Text>
+        <Text style={styles.subtitle}>
+          Build native UI across iOS, Android, and Web seamlessly.
+        </Text>
+        
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={() => console.log('Welcome Button Pressed!')}
+        >
+          <Text style={styles.buttonText}>Get Started</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8fafc',
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    padding: 24,
+    borderRadius: 16,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#64748b',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#0284c7',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+});`,
+
+      counter: `import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Counter App</Text>
+      
+      <View style={styles.counterBox}>
+        <Text style={styles.countText}>{count}</Text>
+      </View>
+
+      <View style={styles.row}>
+        <TouchableOpacity 
+          style={[styles.btn, styles.decrementBtn]}
+          onPress={() => setCount(count - 1)}
+        >
+          <Text style={styles.btnText}>-</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.btn, styles.resetBtn]}
+          onPress={() => setCount(0)}
+        >
+          <Text style={styles.resetText}>Reset</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.btn, styles.incrementBtn]}
+          onPress={() => setCount(count + 1)}
+        >
+          <Text style={styles.btnText}>+</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#0f172a',
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#f8fafc',
+    marginBottom: 30,
+  },
+  counterBox: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#1e293b',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+    borderWidth: 3,
+    borderColor: '#38bdf8',
+  },
+  countText: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#38bdf8',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  btn: {
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  incrementBtn: {
+    backgroundColor: '#10b981',
+  },
+  decrementBtn: {
+    backgroundColor: '#ef4444',
+  },
+  resetBtn: {
+    backgroundColor: '#334155',
+  },
+  btnText: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  resetText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});`,
+
+      todo: `import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+
+export default function App() {
+  const [tasks, setTasks] = useState([
+    { id: '1', text: 'Learn React Native Web', completed: true },
+    { id: '2', text: 'Build awesome cross-platform apps', completed: false }
+  ]);
+  const [input, setInput] = useState('');
+
+  const addTask = () => {
+    if (!input.trim()) return;
+    setTasks([...tasks, { id: Date.now().toString(), text: input, completed: false }]);
+    setInput('');
+  };
+
+  const toggleTask = (id) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Tasks Tracker</Text>
+
+      <View style={styles.inputContainer}>
+        <TextInput 
+          style={styles.input}
+          placeholder="Add a new task..."
+          placeholderTextColor="#94a3b8"
+          value={input}
+          onChangeText={setInput}
+          onSubmitEditing={addTask}
+        />
+        <TouchableOpacity style={styles.addBtn} onPress={addTask}>
+          <Text style={styles.addBtnText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.list}>
+        {tasks.map(task => (
+          <TouchableOpacity 
+            key={task.id} 
+            style={styles.taskCard}
+            onPress={() => toggleTask(task.id)}
+          >
+            <View style={[styles.checkbox, task.completed && styles.checkboxChecked]}>
+              {task.completed && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={[styles.taskText, task.completed && styles.taskCompleted]}>
+              {task.text}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f1f5f9',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    color: '#0f172a',
+  },
+  addBtn: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  addBtnText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  list: {
+    flex: 1,
+  },
+  taskCard: {
+    backgroundColor: '#ffffff',
+    padding: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#94a3b8',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#6366f1',
+    borderColor: '#6366f1',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  taskText: {
+    fontSize: 15,
+    color: '#1e293b',
+  },
+  taskCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#94a3b8',
+  },
+});`,
+
+      card: `import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Switch } from 'react-native';
+
+export default function App() {
+  const [isFollowed, setIsFollowed] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.profileCard}>
+        <Image 
+          source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' }}
+          style={styles.avatar}
+        />
+        <Text style={styles.name}>Sarah Jenkins</Text>
+        <Text style={styles.role}>Mobile UI Designer & Engineer</Text>
+
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>12.4K</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>840</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.followBtn, isFollowed && styles.followingBtn]}
+          onPress={() => setIsFollowed(!isFollowed)}
+        >
+          <Text style={[styles.followBtnText, isFollowed && styles.followingBtnText]}>
+            {isFollowed ? 'Following' : 'Follow Profile'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>Get Push Notifications</Text>
+          <Switch value={notifications} onValueChange={setNotifications} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0284c7',
+    padding: 20,
+    justifyContent: 'center',
+  },
+  profileCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    marginBottom: 12,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  role: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+    marginBottom: 20,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    width: '100%',
+    justifyContent: 'space-around',
+  },
+  stat: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#e2e8f0',
+  },
+  followBtn: {
+    backgroundColor: '#0f172a',
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  followingBtn: {
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  followBtnText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  followingBtnText: {
+    color: '#334155',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  toggleLabel: {
+    fontSize: 13,
+    color: '#475569',
+  },
+});`
+    };
+
+    // ==========================================
+    // 3. EDITOR & EMULATOR APPLICATION STATE
+    // ==========================================
+    let editor = null;
+    let compileDebounceTimer = null;
+    let isConsoleOpen = true;
+    let currentDevice = 'iphone';
+    let currentOrientation = 'portrait';
+    let isDarkPreview = false;
+    let reactRoot = null;
+
+    const RNComponents = createRNPrimitives();
+    Object.assign(RNComponents, createRNExtras(RNComponents));
+
+    const MONACO_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min';
+
+    // FIX: Monaco web workers can't be created cross-origin from a CDN without this proxy
+    window.MonacoEnvironment = {
+      getWorkerUrl: function () {
+        const code = "self.MonacoEnvironment = { baseUrl: '" + MONACO_BASE + "/' };" +
+                     "importScripts('" + MONACO_BASE + "/vs/base/worker/workerMain.js');";
+        return 'data:text/javascript;charset=utf-8,' + encodeURIComponent(code);
+      }
+    };
+
+    function scheduleRun() {
+      clearTimeout(compileDebounceTimer);
+      compileDebounceTimer = setTimeout(runCode, 600);
+    }
+
+    function setEngineLabel(text) {
+      const el = document.getElementById('editor-engine');
+      if (el) el.textContent = text;
+    }
+
+    // ---- Monaco editor ----
+    function createMonacoEditor() {
+      if (editor) return;
+      const container = document.getElementById('monaco-editor');
+      container.innerHTML = '';
+
+      const ts = monaco.languages.typescript;
+      ts.javascriptDefaults.setCompilerOptions({
+        jsx: ts.JsxEmit.React,
+        allowNonTsExtensions: true,
+        allowJs: true,
+        target: ts.ScriptTarget.ES2020
+      });
+      // Imports like 'react-native' have no types here, so skip semantic errors but keep syntax errors
+      ts.javascriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
+
+      const model = monaco.editor.createModel(TEMPLATES.basic, 'javascript', monaco.Uri.parse('file:///App.jsx'));
+
+      editor = monaco.editor.create(container, {
+        model,
+        theme: 'vs-dark',
+        automaticLayout: true,
+        fontSize: 13,
+        fontFamily: 'Fira Code, monospace',
+        minimap: { enabled: false },
+        padding: { top: 12 },
+        scrollBeyondLastLine: false,
+        tabSize: 2
+      });
+
+      editor.onDidChangeModelContent(scheduleRun);
+      setEngineLabel('Monaco');
+      runCode();
+    }
+
+    // ---- Plain textarea fallback (used if Monaco can't load: offline, CDN blocked, etc.) ----
+    function createFallbackEditor() {
+      if (editor) return;
+      const container = document.getElementById('monaco-editor');
+      container.innerHTML = '';
+
+      const ta = document.createElement('textarea');
+      ta.className = 'absolute inset-0 w-full h-full bg-editorBg text-slate-200 font-mono text-[13px] leading-5 p-3 outline-none resize-none';
+      ta.spellcheck = false;
+      ta.value = TEMPLATES.basic;
+
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const s = ta.selectionStart;
+          ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(ta.selectionEnd);
+          ta.selectionStart = ta.selectionEnd = s + 2;
+          scheduleRun();
+        }
+      });
+      ta.addEventListener('input', scheduleRun);
+      container.appendChild(ta);
+
+      editor = {
+        getValue: () => ta.value,
+        setValue: (v) => { ta.value = v; },
+        isFallback: true
+      };
+      setEngineLabel('Basic editor (Monaco unavailable)');
+      console.warn('Monaco editor could not be loaded, using the basic editor instead.');
+      runCode();
+    }
+
+    // Boot: try Monaco, fall back to textarea
+    (function bootEditor() {
+      const fallbackTimer = setTimeout(createFallbackEditor, 8000);
+
+      if (typeof require !== 'undefined' && typeof require.config === 'function') {
+        require.config({ paths: { vs: MONACO_BASE + '/vs' } });
+        require(['vs/editor/editor.main'], function () {
+          clearTimeout(fallbackTimer);
+          createMonacoEditor();
+        }, function () {
+          clearTimeout(fallbackTimer);
+          createFallbackEditor();
+        });
+      } else {
+        clearTimeout(fallbackTimer);
+        createFallbackEditor();
+      }
+    })();
+
+    // ==========================================
+    // 4. BABEL TRANSPILATION & RUNTIME EXECUTION
+    // ==========================================
+
+    // FIX: render-time errors happen after render() returns, so try/catch alone never saw them
+    class ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { error: null };
+      }
+      static getDerivedStateFromError(error) {
+        return { error };
+      }
+      componentDidCatch(error) {
+        console.error(error.message);
+      }
+      render() {
+        if (this.state.error) {
+          return React.createElement('div', {
+            style: { padding: '16px', backgroundColor: '#fef2f2', color: '#991b1b', fontFamily: 'monospace', fontSize: '12px', minHeight: '100%' }
+          },
+            React.createElement('div', { style: { fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' } }, '⚠️ Runtime Error'),
+            React.createElement('pre', { style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all', background: '#fee2e2', padding: '10px', borderRadius: '6px', margin: 0 } }, String(this.state.error.message))
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    function runCode() {
+      if (!editor) return;
+
+      const code = editor.getValue();
+      const mountNode = document.getElementById('app-root');
+
+      // Tear down previous render (React 18 root API)
+      if (reactRoot) {
+        try { reactRoot.unmount(); } catch (e) {}
+        reactRoot = null;
+      }
+      mountNode.innerHTML = '';
+
+      try {
+        if (typeof Babel === 'undefined') {
+          throw new Error('Babel failed to load. Check your internet connection and reload the page.');
+        }
+
+        const transformed = Babel.transform(code, {
+          presets: [
+            ['env', { modules: 'commonjs' }],
+            'react'
+          ],
+          sourceType: 'module',
+          filename: 'App.jsx'
+        }).code;
+
+        const customRequire = (moduleName) => {
+          if (moduleName === 'react') return window.React;
+          if (RNComponents.__modules[moduleName]) return RNComponents.__modules[moduleName];
+          if (moduleName === 'react-native' || moduleName === 'react-native-web') return RNComponents;
+          throw new Error(`Module '${moduleName}' is not supported in this browser sandbox.`);
+        };
+
+        const exports = {};
+        const module = { exports };
+
+        const runFn = new Function('require', 'module', 'exports', 'React', transformed);
+        runFn(customRequire, module, exports, window.React);
+
+        const App = (module.exports && module.exports.default) || exports.default;
+
+        if (!App) {
+          throw new Error("No 'default export' found in App.jsx. Ensure you have 'export default function App()'.");
+        }
+
+        reactRoot = ReactDOM.createRoot(mountNode);
+        reactRoot.render(
+          window.React.createElement(ErrorBoundary, null, window.React.createElement(App))
+        );
+
+      } catch (err) {
+        console.error(err.message);
+
+        mountNode.innerHTML = `
+          <div style="padding: 16px; background-color: #fef2f2; color: #991b1b; font-family: monospace; font-size: 12px; min-height: 100%; overflow-y: auto;">
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">⚠️ Compilation Error</div>
+            <pre style="white-space: pre-wrap; word-break: break-all; background: #fee2e2; padding: 10px; border-radius: 6px; margin: 0;">${escapeHtml(err.message)}</pre>
+          </div>
+        `;
+      }
+    }
+
+    // ==========================================
+    // 5. UI CONTROLS & UTILITIES
+    // ==========================================
+    function loadTemplate(key) {
+      if (TEMPLATES[key] && editor) {
+        editor.setValue(TEMPLATES[key]);
+        runCode();
+      }
+    }
+
+    function formatCode() {
+      if (!editor || typeof editor.getAction !== 'function') {
+        console.warn('Format is only available with the Monaco editor.');
+        return;
+      }
+      const action = editor.getAction('editor.action.formatDocument');
+      if (action) action.run();
+    }
+
+    function clearConsole() {
+      const logContainer = document.getElementById('console-logs');
+      logContainer.innerHTML = '<div class="text-slate-500 italic text-[11px]">[System]: Console cleared...</div>';
+      document.getElementById('log-count').innerText = '0';
+    }
+
+    function toggleConsole() {
+      const dock = document.getElementById('console-dock');
+      const icon = document.getElementById('console-toggle-icon');
+
+      if (isConsoleOpen) {
+        dock.style.height = '32px';
+        icon.className = 'fa-solid fa-chevron-up';
+      } else {
+        dock.style.height = '144px';
+        icon.className = 'fa-solid fa-chevron-down';
+      }
+      isConsoleOpen = !isConsoleOpen;
+    }
+
+    const DEVICES = {
+      iphone15: { n: 'iPhone 15 Pro', w: 393, h: 852, os: 'iphone', r: 50, type: 'island', sb: 44 },
+      iphonese: { n: 'iPhone SE', w: 375, h: 667, os: 'iphone', r: 28, type: 'none', sb: 22 },
+      pixel8:   { n: 'Pixel 8', w: 412, h: 915, os: 'android', r: 36, type: 'punch', sb: 30 },
+      ipad:     { n: 'iPad mini', w: 744, h: 1133, os: 'iphone', r: 24, type: 'none', sb: 24 }
+    };
+    let deviceKey = 'iphone15';
+
+    function applyDevice() {
+      const d = DEVICES[deviceKey];
+      const land = currentOrientation === 'landscape';
+      const w = land ? d.h : d.w, h = land ? d.w : d.h;
+      currentDevice = d.os;
+      const frame = document.getElementById('phone-frame');
+      frame.style.width = (w + 20) + 'px';
+      frame.style.height = (h + 20) + 'px';
+      frame.style.borderRadius = (d.r + 10) + 'px';
+      const notch = document.getElementById('phone-notch');
+      notch.className = '';
+      notch.innerHTML = '';
+      const base = 'position:absolute;left:50%;transform:translateX(-50%);background:#000;z-index:50;';
+      if (d.type === 'island' && !land) notch.style.cssText = base + 'top:8px;width:100px;height:28px;border-radius:16px;';
+      else if (d.type === 'punch') notch.style.cssText = base + 'top:9px;width:14px;height:14px;border-radius:50%;';
+      else notch.style.cssText = 'display:none';
+      const sb = document.getElementById('status-bar');
+      sb.style.height = d.sb + 'px';
+      sb.style.paddingTop = d.type === 'island' ? '14px' : '2px';
+      document.getElementById('modal-root').style.top = d.sb + 'px';
+      document.getElementById('resolution-display').innerText = d.n + ' • ' + w + ' x ' + h;
+      fitDevice();
+    }
+
+    function fitDevice() {
+      const frame = document.getElementById('phone-frame');
+      const wrap = document.getElementById('phone-wrap');
+      const area = wrap.parentElement;
+      const fw = parseFloat(frame.style.width), fh = parseFloat(frame.style.height);
+      const s = Math.max(0.1, Math.min(1, (area.clientWidth - 8) / fw, (area.clientHeight - 8) / fh));
+      window.__deviceScale = s;
+      frame.style.transform = 'scale(' + s + ')';
+      wrap.style.width = fw * s + 'px';
+      wrap.style.height = fh * s + 'px';
+    }
+
+    function setDevice(key) {
+      deviceKey = DEVICES[key] ? key : 'iphone15';
+      applyDevice();
+      runCode(); // re-run so Platform.OS and Dimensions update
+    }
+
+    function toggleOrientation() {
+      currentOrientation = currentOrientation === 'portrait' ? 'landscape' : 'portrait';
+      applyDevice();
+      setTimeout(runCode, 350);
+    }
+
+    // FIX: "dark:" classes don't apply to the same element that has .dark, so set colors directly
+    function toggleTheme() {
+      const screen = document.getElementById('emulator-screen');
+      const icon = document.getElementById('theme-icon');
+
+      isDarkPreview = !isDarkPreview;
+      if (window.rnAppearance) window.rnAppearance.set(isDarkPreview ? 'dark' : 'light');
+      const kbp = document.getElementById('kb-panel'); kbp.style.background = isDarkPreview ? '#1f2937' : '#d1d5db'; kbp.style.color = isDarkPreview ? '#f1f5f9' : '#111827';
+      if (isDarkPreview) {
+        screen.style.backgroundColor = '#020617';
+        screen.style.color = '#f1f5f9';
+        icon.className = 'fa-solid fa-sun text-xs text-amber-400';
+      } else {
+        screen.style.backgroundColor = '#ffffff';
+        screen.style.color = '#0f172a';
+        icon.className = 'fa-solid fa-moon text-xs';
+      }
+    }
+
+    applyDevice();
+    new ResizeObserver(fitDevice).observe(document.getElementById('phone-wrap').parentElement);
+
+    // Status bar clock
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('status-time').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    }, 1000);
+  </script>
+</body>
+</html>
