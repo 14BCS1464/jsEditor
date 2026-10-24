@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>API Client + JSON Editor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="../shared/theme.js"></script>
+  <link rel="stylesheet" href="../shared/chrome.css">
   <style>
     :root, .dark {
       --bg1: #0a0e27; --bg2: #020308; --glass: rgba(255,255,255,0.05);
@@ -13,88 +16,156 @@
       --json-num: #fdba74; --json-bool: #fcd34d; --json-null: #f87171;
     }
     .light {
-      --bg1: #f8fafc; --bg2: #e2e8f0; --glass: rgba(255,255,255,0.9);
-      --border: rgba(0,0,0,0.1); --text: #1e293b; --muted: #64748b;
-      --accent: #7c3aed; --accent2: #6d28d9; --success: #059669; --error: #dc2626;
-      --input: rgba(0,0,0,0.04); --json-key: #0369a1; --json-str: #15803d;
+      --bg1: #f7f6f3; --bg2: #efece6; --glass: #ffffff;
+      --border: #e4e1db; --text: #2c2a26; --muted: #6b6860;
+      --accent: #6b5ce7; --accent2: #5a4fcf; --success: #2a9d6e; --error: #e05a5a;
+      --input: #ffffff; --json-key: #0369a1; --json-str: #15803d;
       --json-num: #c2410c; --json-bool: #a16207; --json-null: #b91c1c;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, sans-serif; background: linear-gradient(135deg, var(--bg1), var(--bg2));
-      color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-    }
-    .topbar {
-      display: flex; gap: 8px; padding: 12px 16px; background: var(--glass);
-      border-bottom: 1px solid var(--border); align-items: center; flex-wrap: wrap;
-    }
-    select, input, button, textarea {
-      font-family: inherit; font-size: 13px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--input); color: var(--text); padding: 9px 12px;
-    }
-    select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-    button {
-      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white;
-      border: none; font-weight: 600; cursor: pointer; white-space: nowrap;
-    }
-    button.secondary { background: var(--input); color: var(--text); border: 1px solid var(--border); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #method { font-weight: 800; min-width: 100px; }
-    #method.GET { color: #10b981; } #method.POST { color: #f59e0b; }
-    #method.PUT { color: #38bdf8; } #method.PATCH { color: #a78bfa; } #method.DELETE { color: #ef4444; }
-    #url { flex: 1; min-width: 220px; font-family: ui-monospace, monospace; }
-    .main { flex: 1; display: flex; min-height: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: var(--bg1); }
+    button, input, select, textarea { font-family: inherit; }
+    .workspace { flex: 1; min-height: 0; display: flex; }
     .sidebar {
-      width: 240px; border-right: 1px solid var(--border); background: var(--glass);
-      display: flex; flex-direction: column; overflow: hidden;
+      width: 268px; flex: 0 0 268px; display: flex; flex-direction: column;
+      background: var(--glass); border-right: 1px solid var(--border); min-height: 0;
     }
-    .sidebar h3 { padding: 12px 14px; font-size: 11px; text-transform: uppercase; color: var(--muted); }
-    .sidebar .item {
-      padding: 8px 14px; font-size: 12.5px; cursor: pointer; border-left: 3px solid transparent;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    body.sidebar-collapsed .sidebar { display: none; }
+    .side-head, .side-label {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px 6px; font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
     }
-    .sidebar .item:hover, .sidebar .item.active { background: rgba(139,92,246,0.12); border-left-color: var(--accent); }
-    .content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    .tabs { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--border); }
-    .tab { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
-    .tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
-    .tab-panel { display: none; flex: 1; overflow: auto; padding: 12px; }
+    .side-scroll { overflow: auto; min-height: 0; }
+    .side-scroll.history { flex: 1; }
+    .side-scroll.saved { max-height: 34%; }
+    .item {
+      display: flex; gap: 8px; align-items: flex-start;
+      padding: 8px 10px; margin: 0 8px 4px; border-radius: 8px;
+      cursor: pointer; border: 1px solid transparent;
+    }
+    .item:hover, .item.active { background: rgba(107, 92, 231, 0.1); border-color: var(--border); }
+    .item .meta { min-width: 0; flex: 1; }
+    .item .name, .item .sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item .name { font-size: 13px; }
+    .item .sub { font-size: 11px; color: var(--muted); }
+    .verb { font-size: 10px; font-weight: 800; width: 52px; flex: 0 0 52px; padding-top: 2px; }
+    .icon-btn, .text-btn {
+      border: 1px solid var(--border); background: var(--input); color: var(--text);
+      border-radius: 8px; cursor: pointer; padding: 6px 10px; font-size: 12px; font-weight: 600;
+    }
+    .icon-btn { padding: 4px 7px; color: var(--muted); }
+    .icon-btn:hover { color: var(--error); }
+    .side-save { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--border); }
+    .side-save input { flex: 1; min-width: 0; }
+    .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .topbar {
+      display: flex; gap: 8px; align-items: center; padding: 12px;
+      background: var(--glass); border-bottom: 1px solid var(--border);
+    }
+    #method {
+      font-weight: 800; min-width: 108px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--input); color: var(--text); padding: 10px 12px;
+    }
+    #method.GET { color: #059669; } #method.POST { color: #d97706; }
+    #method.PUT { color: #0284c7; } #method.PATCH { color: #7c3aed; }
+    #method.DELETE { color: #e11d48; } #method.HEAD { color: #64748b; }
+    #url {
+      flex: 1; min-width: 0; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--input); color: var(--text); padding: 10px 12px;
+      font-family: 'DM Mono', ui-monospace, monospace; font-size: 13px;
+    }
+    #url:focus, #method:focus, textarea:focus, .kv-row input:focus, .env-add input:focus {
+      outline: none; border-color: var(--accent);
+    }
+    #sendBtn { padding: 10px 18px; }
+    .env-bar, .env-editor {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--glass);
+    }
+    .env-editor { align-items: stretch; flex-direction: column; }
+    .env-add { display: flex; gap: 8px; }
+    .env-add input, .env-bar select, .side-save input, .body-tools select, .auth-grid input, .auth-grid select {
+      border: 1px solid var(--border); background: var(--input); color: var(--text);
+      border-radius: 8px; padding: 8px 10px; font-size: 13px;
+    }
+    .hint { font-size: 12px; color: var(--muted); }
+    .tabs { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--border); background: var(--glass); }
+    .tab {
+      padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--muted);
+      cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: 0; border-left: 0; border-right: 0;
+    }
+    .request-pane { flex: 0 0 auto; max-height: 42%; min-height: 132px; display: flex; flex-direction: column; overflow: hidden; background: var(--glass); }
+    .tab-panel { display: none; flex: 1; min-height: 0; overflow: auto; padding: 12px; }
     .tab-panel.active { display: flex; flex-direction: column; }
-    .kv-row { display: grid; grid-template-columns: 20px 1fr 1fr 28px; gap: 6px; margin-bottom: 6px; align-items: center; }
-    .kv-row input[type="text"] { width: 100%; font-family: ui-monospace, monospace; font-size: 12.5px; }
-    .kv-row input.key { color: var(--json-key); }
-    .remove { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 14px; }
-    .remove:hover { color: var(--error); }
-    textarea { flex: 1; resize: none; font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.5; }
-    .response-area { flex: 1; display: flex; flex-direction: column; border-top: 1px solid var(--border); min-height: 0; }
-    .resp-header {
-      display: flex; justify-content: space-between; align-items: center; padding: 8px 14px;
-      background: rgba(139,92,246,0.08); border-bottom: 1px solid var(--border); font-size: 12px;
+    .kv-row { display: grid; grid-template-columns: 22px 1fr 1.4fr 28px; gap: 6px; margin-bottom: 6px; align-items: center; }
+    .kv-row input[type="text"] {
+      width: 100%; border: 1px solid var(--border); background: var(--input); color: var(--text);
+      border-radius: 8px; padding: 8px 10px; font-family: 'DM Mono', ui-monospace, monospace; font-size: 12.5px;
     }
-    .pills { display: flex; gap: 8px; }
-    .pill { padding: 3px 10px; border-radius: 20px; background: var(--input); font-weight: 600; }
-    .status-2xx { color: var(--success); } .status-4xx, .status-err { color: var(--error); }
+    .kv-row input.key { color: var(--json-key); }
+    .remove {
+      border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px;
+    }
+    .remove:hover { color: var(--error); }
+    textarea {
+      flex: 1; min-height: 88px; resize: none; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--input); color: var(--text); padding: 12px;
+      font-family: 'DM Mono', ui-monospace, monospace; font-size: 13px; line-height: 1.5;
+    }
+    .body-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .auth-grid { display: grid; gap: 8px; max-width: 520px; }
+    .split {
+      height: 8px; cursor: row-resize; background: transparent; position: relative; flex: 0 0 8px;
+    }
+    .split::after {
+      content: ''; position: absolute; left: 12px; right: 12px; top: 3px; height: 2px;
+      background: var(--border); border-radius: 2px;
+    }
+    .response-area { flex: 1 1 auto; min-height: 180px; display: flex; flex-direction: column; background: var(--glass); }
+    .resp-header {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 8px 12px; border-bottom: 1px solid var(--border); border-top: 1px solid var(--border);
+    }
+    .pills, .resp-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .pill { padding: 3px 10px; border-radius: 999px; background: var(--input); border: 1px solid var(--border); font-weight: 700; font-size: 12px; }
+    .status-2xx { color: var(--success); } .status-3xx { color: #d97706; }
+    .status-4xx, .status-5xx, .status-err { color: var(--error); }
     #output {
-      flex: 1; overflow: auto; padding: 14px; font-family: ui-monospace, monospace; font-size: 13px;
+      flex: 1; overflow: auto; padding: 14px; margin: 0;
+      font-family: 'DM Mono', ui-monospace, monospace; font-size: 13px;
       white-space: pre-wrap; word-break: break-word;
     }
     .json-key { color: var(--json-key); } .json-string { color: var(--json-str); }
     .json-number { color: var(--json-num); } .json-boolean { color: var(--json-bool); }
     .json-null { color: var(--json-null); }
-    .toggle { cursor: pointer; font-weight: 700; color: var(--accent2); user-select: none; }
-    .toggle .arrow { display: inline-block; transition: transform .15s; font-size: 10px; margin-right: 4px; }
-    .toggle.collapsed .arrow { transform: rotate(-90deg); }
-    .node { margin-left: 6px; padding-left: 12px; border-left: 2px solid rgba(139,92,246,0.25); }
+    .toggle { cursor: pointer; user-select: none; }
+    .toggle .arrow { display: inline-block; width: 12px; }
+    .toggle.collapsed .arrow { transform: none; }
+    .node { margin-left: 14px; padding-left: 10px; border-left: 1px solid var(--border); }
     .toggle.collapsed + .node { display: none; }
-    .status-bar { padding: 8px; text-align: center; font-size: 12px; border-top: 1px solid var(--border); background: var(--glass); }
+    .header-line { display: grid; grid-template-columns: 220px 1fr; gap: 10px; padding: 4px 0; }
+    .empty { color: var(--muted); padding: 8px 12px; font-size: 13px; }
+    .status-bar {
+      padding: 6px 12px; font-size: 12px; border-top: 1px solid var(--border); background: var(--glass);
+    }
     .status-bar.ok { color: var(--success); } .status-bar.err { color: var(--error); }
-    .env-bar { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); align-items: center; }
-    .auth-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-    .auth-row select, .auth-row input { flex: 1; }
+    .proxy-banner {
+      padding: 8px 12px; font-size: 13px; background: rgba(217, 119, 6, 0.12);
+      color: var(--text); border-bottom: 1px solid var(--border);
+    }
+    .proxy-banner[hidden] { display: none; }
+    .insecure-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .show-side {
+      display: none; margin: 8px; align-self: flex-start;
+    }
+    body.sidebar-collapsed .show-side { display: inline-flex; }
+    @media (max-width: 900px) {
+      .workspace { flex-direction: column; }
+      .sidebar { width: 100%; flex-basis: auto; max-height: 220px; }
+      .header-line { grid-template-columns: 1fr; }
+    }
   </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="../shared/theme.js"></script>
-  <link rel="stylesheet" href="../shared/chrome.css">
 </head>
 <body class="suite suite-json light">
   <header class="suite-header">
@@ -106,394 +177,679 @@
       <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" id="themeBtn" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
     </div>
   </header>
-  <div class="topbar">
-    <select id="method" class="GET">
-      <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
-    </select>
-    <input id="url" type="text" placeholder="https://api.example.com/users or {{baseUrl}}/users" value="https://dummyjson.com/products" />
-    <button id="sendBtn" class="suite-btn-run" onclick="send()">Send</button>
-  </div>
+  <div class="proxy-banner" id="proxyBanner" hidden>Project APIs are blocked in this tab. Run <b>python3 server.py</b> and open <b>http://127.0.0.1:8787/json/</b>.</div>
 
-  <div class="main">
-    <!-- Sidebar: History + Collections -->
-    <div class="sidebar">
-      <h3>History</h3>
-      <div id="historyList" style="flex:1; overflow:auto;"></div>
-      <h3>Collections</h3>
-      <div id="collectionList" style="overflow:auto; max-height:180px;"></div>
-      <div style="padding:10px;">
-        <button class="secondary" style="width:100%;" onclick="saveCurrent()">Save Request</button>
+  <div class="workspace">
+    <button type="button" class="text-btn show-side" id="showSide">Collections</button>
+    <aside class="sidebar">
+      <div class="side-head">Collections <button type="button" class="icon-btn" id="hideSide" title="Hide collections">‹</button></div>
+      <div class="side-scroll saved" id="collectionList"></div>
+      <div class="side-save">
+        <input id="requestName" type="text" placeholder="Request name" />
+        <button type="button" class="text-btn" id="saveBtn">Save</button>
       </div>
-    </div>
+      <div class="side-label">Examples</div>
+      <div class="side-scroll" id="exampleList"></div>
+      <div class="side-label">History <button type="button" class="icon-btn" id="clearHistory" title="Clear history">Clear</button></div>
+      <div class="side-scroll history" id="historyList"></div>
+    </aside>
 
-    <!-- Main Content -->
-    <div class="content">
-      <div class="env-bar">
-        <select id="envSelect" onchange="applyEnv()" style="min-width:140px;">
-          <option value="">No Environment</option>
+    <section class="content">
+      <div class="topbar">
+        <select id="method" class="GET">
+          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option>
         </select>
-        <button class="secondary" onclick="manageEnvs()">Manage Envs</button>
-        <span style="font-size:12px; color:var(--muted);">Use {{varName}} in URL / Headers / Body</span>
+        <input id="url" type="text" placeholder="https://api.example.com/users or {{baseUrl}}/users" spellcheck="false" />
+        <button id="sendBtn" class="suite-btn-run" type="button">Send</button>
+        <label class="insecure-toggle" title="Use this for a local API with a self-signed certificate"><input id="insecureTls" type="checkbox"> Insecure HTTPS</label>
       </div>
 
-      <div class="tabs">
-        <div class="tab active" data-tab="params">Params</div>
-        <div class="tab" data-tab="headers">Headers</div>
-        <div class="tab" data-tab="auth">Auth</div>
-        <div class="tab" data-tab="body">Body</div>
+      <div class="env-bar">
+        <select id="envSelect"></select>
+        <input id="newEnvName" type="text" placeholder="New environment" />
+        <button type="button" class="text-btn" id="addEnv">Add</button>
+        <button type="button" class="text-btn" id="deleteEnv">Delete</button>
+        <button type="button" class="text-btn" id="editVars">Variables</button>
+        <span class="hint">Use {{name}} in the URL, headers, auth, and body.</span>
       </div>
+      <div class="env-editor" id="envEditor" hidden></div>
 
-      <div class="tab-panel active" data-tab="params">
-        <div id="paramsTable"></div>
-      </div>
-      <div class="tab-panel" data-tab="headers">
-        <div id="headersTable"></div>
-      </div>
-      <div class="tab-panel" data-tab="auth">
-        <div class="auth-row">
-          <select id="authType" onchange="updateAuthUI()">
-            <option value="none">No Auth</option>
-            <option value="bearer">Bearer Token</option>
-            <option value="basic">Basic Auth</option>
-            <option value="apikey">API Key</option>
-          </select>
+      <div class="request-pane" id="requestPane">
+        <div class="tabs">
+          <button type="button" class="tab active" data-tab="params">Params</button>
+          <button type="button" class="tab" data-tab="headers">Headers</button>
+          <button type="button" class="tab" data-tab="body">Body</button>
+          <button type="button" class="tab" data-tab="auth">Auth</button>
         </div>
-        <div id="authFields"></div>
-      </div>
-      <div class="tab-panel" data-tab="body">
-        <textarea id="body" placeholder='{"name": "John"}'></textarea>
+        <div class="tab-panel active" data-tab="params"><div id="paramsTable"></div></div>
+        <div class="tab-panel" data-tab="headers"><div id="headersTable"></div></div>
+        <div class="tab-panel" data-tab="body">
+          <div class="body-tools">
+            <select id="bodyType">
+              <option value="none">none</option>
+              <option value="json">JSON</option>
+              <option value="text">Text</option>
+              <option value="form">Form urlencoded</option>
+            </select>
+            <span class="hint" id="bodyHint">JSON body is sent on POST, PUT, and PATCH.</span>
+          </div>
+          <textarea id="body" spellcheck="false" placeholder='{"name": "Ada"}'></textarea>
+          <div id="formTable" hidden></div>
+        </div>
+        <div class="tab-panel" data-tab="auth">
+          <div class="auth-grid">
+            <select id="authType">
+              <option value="none">No Auth</option>
+              <option value="bearer">Bearer Token</option>
+              <option value="basic">Basic Auth</option>
+              <option value="apikey">API Key</option>
+            </select>
+            <input id="authToken" type="text" placeholder="Token" hidden />
+            <input id="authUser" type="text" placeholder="Username" hidden />
+            <input id="authPass" type="password" placeholder="Password" hidden />
+            <input id="authKey" type="text" placeholder="Header name, for example X-API-Key" hidden />
+            <input id="authVal" type="text" placeholder="Key value" hidden />
+          </div>
+        </div>
       </div>
 
-      <!-- Response -->
+      <div class="split" id="split" title="Drag to resize"></div>
+
       <div class="response-area">
         <div class="resp-header">
           <div class="pills">
-            <span class="pill" id="respStatus">—</span>
+            <span class="pill" id="respStatus">No response yet</span>
             <span class="pill" id="respTime">—</span>
             <span class="pill" id="respSize">—</span>
           </div>
-          <div>
-            <button class="secondary" style="padding:4px 10px; font-size:11px;" onclick="setView('tree')">Tree</button>
-            <button class="secondary" style="padding:4px 10px; font-size:11px;" onclick="setView('raw')">Raw</button>
+          <div class="resp-actions">
+            <button type="button" class="text-btn" data-view="pretty">Pretty</button>
+            <button type="button" class="text-btn" data-view="raw">Raw</button>
+            <button type="button" class="text-btn" data-view="headers">Headers</button>
+            <button type="button" class="text-btn" id="copyResponse">Copy</button>
+            <button type="button" class="text-btn" id="copyCurl">Copy cURL</button>
           </div>
         </div>
-        <div id="output">Enter a URL and click <b>Send</b></div>
+        <pre id="output">Send a request to see the response.</pre>
       </div>
-    </div>
+    </section>
   </div>
-
   <div class="status-bar" id="status">Ready</div>
 
 <script>
-  // ---------- STATE ----------
-  let history = JSON.parse(localStorage.getItem('api_history') || '[]');
-  let collections = JSON.parse(localStorage.getItem('api_collections') || '[]');
-  let environments = JSON.parse(localStorage.getItem('api_envs') || '{}');
-  let currentEnv = localStorage.getItem('api_current_env') || '';
-  let lastResponse = null;
-  let viewMode = 'tree';
+const EXAMPLES = [
+  { name: 'List products', method: 'GET', url: 'https://dummyjson.com/products?limit=5', bodyType: 'none', body: '', headers: [], params: [{ k: 'limit', v: '5', on: true }] },
+  { name: 'One product', method: 'GET', url: 'https://dummyjson.com/products/1', bodyType: 'none', body: '', headers: [], params: [] },
+  { name: 'Create product', method: 'POST', url: 'https://dummyjson.com/products/add', bodyType: 'json', body: '{\n  "title": "Notebook"\n}', headers: [], params: [] }
+];
 
-  // ---------- INIT ----------
-  function init() {
-    createKv('paramsTable', 'params');
-    createKv('headersTable', 'headers', [['Content-Type', 'application/json']]);
-    renderHistory();
-    renderCollections();
-    renderEnvSelect();
-    updateAuthUI();
-    document.getElementById('method').onchange = e => e.target.className = e.target.value;
-    document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      document.querySelector(`.tab-panel[data-tab="${t.dataset.tab}"]`).classList.add('active');
+let history = readStore('api_history', []);
+let collections = readStore('api_collections', []);
+let environments = readStore('api_envs', {});
+let currentEnv = localStorage.getItem('api_current_env') || '';
+let draft = readStore('api_draft', null);
+let lastResponse = null;
+let viewMode = 'pretty';
+let syncing = false;
+let envOpen = false;
+let proxyReady = false;
+
+function readStore(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+  catch (e) { return fallback; }
+}
+function writeStore(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function setStatus(msg, err) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status-bar ' + (err ? 'err' : 'ok');
+}
+function methodColor(method) {
+  return { GET: '#059669', POST: '#d97706', PUT: '#0284c7', PATCH: '#7c3aed', DELETE: '#e11d48', HEAD: '#64748b' }[method] || '#64748b';
+}
+
+function blankDraft() {
+  return {
+    name: '', method: 'GET', url: 'https://dummyjson.com/products?limit=5',
+    params: [{ k: 'limit', v: '5', on: true }],
+    headers: [{ k: '', v: '', on: true }],
+    bodyType: 'none', body: '{\n  "title": "Notebook"\n}',
+    form: [{ k: '', v: '', on: true }],
+    auth: { type: 'none', token: '', user: '', pass: '', key: '', value: '' }
+  };
+}
+
+function capture() {
+  return {
+    name: document.getElementById('requestName').value.trim(),
+    method: document.getElementById('method').value,
+    url: document.getElementById('url').value,
+    params: readKv('paramsTable'),
+    headers: readKv('headersTable'),
+    bodyType: document.getElementById('bodyType').value,
+    body: document.getElementById('body').value,
+    form: readKv('formTable'),
+    auth: {
+      type: document.getElementById('authType').value,
+      token: document.getElementById('authToken').value,
+      user: document.getElementById('authUser').value,
+      pass: document.getElementById('authPass').value,
+      key: document.getElementById('authKey').value,
+      value: document.getElementById('authVal').value
+    }
+  };
+}
+function saveDraft() {
+  draft = capture();
+  writeStore('api_draft', draft);
+  updateTabCounts();
+}
+
+function fillKv(id, rows) {
+  const box = document.getElementById(id);
+  const source = (rows || []).slice();
+  while (source.length && !source[source.length - 1].k && !source[source.length - 1].v) source.pop();
+  box.innerHTML = '';
+  source.forEach((row) => addKv(id, row.k, row.v, row.on !== false));
+  addKv(id, '', '', true);
+}
+function addKv(id, key, value, on) {
+  const box = document.getElementById(id);
+  const row = document.createElement('div');
+  row.className = 'kv-row';
+  row.innerHTML = '<input type="checkbox"' + (on ? ' checked' : '') + '>'
+    + '<input class="key" type="text" placeholder="Key" value="' + esc(key) + '">'
+    + '<input type="text" placeholder="Value" value="' + esc(value) + '">'
+    + '<button type="button" class="remove" title="Remove">✕</button>';
+  row.querySelector('.remove').onclick = () => {
+    row.remove();
+    if (!box.querySelector('.kv-row')) addKv(id, '', '', true);
+    afterKv(id);
+  };
+  row.querySelectorAll('input').forEach((input) => {
+    input.addEventListener('input', () => {
+      const last = box.querySelector('.kv-row:last-child');
+      const texts = row.querySelectorAll('input[type=text]');
+      if (last === row && (texts[0].value || texts[1].value)) addKv(id, '', '', true);
+      afterKv(id);
     });
-  }
+    input.addEventListener('change', () => afterKv(id));
+  });
+  box.appendChild(row);
+}
+function readKv(id) {
+  return Array.from(document.querySelectorAll('#' + id + ' .kv-row')).map((row) => {
+    const [cb, key, value] = row.querySelectorAll('input');
+    return { k: key.value, v: value.value, on: cb.checked };
+  });
+}
+function activeKv(id) {
+  return readKv(id).filter((row) => row.on && row.k.trim()).map((row) => [row.k.trim(), row.v]);
+}
+function afterKv(id) {
+  if (id === 'paramsTable') paramsToUrl();
+  saveDraft();
+}
 
-  // ---------- KV MANAGER ----------
-  function createKv(id, type, defaults = []) {
-    const box = document.getElementById(id);
-    box.innerHTML = '';
-    function add(k = '', v = '') {
-      const row = document.createElement('div');
-      row.className = 'kv-row';
-      row.innerHTML = `
-        <input type="checkbox" checked>
-        <input class="key" type="text" placeholder="Key" value="${esc(k)}">
-        <input type="text" placeholder="Value" value="${esc(v)}">
-        <button class="remove">✕</button>`;
-      row.querySelector('.remove').onclick = () => { row.remove(); if (!box.querySelector('.kv-row')) add(); };
-      const inputs = row.querySelectorAll('input[type=text]');
-      inputs.forEach(i => i.oninput = () => {
-        const last = box.querySelector('.kv-row:last-child');
-        if (last === row && (inputs[0].value || inputs[1].value)) add();
-      });
-      box.appendChild(row);
+function queryOf(url) {
+  const mark = url.indexOf('?');
+  if (mark === -1) return { path: url, pairs: [] };
+  const path = url.slice(0, mark);
+  const pairs = url.slice(mark + 1).split('&').filter(Boolean).map((part) => {
+    const eq = part.indexOf('=');
+    const rawKey = eq === -1 ? part : part.slice(0, eq);
+    const rawVal = eq === -1 ? '' : part.slice(eq + 1);
+    try { return { k: decodeURIComponent(rawKey), v: decodeURIComponent(rawVal) }; }
+    catch (e) { return { k: rawKey, v: rawVal }; }
+  });
+  return { path, pairs };
+}
+function urlToParams() {
+  if (syncing) return;
+  syncing = true;
+  const { pairs } = queryOf(document.getElementById('url').value);
+  fillKv('paramsTable', pairs.map((pair) => ({ k: pair.k, v: pair.v, on: true })));
+  syncing = false;
+  updateTabCounts();
+}
+function paramsToUrl() {
+  if (syncing) return;
+  syncing = true;
+  const url = document.getElementById('url');
+  const { path } = queryOf(url.value);
+  const qs = activeKv('paramsTable').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  url.value = path + (qs ? '?' + qs : '');
+  syncing = false;
+}
+
+function showAuth() {
+  const type = document.getElementById('authType').value;
+  document.getElementById('authToken').hidden = type !== 'bearer';
+  document.getElementById('authUser').hidden = type !== 'basic';
+  document.getElementById('authPass').hidden = type !== 'basic';
+  document.getElementById('authKey').hidden = type !== 'apikey';
+  document.getElementById('authVal').hidden = type !== 'apikey';
+}
+function showBody() {
+  const type = document.getElementById('bodyType').value;
+  document.getElementById('body').hidden = type === 'none' || type === 'form';
+  document.getElementById('formTable').hidden = type !== 'form';
+  document.getElementById('bodyHint').textContent = type === 'none'
+    ? 'No body will be sent.'
+    : type === 'form'
+      ? 'Fields are sent as application/x-www-form-urlencoded.'
+      : 'Sent on POST, PUT, and PATCH. GET and HEAD ignore the body.';
+}
+
+function resolve(str) {
+  if (!str || !currentEnv || !environments[currentEnv]) return str;
+  return String(str).replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    const value = environments[currentEnv][key];
+    return value == null ? '{{' + key + '}}' : value;
+  });
+}
+function unresolved(str) {
+  const found = String(str || '').match(/\{\{(\w+)\}\}/g);
+  return found || [];
+}
+
+function applyRequest(req) {
+  const data = Object.assign(blankDraft(), req || {});
+  document.getElementById('requestName').value = data.name || '';
+  document.getElementById('method').value = data.method || 'GET';
+  document.getElementById('method').className = data.method || 'GET';
+  document.getElementById('url').value = data.url || '';
+  fillKv('paramsTable', data.params && data.params.length ? data.params : queryOf(data.url || '').pairs.map((p) => ({ k: p.k, v: p.v, on: true })));
+  fillKv('headersTable', data.headers && data.headers.length ? data.headers : [{ k: '', v: '', on: true }]);
+  fillKv('formTable', data.form && data.form.length ? data.form : [{ k: '', v: '', on: true }]);
+  document.getElementById('bodyType').value = data.bodyType || (data.body && String(data.body).trim() ? 'json' : 'none');
+  document.getElementById('body').value = data.body || '';
+  const auth = data.auth || {};
+  document.getElementById('authType').value = auth.type || 'none';
+  document.getElementById('authToken').value = auth.token || '';
+  document.getElementById('authUser').value = auth.user || '';
+  document.getElementById('authPass').value = auth.pass || '';
+  document.getElementById('authKey').value = auth.key || '';
+  document.getElementById('authVal').value = auth.value || '';
+  showAuth();
+  showBody();
+  saveDraft();
+}
+
+function renderEnvSelect() {
+  const sel = document.getElementById('envSelect');
+  const names = Object.keys(environments);
+  if (currentEnv && !environments[currentEnv]) currentEnv = '';
+  sel.innerHTML = '<option value="">No environment</option>' + names.map((name) =>
+    '<option value="' + esc(name) + '"' + (name === currentEnv ? ' selected' : '') + '>' + esc(name) + '</option>'
+  ).join('');
+  renderEnvEditor();
+}
+function renderEnvEditor() {
+  const box = document.getElementById('envEditor');
+  if (!currentEnv || !envOpen) { box.hidden = true; if (!currentEnv) box.innerHTML = ''; return; }
+  box.hidden = false;
+  const vars = environments[currentEnv] || {};
+  const rows = Object.keys(vars).map((key) => ({ k: key, v: vars[key], on: true }));
+  box.innerHTML = '<div class="hint">Variables in ' + esc(currentEnv) + '</div><div id="envTable"></div>';
+  fillKv('envTable', rows);
+}
+function saveEnvFromTable() {
+  if (!currentEnv || !document.getElementById('envTable')) return;
+  const obj = {};
+  activeKv('envTable').forEach(([k, v]) => { obj[k] = v; });
+  environments[currentEnv] = obj;
+  writeStore('api_envs', environments);
+}
+function updateTabCounts() {
+  const counts = {
+    params: activeKv('paramsTable').length,
+    headers: activeKv('headersTable').length,
+    body: document.getElementById('bodyType').value === 'none' ? 0 : 1,
+    auth: document.getElementById('authType').value === 'none' ? 0 : 1
+  };
+  document.querySelectorAll('.tab').forEach((tab) => {
+    const name = tab.dataset.tab;
+    const label = name[0].toUpperCase() + name.slice(1);
+    tab.textContent = counts[name] ? label + ' (' + counts[name] + ')' : label;
+  });
+}
+
+function renderList(id, rows, empty) {
+  const box = document.getElementById(id);
+  if (!rows.length) { box.innerHTML = '<div class="empty">' + empty + '</div>'; return; }
+  box.innerHTML = rows.map((row) =>
+    '<div class="item" data-id="' + row.id + '">'
+    + '<span class="verb" style="color:' + methodColor(row.method) + '">' + esc(row.method) + '</span>'
+    + '<span class="meta"><span class="name">' + esc(row.name || row.url) + '</span>'
+    + '<span class="sub">' + esc(row.url) + (row.status != null ? ' · ' + row.status : '') + '</span></span>'
+    + (row.example ? '' : '<button type="button" class="icon-btn" data-remove="' + row.id + '" title="Remove">✕</button>')
+    + '</div>'
+  ).join('');
+}
+function renderSidebar() {
+  renderList('collectionList', collections, 'Save a request to reuse it.');
+  renderList('historyList', history, 'Sent requests show up here.');
+  renderList('exampleList', EXAMPLES.map((ex, i) => Object.assign({ id: 'ex' + i, example: true }, ex)), '');
+}
+
+async function send() {
+  const req = capture();
+  let url = resolve(req.url.trim());
+  if (!url) { setStatus('Enter a URL', true); return; }
+  const missing = unresolved(url + req.body + JSON.stringify(req.headers) + JSON.stringify(req.auth));
+  const headers = {};
+  activeKv('headersTable').forEach(([k, v]) => { headers[k] = resolve(v); });
+  if (req.auth.type === 'bearer' && req.auth.token) headers.Authorization = 'Bearer ' + resolve(req.auth.token);
+  if (req.auth.type === 'basic') headers.Authorization = 'Basic ' + btoa(unescape(encodeURIComponent(resolve(req.auth.user) + ':' + resolve(req.auth.pass))));
+  if (req.auth.type === 'apikey' && req.auth.key) headers[req.auth.key] = resolve(req.auth.value);
+
+  const opts = { method: req.method, headers };
+  if (!['GET', 'HEAD'].includes(req.method) && req.bodyType !== 'none') {
+    if (req.bodyType === 'form') {
+      const form = new URLSearchParams();
+      activeKv('formTable').forEach(([k, v]) => form.append(k, resolve(v)));
+      opts.body = form.toString();
+      if (!headers['Content-Type'] && !headers['content-type']) headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    } else if (req.body.trim()) {
+      opts.body = resolve(req.body);
+      if (req.bodyType === 'json' && !headers['Content-Type'] && !headers['content-type']) headers['Content-Type'] = 'application/json';
     }
-    defaults.forEach(([k, v]) => add(k, v));
-    add();
-  }
-  function getKv(id) {
-    const res = [];
-    document.querySelectorAll(`#${id} .kv-row`).forEach(r => {
-      const [cb, k, v] = r.querySelectorAll('input');
-      if (cb.checked && k.value.trim()) res.push([k.value.trim(), v.value]);
-    });
-    return res;
-  }
-  function esc(s) { return String(s).replace(/"/g, '&quot;'); }
-
-  // ---------- VARIABLES ----------
-  function resolve(str) {
-    if (!str || !currentEnv || !environments[currentEnv]) return str;
-    return str.replace(/\{\{(\w+)\}\}/g, (_, key) => environments[currentEnv][key] ?? `{{${key}}}`);
   }
 
-  // ---------- AUTH ----------
-  function updateAuthUI() {
-    const type = document.getElementById('authType').value;
-    const box = document.getElementById('authFields');
-    if (type === 'none') box.innerHTML = '';
-    else if (type === 'bearer') box.innerHTML = `<input id="authToken" type="text" placeholder="Token" style="width:100%;">`;
-    else if (type === 'basic') box.innerHTML = `
-      <input id="authUser" type="text" placeholder="Username" style="width:100%; margin-bottom:6px;">
-      <input id="authPass" type="password" placeholder="Password" style="width:100%;">`;
-    else if (type === 'apikey') box.innerHTML = `
-      <input id="authKey" type="text" placeholder="Key name (e.g. X-API-Key)" style="width:100%; margin-bottom:6px;">
-      <input id="authVal" type="text" placeholder="Key value" style="width:100%;">`;
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  setStatus(missing.length ? 'Sending, with unset ' + missing.join(', ') : 'Sending…');
+  const start = performance.now();
+  try {
+    const outcome = proxyReady
+      ? await sendThroughProxy(url, req.method, headers, opts.body || null)
+      : await sendDirect(url, opts, req.method);
+    const text = outcome.text;
+    const time = Math.round(performance.now() - start);
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch (e) {}
+    lastResponse = {
+      status: outcome.status, statusText: outcome.statusText, time,
+      size: new Blob([text]).size, text, json, headers: outcome.headers, ok: outcome.status >= 200 && outcome.status < 300
+    };
+    renderResponse();
+    history.unshift(Object.assign({ id: Date.now(), status: outcome.status, time }, req));
+    history = history.slice(0, 30);
+    writeStore('api_history', history);
+    renderSidebar();
+    setStatus((outcome.status + ' ' + (outcome.statusText || '')).trim(), !lastResponse.ok);
+  } catch (error) {
+    const cors = !proxyReady && /failed to fetch|networkerror|load failed/i.test(error.message || '');
+    const message = cors
+      ? 'The browser blocked this request. Start python3 server.py and open http://127.0.0.1:8787/json/ to test a project API.'
+      : error.message;
+    lastResponse = { status: 0, statusText: 'Network error', time: Math.round(performance.now() - start), size: 0, text: message, json: null, headers: [], ok: false };
+    renderResponse();
+    setStatus(message, true);
+  } finally {
+    sendBtn.disabled = false;
   }
+}
 
-  // ---------- SEND ----------
-  async function send() {
-    const method = document.getElementById('method').value;
-    let url = resolve(document.getElementById('url').value.trim());
-    if (!url) return setStatus('Enter a URL', true);
+async function sendDirect(url, opts, method) {
+  const res = await fetch(url, opts);
+  const text = method === 'HEAD' ? '' : await res.text();
+  const responseHeaders = [];
+  res.headers.forEach((value, key) => responseHeaders.push([key, value]));
+  return { status: res.status, statusText: res.statusText, text, headers: responseHeaders };
+}
 
-    // params
-    const params = getKv('paramsTable');
-    if (params.length) {
-      try {
-        const u = new URL(url);
-        params.forEach(([k, v]) => u.searchParams.set(k, resolve(v)));
-        url = u.toString();
-      } catch {
-        const qs = params.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(resolve(v))}`).join('&');
-        url += (url.includes('?') ? '&' : '?') + qs;
-      }
-    }
+async function sendThroughProxy(url, method, headers, body) {
+  const res = await fetch('/__proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url: url,
+      method: method,
+      headers: headers,
+      body: body,
+      insecure: document.getElementById('insecureTls').checked
+    })
+  });
+  let data = {};
+  try { data = await res.json(); } catch (e) { throw new Error('The local API server returned an unreadable response.'); }
+  if (!data.ok) throw new Error(data.error || 'The local API server could not reach that URL.');
+  return { status: data.status, statusText: data.statusText || '', text: data.body || '', headers: data.headers || [] };
+}
 
-    // headers
-    const headers = {};
-    getKv('headersTable').forEach(([k, v]) => headers[k] = resolve(v));
-
-    // auth
-    const authType = document.getElementById('authType').value;
-    if (authType === 'bearer') {
-      const t = document.getElementById('authToken')?.value;
-      if (t) headers['Authorization'] = 'Bearer ' + resolve(t);
-    } else if (authType === 'basic') {
-      const u = document.getElementById('authUser')?.value || '';
-      const p = document.getElementById('authPass')?.value || '';
-      headers['Authorization'] = 'Basic ' + btoa(resolve(u) + ':' + resolve(p));
-    } else if (authType === 'apikey') {
-      const k = document.getElementById('authKey')?.value;
-      const v = document.getElementById('authVal')?.value;
-      if (k && v) headers[k] = resolve(v);
-    }
-
-    const opts = { method, headers };
-    if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      const body = document.getElementById('body').value.trim();
-      if (body) opts.body = resolve(body);
-    }
-
-    document.getElementById('sendBtn').disabled = true;
-    setStatus('Sending...');
-    const start = performance.now();
-
-    try {
-      const res = await fetch(url, opts);
-      const text = await res.text();
-      const time = Math.round(performance.now() - start);
-      let json = null;
-      try { json = JSON.parse(text); } catch {}
-
-      lastResponse = { status: res.status, statusText: res.statusText, time, size: new Blob([text]).size, text, json, ok: res.ok };
-      renderResponse();
-      addHistory({ method, url, status: res.status, time });
-      setStatus(`${res.status} ${res.statusText}`, !res.ok);
-    } catch (e) {
-      lastResponse = { status: 0, statusText: 'Error', time: Math.round(performance.now() - start), size: 0, text: e.message, json: null, ok: false };
-      renderResponse();
-      setStatus('Failed: ' + e.message, true);
-    } finally {
-      document.getElementById('sendBtn').disabled = false;
-    }
+async function detectProxy() {
+  const banner = document.getElementById('proxyBanner');
+  try {
+    const res = await fetch('/__proxy', { headers: { Accept: 'application/json' } });
+    const data = await res.json();
+    proxyReady = !!(data && data.proxy);
+  } catch (e) {
+    proxyReady = false;
   }
+  banner.hidden = proxyReady;
+  if (proxyReady) setStatus('Local server is on. Project APIs can be tested from here.');
+}
 
-  function renderResponse() {
-    if (!lastResponse) return;
-    const s = lastResponse.status;
-    document.getElementById('respStatus').textContent = s ? `${s} ${lastResponse.statusText}` : 'ERROR';
-    document.getElementById('respStatus').className = 'pill ' + (s >= 200 && s < 300 ? 'status-2xx' : 'status-4xx');
-    document.getElementById('respTime').textContent = lastResponse.time + ' ms';
-    document.getElementById('respSize').textContent = formatBytes(lastResponse.size);
-    setView(viewMode);
-  }
-
-  function setView(mode) {
-    viewMode = mode;
-    const out = document.getElementById('output');
-    out.innerHTML = '';
-    if (!lastResponse) return;
-    if (mode === 'raw' || !lastResponse.json) {
-      out.textContent = lastResponse.text;
-      return;
-    }
-    buildTree(lastResponse.json, out);
-  }
-
-  function buildTree(val, parent) {
-    if (val === null) { parent.innerHTML += '<span class="json-null">null</span>'; return; }
-    if (typeof val !== 'object') {
-      parent.innerHTML += formatVal(val);
-      return;
-    }
-    const isArr = Array.isArray(val);
-    const keys = Object.keys(val);
-    const toggle = document.createElement('div');
-    toggle.className = 'toggle';
-    toggle.innerHTML = `<span class="arrow">▼</span>${isArr ? `Array [${keys.length}]` : `Object {${keys.length}}`}`;
-    toggle.onclick = () => toggle.classList.toggle('collapsed');
-    const node = document.createElement('div');
-    node.className = 'node';
-    keys.forEach(k => {
+function renderResponse() {
+  if (!lastResponse) return;
+  const status = lastResponse.status;
+  const pill = document.getElementById('respStatus');
+  pill.textContent = status ? String(status) + (lastResponse.statusText ? ' ' + lastResponse.statusText : '') : 'Network error';
+  pill.className = 'pill ' + (status >= 500 ? 'status-5xx' : status >= 400 ? 'status-4xx' : status >= 300 ? 'status-3xx' : status >= 200 ? 'status-2xx' : 'status-err');
+  document.getElementById('respTime').textContent = lastResponse.time + ' ms';
+  document.getElementById('respSize').textContent = formatBytes(lastResponse.size);
+  const out = document.getElementById('output');
+  out.innerHTML = '';
+  if (viewMode === 'headers') {
+    if (!lastResponse.headers.length) { out.textContent = 'No response headers were visible to the browser.'; return; }
+    lastResponse.headers.forEach(([key, value]) => {
       const line = document.createElement('div');
-      line.innerHTML = `<span class="json-key">${isArr ? k : `"${k}"`}</span>: `;
-      if (val[k] !== null && typeof val[k] === 'object') buildTree(val[k], line);
-      else line.innerHTML += formatVal(val[k]);
-      node.appendChild(line);
+      line.className = 'header-line';
+      line.innerHTML = '<span class="json-key">' + esc(key) + '</span><span>' + esc(value) + '</span>';
+      out.appendChild(line);
     });
-    parent.append(toggle, node);
+    return;
   }
-  function formatVal(v) {
-    if (v === null) return '<span class="json-null">null</span>';
-    if (typeof v === 'string') return `<span class="json-string">"${escHtml(v)}"</span>`;
-    if (typeof v === 'number') return `<span class="json-number">${v}</span>`;
-    if (typeof v === 'boolean') return `<span class="json-boolean">${v}</span>`;
-    return String(v);
+  if (viewMode === 'raw' || !lastResponse.json) { out.textContent = lastResponse.text || '(empty body)'; return; }
+  buildTree(lastResponse.json, out);
+}
+function buildTree(value, parent) {
+  if (value === null || typeof value !== 'object') {
+    const span = document.createElement('span');
+    span.innerHTML = formatVal(value);
+    parent.appendChild(span);
+    return;
   }
-  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function formatBytes(b) {
-    if (b < 1024) return b + ' B';
-    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-    return (b/1048576).toFixed(1) + ' MB';
-  }
+  const isArray = Array.isArray(value);
+  const keys = Object.keys(value);
+  const toggle = document.createElement('div');
+  toggle.className = 'toggle';
+  toggle.innerHTML = '<span class="arrow">▼</span>' + (isArray ? 'Array [' + keys.length + ']' : 'Object {' + keys.length + '}');
+  toggle.onclick = () => toggle.classList.toggle('collapsed');
+  const node = document.createElement('div');
+  node.className = 'node';
+  keys.forEach((key) => {
+    const line = document.createElement('div');
+    line.innerHTML = '<span class="json-key">' + esc(isArray ? key : '"' + key + '"') + '</span>: ';
+    if (value[key] !== null && typeof value[key] === 'object') buildTree(value[key], line);
+    else line.insertAdjacentHTML('beforeend', formatVal(value[key]));
+    node.appendChild(line);
+  });
+  parent.append(toggle, node);
+}
+function formatVal(value) {
+  if (value === null) return '<span class="json-null">null</span>';
+  if (typeof value === 'string') return '<span class="json-string">"' + esc(value) + '"</span>';
+  if (typeof value === 'number') return '<span class="json-number">' + value + '</span>';
+  if (typeof value === 'boolean') return '<span class="json-boolean">' + value + '</span>';
+  return esc(String(value));
+}
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
 
-  // ---------- HISTORY & COLLECTIONS ----------
-  function addHistory(item) {
-    history.unshift({ ...item, id: Date.now() });
-    history = history.slice(0, 20);
-    localStorage.setItem('api_history', JSON.stringify(history));
-    renderHistory();
+function beautify() {
+  try {
+    document.getElementById('bodyType').value = 'json';
+    showBody();
+    document.getElementById('body').value = JSON.stringify(JSON.parse(document.getElementById('body').value), null, 2);
+    saveDraft();
+    setStatus('Body beautified');
+  } catch (e) { setStatus('Body is not valid JSON', true); }
+}
+function minify() {
+  try {
+    document.getElementById('body').value = JSON.stringify(JSON.parse(document.getElementById('body').value));
+    saveDraft();
+    setStatus('Body minified');
+  } catch (e) { setStatus('Body is not valid JSON', true); }
+}
+function curl() {
+  const req = capture();
+  const url = resolve(req.url.trim());
+  const lines = ['curl -X ' + req.method + ' ' + JSON.stringify(url)];
+  const headers = {};
+  activeKv('headersTable').forEach(([k, v]) => { headers[k] = resolve(v); });
+  if (req.auth.type === 'bearer' && req.auth.token) headers.Authorization = 'Bearer ' + resolve(req.auth.token);
+  Object.keys(headers).forEach((key) => { if (headers[key] !== '') lines.push('  -H ' + JSON.stringify(key + ': ' + headers[key])); });
+  if (!['GET', 'HEAD'].includes(req.method) && req.bodyType === 'json' && req.body.trim()) lines.push('  -d ' + JSON.stringify(resolve(req.body)));
+  if (!['GET', 'HEAD'].includes(req.method) && req.bodyType === 'form') {
+    const form = activeKv('formTable').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(resolve(v))).join('&');
+    if (form) lines.push('  -d ' + JSON.stringify(form));
   }
-  function renderHistory() {
-    const box = document.getElementById('historyList');
-    box.innerHTML = history.map(h => `
-      <div class="item" onclick='loadHistory(${JSON.stringify(h).replace(/'/g, "\\'")})'>
-        <b style="color:${methodColor(h.method)}">${h.method}</b> ${h.url.replace(/^https?:\/\//, '').slice(0, 40)}
-        <div style="font-size:11px; color:var(--muted);">${h.status} • ${h.time}ms</div>
-      </div>`).join('') || '<div style="padding:14px; color:var(--muted); font-size:12px;">No history yet</div>';
-  }
-  function loadHistory(h) {
-    document.getElementById('method').value = h.method;
-    document.getElementById('method').className = h.method;
-    document.getElementById('url').value = h.url;
-  }
-  function methodColor(m) {
-    return { GET: '#10b981', POST: '#f59e0b', PUT: '#38bdf8', PATCH: '#a78bfa', DELETE: '#ef4444' }[m] || '#999';
-  }
+  if (!['GET', 'HEAD'].includes(req.method) && req.bodyType === 'text' && req.body.trim()) lines.push('  -d ' + JSON.stringify(resolve(req.body)));
+  return lines.join(' \\\n');
+}
 
-  function saveCurrent() {
-    const name = prompt('Request name:');
+function bind() {
+  document.getElementById('sendBtn').onclick = send;
+  const insecureBox = document.getElementById('insecureTls');
+  insecureBox.checked = localStorage.getItem('api_insecure') === '1';
+  insecureBox.onchange = () => localStorage.setItem('api_insecure', insecureBox.checked ? '1' : '0');
+  document.getElementById('url').addEventListener('input', () => { urlToParams(); saveDraft(); });
+  document.getElementById('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+  document.getElementById('method').onchange = (e) => { e.target.className = e.target.value; saveDraft(); };
+  document.getElementById('requestName').oninput = saveDraft;
+  document.getElementById('body').oninput = saveDraft;
+  document.getElementById('bodyType').onchange = () => { showBody(); saveDraft(); };
+  document.getElementById('authType').onchange = () => { showAuth(); saveDraft(); };
+  ['authToken', 'authUser', 'authPass', 'authKey', 'authVal'].forEach((id) => {
+    document.getElementById(id).oninput = saveDraft;
+  });
+  document.querySelectorAll('.tab').forEach((tab) => tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach((item) => item.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach((item) => item.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector('.tab-panel[data-tab="' + tab.dataset.tab + '"]').classList.add('active');
+  });
+  document.querySelectorAll('[data-view]').forEach((btn) => btn.onclick = () => { viewMode = btn.dataset.view; renderResponse(); });
+  document.getElementById('copyResponse').onclick = async () => {
+    if (!lastResponse) return;
+    await navigator.clipboard.writeText(viewMode === 'headers'
+      ? lastResponse.headers.map(([k, v]) => k + ': ' + v).join('\n')
+      : lastResponse.text);
+    setStatus('Response copied');
+  };
+  document.getElementById('copyCurl').onclick = async () => {
+    await navigator.clipboard.writeText(curl());
+    setStatus('cURL copied');
+  };
+  document.getElementById('saveBtn').onclick = () => {
+    const req = capture();
+    if (!req.name) { setStatus('Name the request before saving', true); document.getElementById('requestName').focus(); return; }
+    const existing = collections.find((item) => item.name === req.name);
+    const saved = Object.assign({ id: existing ? existing.id : Date.now() }, req);
+    collections = [saved].concat(collections.filter((item) => item.id !== saved.id));
+    writeStore('api_collections', collections);
+    renderSidebar();
+    setStatus('Saved “' + req.name + '”');
+  };
+  document.getElementById('collectionList').onclick = (e) => openItem(e, collections);
+  document.getElementById('historyList').onclick = (e) => openItem(e, history);
+  document.getElementById('exampleList').onclick = (e) => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    applyRequest(EXAMPLES[Number(String(item.dataset.id).replace('ex', ''))]);
+  };
+  document.getElementById('clearHistory').onclick = () => { history = []; writeStore('api_history', history); renderSidebar(); };
+  document.getElementById('addEnv').onclick = () => {
+    const name = document.getElementById('newEnvName').value.trim();
     if (!name) return;
-    collections.push({
-      id: Date.now(), name,
-      method: document.getElementById('method').value,
-      url: document.getElementById('url').value,
-      body: document.getElementById('body').value
-    });
-    localStorage.setItem('api_collections', JSON.stringify(collections));
-    renderCollections();
-  }
-  function renderCollections() {
-    const box = document.getElementById('collectionList');
-    box.innerHTML = collections.map(c => `
-      <div class="item" onclick='loadCollection(${c.id})'>
-        <b style="color:${methodColor(c.method)}">${c.method}</b> ${c.name}
-      </div>`).join('') || '<div style="padding:14px; color:var(--muted); font-size:12px;">No saved requests</div>';
-  }
-  function loadCollection(id) {
-    const c = collections.find(x => x.id === id);
-    if (!c) return;
-    document.getElementById('method').value = c.method;
-    document.getElementById('method').className = c.method;
-    document.getElementById('url').value = c.url;
-    document.getElementById('body').value = c.body || '';
-  }
-
-  // ---------- ENVIRONMENTS ----------
-  function renderEnvSelect() {
-    const sel = document.getElementById('envSelect');
-    sel.innerHTML = '<option value="">No Environment</option>' +
-      Object.keys(environments).map(k => `<option value="${k}" ${k === currentEnv ? 'selected' : ''}>${k}</option>`).join('');
-  }
-  function applyEnv() {
-    currentEnv = document.getElementById('envSelect').value;
-    localStorage.setItem('api_current_env', currentEnv);
-  }
-  function manageEnvs() {
-    const name = prompt('Environment name (leave empty to cancel):');
-    if (!name) return;
-    const vars = prompt('Variables (key=value, one per line):\nbaseUrl=https://api.example.com\ntoken=abc123');
-    if (vars === null) return;
-    const obj = {};
-    vars.split('\n').forEach(line => {
-      const [k, ...rest] = line.split('=');
-      if (k.trim()) obj[k.trim()] = rest.join('=').trim();
-    });
-    environments[name] = obj;
-    localStorage.setItem('api_envs', JSON.stringify(environments));
+    if (!environments[name]) environments[name] = { baseUrl: 'https://dummyjson.com' };
     currentEnv = name;
-    localStorage.setItem('api_current_env', name);
+    writeStore('api_envs', environments);
+    localStorage.setItem('api_current_env', currentEnv);
+    document.getElementById('newEnvName').value = '';
     renderEnvSelect();
+  };
+  document.getElementById('editVars').onclick = () => {
+    if (!currentEnv) { setStatus('Choose or add an environment first', true); return; }
+    envOpen = !envOpen;
+    renderEnvEditor();
+  };
+  document.getElementById('deleteEnv').onclick = () => {
+    if (!currentEnv) return;
+    delete environments[currentEnv];
+    currentEnv = '';
+    writeStore('api_envs', environments);
+    localStorage.setItem('api_current_env', '');
+    renderEnvSelect();
+  };
+  document.getElementById('envSelect').onchange = (e) => {
+    saveEnvFromTable();
+    currentEnv = e.target.value;
+    localStorage.setItem('api_current_env', currentEnv);
+    renderEnvEditor();
+  };
+  document.getElementById('envEditor').addEventListener('input', saveEnvFromTable);
+  document.getElementById('envEditor').addEventListener('change', saveEnvFromTable);
+  document.getElementById('hideSide').onclick = () => { document.body.classList.add('sidebar-collapsed'); localStorage.setItem('api_sidebar', '0'); };
+  document.getElementById('showSide').onclick = () => { document.body.classList.remove('sidebar-collapsed'); localStorage.setItem('api_sidebar', '1'); };
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); send(); }
+  });
+  const split = document.getElementById('split');
+  const pane = document.getElementById('requestPane');
+  split.addEventListener('pointerdown', (e) => {
+    split.setPointerCapture(e.pointerId);
+    const move = (ev) => {
+      const top = pane.getBoundingClientRect().top;
+      pane.style.flex = '0 0 ' + Math.max(160, Math.min(ev.clientY - top, window.innerHeight * 0.62)) + 'px';
+    };
+    const up = () => { split.removeEventListener('pointermove', move); split.removeEventListener('pointerup', up); };
+    split.addEventListener('pointermove', move);
+    split.addEventListener('pointerup', up);
+  });
+}
+function openItem(event, list) {
+  const remove = event.target.closest('[data-remove]');
+  if (remove) {
+    const id = Number(remove.dataset.remove);
+    if (list === collections) { collections = collections.filter((item) => item.id !== id); writeStore('api_collections', collections); }
+    else { history = history.filter((item) => item.id !== id); writeStore('api_history', history); }
+    renderSidebar();
+    return;
   }
+  const item = event.target.closest('.item');
+  if (!item) return;
+  applyRequest(list.find((row) => String(row.id) === item.dataset.id));
+}
 
-  // ---------- UTILS ----------
-  function beautify() {
-    try {
-      document.getElementById('body').value = JSON.stringify(JSON.parse(document.getElementById('body').value), null, 2);
-      setStatus('Beautified');
-    } catch (e) { setStatus('Invalid JSON', true); }
-  }
-  function minify() {
-    try {
-      document.getElementById('body').value = JSON.stringify(JSON.parse(document.getElementById('body').value));
-      setStatus('Minified');
-    } catch (e) { setStatus('Invalid JSON', true); }
-  }
-  function toggleTheme() {
-    if (typeof suiteToggleTheme === 'function') suiteToggleTheme();
-  }
-  function setStatus(msg, err = false) {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = 'status-bar ' + (err ? 'err' : 'ok');
-  }
-
-  // ---------- START ----------
-  init();
-  document.getElementById('url').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+applyRequest(draft || blankDraft());
+if (localStorage.getItem('api_sidebar') === '0') document.body.classList.add('sidebar-collapsed');
+renderEnvSelect();
+renderSidebar();
+bind();
+detectProxy();
+document.getElementById('method').className = document.getElementById('method').value;
 </script>
 </body>
 </html>
