@@ -367,7 +367,8 @@ function runCode(launch) {
     const runFn = new Function('require', 'module', 'exports', 'React', transformed);
     runFn(customRequire, module, exports, window.React);
 
-    const App = (module.exports && module.exports.default) || exports.default;
+    const App = (module.exports && module.exports.default) || exports.default
+      || (window.__rnAppRegistry && window.__rnAppRegistry.getApplication());
 
     if (!App) {
       throw new Error("No 'default export' found in App.jsx. Ensure you have 'export default function App()'.");

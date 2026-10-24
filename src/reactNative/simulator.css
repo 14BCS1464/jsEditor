@@ -120,6 +120,7 @@
 #android-nav button:active { background: rgba(128,128,128,.2); }
 
 #emulator-screen { overflow: hidden; display: flex; flex-direction: column; }
+#app-root.rn-layout-anim, #app-root.rn-layout-anim * { transition: all .3s ease; }
 
 /* ========== Attractive Home Screen ========== */
 #os-home, #os-system, #app-root { flex: 1; min-height: 0; width: 100%; }

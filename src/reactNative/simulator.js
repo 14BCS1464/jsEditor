@@ -76,6 +76,27 @@ const createRNPrimitives = () => {
 
   // Only pass props that make sense on a DOM node (avoids "unknown prop" warnings)
   const DOM_PROPS = new Set(['id', 'className', 'role', 'title', 'tabIndex', 'onClick', 'onScroll', 'onMouseEnter', 'onMouseLeave', 'onFocus', 'onBlur', 'onKeyDown', 'onKeyUp', 'onMouseDown', 'onMouseMove', 'onMouseUp', 'onTouchStart', 'onTouchMove', 'onTouchEnd']);
+
+  const useLayoutRef = (ref, onLayout) => {
+    const local = React.useRef(null);
+    React.useLayoutEffect(() => {
+      const node = local.current;
+      if (!node || !onLayout) return undefined;
+      const fire = () => onLayout({
+        nativeEvent: { layout: { x: node.offsetLeft, y: node.offsetTop, width: node.offsetWidth, height: node.offsetHeight } }
+      });
+      fire();
+      if (typeof ResizeObserver === 'undefined') return undefined;
+      const ro = new ResizeObserver(fire);
+      ro.observe(node);
+      return () => ro.disconnect();
+    }, [onLayout]);
+    return (node) => {
+      local.current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    };
+  };
   const domProps = (props) => {
     const out = {};
     Object.keys(props).forEach((k) => {
@@ -85,7 +106,8 @@ const createRNPrimitives = () => {
     return out;
   };
 
-  const View = React.forwardRef(({ style, children, pointerEvents, ...props }, ref) => {
+  const View = React.forwardRef(({ style, children, pointerEvents, onLayout, ...props }, ref) => {
+    const setRef = useLayoutRef(ref, onLayout);
     const baseStyle = {
       display: 'flex',
       flexDirection: 'column',
@@ -98,7 +120,7 @@ const createRNPrimitives = () => {
     };
     const extra = pointerEvents ? { pointerEvents: pointerEvents === 'box-none' ? 'none' : pointerEvents } : {};
     return React.createElement('div', {
-      ref,
+      ref: setRef,
       style: { ...baseStyle, ...extra, ...processStyles(style) },
       ...domProps(props)
     }, children);
@@ -158,23 +180,42 @@ const createRNPrimitives = () => {
     }, children);
   });
 
-  const Pressable = React.forwardRef(({ style, children, onPress, disabled, ...props }, ref) => {
+  const Pressable = React.forwardRef(({ style, children, onPress, onPressIn, onPressOut, onLongPress, delayLongPress = 500, disabled, ...props }, ref) => {
     const [pressed, setPressed] = React.useState(false);
+    const timer = React.useRef(null);
+    const longFired = React.useRef(false);
+    const held = React.useRef(false);
+    const down = (e) => {
+      if (disabled) return;
+      held.current = true;
+      setPressed(true);
+      longFired.current = false;
+      if (onPressIn) onPressIn(e);
+      if (onLongPress) timer.current = setTimeout(() => { longFired.current = true; onLongPress(e); }, delayLongPress);
+    };
+    const up = (e) => {
+      clearTimeout(timer.current);
+      if (!held.current) return;
+      held.current = false;
+      setPressed(false);
+      if (onPressOut) onPressOut(e);
+    };
     const computedStyle = typeof style === 'function' ? style({ pressed }) : style;
     return React.createElement('div', {
       ref,
-      onClick: disabled ? undefined : onPress,
-      onMouseDown: () => setPressed(true),
-      onMouseUp: () => setPressed(false),
-      onMouseLeave: () => setPressed(false),
-      onTouchStart: () => setPressed(true),
-      onTouchEnd: () => setPressed(false),
+      onClick: (e) => { if (!disabled && !longFired.current && onPress) onPress(e); },
+      onMouseDown: down,
+      onMouseUp: up,
+      onMouseLeave: up,
+      onTouchStart: down,
+      onTouchEnd: up,
       style: {
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         userSelect: 'none',
+        opacity: disabled ? 0.5 : 1,
         borderWidth: 0,
         borderStyle: 'solid',
         ...processStyles(computedStyle)
@@ -183,21 +224,66 @@ const createRNPrimitives = () => {
     }, typeof children === 'function' ? children({ pressed }) : children);
   });
 
-  const ScrollView = React.forwardRef(({ style, contentContainerStyle, children, horizontal, ...props }, ref) => {
+  const ScrollView = React.forwardRef(({ style, contentContainerStyle, children, horizontal, onScroll, onLayout, refreshControl, scrollEnabled = true, pagingEnabled, showsVerticalScrollIndicator = true, showsHorizontalScrollIndicator = true, ...props }, ref) => {
+    const outer = React.useRef(null);
+    const pullY = React.useRef(0);
+    React.useLayoutEffect(() => {
+      const node = outer.current;
+      if (!node || !onLayout) return undefined;
+      const fire = () => onLayout({ nativeEvent: { layout: { x: node.offsetLeft, y: node.offsetTop, width: node.offsetWidth, height: node.offsetHeight } } });
+      fire();
+      if (typeof ResizeObserver === 'undefined') return undefined;
+      const ro = new ResizeObserver(fire);
+      ro.observe(node);
+      return () => ro.disconnect();
+    }, [onLayout]);
+    React.useImperativeHandle(ref, () => ({
+      scrollTo({ x = 0, y = 0, animated = true } = {}) {
+        if (outer.current) outer.current.scrollTo({ left: x, top: y, behavior: animated ? 'smooth' : 'auto' });
+      },
+      scrollToEnd({ animated = true } = {}) {
+        const node = outer.current;
+        if (!node) return;
+        node.scrollTo({ top: horizontal ? 0 : node.scrollHeight, left: horizontal ? node.scrollWidth : 0, behavior: animated ? 'smooth' : 'auto' });
+      },
+      getScrollResponder() { return outer.current; }
+    }), [horizontal]);
+    const rc = refreshControl && refreshControl.props;
+    const emitScroll = (e) => {
+      const node = e.currentTarget;
+      const nativeEvent = {
+        contentOffset: { x: node.scrollLeft, y: node.scrollTop },
+        contentSize: { width: node.scrollWidth, height: node.scrollHeight },
+        layoutMeasurement: { width: node.clientWidth, height: node.clientHeight }
+      };
+      if (onScroll) onScroll({ nativeEvent });
+    };
+    const endPull = (e) => {
+      const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+      if (rc && rc.onRefresh && outer.current && outer.current.scrollTop <= 0 && y - pullY.current > 48) rc.onRefresh();
+    };
+    const hideBar = (horizontal ? showsHorizontalScrollIndicator : showsVerticalScrollIndicator) ? 'auto' : 'none';
     return React.createElement('div', {
-      ref,
+      ref: outer,
+      onScroll: emitScroll,
+      onMouseDown: (e) => { pullY.current = e.clientY; },
+      onMouseUp: endPull,
+      onTouchStart: (e) => { pullY.current = e.touches[0].clientY; },
+      onTouchEnd: endPull,
       style: {
         display: 'flex',
         flexDirection: horizontal ? 'row' : 'column',
-        overflowX: horizontal ? 'auto' : 'hidden',
-        overflowY: horizontal ? 'hidden' : 'auto',
+        overflowX: !scrollEnabled ? 'hidden' : horizontal ? 'auto' : 'hidden',
+        overflowY: !scrollEnabled ? 'hidden' : horizontal ? 'hidden' : 'auto',
         flex: 1,
         minHeight: 0,
         boxSizing: 'border-box',
+        scrollbarWidth: hideBar,
+        scrollSnapType: pagingEnabled ? (horizontal ? 'x mandatory' : 'y mandatory') : undefined,
         ...processStyles(style)
       },
       ...domProps(props)
-    }, React.createElement('div', {
+    }, rc && rc.refreshing ? React.createElement('div', { style: { textAlign: 'center', padding: 8, fontSize: 12, opacity: 0.7 } }, 'Refreshing…') : null, React.createElement('div', {
       style: {
         display: 'flex',
         flexDirection: horizontal ? 'row' : 'column',
@@ -210,22 +296,43 @@ const createRNPrimitives = () => {
 
   const renderMaybe = (c) => (c ? (React.isValidElement(c) ? c : React.createElement(c)) : null);
 
-  const FlatList = ({ data = [], renderItem, keyExtractor, style, contentContainerStyle, horizontal, ListHeaderComponent, ListFooterComponent, ListEmptyComponent, ItemSeparatorComponent, ...props }) => {
+  const FlatList = ({ data = [], renderItem, keyExtractor, style, contentContainerStyle, horizontal, numColumns = 1, columnWrapperStyle, ListHeaderComponent, ListFooterComponent, ListEmptyComponent, ItemSeparatorComponent, onEndReached, onEndReachedThreshold = 0.5, refreshing, onRefresh, refreshControl, onScroll, ...props }) => {
+    const reached = React.useRef(false);
     const children = [];
+    const keyFor = (item, index) => keyExtractor ? keyExtractor(item, index) : (item && item.id != null ? String(item.id) : String(index));
     if (ListHeaderComponent) children.push(React.createElement(React.Fragment, { key: '__header' }, renderMaybe(ListHeaderComponent)));
     if (!data.length && ListEmptyComponent) children.push(React.createElement(React.Fragment, { key: '__empty' }, renderMaybe(ListEmptyComponent)));
-    data.forEach((item, index) => {
-      const key = keyExtractor ? keyExtractor(item, index) : (item && item.id != null ? String(item.id) : String(index));
-      children.push(React.createElement(React.Fragment, { key }, renderItem({ item, index })));
-      if (ItemSeparatorComponent && index < data.length - 1) {
-        children.push(React.createElement(React.Fragment, { key: key + '__sep' }, renderMaybe(ItemSeparatorComponent)));
+    const cols = !horizontal && numColumns > 1 ? numColumns : 1;
+    for (let index = 0; index < data.length; index += cols) {
+      const cells = [];
+      for (let c = 0; c < cols && index + c < data.length; c++) {
+        const i = index + c;
+        const item = data[i];
+        cells.push(React.createElement(React.Fragment, { key: keyFor(item, i) }, renderItem({ item, index: i, separators: {} })));
       }
-    });
+      if (cols === 1) {
+        children.push(cells[0]);
+        if (ItemSeparatorComponent && index < data.length - 1) children.push(React.createElement(React.Fragment, { key: 'sep' + index }, renderMaybe(ItemSeparatorComponent)));
+      } else {
+        children.push(React.createElement(View, { key: 'row' + index, style: [{ flexDirection: 'row' }, columnWrapperStyle] }, cells));
+      }
+    }
     if (ListFooterComponent) children.push(React.createElement(React.Fragment, { key: '__footer' }, renderMaybe(ListFooterComponent)));
-    return React.createElement(ScrollView, { style, contentContainerStyle, horizontal, ...props }, children);
+    const rc = refreshControl || (onRefresh ? { props: { refreshing, onRefresh } } : null);
+    const handleScroll = (e) => {
+      if (onScroll) onScroll(e);
+      if (!onEndReached) return;
+      const ne = e.nativeEvent;
+      const dist = ne.contentSize.height - ne.contentOffset.y - ne.layoutMeasurement.height;
+      const limit = onEndReachedThreshold * ne.layoutMeasurement.height;
+      if (dist <= limit) {
+        if (!reached.current) { reached.current = true; onEndReached({ distanceFromEnd: dist }); }
+      } else reached.current = false;
+    };
+    return React.createElement(ScrollView, { style, contentContainerStyle, horizontal, refreshControl: rc, onScroll: handleScroll, ...props }, children);
   };
 
-  const TextInput = React.forwardRef(({ style, value, defaultValue, onChangeText, onChange, onSubmitEditing, placeholder, placeholderTextColor, secureTextEntry, multiline, keyboardType, editable = true, autoFocus, maxLength, ...props }, ref) => {
+  const TextInput = React.forwardRef(({ style, value, defaultValue, onChangeText, onChange, onSubmitEditing, onFocus, onBlur, onEndEditing, placeholder, placeholderTextColor, secureTextEntry, multiline, keyboardType, editable = true, autoFocus, maxLength, ...props }, ref) => {
     const isMultiline = !!multiline;
     const inputModeMap = { 'numeric': 'numeric', 'number-pad': 'numeric', 'decimal-pad': 'decimal', 'email-address': 'email', 'phone-pad': 'tel' };
     const common = {
@@ -238,7 +345,12 @@ const createRNPrimitives = () => {
       inputMode: inputModeMap[keyboardType],
       onChange: (e) => {
         if (onChangeText) onChangeText(e.target.value);
-        if (onChange) onChange(e);
+        if (onChange) onChange({ nativeEvent: { text: e.target.value }, target: e.target });
+      },
+      onFocus: (e) => onFocus && onFocus({ nativeEvent: { text: e.target.value } }),
+      onBlur: (e) => {
+        if (onEndEditing) onEndEditing({ nativeEvent: { text: e.target.value } });
+        if (onBlur) onBlur({ nativeEvent: { text: e.target.value } });
       },
       style: {
         outline: 'none',
@@ -268,17 +380,22 @@ const createRNPrimitives = () => {
     return React.createElement('input', common);
   });
 
-  const Image = React.forwardRef(({ source, style, resizeMode = 'cover', ...props }, ref) => {
+  const Image = React.forwardRef(({ source, style, resizeMode = 'cover', onLoad, onError, ...props }, ref) => {
     const uri = source && typeof source === 'object' && source.uri ? source.uri : (typeof source === 'string' ? source : '');
     return React.createElement('img', {
       ref,
       src: uri || 'https://placehold.co/200x200/1e293b/61dafb?text=Image',
       style: {
-        objectFit: resizeMode === 'stretch' ? 'fill' : resizeMode,
+        objectFit: resizeMode === 'stretch' ? 'fill' : (resizeMode === 'repeat' ? 'none' : resizeMode),
         maxWidth: '100%',
         ...processStyles(style)
       },
-      onError: (e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/1e293b/61dafb?text=Image+Error'; },
+      onLoad: (e) => onLoad && onLoad({ nativeEvent: { source: { width: e.target.naturalWidth, height: e.target.naturalHeight, uri } } }),
+      onError: (e) => {
+        e.target.onerror = null;
+        e.target.src = 'https://placehold.co/200x200/1e293b/61dafb?text=Image+Error';
+        if (onError) onError({ nativeEvent: { error: 'Image failed to load' } });
+      },
       ...domProps(props)
     });
   });
@@ -349,6 +466,7 @@ const createRNPrimitives = () => {
   const StyleSheet = {
     create: (styles) => styles,
     flatten: (styles) => processStyles(styles),
+    compose: (a, b) => [a, b].filter(Boolean),
     hairlineWidth: 1,
     absoluteFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
     absoluteFillObject: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }
@@ -364,11 +482,25 @@ const createRNPrimitives = () => {
       fontScale: 1
     };
   };
+  const dimListeners = new Set();
   const Dimensions = {
     get: () => getScreenSize(),
-    addEventListener: () => ({ remove: () => {} })
+    addEventListener: (type, cb) => {
+      const fn = () => { const size = getScreenSize(); cb({ window: size, screen: size }); };
+      dimListeners.add(fn);
+      return { remove: () => dimListeners.delete(fn) };
+    },
+    set: () => {}
   };
-  const useWindowDimensions = () => getScreenSize();
+  window.__emitDimensions = () => dimListeners.forEach((fn) => fn());
+  const useWindowDimensions = () => {
+    const [size, setSize] = React.useState(getScreenSize);
+    React.useEffect(() => {
+      const sub = Dimensions.addEventListener('change', ({ window: next }) => setSize(next));
+      return () => sub.remove();
+    }, []);
+    return size;
+  };
 
   // FIX: Platform.OS follows the selected device (ios / android)
   const Platform = {
@@ -376,6 +508,14 @@ const createRNPrimitives = () => {
       return (currentDevice === 'iphone' || currentDevice === 'ipad') ? 'ios' : 'android';
     },
     get isPad() { return currentDevice === 'ipad'; },
+    isTV: false,
+    isTesting: false,
+    get Version() { return this.OS === 'ios' ? '18.0' : 35; },
+    get constants() {
+      return this.OS === 'ios'
+        ? { forceTouchAvailable: false, interfaceIdiom: this.isPad ? 'pad' : 'phone', osVersion: '18.0', systemName: 'iOS' }
+        : { Version: 35, Release: '15', Model: 'sdk', uiMode: 'normal', Brand: 'google' };
+    },
     select(obj) {
       const os = this.OS;
       return obj[os] !== undefined ? obj[os] : (obj.native !== undefined ? obj.native : obj.default);
@@ -417,6 +557,9 @@ function createRNExtras(RN) {
     linear: (t) => t, ease: bez(0.42, 0, 1, 1), quad: (t) => t * t, cubic: (t) => t * t * t,
     sin: (t) => 1 - Math.cos(t * Math.PI / 2), circle: (t) => 1 - Math.sqrt(1 - t * t),
     exp: (t) => Math.pow(2, 10 * (t - 1)), bezier: bez,
+    elastic: (t) => Math.pow(2, -10 * t) * Math.sin((t - 0.075) * (2 * Math.PI) / 0.3) + 1,
+    back: (t) => t * t * (2.70158 * t - 1.70158),
+    poly: (n) => (t) => Math.pow(t, n),
     bounce: (t) => t < 1 / 2.75 ? 7.5625 * t * t : t < 2 / 2.75 ? (t -= 1.5 / 2.75, 7.5625 * t * t + 0.75) : t < 2.5 / 2.75 ? (t -= 2.25 / 2.75, 7.5625 * t * t + 0.9375) : (t -= 2.625 / 2.75, 7.5625 * t * t + 0.984375),
     in: (f) => f, out: (f) => (t) => 1 - f(1 - t), inOut: (f) => (t) => t < 0.5 ? f(t * 2) / 2 : 1 - f((1 - t) * 2) / 2
   };
@@ -456,7 +599,18 @@ function createRNExtras(RN) {
     interpolate(c) { return new Interp(this, c); }
     stopAnimation(cb) { this._stop && this._stop(); cb && cb(this._v); }
     setOffset() {} flattenOffset() {}
+    resetAnimation(cb) { this.setValue(0); cb && cb(this._v); }
   }
+  class ValueXY {
+    constructor(v = {}) { this.x = new Value(v.x || 0); this.y = new Value(v.y || 0); }
+    setValue(v) { this.x.setValue(v.x || 0); this.y.setValue(v.y || 0); }
+    setOffset() {} flattenOffset() {}
+    stopAnimation(cb) { this.x.stopAnimation(); this.y.stopAnimation(); cb && cb({ x: this.x.__get(), y: this.y.__get() }); }
+    getLayout() { return { left: this.x, top: this.y }; }
+    getTranslateTransform() { return [{ translateX: this.x }, { translateY: this.y }]; }
+    __get() { return { x: this.x.__get(), y: this.y.__get() }; }
+  }
+  const isXY = (value) => value && value.x && value.y && typeof value.x.setValue === 'function' && !(value instanceof Value);
   class Op {
     constructor(a, b, f) { this.a = a; this.b = b; this.f = f; }
     __get() { return this.f(val(this.a), val(this.b)); }
@@ -475,7 +629,9 @@ function createRNExtras(RN) {
     },
     reset() { reset && reset(); }
   });
-  const timing = (value, { toValue, duration = 500, delay = 0, easing = Easing.inOut(Easing.ease) }) => {
+  const timing = (value, opts) => {
+    const { toValue, duration = 500, delay = 0, easing = Easing.inOut(Easing.ease) } = opts || {};
+    if (isXY(value)) return parallel([timing(value.x, { ...opts, toValue: toValue.x }), timing(value.y, { ...opts, toValue: toValue.y })]);
     const v0 = value.__get();
     const a = mk((done) => {
       let raf, to;
@@ -494,7 +650,9 @@ function createRNExtras(RN) {
     }, () => value.setValue(v0));
     return a;
   };
-  const spring = (value, { toValue, stiffness = 100, damping = 10, mass = 1, velocity = 0 }) => {
+  const spring = (value, opts) => {
+    const { toValue, stiffness = 100, damping = 10, mass = 1, velocity = 0 } = opts || {};
+    if (isXY(value)) return parallel([spring(value.x, { ...opts, toValue: toValue.x }), spring(value.y, { ...opts, toValue: toValue.y })]);
     const v0 = value.__get();
     const a = mk((done) => {
       let x = value.__get(), v = velocity, last = performance.now(), raf;
@@ -554,12 +712,56 @@ function createRNExtras(RN) {
     });
     return h(C, { ...p, ref, style: resolve(style) });
   });
+  class DiffClampNode {
+    constructor(node, min, max) { this.node = node; this.min = min; this.max = max; this._last = val(node); this._v = Math.min(max, Math.max(min, this._last)); }
+    __get() {
+      const n = val(this.node);
+      this._v = Math.min(this.max, Math.max(this.min, this._v + (n - this._last)));
+      this._last = n;
+      return this._v;
+    }
+    __subscribe(f) { return this.node.__subscribe(f); }
+    interpolate(c) { return new Interp(this, c); }
+  }
+  class ModuloNode {
+    constructor(node, modulus) { this.node = node; this.modulus = modulus; }
+    __get() { const v = val(this.node); return ((v % this.modulus) + this.modulus) % this.modulus; }
+    __subscribe(f) { return this.node.__subscribe(f); }
+    interpolate(c) { return new Interp(this, c); }
+  }
+  const decay = (value, { velocity = 0, deceleration = 0.997 } = {}) => {
+    const v0 = value.__get();
+    return mk((done) => {
+      let x = v0, v = velocity, last = performance.now(), raf;
+      const tick = (now) => {
+        const dt = Math.min(0.064, (now - last) / 1000); last = now;
+        v *= Math.pow(deceleration, dt * 1000);
+        x += v * dt;
+        value.setValue(x);
+        if (Math.abs(v) < 0.05) done({ finished: true });
+        else raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    }, () => value.setValue(v0));
+  };
+  const mapEvent = (mapping, source) => {
+    if (!mapping || source == null) return;
+    Object.keys(mapping).forEach((key) => {
+      const next = mapping[key];
+      if (isNode(next) && next.setValue && source && typeof source[key] === 'number') next.setValue(source[key]);
+      else if (next && typeof next === 'object') mapEvent(next, source && source[key]);
+    });
+  };
   const Animated = {
-    Value, timing, spring, sequence, parallel, loop, delay: delayAnim,
+    Value, ValueXY, timing, spring, decay, sequence, parallel, loop, delay: delayAnim,
     stagger: (ms, list) => parallel(list.map((a, i) => sequence([delayAnim(ms * i), a]))),
     add: (a, b) => new Op(a, b, (x, y) => x + y), subtract: (a, b) => new Op(a, b, (x, y) => x - y),
     multiply: (a, b) => new Op(a, b, (x, y) => x * y), divide: (a, b) => new Op(a, b, (x, y) => x / y),
-    event: () => () => {}, createAnimatedComponent: wrap,
+    diffClamp: (node, min, max) => new DiffClampNode(node, min, max),
+    modulo: (node, modulus) => new ModuloNode(node, modulus),
+    event: (mapping) => (e) => (mapping || []).forEach((item) => mapEvent(item, e)),
+    createAnimatedComponent: wrap,
     View: wrap(RN.View), Text: wrap(RN.Text), Image: wrap(RN.Image), ScrollView: wrap(RN.ScrollView), FlatList: wrap(RN.FlatList)
   };
 
@@ -666,15 +868,265 @@ function createRNExtras(RN) {
   })();
 
   // ----- Misc APIs -----
-  const Linking = { openURL: async (u) => { window.open(u, '_blank'); }, canOpenURL: async () => true, getInitialURL: async () => null, addEventListener: () => ({ remove() {} }) };
-  const Vibration = { vibrate: (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} console.log('[Vibration]', p || 400); window.shakePhone && window.shakePhone(); }, cancel: () => {} };
-  const Share = { share: async (o) => { if (navigator.share) { try { await navigator.share({ title: o.title, text: o.message, url: o.url }); } catch (e) {} } else console.log('[Share]', o.message || o.url); return { action: 'sharedAction' }; } };
-  const PixelRatio = { get: () => 3, getFontScale: () => 1, roundToNearestPixel: (x) => Math.round(x * 3) / 3, getPixelSizeForLayoutSize: (x) => x * 3 };
-  const LayoutAnimation = { configureNext: () => {}, create: () => ({}), Presets: { easeInEaseOut: {}, linear: {}, spring: {} }, Types: {}, Properties: {} };
-  const BackHandler = { addEventListener: () => ({ remove() {} }), exitApp: () => console.log('[BackHandler] exitApp') };
-  const AppState = { currentState: 'active', addEventListener: () => ({ remove() {} }) };
-  const I18nManager = { isRTL: false, allowRTL() {}, forceRTL() {} };
+  const linkListeners = new Set();
+  const Linking = {
+    openURL: async (u) => { window.open(u, '_blank', 'noopener'); },
+    canOpenURL: async () => true,
+    getInitialURL: async () => null,
+    openSettings: async () => console.log('[Linking] openSettings'),
+    sendIntent: async () => {},
+    addEventListener: (type, fn) => { linkListeners.add(fn); return { remove() { linkListeners.delete(fn); } }; }
+  };
+  const Vibration = { vibrate: (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} console.log('[Vibration]', p || 400); window.shakePhone && window.shakePhone(); }, cancel: () => { try { navigator.vibrate && navigator.vibrate(0); } catch (e) {} } };
+  const Share = {
+    sharedAction: 'sharedAction',
+    dismissedAction: 'dismissedAction',
+    share: async (o) => {
+      if (navigator.share) { try { await navigator.share({ title: o.title, text: o.message, url: o.url }); } catch (e) { return { action: 'dismissedAction' }; } }
+      else console.log('[Share]', o.message || o.url);
+      return { action: 'sharedAction' };
+    }
+  };
+  const PixelRatio = {
+    get: () => (typeof DEVICES !== 'undefined' && DEVICES[deviceKey] && DEVICES[deviceKey].dpr) || window.devicePixelRatio || 2,
+    getFontScale: () => 1,
+    getPixelSizeForLayoutSize(x) { return Math.round(x * this.get()); },
+    roundToNearestPixel(x) { const r = this.get(); return Math.round(x * r) / r; }
+  };
+  const LayoutAnimation = {
+    configureNext() {
+      const root = document.getElementById('app-root');
+      if (!root) return;
+      root.classList.add('rn-layout-anim');
+      setTimeout(() => root.classList.remove('rn-layout-anim'), 320);
+    },
+    create: () => ({}),
+    Presets: { easeInEaseOut: {}, linear: {}, spring: {} },
+    Types: { spring: 'spring', linear: 'linear', easeInEaseOut: 'easeInEaseOut', easeIn: 'easeIn', easeOut: 'easeOut' },
+    Properties: { opacity: 'opacity', scaleX: 'scaleX', scaleY: 'scaleY' }
+  };
+  const backStack = [];
+  const BackHandler = {
+    addEventListener(type, fn) { backStack.push(fn); return { remove() { const i = backStack.indexOf(fn); if (i >= 0) backStack.splice(i, 1); } }; },
+    exitApp() { console.log('[BackHandler] exitApp'); if (window.goHome) window.goHome(); }
+  };
+  window.__rnBack = () => {
+    for (let i = backStack.length - 1; i >= 0; i--) { if (backStack[i]()) return true; }
+    return false;
+  };
+  const appListeners = new Set();
+  const AppState = {
+    currentState: document.hidden ? 'background' : 'active',
+    addEventListener(type, fn) {
+      const wrap = () => { AppState.currentState = document.hidden ? 'background' : 'active'; fn(AppState.currentState); };
+      document.addEventListener('visibilitychange', wrap);
+      appListeners.add(wrap);
+      return { remove() { document.removeEventListener('visibilitychange', wrap); appListeners.delete(wrap); } };
+    },
+    removeEventListener(type, fn) { fn && appListeners.delete(fn); }
+  };
+  const I18nManager = {
+    isRTL: false,
+    doLeftAndRightSwapInRTL: true,
+    allowRTL() {},
+    forceRTL(v) { this.isRTL = !!v; const screen = document.getElementById('emulator-screen'); if (screen) screen.dir = v ? 'rtl' : 'ltr'; },
+    swapLeftAndRightInRTL(v) { this.doLeftAndRightSwapInRTL = !!v; }
+  };
   const RefreshControl = () => null;
+  const KeyboardAvoidingView = ({ behavior, keyboardVerticalOffset = 0, style, children, ...props }) => {
+    const [kb, setKb] = R.useState(0);
+    R.useEffect(() => {
+      const show = Keyboard.addListener('keyboardDidShow', (e) => setKb((e.endCoordinates && e.endCoordinates.height) || 240));
+      const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
+      return () => { show.remove(); hide.remove(); };
+    }, []);
+    const extra = {};
+    if (kb) {
+      if (behavior === 'padding') extra.paddingBottom = kb + keyboardVerticalOffset;
+      else if (behavior === 'position') extra.bottom = kb + keyboardVerticalOffset;
+      else if (behavior === 'height') extra.maxHeight = '100%';
+    }
+    return h(RN.View, { ...props, style: [style, extra, behavior === 'position' && kb ? { position: 'relative' } : null] }, children);
+  };
+  const InputAccessoryView = ({ children }) => {
+    const [open, setOpen] = R.useState(false);
+    R.useEffect(() => {
+      const show = Keyboard.addListener('keyboardDidShow', () => setOpen(true));
+      const hide = Keyboard.addListener('keyboardDidHide', () => setOpen(false));
+      return () => { show.remove(); hide.remove(); };
+    }, []);
+    const panel = document.getElementById('kb-panel');
+    if (!open || !panel) return null;
+    return ReactDOM.createPortal(h('div', { style: { background: '#d1d5db', padding: '6px 8px' } }, children), panel);
+  };
+  const DrawerLayoutAndroid = R.forwardRef(({ drawerWidth = 280, renderNavigationView, children, drawerPosition = 'left' }, ref) => {
+    const [open, setOpen] = R.useState(false);
+    R.useImperativeHandle(ref, () => ({ openDrawer: () => setOpen(true), closeDrawer: () => setOpen(false) }));
+    return h(RN.View, { style: { flex: 1, overflow: 'hidden' } },
+      children,
+      open ? h(RN.Pressable, { onPress: () => setOpen(false), style: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,.35)' } }) : null,
+      open ? h(RN.View, { style: { position: 'absolute', top: 0, bottom: 0, width: drawerWidth, backgroundColor: '#fff', [drawerPosition]: 0 } }, renderNavigationView && renderNavigationView()) : null
+    );
+  });
+  const ProgressBarAndroid = ({ progress = 0, indeterminate, color = '#2196F3', style }) => h(RN.View, {
+    style: [{ height: 4, backgroundColor: '#e5e7eb', overflow: 'hidden', borderRadius: 2 }, style]
+  }, h(RN.View, { style: { width: indeterminate ? '40%' : Math.max(0, Math.min(1, progress)) * 100 + '%', height: '100%', backgroundColor: color } }));
+
+  const makeEmitter = () => {
+    const map = {};
+    return {
+      addListener(ev, fn) { (map[ev] = map[ev] || new Set()).add(fn); const sub = { remove() { map[ev] && map[ev].delete(fn); } }; return sub; },
+      removeAllListeners(ev) { if (ev) delete map[ev]; else Object.keys(map).forEach((k) => delete map[k]); },
+      emit(ev, ...args) { map[ev] && map[ev].forEach((fn) => fn(...args)); },
+      listenerCount(ev) { return map[ev] ? map[ev].size : 0; }
+    };
+  };
+  const DeviceEventEmitter = makeEmitter();
+  class NativeEventEmitter {
+    constructor() { this._e = makeEmitter(); }
+    addListener(ev, fn) { return this._e.addListener(ev, fn); }
+    removeAllListeners(ev) { this._e.removeAllListeners(ev); }
+    emit(ev, ...args) { this._e.emit(ev, ...args); }
+  }
+  const nodeIds = new WeakMap();
+  let nodeSeq = 1;
+  const hostNode = (node) => (node && node.current != null ? node.current : node);
+  const findNodeHandle = (node) => {
+    const el = hostNode(node);
+    if (!el || el.nodeType !== 1) return null;
+    if (!nodeIds.has(el)) nodeIds.set(el, nodeSeq++);
+    return nodeIds.get(el);
+  };
+  const measureNode = (node) => {
+    const el = hostNode(node);
+    if (!el || !el.getBoundingClientRect) return null;
+    return { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, pageX: el.offsetLeft, pageY: el.offsetTop };
+  };
+  const UIManager = {
+    measure(node, cb) { const m = measureNode(node); cb(m ? m.x : 0, m ? m.y : 0, m ? m.w : 0, m ? m.h : 0, m ? m.pageX : 0, m ? m.pageY : 0); },
+    measureInWindow(node, cb) { const m = measureNode(node); cb(m ? m.pageX : 0, m ? m.pageY : 0, m ? m.w : 0, m ? m.h : 0); },
+    measureLayout(node, relative, onFail, onSuccess) { const m = measureNode(node); if (!m) onFail(); else onSuccess(m.x, m.y, m.w, m.h); },
+    setLayoutAnimationEnabledExperimental() {},
+    getViewManagerConfig() { return null; },
+    getConstants() { return {}; }
+  };
+  const nativeMod = {
+    get(target, prop) {
+      if (prop in target) return target[prop];
+      if (typeof prop !== 'string' || prop === 'then') return undefined;
+      const bag = new Proxy({}, { get: (_, key) => (key === 'then' ? undefined : () => Promise.resolve(null)) });
+      target[prop] = bag;
+      return bag;
+    }
+  };
+  const NativeModules = new Proxy({}, nativeMod);
+  const TurboModuleRegistry = { get: () => null, getEnforcing: (name) => NativeModules[name] };
+  const InteractionManager = {
+    runAfterInteractions: (task) => { const id = setTimeout(task, 0); return { then(fn) { return Promise.resolve().then(fn); }, cancel() { clearTimeout(id); } }; },
+    createInteractionHandle: () => 1,
+    clearInteractionHandle() {},
+    setDeadline() {}
+  };
+  let toastTimer = null;
+  const showToast = (message, duration) => {
+    const screen = document.getElementById('emulator-screen');
+    if (!screen) { console.log('[Toast]', message); return; }
+    let el = document.getElementById('rn-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'rn-toast'; screen.appendChild(el); }
+    el.textContent = String(message);
+    el.style.cssText = 'position:absolute;left:50%;bottom:56px;transform:translateX(-50%);max-width:80%;background:rgba(17,24,39,.92);color:#fff;padding:8px 14px;border-radius:18px;font:13px Inter,sans-serif;z-index:80;pointer-events:none;text-align:center';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.remove(), duration === 1 ? 3500 : 2000);
+  };
+  const ToastAndroid = { SHORT: 0, LONG: 1, TOP: 49, BOTTOM: 81, CENTER: 17, show: (m, d) => showToast(m, d), showWithGravity: (m, d) => showToast(m, d) };
+  const Clipboard = {
+    getString: async () => { try { return await navigator.clipboard.readText(); } catch (e) { return ''; } },
+    setString: (text) => { const value = String(text); try { navigator.clipboard.writeText(value); } catch (e) {} console.log('[Clipboard]', value); }
+  };
+  const settingsBag = {};
+  const Settings = { get: (k) => settingsBag[k], set: (o) => Object.assign(settingsBag, o), watchKeys: () => ({ remove() {} }) };
+  const PermissionsAndroid = {
+    RESULTS: { GRANTED: 'granted', DENIED: 'denied', NEVER_ASK_AGAIN: 'never_ask_again' },
+    PERMISSIONS: { CAMERA: 'android.permission.CAMERA', RECORD_AUDIO: 'android.permission.RECORD_AUDIO', ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION', ACCESS_COARSE_LOCATION: 'android.permission.ACCESS_COARSE_LOCATION', READ_EXTERNAL_STORAGE: 'android.permission.READ_EXTERNAL_STORAGE', WRITE_EXTERNAL_STORAGE: 'android.permission.WRITE_EXTERNAL_STORAGE', POST_NOTIFICATIONS: 'android.permission.POST_NOTIFICATIONS', READ_CONTACTS: 'android.permission.READ_CONTACTS' },
+    request: async () => 'granted',
+    requestMultiple: async (perms) => Object.fromEntries(perms.map((p) => [p, 'granted'])),
+    check: async () => true
+  };
+  const AccessibilityInfo = {
+    isScreenReaderEnabled: async () => false,
+    isBoldTextEnabled: async () => false,
+    isReduceMotionEnabled: async () => false,
+    announceForAccessibility: (msg) => console.log('[Accessibility]', msg),
+    setAccessibilityFocus() {},
+    addEventListener: () => ({ remove() {} })
+  };
+  const ActionSheetIOS = {
+    showActionSheetWithOptions(options, callback) {
+      const root = document.getElementById('modal-root');
+      if (!root) { callback && callback(options.cancelButtonIndex || 0); return; }
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;pointer-events:auto;z-index:8';
+      const sheet = document.createElement('div');
+      sheet.style.cssText = 'width:100%;max-width:420px;margin:8px;background:' + (isDarkPreview ? '#1c1c1e' : '#fff') + ';color:' + (isDarkPreview ? '#fff' : '#111') + ';border-radius:14px;overflow:hidden;font-family:Inter,sans-serif';
+      if (options.title) {
+        const t = document.createElement('div');
+        t.textContent = options.title;
+        t.style.cssText = 'padding:12px;text-align:center;font-weight:600';
+        sheet.appendChild(t);
+      }
+      (options.options || []).forEach((label, index) => {
+        const row = document.createElement('div');
+        row.textContent = label;
+        const destructive = index === options.destructiveButtonIndex;
+        row.style.cssText = 'padding:14px;text-align:center;border-top:1px solid rgba(128,128,128,.3);cursor:pointer;color:' + (destructive ? '#ff3b30' : '#0a84ff');
+        row.onclick = () => { ov.remove(); callback && callback(index); };
+        sheet.appendChild(row);
+      });
+      ov.appendChild(sheet);
+      root.appendChild(ov);
+    },
+    showShareActionSheetWithOptions(options, failure, success) { if (success) success(true, 'shared'); }
+  };
+  const apps = {};
+  let lastApp = null;
+  const AppRegistry = {
+    registerComponent(name, getComponent) { apps[name] = getComponent; lastApp = name; return name; },
+    getApplication(name) { const get = apps[name || lastApp]; return get ? get() : null; },
+    runApplication() {},
+    unmountApplicationComponentAtRootTag() {}
+  };
+  window.__rnAppRegistry = AppRegistry;
+  const LogBox = { ignoreLogs() {}, ignoreAllLogs() {}, install() {}, uninstall() {} };
+  const DevSettings = { addMenuItem() {}, reload() { if (window.runCode) window.runCode(true); } };
+  const processColor = (color) => color;
+  const PlatformColor = (...names) => names[0] || 'black';
+  const DynamicColorIOS = ({ light, dark }) => (window.__scheme === 'dark' ? dark : light);
+  const Systrace = { beginSection() {}, endSection() {}, measure: (name, fn) => fn() };
+  const codegenNativeComponent = () => RN.View;
+  const codegenNativeCommands = () => ({});
+  const unstable_batchedUpdates = (fn, arg) => fn(arg);
+  RN.Alert.prompt = (title, message, callbackOrButtons, type, defaultValue) => {
+    window.showNativePrompt && window.showNativePrompt(title, message, callbackOrButtons, defaultValue);
+  };
+  RN.StatusBar.currentHeight = 24;
+  RN.StatusBar.setTranslucent = () => {};
+  RN.StatusBar.pushStackEntry = (p) => p;
+  RN.StatusBar.popStackEntry = () => {};
+  Keyboard.metrics = () => (window.__kbOpen ? { height: 240, screenX: 0, screenY: 0, width: 0 } : null);
+  Keyboard.scheduleLayoutAnimation = () => {};
+  const VirtualizedList = ({ data, getItem, getItemCount, renderItem, keyExtractor, ListHeaderComponent, ListFooterComponent, ListEmptyComponent, ...rest }) => {
+    const count = getItemCount ? getItemCount(data) : (data ? data.length : 0);
+    const kids = [];
+    if (ListHeaderComponent) kids.push(h(R.Fragment, { key: 'h' }, rm(ListHeaderComponent)));
+    if (!count && ListEmptyComponent) kids.push(h(R.Fragment, { key: 'e' }, rm(ListEmptyComponent)));
+    for (let i = 0; i < count; i++) {
+      const item = getItem ? getItem(data, i) : data[i];
+      const key = keyExtractor ? keyExtractor(item, i) : String(i);
+      kids.push(h(R.Fragment, { key }, renderItem({ item, index: i })));
+    }
+    if (ListFooterComponent) kids.push(h(R.Fragment, { key: 'f' }, rm(ListFooterComponent)));
+    return h(RN.ScrollView, rest, kids);
+  };
   const PanResponder = {
     create: (cfg) => {
       let g = {}, s = () => window.__deviceScale || 1;
@@ -703,21 +1155,33 @@ function createRNExtras(RN) {
   const insets = () => ({ top: 0, bottom: 0, left: 0, right: 0 });
   const modules = {
     '@react-native-async-storage/async-storage': { ...AsyncStorage, default: AsyncStorage, __esModule: true },
-    'react-native-safe-area-context': { SafeAreaProvider: ({ children }) => children, SafeAreaView: RN.SafeAreaView, useSafeAreaInsets: insets, __esModule: true },
+    '@react-native-clipboard/clipboard': { ...Clipboard, default: Clipboard, __esModule: true },
+    '@react-native-community/netinfo': {
+      fetch: async () => ({ isConnected: navigator.onLine, isInternetReachable: navigator.onLine, type: navigator.onLine ? 'wifi' : 'none', details: {} }),
+      addEventListener: () => () => {},
+      __esModule: true
+    },
+    'react-native-safe-area-context': { SafeAreaProvider: ({ children }) => children, SafeAreaView: RN.SafeAreaView, useSafeAreaInsets: insets, useSafeAreaFrame: () => RN.Dimensions.get('window'), __esModule: true },
     'expo-status-bar': { StatusBar: RN.StatusBar, __esModule: true }
   };
 
   return {
-    Animated, Easing, Modal, SectionList, VirtualizedList: RN.FlatList, TouchableHighlight, TouchableWithoutFeedback,
-    TouchableNativeFeedback: RN.TouchableOpacity, Button, ImageBackground, Appearance, useColorScheme, Keyboard,
-    Linking, Vibration, Share, PixelRatio, LayoutAnimation, BackHandler, AppState, I18nManager, RefreshControl,
-    PanResponder, NativeModules: {}, UIManager: {}, __modules: modules
+    Animated, Easing, Modal, SectionList, VirtualizedList, VirtualizedSectionList: SectionList,
+    TouchableHighlight, TouchableWithoutFeedback, TouchableNativeFeedback: RN.TouchableOpacity,
+    Button, ImageBackground, Appearance, useColorScheme, Keyboard, KeyboardAvoidingView, InputAccessoryView,
+    DrawerLayoutAndroid, ProgressBarAndroid, Linking, Vibration, Share, PixelRatio, LayoutAnimation,
+    BackHandler, AppState, I18nManager, RefreshControl, PanResponder, NativeModules, UIManager,
+    DeviceEventEmitter, NativeEventEmitter, findNodeHandle, InteractionManager, TurboModuleRegistry,
+    Clipboard, Settings, PermissionsAndroid, AccessibilityInfo, ActionSheetIOS, AppRegistry, LogBox,
+    YellowBox: LogBox, DevSettings, ToastAndroid, processColor, PlatformColor, DynamicColorIOS, Systrace,
+    codegenNativeComponent, codegenNativeCommands, unstable_batchedUpdates, __modules: modules
   };
 }
 
 
 const RNComponents = createRNPrimitives();
 Object.assign(RNComponents, createRNExtras(RNComponents));
+RNComponents.default = RNComponents;
 window.RNComponents = RNComponents;
 
 const DEVICES = {
@@ -901,6 +1365,7 @@ function applyDevice() {
   buildLauncher();
   fitDevice();
   paintStatusBar();
+  if (window.__emitDimensions) window.__emitDimensions();
 }
 function fitDevice() {
   const frame = document.getElementById('phone-frame');
@@ -1036,6 +1501,34 @@ window.showNativeAlert = (title, message, buttons) => {
   box.appendChild(row);
   ov.appendChild(box);
   root.appendChild(ov);
+};
+
+window.showNativePrompt = (title, message, callbackOrButtons, defaultValue) => {
+  const buttons = Array.isArray(callbackOrButtons) ? callbackOrButtons : [{ text: 'Cancel', style: 'cancel' }, { text: 'OK', onPress: callbackOrButtons }];
+  const root = document.getElementById('modal-root');
+  const dark = isDarkPreview;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:6';
+  const box = document.createElement('div');
+  box.style.cssText = 'width:270px;background:' + (dark ? '#2c2c2e' : '#fff') + ';color:' + (dark ? '#fff' : '#111') + ';border-radius:14px;overflow:hidden;font-family:Inter,sans-serif;text-align:center';
+  box.innerHTML = '<div style="padding:16px 16px 8px;font-weight:600">' + escapeHtml(title || '') + '</div>' + (message ? '<div style="padding:0 16px 8px;font-size:13px;opacity:.8">' + escapeHtml(message) + '</div>' : '');
+  const input = document.createElement('input');
+  input.value = defaultValue || '';
+  input.style.cssText = 'margin:0 16px 12px;width:calc(100% - 32px);box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #cbd5e1;font:14px Inter,sans-serif';
+  box.appendChild(input);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;border-top:1px solid rgba(128,128,128,.35)';
+  buttons.forEach((b, i) => {
+    const el = document.createElement('div');
+    el.textContent = b.text;
+    el.style.cssText = 'flex:1;padding:12px;color:#0a84ff;cursor:pointer' + (i ? ';border-left:1px solid rgba(128,128,128,.35)' : '');
+    el.onclick = () => { ov.remove(); if (b.onPress) b.onPress(input.value); else if (typeof callbackOrButtons === 'function' && b.text !== 'Cancel') callbackOrButtons(input.value); };
+    row.appendChild(el);
+  });
+  box.appendChild(row);
+  ov.appendChild(box);
+  root.appendChild(ov);
+  setTimeout(() => input.focus(), 30);
 };
 
 // ---------- Vibration shake ----------
@@ -1204,6 +1697,7 @@ function goHome() {
 }
 
 function goBack() {
+  if (window.__rnBack && window.__rnBack()) return;
   if (osMode !== 'home') goHome();
 }
 
