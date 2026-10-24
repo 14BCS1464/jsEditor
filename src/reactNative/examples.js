@@ -380,6 +380,31 @@
       h(Text, { style: { marginTop: 8 } }, visible ? 'Keyboard is visible' : 'Keyboard is hidden'));
   }
 
+  function DemoKeyboardType() {
+    const { View, Text, TextInput } = RN();
+    const fields = [
+      ['default', 'sentences', 'done', 'Default'],
+      ['email-address', 'none', 'go', 'Email'],
+      ['url', 'none', 'go', 'URL'],
+      ['twitter', 'none', 'send', 'Twitter'],
+      ['web-search', 'sentences', 'search', 'Search'],
+      ['numeric', 'none', 'done', 'Numeric'],
+      ['number-pad', 'none', 'done', 'Number pad'],
+      ['decimal-pad', 'none', 'done', 'Decimal pad'],
+      ['phone-pad', 'none', 'done', 'Phone pad'],
+      ['name-phone-pad', 'words', 'done', 'Name / phone']
+    ];
+    return h(View, { style: { gap: 8 } }, fields.map(([type, cap, ret, label]) => h(View, { key: type },
+      h(Text, { style: { fontSize: 11, color: '#64748b', marginBottom: 3 } }, label + ' · ' + type),
+      h(TextInput, {
+        keyboardType: type,
+        autoCapitalize: cap,
+        returnKeyType: ret,
+        placeholder: label,
+        style: { borderColor: '#cbd5e1', paddingVertical: 8 }
+      }))));
+  }
+
   function DemoAppState() {
     const { AppState, Text } = RN();
     return h(Text, null, 'AppState.currentState → ' + AppState.currentState);
@@ -579,6 +604,14 @@ const text = await Clipboard.getString();` },
     { id: 'linking', group: 'Device', name: 'Linking', blurb: 'Checks whether a URL can be opened.', Demo: DemoLinking, code:
 `const ok = await Linking.canOpenURL('https://reactnative.dev');
 await Linking.openURL('https://reactnative.dev');` },
+    { id: 'keyboard-type', group: 'Components', name: 'keyboardType', blurb: 'Email, URL, number, phone, and search keyboards.', Demo: DemoKeyboardType, code:
+`<TextInput keyboardType="email-address" autoCapitalize="none" placeholder="Email" />
+<TextInput keyboardType="phone-pad" placeholder="Phone" />
+<TextInput keyboardType="number-pad" placeholder="PIN" />
+<TextInput keyboardType="decimal-pad" placeholder="Price" />
+<TextInput keyboardType="numeric" placeholder="Amount" />
+<TextInput keyboardType="url" autoCapitalize="none" placeholder="Website" />
+<TextInput keyboardType="web-search" returnKeyType="search" placeholder="Search" />` },
     { id: 'keyboard', group: 'Device', name: 'Keyboard', blurb: 'Events for the on-screen keyboard.', Demo: DemoKeyboard, code:
 `const sub = Keyboard.addListener('keyboardDidShow', () => {
   console.log('open');
@@ -613,6 +646,7 @@ PixelRatio.roundToNearestPixel(12.4)` },
       window.__examplesBack = () => {
         if (!idRef.current) return false;
         setId(null);
+        if (window.__kbHide) window.__kbHide();
         return true;
       };
       bump = () => setTick((n) => n + 1);
@@ -708,6 +742,7 @@ PixelRatio.roundToNearestPixel(12.4)` },
   window.renderExamples = renderExamples;
   window.__examplesRerender = () => { if (bump) bump(); };
   window.__examplesLeave = () => {
+    if (window.__kbHide) window.__kbHide();
     window.__examplesBack = null;
     bump = null;
     if (root) {

@@ -332,7 +332,7 @@ const createRNPrimitives = () => {
     return React.createElement(ScrollView, { style, contentContainerStyle, horizontal, refreshControl: rc, onScroll: handleScroll, ...props }, children);
   };
 
-  const TextInput = React.forwardRef(({ style, value, defaultValue, onChangeText, onChange, onSubmitEditing, onFocus, onBlur, onEndEditing, placeholder, placeholderTextColor, secureTextEntry, multiline, keyboardType, editable = true, autoFocus, maxLength, ...props }, ref) => {
+  const TextInput = React.forwardRef(({ style, value, defaultValue, onChangeText, onChange, onSubmitEditing, onFocus, onBlur, onEndEditing, placeholder, placeholderTextColor, secureTextEntry, multiline, keyboardType = 'default', returnKeyType, autoCapitalize = 'sentences', editable = true, autoFocus, maxLength, ...props }, ref) => {
     const isMultiline = !!multiline;
     const inputModeMap = { 'numeric': 'numeric', 'number-pad': 'numeric', 'decimal-pad': 'decimal', 'email-address': 'email', 'phone-pad': 'tel' };
     const common = {
@@ -342,6 +342,9 @@ const createRNPrimitives = () => {
       readOnly: !editable,
       autoFocus,
       maxLength,
+      autoComplete: 'off',
+      spellCheck: false,
+      autoCapitalize: autoCapitalize === 'none' ? 'off' : autoCapitalize,
       inputMode: inputModeMap[keyboardType],
       onChange: (e) => {
         if (onChangeText) onChangeText(e.target.value);
@@ -371,6 +374,9 @@ const createRNPrimitives = () => {
       ...domProps(props)
     };
     // FIX: only control the input when a value is actually provided
+    common['data-kb'] = keyboardType || 'default';
+    common['data-return-key'] = returnKeyType || '';
+    common['data-cap'] = autoCapitalize || 'sentences';
     if (value !== undefined) common.value = value;
     else if (defaultValue !== undefined) common.defaultValue = defaultValue;
 
@@ -846,37 +852,248 @@ function createRNExtras(RN) {
     isVisible: () => !!window.__kbOpen
   };
   (function setupKeyboard() {
-    const screen = document.getElementById('emulator-screen'), panel = document.getElementById('kb-panel');
-    const isField = (el) => el && /^(INPUT|TEXTAREA)$/.test(el.tagName);
-    const setVal = (el, v) => {
-      Object.getOwnPropertyDescriptor(el.constructor.prototype, 'value').set.call(el, v);
+    const screen = document.getElementById('emulator-screen');
+    const panel = document.getElementById('kb-panel');
+    const isField = (el) => el && el.dataset && el.dataset.kb && /^(INPUT|TEXTAREA)$/.test(el.tagName);
+    let shift = false;
+    let caps = false;
+    let layer = 'letters';
+    let hold = null;
+    let lastShift = 0;
+
+    const family = (type) => {
+      if (type === 'number-pad' || type === 'decimal-pad' || type === 'phone-pad') return type;
+      if (type === 'numeric' || type === 'numbers-and-punctuation') return 'numeric';
+      if (type === 'email-address') return 'email';
+      if (type === 'url') return 'url';
+      if (type === 'twitter') return 'twitter';
+      if (type === 'web-search') return 'search';
+      if (type === 'name-phone-pad') return 'name-phone';
+      return 'default';
+    };
+    const returnLabel = (el) => {
+      const key = (el && el.dataset.returnKey) || '';
+      if (key === 'search' || family(el && el.dataset.kb) === 'search') return 'search';
+      if (key === 'go' || family(el && el.dataset.kb) === 'url') return 'go';
+      if (key === 'send') return 'send';
+      if (key === 'next') return 'next';
+      if (key === 'done' || key === '') return 'done';
+      return key;
+    };
+    const setNative = (el, value) => {
+      const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value);
       el.dispatchEvent(new Event('input', { bubbles: true }));
     };
-    const press = (k) => {
-      const el = document.activeElement;
-      if (!isField(el)) return;
-      if (k === '⌫') setVal(el, el.value.slice(0, -1));
-      else if (k === 'return') el.tagName === 'TEXTAREA' ? setVal(el, el.value + '\n') : el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      else setVal(el, el.value + (k === 'space' ? ' ' : k));
-    };
-    const row = (keys, flexes) => {
-      const r = document.createElement('div');
-      r.style.cssText = 'display:flex;gap:4px;justify-content:center;padding:0 3px';
-      keys.forEach((k, i) => {
-        const b = document.createElement('div');
-        b.textContent = k;
-        b.style.cssText = 'flex:' + ((flexes && flexes[i]) || 1) + ';height:40px;display:flex;align-items:center;justify-content:center;border-radius:6px;font:16px Inter,sans-serif;background:rgba(128,128,128,.35);cursor:pointer;user-select:none';
-        b.onmousedown = (e) => e.preventDefault();
-        b.onclick = () => press(k);
-        r.appendChild(b);
+    const placeCaret = (el, pos) => {
+      requestAnimationFrame(() => {
+        if (document.activeElement !== el || !el.setSelectionRange) return;
+        const p = Math.max(0, Math.min(pos, el.value.length));
+        el.setSelectionRange(p, p);
       });
-      panel.appendChild(r);
     };
-    row('qwertyuiop'.split('')); row('asdfghjkl'.split('')); row(['z', 'x', 'c', 'v', 'b', 'n', 'm', '⌫'], [1, 1, 1, 1, 1, 1, 1, 1.5]); row(['space', 'return'], [4, 1.5]);
-    const show = () => { if (window.__kbOpen) return; window.__kbOpen = true; panel.style.display = 'flex'; Keyboard.emit('keyboardDidShow', { endCoordinates: { height: panel.offsetHeight } }); };
-    const hide = () => { if (!window.__kbOpen) return; window.__kbOpen = false; panel.style.display = 'none'; Keyboard.emit('keyboardDidHide', {}); };
-    screen.addEventListener('focusin', (e) => isField(e.target) && show());
-    screen.addEventListener('focusout', () => setTimeout(() => !isField(document.activeElement) && hide(), 60));
+    const insert = (el, text) => {
+      const start = el.selectionStart == null ? el.value.length : el.selectionStart;
+      const end = el.selectionEnd == null ? el.value.length : el.selectionEnd;
+      const next = el.value.slice(0, start) + text + el.value.slice(end);
+      if (el.maxLength > 0 && next.length > el.maxLength) return;
+      setNative(el, next);
+      placeCaret(el, start + text.length);
+    };
+    const backspace = (el) => {
+      const start = el.selectionStart == null ? el.value.length : el.selectionStart;
+      const end = el.selectionEnd == null ? el.value.length : el.selectionEnd;
+      if (start !== end) {
+        setNative(el, el.value.slice(0, start) + el.value.slice(end));
+        placeCaret(el, start);
+      } else if (start > 0) {
+        setNative(el, el.value.slice(0, start - 1) + el.value.slice(end));
+        placeCaret(el, start - 1);
+      }
+    };
+    const wantsShift = (el) => {
+      const mode = (el && el.dataset.cap) || 'sentences';
+      if (mode === 'none') return false;
+      if (mode === 'characters') return 'caps';
+      const before = el.value.slice(0, el.selectionStart == null ? el.value.length : el.selectionStart);
+      if (mode === 'words') return before.length === 0 || /\s$/.test(before);
+      return before.length === 0 || /[.!?]\s$/.test(before);
+    };
+    const charKey = (ch, flex) => ({ t: ch, insert: ch, flex: flex || 1, kind: 'char' });
+    const actionKey = (t, action, flex, kind) => ({ t, action, flex: flex || 1, kind: kind || 'mod' });
+    const letterRows = (bottom) => {
+      const up = (ch) => (shift || caps) && ch.length === 1 ? ch.toUpperCase() : ch;
+      const row = (chars) => chars.map((ch) => charKey(up(ch)));
+      return [
+        row('qwertyuiop'.split('')),
+        row('asdfghjkl'.split('')),
+        [actionKey(caps ? '⇪' : '⇧', 'shift', 1.35, 'shift'), ...row('zxcvbnm'.split('')), actionKey('⌫', 'backspace', 1.35)],
+        bottom
+      ];
+    };
+    const symbolRows = (which) => which === 'symbols'
+      ? [
+          '[]{}#%^*+='.split('').map((ch) => charKey(ch)),
+          ['_', '\\', '|', '~', '<', '>', '€', '£', '¥', '•'].map((ch) => charKey(ch)),
+          [actionKey('123', 'numbers', 1.4), ...'.,?!\'"'.split('').map((ch) => charKey(ch)), actionKey('⌫', 'backspace', 1.35)],
+          [actionKey('ABC', 'letters', 1.5), actionKey('', 'space', 4, 'space'), actionKey('done', 'return', 1.7, 'return')]
+        ]
+      : [
+          '1234567890'.split('').map((ch) => charKey(ch)),
+          '-/:;()$&@"'.split('').map((ch) => charKey(ch)),
+          [actionKey('#+=', 'symbols', 1.4), ...'.,?!\''.split('').map((ch) => charKey(ch)), actionKey('⌫', 'backspace', 1.35)],
+          [actionKey('ABC', 'letters', 1.5), actionKey('', 'space', 4, 'space'), actionKey('done', 'return', 1.7, 'return')]
+        ];
+    const pad = (rows) => rows;
+    const rowsFor = (el) => {
+      const kind = family(el && el.dataset.kb);
+      const ret = actionKey(returnLabel(el), 'return', 1.7, 'return');
+      const space = actionKey('', 'space', 4, 'space');
+      if (kind === 'number-pad') {
+        return pad([
+          [charKey('1'), charKey('2'), charKey('3')],
+          [charKey('4'), charKey('5'), charKey('6')],
+          [charKey('7'), charKey('8'), charKey('9')],
+          [actionKey('', 'blank', 1, 'blank'), charKey('0'), actionKey('⌫', 'backspace', 1)]
+        ]);
+      }
+      if (kind === 'decimal-pad') {
+        return pad([
+          [charKey('1'), charKey('2'), charKey('3')],
+          [charKey('4'), charKey('5'), charKey('6')],
+          [charKey('7'), charKey('8'), charKey('9')],
+          [charKey('.'), charKey('0'), actionKey('⌫', 'backspace', 1)]
+        ]);
+      }
+      if (kind === 'phone-pad' || (kind === 'name-phone' && layer === 'phone')) {
+        return pad([
+          [charKey('1'), charKey('2'), charKey('3')],
+          [charKey('4'), charKey('5'), charKey('6')],
+          [charKey('7'), charKey('8'), charKey('9')],
+          [charKey('*'), charKey('0'), charKey('#')],
+          [kind === 'name-phone' ? actionKey('ABC', 'letters', 1) : charKey('+'), actionKey('⌫', 'backspace', 1), ret]
+        ]);
+      }
+      if (kind === 'numeric' || layer === 'numbers' || layer === 'symbols') return symbolRows(layer === 'symbols' ? 'symbols' : 'numbers').map((row, i, all) => i === all.length - 1 ? [actionKey('ABC', 'letters', 1.5), space, ret] : row);
+      const extra = kind === 'email' ? [actionKey('123', 'numbers', 1.3), charKey('@', 1.2), space, charKey('.', 1.1), ret]
+        : kind === 'url' ? [actionKey('123', 'numbers', 1.2), charKey('.', 1), charKey('/', 1), charKey('.com', 1.5), ret]
+        : kind === 'twitter' ? [actionKey('123', 'numbers', 1.3), charKey('@', 1.1), space, charKey('#', 1.1), ret]
+        : kind === 'name-phone' ? [actionKey('123', 'phone', 1.4), space, ret]
+        : [actionKey('123', 'numbers', 1.4), space, ret];
+      return letterRows(extra);
+    };
+
+    const render = (el) => {
+      clearInterval(hold);
+      hold = null;
+      const android = currentDevice === 'android';
+      const kind = family(el && el.dataset.kb);
+      const isPad = kind === 'number-pad' || kind === 'decimal-pad' || kind === 'phone-pad' || (kind === 'name-phone' && layer === 'phone');
+      panel.className = 'rn-kb' + (android ? ' android' : ' ios') + (isDarkPreview ? ' dark' : '') + (isPad ? ' pad' : '');
+      panel.innerHTML = '';
+      rowsFor(el).forEach((keys) => {
+        const line = document.createElement('div');
+        line.className = 'rn-kb-row';
+        keys.forEach((key) => {
+          if (key.kind === 'blank') {
+            const gap = document.createElement('div');
+            gap.style.flex = String(key.flex);
+            line.appendChild(gap);
+            return;
+          }
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'rn-key' + (key.kind === 'char' ? '' : ' ' + key.kind) + (key.action === 'shift' && (shift || caps) ? ' on' : '');
+          button.style.flex = String(key.flex);
+          button.textContent = key.t === '' && key.action === 'space' ? 'space' : key.t;
+          const fire = () => {
+            const field = document.activeElement;
+            if (!isField(field)) return;
+            if (key.action === 'shift') {
+              const now = Date.now();
+              if (now - lastShift < 320) { caps = !caps; shift = caps; }
+              else { caps = false; shift = !shift; }
+              lastShift = now;
+              render(field);
+              return;
+            }
+            if (key.action === 'backspace') { backspace(field); return; }
+            if (key.action === 'space') { insert(field, ' '); if (!caps) { shift = !!wantsShift(field); render(field); } return; }
+            if (key.action === 'return') {
+              if (field.tagName === 'TEXTAREA') insert(field, '\n');
+              else {
+                field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+                if (document.activeElement === field) field.blur();
+                setTimeout(() => { if (!isField(document.activeElement)) hide(); }, 0);
+              }
+              return;
+            }
+            if (key.action === 'numbers') { layer = 'numbers'; render(field); return; }
+            if (key.action === 'symbols') { layer = 'symbols'; render(field); return; }
+            if (key.action === 'letters') { layer = 'letters'; render(field); return; }
+            if (key.action === 'phone') { layer = 'phone'; render(field); return; }
+            const text = key.insert || key.t;
+            insert(field, text);
+            if (shift && !caps && text.length === 1 && /[a-z]/i.test(text)) { shift = false; render(field); }
+          };
+          button.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            button.classList.add('down');
+            fire();
+            if (key.action === 'backspace') {
+              hold = setTimeout(() => { hold = setInterval(() => backspace(document.activeElement), 45); }, 320);
+            }
+          });
+          const release = () => { button.classList.remove('down'); clearTimeout(hold); clearInterval(hold); hold = null; };
+          button.addEventListener('pointerup', release);
+          button.addEventListener('pointerleave', release);
+          button.addEventListener('pointercancel', release);
+          line.appendChild(button);
+        });
+        panel.appendChild(line);
+      });
+    };
+
+    const reveal = (el) => {
+      let node = el.parentElement;
+      while (node && node !== screen) {
+        const cs = getComputedStyle(node);
+        if (/(auto|scroll)/.test(cs.overflowY) && node.scrollHeight > node.clientHeight + 4) {
+          const box = node.getBoundingClientRect();
+          const field = el.getBoundingClientRect();
+          if (field.bottom > box.bottom - 6) node.scrollTop += field.bottom - box.bottom + 14;
+          if (field.top < box.top + 6) node.scrollTop -= box.top - field.top + 14;
+        }
+        node = node.parentElement;
+      }
+    };
+    const show = (el) => {
+      const next = wantsShift(el);
+      caps = next === 'caps';
+      shift = caps || next === true;
+      layer = 'letters';
+      render(el);
+      const was = window.__kbOpen;
+      window.__kbOpen = true;
+      panel.style.display = 'flex';
+      requestAnimationFrame(() => reveal(el));
+      if (!was) Keyboard.emit('keyboardDidShow', { endCoordinates: { height: panel.offsetHeight, width: panel.offsetWidth, screenX: 0, screenY: 0 } });
+    };
+    const hide = () => {
+      if (!window.__kbOpen) return;
+      window.__kbOpen = false;
+      panel.style.display = 'none';
+      Keyboard.emit('keyboardDidHide', {});
+    };
+    window.__kbRerender = () => { if (isField(document.activeElement)) render(document.activeElement); };
+    window.__kbHide = hide;
+    Keyboard.dismiss = () => {
+      const active = document.activeElement;
+      if (active && active.blur) active.blur();
+      hide();
+    };
+    screen.addEventListener('focusin', (e) => { if (isField(e.target)) show(e.target); });
+    screen.addEventListener('focusout', () => setTimeout(() => { if (!isField(document.activeElement)) hide(); }, 40));
   })();
 
   // ----- Misc APIs -----
@@ -1412,10 +1629,8 @@ function applyPreviewTheme() {
   if (home) home.classList.toggle('light', !isDarkPreview);
   if (system) system.classList.toggle('dark', isDarkPreview);
   const kbp = document.getElementById('kb-panel');
-  if (kbp) {
-    kbp.style.background = isDarkPreview ? '#1f2937' : '#d1d5db';
-    kbp.style.color = isDarkPreview ? '#f1f5f9' : '#111827';
-  }
+  if (kbp) kbp.classList.toggle('dark', isDarkPreview);
+  if (window.__kbRerender && window.__kbOpen) window.__kbRerender();
   if (screen) {
     screen.style.backgroundColor = isDarkPreview ? '#020617' : '#ffffff';
     screen.style.color = isDarkPreview ? '#f1f5f9' : '#0f172a';
@@ -1704,6 +1919,7 @@ function showOs() {
   system.style.display = osMode === 'system' ? 'flex' : 'none';
   app.style.display = osMode === 'expo' ? 'flex' : 'none';
   paintStatusBar();
+  if (window.__kbHide) window.__kbHide();
 }
 
 function goHome() {
