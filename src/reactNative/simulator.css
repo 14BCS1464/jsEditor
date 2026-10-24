@@ -120,6 +120,10 @@
 #android-nav button:active { background: rgba(128,128,128,.2); }
 
 #emulator-screen { overflow: hidden; display: flex; flex-direction: column; }
+#phone-frame pre.ex-code, #phone-frame pre.ex-code * {
+  -webkit-user-select: text;
+  user-select: text;
+}
 #app-root.rn-layout-anim, #app-root.rn-layout-anim * { transition: all .3s ease; }
 
 /* ========== Attractive Home Screen ========== */

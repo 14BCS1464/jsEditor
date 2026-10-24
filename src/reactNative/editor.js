@@ -79,6 +79,7 @@ const TEMPLATES = {
   basic: `import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
+// To see a live sample of each supported API, open the Examples app on the home screen.
 export default function App() {
   return (
 <View style={styles.container}>
@@ -86,6 +87,9 @@ export default function App() {
     <Text style={styles.title}>Hello React Native!</Text>
     <Text style={styles.subtitle}>
       Build native UI across iOS, Android, and Web seamlessly.
+    </Text>
+    <Text style={styles.hint}>
+      To see examples of TouchableOpacity, animation, Alert, Toast, and the other supported APIs, open the Examples app on the home screen.
     </Text>
     
     <TouchableOpacity 
@@ -128,7 +132,13 @@ marginBottom: 8,
 fontSize: 14,
 color: '#64748b',
 lineHeight: 20,
-marginBottom: 20,
+marginBottom: 10,
+  },
+  hint: {
+fontSize: 13,
+color: '#0369a1',
+lineHeight: 18,
+marginBottom: 16,
   },
   button: {
 backgroundColor: '#0284c7',

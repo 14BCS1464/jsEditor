@@ -382,18 +382,30 @@ const createRNPrimitives = () => {
 
   const Image = React.forwardRef(({ source, style, resizeMode = 'cover', onLoad, onError, ...props }, ref) => {
     const uri = source && typeof source === 'object' && source.uri ? source.uri : (typeof source === 'string' ? source : '');
+    const [failed, setFailed] = React.useState(false);
+    React.useEffect(() => { setFailed(false); }, [uri]);
+    const fit = resizeMode === 'stretch' ? 'fill' : (resizeMode === 'repeat' ? 'none' : resizeMode);
+    const box = {
+      display: 'block',
+      maxWidth: '100%',
+      objectFit: fit,
+      backgroundColor: '#e2e8f0',
+      ...processStyles(style)
+    };
+    if (!uri || failed) {
+      return React.createElement('div', {
+        ref,
+        style: { ...box, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 12, minHeight: 80 }
+      }, failed ? 'Could not load image' : 'Add source={{ uri }}');
+    }
     return React.createElement('img', {
       ref,
-      src: uri || 'https://placehold.co/200x200/1e293b/61dafb?text=Image',
-      style: {
-        objectFit: resizeMode === 'stretch' ? 'fill' : (resizeMode === 'repeat' ? 'none' : resizeMode),
-        maxWidth: '100%',
-        ...processStyles(style)
-      },
+      alt: '',
+      src: uri,
+      style: box,
       onLoad: (e) => onLoad && onLoad({ nativeEvent: { source: { width: e.target.naturalWidth, height: e.target.naturalHeight, uri } } }),
-      onError: (e) => {
-        e.target.onerror = null;
-        e.target.src = 'https://placehold.co/200x200/1e293b/61dafb?text=Image+Error';
+      onError: () => {
+        setFailed(true);
         if (onError) onError({ nativeEvent: { error: 'Image failed to load' } });
       },
       ...domProps(props)
@@ -1411,6 +1423,7 @@ function applyPreviewTheme() {
   if (icon) icon.className = isDarkPreview ? 'fa-solid fa-sun text-xs text-amber-400' : 'fa-solid fa-moon text-xs';
   try { localStorage.setItem('rn-device', isDarkPreview ? 'dark' : 'light'); } catch (e) {}
   paintStatusBar();
+  if (window.__examplesRerender) window.__examplesRerender();
 }
 
 function toggleTheme() {
@@ -1559,7 +1572,8 @@ window.shakePhone = () => {
     if (e.button) return;
     dot.style.display = 'block'; pos(e);
     const field = /^(INPUT|TEXTAREA)$/.test(e.target.tagName);
-    if (screen.contains(e.target) && !field) drag = { sc: scrollable(e.target), x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, v: 0 };
+    const selectable = e.target.closest && e.target.closest('pre.ex-code');
+    if (screen.contains(e.target) && !field && !selectable) drag = { sc: scrollable(e.target), x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, v: 0 };
   });
   window.addEventListener('mousemove', (e) => {
     if (dot.style.display === 'none') return;
@@ -1591,6 +1605,7 @@ window.shakePhone = () => {
 const LAUNCHER = [
   // Core / System
   { id: 'expo', name: 'React Native', bg: '#09090b', fg: '#61dafb', icon: 'fa-brands fa-react', kind: 'expo' },
+  { id: 'examples', name: 'Examples', bg: '#4f46e5', fg: '#ffffff', icon: 'fa-solid fa-flask', kind: 'examples' },
   { id: 'settings', name: 'Settings', bg: '#6b7280', fg: '#ffffff', icon: 'fa-solid fa-gear' },
   { id: 'appstore', name: 'App Store', bg: '#0ea5e9', fg: '#ffffff', icon: 'fa-brands fa-app-store-ios' },
   { id: 'files', name: 'Files', bg: '#3b82f6', fg: '#ffffff', icon: 'fa-solid fa-folder' },
@@ -1692,12 +1707,14 @@ function showOs() {
 }
 
 function goHome() {
+  if (window.__examplesLeave) window.__examplesLeave();
   osMode = 'home';
   showOs();
 }
 
 function goBack() {
   if (window.__rnBack && window.__rnBack()) return;
+  if (window.__examplesBack && window.__examplesBack()) return;
   if (osMode !== 'home') goHome();
 }
 
@@ -1706,11 +1723,24 @@ function openExpo() {
   showOs();
 }
 
+function openExamples() {
+  if (window.__examplesLeave) window.__examplesLeave();
+  osMode = 'system';
+  showOs();
+  if (window.renderExamples) window.renderExamples();
+}
+
 function openApp(app) {
   if (app.kind === 'expo') {
+    if (window.__examplesLeave) window.__examplesLeave();
     openExpo();
     return;
   }
+  if (app.kind === 'examples') {
+    openExamples();
+    return;
+  }
+  if (window.__examplesLeave) window.__examplesLeave();
   osMode = 'system';
   document.getElementById('os-system').innerHTML = systemMarkup(app);
   showOs();
