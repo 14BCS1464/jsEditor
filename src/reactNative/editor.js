@@ -208,7 +208,39 @@ function createMonacoEditor() {
 
   editor.onDidChangeModelContent(scheduleRun);
   setEngineLabel('Monaco');
+  applyEditorTheme();
   runCode();
+}
+
+function applyEditorTheme() {
+  const light = document.documentElement.dataset.ui === 'light';
+  if (window.monaco && monaco.editor) monaco.editor.setTheme(light ? 'vs' : 'vs-dark');
+  const ta = document.querySelector('#monaco-editor textarea');
+  if (ta) {
+    ta.style.background = light ? '#ffffff' : '#0d1117';
+    ta.style.color = light ? '#0f172a' : '#e2e8f0';
+  }
+}
+
+function toggleUiTheme() {
+  const root = document.documentElement;
+  const next = root.dataset.ui === 'light' ? 'dark' : 'light';
+  if (next === 'light') root.dataset.ui = 'light';
+  else delete root.dataset.ui;
+  const icon = document.getElementById('ui-theme-icon');
+  const label = document.querySelector('#ui-theme span');
+  if (icon) icon.className = next === 'light' ? 'fa-solid fa-moon text-slate-600' : 'fa-solid fa-sun text-amber-300';
+  if (label) label.textContent = next === 'light' ? 'Dark' : 'Light';
+  try { localStorage.setItem('rn-ui', next); } catch (e) {}
+  applyEditorTheme();
+}
+
+function syncUiThemeButton() {
+  const light = document.documentElement.dataset.ui === 'light';
+  const icon = document.getElementById('ui-theme-icon');
+  const label = document.querySelector('#ui-theme span');
+  if (icon) icon.className = light ? 'fa-solid fa-moon text-slate-600' : 'fa-solid fa-sun text-amber-300';
+  if (label) label.textContent = light ? 'Dark' : 'Light';
 }
 
 // ---- Plain textarea fallback (used if Monaco can't load: offline, CDN blocked, etc.) ----
@@ -294,7 +326,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-function runCode() {
+function runCode(launch) {
   if (!editor) return;
 
   const code = editor.getValue();
@@ -346,6 +378,7 @@ function runCode() {
       window.React.createElement(ErrorBoundary, null, window.React.createElement(App))
     );
     setTimeout(paintStatusBar, 100);
+    if (launch === true && window.openExpo) window.openExpo();
 
   } catch (err) {
     console.error(err.message);
@@ -355,7 +388,8 @@ function runCode() {
         <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">⚠️ Compilation Error</div>
         <pre style="white-space: pre-wrap; word-break: break-all; background: #fee2e2; padding: 10px; border-radius: 6px; margin: 0;">${escapeHtml(err.message)}</pre>
       </div>
-    `;
+        `;
+    if (launch === true && window.openExpo) window.openExpo();
   }
 }
 
@@ -384,16 +418,117 @@ function clearConsole() {
   document.getElementById('log-count').innerText = '0';
 }
 
+let consoleOpenHeight = 144;
+
 function toggleConsole() {
   const dock = document.getElementById('console-dock');
   const icon = document.getElementById('console-toggle-icon');
 
   if (isConsoleOpen) {
-    dock.style.height = '32px';
+    consoleOpenHeight = Math.max(dock.offsetHeight, 80);
+    dock.style.height = '39px';
     icon.className = 'fa-solid fa-chevron-up';
   } else {
-    dock.style.height = '144px';
+    dock.style.height = consoleOpenHeight + 'px';
     icon.className = 'fa-solid fa-chevron-down';
   }
   isConsoleOpen = !isConsoleOpen;
+  if (editor && editor.layout) editor.layout();
 }
+
+function layoutAfterResize() {
+  if (editor && editor.layout) editor.layout();
+  if (typeof fitDevice === 'function') fitDevice();
+}
+
+function setupPaneResize() {
+  const playground = document.querySelector('.playground');
+  const editorPane = document.querySelector('.editor-pane');
+  const simPane = document.querySelector('.sim-pane');
+  const split = document.getElementById('split-handle');
+  const dock = document.getElementById('console-dock');
+  const consoleHandle = document.getElementById('console-resize');
+  if (!playground || !split || !dock || !consoleHandle) return;
+
+  const rowLayout = () => getComputedStyle(playground).flexDirection === 'row';
+  let splitAxis = null;
+
+  split.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    split.classList.add('dragging');
+    split.setPointerCapture(event.pointerId);
+    const move = (ev) => {
+      const rect = playground.getBoundingClientRect();
+      if (rowLayout()) {
+        splitAxis = 'x';
+        const width = Math.max(280, Math.min(rect.width - 280, ev.clientX - rect.left));
+        editorPane.style.flex = '0 0 ' + width + 'px';
+        editorPane.style.height = '';
+        simPane.style.flex = '1 1 auto';
+        simPane.style.maxWidth = 'none';
+        simPane.style.width = 'auto';
+      } else {
+        splitAxis = 'y';
+        const height = Math.max(160, Math.min(rect.height - 160, ev.clientY - rect.top));
+        editorPane.style.flex = '0 0 ' + height + 'px';
+        editorPane.style.height = height + 'px';
+        simPane.style.flex = '1 1 auto';
+      }
+      layoutAfterResize();
+    };
+    const up = () => {
+      split.classList.remove('dragging');
+      split.removeEventListener('pointermove', move);
+      split.removeEventListener('pointerup', up);
+    };
+    split.addEventListener('pointermove', move);
+    split.addEventListener('pointerup', up);
+  });
+
+  consoleHandle.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    consoleHandle.classList.add('dragging');
+    consoleHandle.setPointerCapture(event.pointerId);
+    const startY = event.clientY;
+    const startH = dock.offsetHeight;
+    const move = (ev) => {
+      const limit = editorPane.clientHeight - 80;
+      const next = Math.max(39, Math.min(limit, startH + (startY - ev.clientY)));
+      dock.style.height = next + 'px';
+      const icon = document.getElementById('console-toggle-icon');
+      if (next > 56) {
+        isConsoleOpen = true;
+        consoleOpenHeight = next;
+        icon.className = 'fa-solid fa-chevron-down';
+      } else {
+        isConsoleOpen = false;
+        icon.className = 'fa-solid fa-chevron-up';
+      }
+      layoutAfterResize();
+    };
+    const up = () => {
+      consoleHandle.classList.remove('dragging');
+      consoleHandle.removeEventListener('pointermove', move);
+      consoleHandle.removeEventListener('pointerup', up);
+    };
+    consoleHandle.addEventListener('pointermove', move);
+    consoleHandle.addEventListener('pointerup', up);
+  });
+
+  window.addEventListener('resize', () => {
+    const axis = rowLayout() ? 'x' : 'y';
+    if (splitAxis && splitAxis !== axis) {
+      editorPane.style.flex = '';
+      editorPane.style.height = '';
+      simPane.style.flex = '';
+      simPane.style.maxWidth = '';
+      simPane.style.width = '';
+      splitAxis = null;
+    }
+    layoutAfterResize();
+  });
+}
+
+setupPaneResize();
+syncUiThemeButton();

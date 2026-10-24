@@ -1,7 +1,8 @@
 // Device simulator: phone chrome, React Native primitives, and preview runtime.
 let currentDevice = 'iphone';
 let currentOrientation = 'portrait';
-let isDarkPreview = false;
+let isDarkPreview = true;
+try { isDarkPreview = localStorage.getItem('rn-device') !== 'light'; } catch (e) {}
 
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -374,6 +375,7 @@ const createRNPrimitives = () => {
     get OS() {
       return (currentDevice === 'iphone' || currentDevice === 'ipad') ? 'ios' : 'android';
     },
+    get isPad() { return currentDevice === 'ipad'; },
     select(obj) {
       const os = this.OS;
       return obj[os] !== undefined ? obj[os] : (obj.native !== undefined ? obj.native : obj.default);
@@ -697,6 +699,7 @@ function createRNExtras(RN) {
     getAllKeys: async () => ls.keys(), clear: async () => ls.keys().forEach(ls.del),
     multiGet: async (ks) => ks.map((k) => [k, ls.get(k)]), multiSet: async (ps) => ps.forEach(([k, v]) => ls.set(k, String(v)))
   };
+  // Chrome (notch, status bar, home button) sits outside the app, so the app box is already the safe area.
   const insets = () => ({ top: 0, bottom: 0, left: 0, right: 0 });
   const modules = {
     '@react-native-async-storage/async-storage': { ...AsyncStorage, default: AsyncStorage, __esModule: true },
@@ -747,10 +750,25 @@ const DEVICES = {
 
   // ===== iPad =====
   ipadmini:       { n: 'iPad mini',         w: 744, h: 1133, os: 'ipad', r: 24, type: 'none', sb: 24, dpr: 2 },
-  ipadpro11:      { n: 'iPad Pro 11"',      w: 834, h: 1194, os: 'ipad', r: 22, type: 'none', sb: 24, dpr: 2 },
-  ipadair:        { n: 'iPad Air',          w: 820, h: 1180, os: 'ipad', r: 22, type: 'none', sb: 24, dpr: 2 },
+  ipadpro11:      { n: 'iPad Pro 11"',      w: 834, h: 1194, os: 'ipad', r: 18, type: 'none', sb: 24, dpr: 2 },
+  ipadair:        { n: 'iPad Air',          w: 820, h: 1180, os: 'ipad', r: 18, type: 'none', sb: 24, dpr: 2 },
+
+  // ===== Android tablets =====
+  galaxytabs9:    { n: 'Galaxy Tab S9',     w: 753, h: 1205, os: 'android', form: 'tablet', r: 16, type: 'none', sb: 32, dpr: 2 },
+  pixeltablet:    { n: 'Pixel Tablet',      w: 800, h: 1280, os: 'android', form: 'tablet', r: 20, type: 'none', sb: 32, dpr: 2 },
 };
+
+function isTabletDevice(d) {
+  return !!d && (d.os === 'ipad' || d.form === 'tablet');
+}
+
+function launcherColumns(d, land) {
+  if (!isTabletDevice(d)) return 4;
+  if (d.os === 'ipad' && deviceKey === 'ipadmini') return land ? 6 : 5;
+  return land ? 8 : 6;
+}
 let deviceKey = 'iphone15pro';
+let osMode = 'home';
 
 function applyDevice() {
   const d = DEVICES[deviceKey];
@@ -760,8 +778,8 @@ function applyDevice() {
   const w = land ? d.h : d.w;
   const h = land ? d.w : d.h;
 
-  // Platform: iPad is also iOS
-  currentDevice = (d.os === 'iphone' || d.os === 'ipad') ? 'iphone' : 'android';
+  currentDevice = d.os === 'android' ? 'android' : d.os === 'ipad' ? 'ipad' : 'iphone';
+  const tablet = isTabletDevice(d);
 
   const frame = document.getElementById('phone-frame');
   const wrap = document.getElementById('phone-wrap');
@@ -769,6 +787,10 @@ function applyDevice() {
   const sb = document.getElementById('status-bar');
   const hic = document.getElementById('home-indicator-container');
   const hi = document.getElementById('home-indicator');
+
+  frame.dataset.form = tablet ? 'tablet' : 'phone';
+  frame.dataset.os = d.os;
+  frame.style.setProperty('--os-cols', String(launcherColumns(d, land)));
 
   // Frame size + radius
   frame.style.width = (w + 20) + 'px';
@@ -783,10 +805,12 @@ function applyDevice() {
   // ===== Cutout handling (more realistic) =====
   if (!land && d.type !== 'none') {
     if (d.type === 'island') {
+      const islandH = 34;
+      const islandTop = Math.max(6, Math.round((d.sb - islandH) / 2));
       notch.style.cssText = `
         display:block; pointer-events:none;
-        position:absolute; top:11px; left:50%; transform:translateX(-50%);
-        width:110px; height:34px; background:#000; border-radius:20px;
+        position:absolute; top:${islandTop}px; left:50%; transform:translateX(-50%);
+        width:110px; height:${islandH}px; background:#000; border-radius:20px;
         z-index:60; box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;
       `;
       notch.innerHTML = `<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:12px;height:12px;background:radial-gradient(circle at 35% 35%,#1a1a2e,#000);border-radius:50%;box-shadow:inset 0 0 2px #4a4a6a;"></div>`;
@@ -801,29 +825,41 @@ function applyDevice() {
       `;
     }
     else if (d.type === 'punch') {
+      const hole = 14;
+      const holeTop = Math.max(8, Math.round((d.sb - hole) / 2));
       notch.style.cssText = `
         display:block; pointer-events:none;
-        position:absolute; top:12px; left:50%; transform:translateX(-50%);
-        width:14px; height:14px; background:#000; border-radius:50%;
+        position:absolute; top:${holeTop}px; left:50%; transform:translateX(-50%);
+        width:${hole}px; height:${hole}px; background:#000; border-radius:50%;
         z-index:50; box-shadow:0 0 0 2px #111;
       `;
     }
   }
 
   // ===== Status bar =====
-  // Island and notch sit in the top center, so the clock and icons sit lower, beside the cutout.
+  // Middle column is exactly the cutout width, so the clock and icons stay in the safe side areas.
+  const cutoutW = land || d.type === 'none' ? 0 : d.type === 'island' ? 126 : d.type === 'notch' ? 168 : 36;
+  sb.style.display = 'grid';
+  sb.style.gridTemplateColumns = '1fr ' + cutoutW + 'px 1fr';
+  sb.style.alignItems = 'center';
   sb.style.height = d.sb + 'px';
   sb.style.boxSizing = 'border-box';
-  sb.style.alignItems = (d.type === 'island' || d.type === 'notch') && !land ? 'flex-end' : 'center';
   sb.style.paddingTop = '0px';
-  sb.style.paddingBottom = (d.type === 'island' || d.type === 'notch') && !land ? '8px' : '0px';
-  sb.style.fontSize = currentDevice === 'iphone' ? '15px' : '13px';
-  sb.style.paddingLeft = sb.style.paddingRight = currentDevice === 'iphone' ? '28px' : '16px';
+  sb.style.paddingBottom = '0px';
+  sb.style.paddingLeft = sb.style.paddingRight = tablet ? '28px' : '16px';
+  sb.style.fontSize = d.os === 'iphone' ? '15px' : '13px';
 
-  // ===== Home indicator or classic home button =====
+  // ===== Home indicator, classic home button, or Android navigation =====
+  const nav = document.getElementById('android-nav');
   const classicHome = d.os === 'iphone' && d.type === 'none' && !land;
-  const gestureHome = d.type !== 'none' && d.os !== 'android' && !land;
-  if (classicHome) {
+  const gestureHome = d.os === 'ipad' || (d.type !== 'none' && d.os === 'iphone' && !land);
+  const androidNav = d.os === 'android' && (tablet || !land);
+  nav.style.display = androidNav ? 'flex' : 'none';
+  if (androidNav) {
+    hic.style.display = 'none';
+    hi.style.display = 'none';
+    hi.dataset.shape = '';
+  } else if (classicHome) {
     hic.style.display = 'flex';
     hic.style.height = '58px';
     hi.style.display = 'block';
@@ -834,9 +870,9 @@ function applyDevice() {
     hi.dataset.shape = 'button';
   } else if (gestureHome) {
     hic.style.display = 'flex';
-    hic.style.height = '22px';
+    hic.style.height = tablet ? '28px' : '22px';
     hi.style.display = 'block';
-    hi.style.width = '134px';
+    hi.style.width = tablet ? '180px' : '134px';
     hi.style.height = '5px';
     hi.style.borderRadius = '100px';
     hi.style.border = 'none';
@@ -862,6 +898,7 @@ function applyDevice() {
     0 0 40px rgba(97,218,251,.08)
   `;
 
+  buildLauncher();
   fitDevice();
   paintStatusBar();
 }
@@ -889,24 +926,31 @@ function toggleOrientation() {
   setTimeout(runCode, 350);
 }
 
-// FIX: "dark:" classes don't apply to the same element that has .dark, so set colors directly
-function toggleTheme() {
+function applyPreviewTheme() {
   const screen = document.getElementById('emulator-screen');
   const icon = document.getElementById('theme-icon');
-
-  isDarkPreview = !isDarkPreview;
+  const home = document.getElementById('os-home');
+  const system = document.getElementById('os-system');
   if (window.rnAppearance) window.rnAppearance.set(isDarkPreview ? 'dark' : 'light');
-  setTimeout(paintStatusBar, 0);
-  const kbp = document.getElementById('kb-panel'); kbp.style.background = isDarkPreview ? '#1f2937' : '#d1d5db'; kbp.style.color = isDarkPreview ? '#f1f5f9' : '#111827';
-  if (isDarkPreview) {
-    screen.style.backgroundColor = '#020617';
-    screen.style.color = '#f1f5f9';
-    icon.className = 'fa-solid fa-sun text-xs text-amber-400';
-  } else {
-    screen.style.backgroundColor = '#ffffff';
-    screen.style.color = '#0f172a';
-    icon.className = 'fa-solid fa-moon text-xs';
+  if (home) home.classList.toggle('light', !isDarkPreview);
+  if (system) system.classList.toggle('dark', isDarkPreview);
+  const kbp = document.getElementById('kb-panel');
+  if (kbp) {
+    kbp.style.background = isDarkPreview ? '#1f2937' : '#d1d5db';
+    kbp.style.color = isDarkPreview ? '#f1f5f9' : '#111827';
   }
+  if (screen) {
+    screen.style.backgroundColor = isDarkPreview ? '#020617' : '#ffffff';
+    screen.style.color = isDarkPreview ? '#f1f5f9' : '#0f172a';
+  }
+  if (icon) icon.className = isDarkPreview ? 'fa-solid fa-sun text-xs text-amber-400' : 'fa-solid fa-moon text-xs';
+  try { localStorage.setItem('rn-device', isDarkPreview ? 'dark' : 'light'); } catch (e) {}
+  paintStatusBar();
+}
+
+function toggleTheme() {
+  isDarkPreview = !isDarkPreview;
+  applyPreviewTheme();
 }
 
 // ---------- Status bar that follows the app's background ----------
@@ -935,9 +979,25 @@ function paintStatusBar() {
     const m = (bg.match(/[\d.]+/g) || [255, 255, 255]).map(Number);
     light = (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) < 140;
   }
-  sb.style.background = bg;
-  sb.style.color = light ? '#ffffff' : '#0f172a';
-  hic.style.background = bg;
+  if (osMode === 'home' || osMode === 'system') light = isDarkPreview;
+  const nav = document.getElementById('android-nav');
+  if (osMode === 'home') {
+    sb.style.background = isDarkPreview ? '#0f172a' : '#e8eef6';
+    sb.style.color = isDarkPreview ? '#ffffff' : '#0f172a';
+    hic.style.background = isDarkPreview ? '#020617' : '#e2e8f0';
+  } else if (osMode === 'system') {
+    sb.style.background = isDarkPreview ? '#0f172a' : '#f2f2f7';
+    sb.style.color = isDarkPreview ? '#ffffff' : '#0f172a';
+    hic.style.background = isDarkPreview ? '#0f172a' : '#f2f2f7';
+  } else {
+    sb.style.background = bg;
+    sb.style.color = light ? '#ffffff' : '#0f172a';
+    hic.style.background = bg;
+  }
+  if (nav) {
+    nav.style.background = sb.style.background;
+    nav.style.color = sb.style.color;
+  }
   if (hi.dataset.shape === 'button') {
     hi.style.background = 'transparent';
     hi.style.borderColor = light ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.28)';
@@ -950,7 +1010,7 @@ function paintStatusBar() {
 window.showNativeAlert = (title, message, buttons) => {
   console.log('[Alert] ' + title + (message ? ': ' + message : ''));
   const root = document.getElementById('modal-root');
-  const ios = currentDevice === 'iphone', dark = isDarkPreview;
+  const ios = currentDevice !== 'android', dark = isDarkPreview;
   const btns = buttons && buttons.length ? buttons : [{ text: 'OK' }];
   const line = 'rgba(128,128,128,.35)';
   const ov = document.createElement('div');
@@ -1034,15 +1094,184 @@ window.shakePhone = () => {
   frame.addEventListener('click', (e) => { if (suppress) { e.stopPropagation(); e.preventDefault(); } }, true);
 })();
 
+// ---------- Phone launcher (Expo-style home screen) ----------
+const LAUNCHER = [
+  // Core / System
+  { id: 'expo', name: 'React Native', bg: '#09090b', fg: '#61dafb', icon: 'fa-brands fa-react', kind: 'expo' },
+  { id: 'settings', name: 'Settings', bg: '#6b7280', fg: '#ffffff', icon: 'fa-solid fa-gear' },
+  { id: 'appstore', name: 'App Store', bg: '#0ea5e9', fg: '#ffffff', icon: 'fa-brands fa-app-store-ios' },
+  { id: 'files', name: 'Files', bg: '#3b82f6', fg: '#ffffff', icon: 'fa-solid fa-folder' },
+
+  // Media
+  { id: 'photos', name: 'Photos', bg: '#ffffff', fg: '#e11d48', icon: 'fa-solid fa-images' },
+  { id: 'camera', name: 'Camera', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-camera' },
+  { id: 'music', name: 'Music', bg: '#fb7185', fg: '#ffffff', icon: 'fa-solid fa-music' },
+  { id: 'podcasts', name: 'Podcasts', bg: '#7c3aed', fg: '#ffffff', icon: 'fa-solid fa-podcast' },
+  { id: 'tv', name: 'TV', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-tv' },
+
+  // Utilities
+  { id: 'weather', name: 'Weather', bg: '#38bdf8', fg: '#ffffff', icon: 'fa-solid fa-cloud-sun' },
+  { id: 'clock', name: 'Clock', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-clock' },
+  { id: 'calc', name: 'Calculator', bg: '#374151', fg: '#ffffff', icon: 'fa-solid fa-calculator' },
+  { id: 'calendar', name: 'Calendar', bg: '#ef4444', fg: '#ffffff', icon: 'fa-solid fa-calendar' },
+  { id: 'reminders', name: 'Reminders', bg: '#f59e0b', fg: '#ffffff', icon: 'fa-solid fa-list-check' },
+  { id: 'notes', name: 'Notes', bg: '#fde68a', fg: '#92400e', icon: 'fa-solid fa-note-sticky' },
+
+  // Communication
+  { id: 'mail', name: 'Mail', bg: '#2563eb', fg: '#ffffff', icon: 'fa-solid fa-envelope' },
+  { id: 'safari', name: 'Safari', bg: '#ffffff', fg: '#0284c7', icon: 'fa-solid fa-compass' },
+  { id: 'messages', name: 'Messages', bg: '#22c55e', fg: '#ffffff', icon: 'fa-solid fa-comment', dockOnly: true },
+  { id: 'phone', name: 'Phone', bg: '#22c55e', fg: '#ffffff', icon: 'fa-solid fa-phone', dockOnly: true },
+  { id: 'facetime', name: 'FaceTime', bg: '#22c55e', fg: '#ffffff', icon: 'fa-solid fa-video' },
+
+  // Navigation & Maps
+  { id: 'maps', name: 'Maps', bg: '#d1fae5', fg: '#047857', icon: 'fa-solid fa-map-location-dot' },
+
+  // Extra useful ones
+  { id: 'wallet', name: 'Wallet', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-wallet' },
+  { id: 'health', name: 'Health', bg: '#ef4444', fg: '#ffffff', icon: 'fa-solid fa-heart-pulse' },
+  { id: 'books', name: 'Books', bg: '#f97316', fg: '#ffffff', icon: 'fa-solid fa-book' },
+  { id: 'stocks', name: 'Stocks', bg: '#111827', fg: '#22c55e', icon: 'fa-solid fa-chart-line' },
+];
+
+function launcherButton(app) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'os-app' + (app.kind === 'expo' ? ' expo' : '');
+  button.innerHTML = '<span class="os-icon" style="background:' + app.bg + ';color:' + app.fg + '"><i class="' + app.icon + '"></i></span><span>' + app.name + '</span>';
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openApp(app);
+  });
+  return button;
+}
+
+function buildLauncher() {
+  const home = document.getElementById('os-home');
+  if (!home) return;
+  const d = DEVICES[deviceKey] || {};
+  const tablet = isTabletDevice(d);
+  home.dataset.shell = !tablet ? 'phone' : d.os === 'ipad' ? 'ipad' : 'android';
+  home.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'os-grid';
+  LAUNCHER.filter((app) => !app.dockOnly).forEach((app) => grid.appendChild(launcherButton(app)));
+  const dock = document.createElement('div');
+  dock.className = 'os-dock' + (home.dataset.shell === 'ipad' ? ' ipad-dock' : home.dataset.shell === 'android' ? ' android-taskbar' : '');
+  const dockIds = home.dataset.shell === 'ipad'
+    ? ['phone', 'messages', 'safari', 'photos', 'notes', 'expo']
+    : home.dataset.shell === 'android'
+      ? ['phone', 'messages', 'photos', 'camera', 'notes', 'expo']
+      : ['phone', 'messages', 'safari', 'expo'];
+  dockIds.forEach((id) => {
+    const app = LAUNCHER.find((item) => item.id === id);
+    if (app) dock.appendChild(launcherButton(app));
+  });
+  home.append(grid, dock);
+}
+
+function systemMarkup(app) {
+  if (app.id === 'photos') {
+    const colors = ['#fda4af', '#93c5fd', '#86efac', '#fde68a', '#c4b5fd', '#fdba74', '#67e8f9', '#f9a8d4', '#a5b4fc'];
+    return '<div class="os-sys-title">Photos</div><div class="os-sys-body"><div class="os-photos">' + colors.map((c) => '<i style="background:' + c + '"></i>').join('') + '</div></div>';
+  }
+  if (app.id === 'camera') return '<div class="os-cam"><div class="os-shutter"></div></div>';
+  if (app.id === 'weather') return '<div class="os-sys-title">Weather</div><div class="os-sys-body"><div class="os-row" style="font-size:42px;font-weight:300">24°</div><div class="os-row">Partly cloudy</div></div>';
+  if (app.id === 'clock') return '<div class="os-sys-title">Clock</div><div class="os-sys-body"><div class="os-row" id="os-app-clock" style="font-size:40px;font-weight:300"></div></div>';
+  if (app.id === 'maps') return '<div class="os-sys-title">Maps</div><div class="os-sys-body"><div class="os-row" style="height:180px;background:linear-gradient(#d1fae5,#bfdbfe);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-location-dot" style="color:#e11d48;font-size:28px"></i></div></div>';
+  if (app.id === 'notes') return '<div class="os-sys-title">Notes</div><div class="os-sys-body"><div class="os-row">Shopping list</div><div class="os-row">Ideas</div><div class="os-row">Meeting notes</div></div>';
+  if (app.id === 'mail') return '<div class="os-sys-title">Mail</div><div class="os-sys-body"><div class="os-row"><b>Expo</b><div>Your project is ready to open.</div></div><div class="os-row"><b>Welcome</b><div>This mailbox is part of the emulator.</div></div></div>';
+  if (app.id === 'settings') return '<div class="os-sys-title">Settings</div><div class="os-sys-body"><div class="os-row">Wi-Fi</div><div class="os-row">Bluetooth</div><div class="os-row">Display & Brightness</div><div class="os-row">Battery</div></div>';
+  if (app.id === 'phone') return '<div class="os-sys-title">Phone</div><div class="os-sys-body"><div class="os-row">Keypad</div><div class="os-row">Recents</div><div class="os-row">Contacts</div></div>';
+  if (app.id === 'messages') return '<div class="os-sys-title">Messages</div><div class="os-sys-body"><div class="os-row"><b>Expo</b><div>Open the Expo app to run your project.</div></div></div>';
+  return '<div class="os-sys-title">' + app.name + '</div><div class="os-sys-body"><div class="os-row">' + app.name + ' is installed on this emulator.</div></div>';
+}
+
+function showOs() {
+  const home = document.getElementById('os-home');
+  const system = document.getElementById('os-system');
+  const app = document.getElementById('app-root');
+  if (!home || !system || !app) return;
+  home.style.display = osMode === 'home' ? 'flex' : 'none';
+  system.style.display = osMode === 'system' ? 'flex' : 'none';
+  app.style.display = osMode === 'expo' ? 'flex' : 'none';
+  paintStatusBar();
+}
+
+function goHome() {
+  osMode = 'home';
+  showOs();
+}
+
+function goBack() {
+  if (osMode !== 'home') goHome();
+}
+
+function openExpo() {
+  osMode = 'expo';
+  showOs();
+}
+
+function openApp(app) {
+  if (app.kind === 'expo') {
+    openExpo();
+    return;
+  }
+  osMode = 'system';
+  document.getElementById('os-system').innerHTML = systemMarkup(app);
+  showOs();
+  paintClock();
+}
+
+window.goHome = goHome;
+window.goBack = goBack;
+window.openExpo = openExpo; 
+window.openApp = openApp;
+
+function paintBattery(level, charging) {
+  const icon = document.getElementById('battery-icon');
+  const bolt = document.getElementById('battery-bolt');
+  const wrap = document.getElementById('battery-wrap');
+  if (!icon || !bolt || !wrap) return;
+  const name = level < 0.15 ? 'fa-battery-empty'
+    : level < 0.4 ? 'fa-battery-quarter'
+    : level < 0.65 ? 'fa-battery-half'
+    : level < 0.9 ? 'fa-battery-three-quarters'
+    : 'fa-battery-full';
+  icon.className = 'fa-solid ' + name;
+  bolt.classList.toggle('on', !!charging);
+  wrap.title = (charging ? 'Charging · ' : '') + Math.round(level * 100) + '%';
+}
+
+function watchBattery() {
+  if (!navigator.getBattery) return;
+  navigator.getBattery().then((battery) => {
+    const paint = () => paintBattery(battery.level, battery.charging);
+    paint();
+    battery.addEventListener('chargingchange', paint);
+    battery.addEventListener('levelchange', paint);
+  }).catch(() => {});
+}
+
+function paintClock() {
+  const now = new Date();
+  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const status = document.getElementById('status-time');
+  if (status) status.textContent = time;
+  const appClock = document.getElementById('os-app-clock');
+  if (appClock) appClock.textContent = time;
+}
+
 setInterval(paintStatusBar, 800);
 
+buildLauncher();
+watchBattery();
 const picked = document.getElementById('device-select');
 if (picked && DEVICES[picked.value]) deviceKey = picked.value;
 applyDevice();
+applyPreviewTheme();
+showOs();
 new ResizeObserver(fitDevice).observe(document.getElementById('phone-wrap').parentElement);
 
-// Status bar clock
-setInterval(() => {
-  const now = new Date();
-  document.getElementById('status-time').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-}, 1000);
+setInterval(paintClock, 1000);
+paintClock();

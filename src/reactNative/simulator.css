@@ -1,10 +1,9 @@
-/* ========== Realistic Phone Frame ========== */
-
+/* ========== Phone Frame ========== */
 .phone-shadow {
   box-shadow:
-    0 25px 60px -12px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-    0 0 40px rgba(97, 218, 251, 0.08);
+    0 30px 70px -15px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 50px rgba(97, 218, 251, 0.1);
 }
 
 #phone-wrap {
@@ -14,164 +13,345 @@
 
 #phone-frame {
   background: #0a0a0a;
-  border: 10px solid #1a1a1a;
-  border-radius: 46px;
+  border: 11px solid #161616;
+  border-radius: 48px;
   position: absolute;
   top: 0;
   left: 0;
   overflow: hidden;
-  /* Metal edge highlight */
   box-shadow:
-    0 0 0 1px #3a3a3a inset,
+    0 0 0 1px #3f3f3f inset,
     0 0 0 2px #0a0a0a inset;
 }
 
-/* The script draws the cutout on #phone-notch. These extras used to stay visible on every device. */
-.dynamic-island,
-.android-punchhole {
-  display: none;
-}
-
-/* Dynamic Island (iPhone 15 Pro style) */
-.dynamic-island {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 110px;
-  height: 34px;
-  background: #000;
-  border-radius: 20px;
-  z-index: 60;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-              height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Optional camera lens inside Dynamic Island */
-.dynamic-island::after {
-  content: '';
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  background: radial-gradient(circle at 30% 30%, #1a1a2e, #000);
-  border-radius: 50%;
-  box-shadow: inset 0 0 2px #4a4a6a;
-}
-
-/* Classic notch (fallback) */
-.iphone-notch {
-  width: 140px;
-  height: 28px;
-  background: #000;
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-}
-
-/* Pixel / Android punch hole */
-.android-punchhole {
-  width: 16px;
-  height: 16px;
-  background: #000;
-  border-radius: 50%;
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  box-shadow: 0 0 0 2px #111;
-}
-
-/* Side buttons (volume + power) */
+/* Side buttons */
 #phone-frame::before,
 #phone-frame::after {
   content: '';
   position: absolute;
-  background: linear-gradient(to bottom, #3a3a3a, #1a1a1a);
+  background: linear-gradient(to bottom, #4a4a4a, #1f1f1f);
   border-radius: 2px;
   z-index: 40;
 }
-
-/* Volume buttons (left) */
 #phone-frame::before {
-  left: -3px;
-  top: 120px;
-  width: 3px;
-  height: 70px;
-  box-shadow: 0 80px 0 #2a2a2a; /* second volume button */
+  left: -3.5px;
+  top: 130px;
+  width: 3.5px;
+  height: 68px;
+  box-shadow: 0 86px 0 #2c2c2c;
 }
-
-/* Power button (right) */
 #phone-frame::after {
-  right: -3px;
-  top: 160px;
-  width: 3px;
-  height: 90px;
+  right: -3.5px;
+  top: 170px;
+  width: 3.5px;
+  height: 92px;
 }
 
-/* Status bar refinements */
+/* Status bar */
 #status-bar {
-  height: 44px;
-  padding-top: 6px;
+  display: grid;
+  grid-template-columns: 1fr 0px 1fr;
+  align-items: center;
+  height: 54px;
+  padding: 0 18px;
   font-weight: 600;
-  letter-spacing: -0.2px;
-  color: #000;
+  letter-spacing: -0.3px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 40;
 }
+#status-time { justify-self: start; font-variant-numeric: tabular-nums; }
+#status-icons {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+#battery-wrap {
+  position: relative;
+  width: 22px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#battery-bolt {
+  display: none;
+  position: absolute;
+  font-size: 7px;
+}
+#battery-bolt.on { display: block; }
 
-/* Home indicator (more realistic) */
+/* Home indicator */
+#home-indicator-container { cursor: pointer; }
+#home-indicator-container:active #home-indicator { transform: scale(0.94); }
 #home-indicator {
   width: 134px;
   height: 5px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 100px;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.15s;
 }
-
-/* Dark mode home indicator */
 .dark #home-indicator,
 [data-theme="dark"] #home-indicator {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.45);
 }
 
-/* Screen corner radius matching frame */
-#emulator-screen {
+/* Android nav */
+#android-nav {
+  display: none;
+  height: 48px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 40;
+}
+#android-nav button {
+  width: 42px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 10px;
+}
+#android-nav button:active { background: rgba(128,128,128,.2); }
 
+#emulator-screen { overflow: hidden; display: flex; flex-direction: column; }
+
+/* ========== Attractive Home Screen ========== */
+#os-home, #os-system, #app-root { flex: 1; min-height: 0; width: 100%; }
+#os-system, #app-root { display: none; }
+
+#os-home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.35), transparent 40%),
+    radial-gradient(circle at 85% 5%, rgba(99, 102, 241, 0.35), transparent 35%),
+    linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #020617 100%);
+  color: #fff;
+  padding: 16px 14px 10px;
+  box-sizing: border-box;
   overflow: hidden;
 }
-
-/* Device-specific overrides */
-#phone-frame[data-device="iphone15"] {
-  border-radius: 48px;
-}
-#phone-frame[data-device="iphone15"] .iphone-notch {
-  display: none;
-}
-#phone-frame[data-device="iphone15"] .dynamic-island {
-  display: block;
+#os-home.light {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(125, 211, 252, 0.8), transparent 42%),
+    radial-gradient(circle at 88% 10%, rgba(196, 181, 253, 0.7), transparent 38%),
+    linear-gradient(165deg, #e0f2fe 0%, #f8fafc 50%, #e2e8f0 100%);
+  color: #0f172a;
 }
 
-#phone-frame[data-device="pixel8"] .iphone-notch,
-#phone-frame[data-device="pixel8"] .dynamic-island {
-  display: none;
-}
-#phone-frame[data-device="pixel8"] .android-punchhole {
-  display: block;
+/* Grid */
+.os-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px 10px;
+  align-content: start;
+  padding: 6px 2px 12px;
+  overflow-y: auto;
 }
 
-#phone-frame[data-device="iphonese"] {
-  border-radius: 36px;
-  border-width: 8px;
+/* Icons */
+.os-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  gap: 5px;
+  transition: transform 0.12s ease;
 }
-#phone-frame[data-device="iphonese"] .iphone-notch,
-#phone-frame[data-device="iphonese"] .dynamic-island,
-#phone-frame[data-device="iphonese"] .android-punchhole {
-  display: none;
+.os-app:active { transform: scale(0.9); }
+
+.os-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
+  box-shadow:
+    0 6px 16px rgba(0,0,0,0.28),
+    0 1px 2px rgba(0,0,0,0.12);
+  position: relative;
+  overflow: hidden;
+}
+.os-icon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.os-app span:last-child {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-align: center;
+  max-width: 68px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.92;
+}
+
+/* Expo glow */
+.os-app.expo .os-icon {
+  box-shadow:
+    0 0 18px rgba(97, 218, 251, 0.45),
+    0 6px 16px rgba(0,0,0,0.28);
+}
+
+/* Dock */
+.os-dock {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 26px;
+  padding: 9px 10px;
+  margin: 6px 2px 2px;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+#os-home.light .os-dock {
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.06);
+}
+.os-dock .os-app span:last-child { display: none; }
+.os-dock .os-icon {
+  width: 50px;
+  height: 50px;
+  font-size: 23px;
+  border-radius: 14px;
+}
+
+/* System pages */
+#os-system {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f2f2f7;
+  color: #0f172a;
+}
+#os-system.dark {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+.os-sys-title {
+  font-size: 28px;
+  font-weight: 700;
+  padding: 14px 18px 6px;
+}
+.os-sys-body {
+  flex: 1;
+  padding: 6px 14px 18px;
+  overflow-y: auto;
+}
+.os-row {
+  background: #fff;
+  border-radius: 12px;
+  padding: 13px 15px;
+  margin-bottom: 7px;
+  font-size: 16px;
+}
+#os-system.dark .os-row {
+  background: #1e293b;
+}
+
+/* Tablet and iPad chrome. Phones keep the 4-column layout above. */
+#phone-frame[data-form="tablet"] {
+  border-width: 16px;
+  border-color: #1a1a1a;
+}
+#phone-frame[data-form="tablet"]::before {
+  top: 72px;
+  height: 42px;
+  box-shadow: 0 54px 0 #2c2c2c;
+}
+#phone-frame[data-form="tablet"]::after {
+  top: 96px;
+  height: 64px;
+}
+#phone-frame[data-form="tablet"] .os-grid {
+  grid-template-columns: repeat(var(--os-cols, 6), minmax(0, 1fr));
+  gap: 22px 6px;
+  padding: 18px 28px 8px;
+  align-content: start;
+}
+#phone-frame[data-form="tablet"] .os-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  font-size: 26px;
+}
+#phone-frame[data-form="tablet"] .os-app span:last-child {
+  font-size: 12px;
+  max-width: 84px;
+}
+#phone-frame[data-os="ipad"] .ipad-dock {
+  align-self: center;
+  width: max-content;
+  max-width: calc(100% - 48px);
+  margin: 4px auto 8px;
+  padding: 12px 16px;
+  gap: 14px;
+  justify-content: center;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.22);
+}
+#os-home.light .ipad-dock {
+  background: rgba(255, 255, 255, 0.72);
+}
+#phone-frame[data-os="ipad"] .ipad-dock .os-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+}
+#phone-frame[data-os="android"][data-form="tablet"] #android-nav {
+  justify-content: flex-end;
+  gap: 22px;
+  height: 48px;
+  padding: 0 28px 4px;
+}
+#phone-frame[data-os="android"][data-form="tablet"] .android-taskbar {
+  align-self: center;
+  width: max-content;
+  max-width: calc(100% - 36px);
+  margin: 4px auto 6px;
+  padding: 8px 14px;
+  gap: 10px;
+  justify-content: center;
+  border-radius: 22px;
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+#phone-frame[data-os="android"][data-form="tablet"] .android-taskbar .os-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 20px;
+}
+#os-home[data-shell="android"] {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(52, 211, 153, 0.28), transparent 36%),
+    radial-gradient(circle at 90% 18%, rgba(59, 130, 246, 0.32), transparent 34%),
+    linear-gradient(180deg, #1f2937 0%, #0f172a 100%);
+}
+#phone-frame[data-form="tablet"] .os-sys-title,
+#phone-frame[data-form="tablet"] .os-sys-body {
+  width: min(520px, 100%);
+  margin-left: auto;
+  margin-right: auto;
 }

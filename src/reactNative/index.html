@@ -42,6 +42,9 @@
     }
   </script>
 
+  <script>
+    try { if (localStorage.getItem('rn-ui') === 'light') document.documentElement.dataset.ui = 'light'; } catch (e) {}
+  </script>
   <link rel="stylesheet" href="simulator.css">
   <style>
     /* FIX: select-none on body can block typing in Safari. Allow selection in editor areas. */
@@ -73,10 +76,74 @@
     .editor-pane { flex: 1 1 46%; }
     .sim-pane { flex: 1 1 54%; }
 
+    .split-handle,
+    .console-resize {
+      flex: 0 0 7px;
+      position: relative;
+      z-index: 6;
+      background: #1e293b;
+      touch-action: none;
+    }
+
+    .split-handle { cursor: row-resize; }
+    .console-resize { cursor: row-resize; }
+
+    .split-handle::after,
+    .console-resize::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 3px;
+      border-radius: 99px;
+      background: #64748b;
+      transform: translate(-50%, -50%);
+    }
+
+    .split-handle:hover,
+    .console-resize:hover,
+    .split-handle.dragging,
+    .console-resize.dragging {
+      background: #334155;
+    }
+
+    html[data-ui="light"] body { background: #f4f6f8; color: #111827; }
+    html[data-ui="light"] header { background: #ffffff !important; border-color: #e5e7eb !important; color: #111827; }
+    html[data-ui="light"] header p,
+    html[data-ui="light"] .text-slate-400,
+    html[data-ui="light"] .text-slate-500 { color: #64748b !important; }
+    html[data-ui="light"] .text-slate-300 { color: #334155 !important; }
+    html[data-ui="light"] header .bg-slate-800,
+    html[data-ui="light"] .sim-pane .bg-slate-800 {
+      background: #f1f5f9 !important;
+      color: #334155 !important;
+      border-color: #e2e8f0 !important;
+    }
+    html[data-ui="light"] .editor-pane { background: #ffffff !important; border-color: #e5e7eb !important; }
+    html[data-ui="light"] .editor-pane .bg-slate-950,
+    html[data-ui="light"] .editor-pane .bg-editorBg,
+    html[data-ui="light"] .editor-pane .bg-slate-900\/80 { background: #ffffff !important; border-color: #e5e7eb !important; }
+    html[data-ui="light"] #console-dock,
+    html[data-ui="light"] #console-logs { background: #f8fafc !important; color: #334155 !important; border-color: #e5e7eb !important; }
+    html[data-ui="light"] #log-count { background: #e2e8f0 !important; color: #475569 !important; }
+    html[data-ui="light"] .sim-pane { background: #e7edf3 !important; }
+    html[data-ui="light"] .sim-pane .bg-slate-950\/80 { background: rgba(255,255,255,.92) !important; border-color: #e5e7eb !important; }
+    html[data-ui="light"] .sim-pane select { background: #f8fafc !important; color: #0f172a !important; border-color: #e2e8f0 !important; }
+    html[data-ui="light"] .split-handle,
+    html[data-ui="light"] .console-resize { background: #d5dde6; }
+    html[data-ui="light"] .split-handle:hover,
+    html[data-ui="light"] .console-resize:hover { background: #c5d0dc; }
+    html[data-ui="light"] .monaco-editor,
+    html[data-ui="light"] .monaco-editor-background,
+    html[data-ui="light"] .monaco-editor .margin { background-color: #ffffff !important; }
+
     @media (min-width: 980px) {
       .playground { flex-direction: row; }
       .editor-pane { flex: 1.25 1 0; }
-      .sim-pane { flex: 0.85 1 0; width: auto; max-width: 560px; }
+      .sim-pane { flex: 0.85 1 0; width: auto; }
+      .split-handle { cursor: col-resize; flex-basis: 7px; }
+      .split-handle::after { width: 3px; height: 28px; }
     }
   </style>
 </head>
@@ -101,12 +168,16 @@
 
     <!-- Action Buttons -->
     <div class="flex items-center space-x-2">
+      <button id="ui-theme" onclick="toggleUiTheme()" title="Switch workspace appearance" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition">
+        <i id="ui-theme-icon" class="fa-solid fa-sun text-amber-300"></i>
+        <span class="hidden sm:inline">Light</span>
+      </button>
       <button onclick="formatCode()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition">
         <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
         <span class="hidden sm:inline">Format</span>
       </button>
 
-      <button onclick="runCode()" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition active:scale-95">
+      <button onclick="runCode(true)" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition active:scale-95">
         <i class="fa-solid fa-play text-[10px]"></i>
         <span>Run Code</span>
       </button>
@@ -142,7 +213,8 @@
       <div id="monaco-editor" class="flex-1 min-h-0 w-full overflow-hidden relative"></div>
 
       <!-- Console Dock -->
-      <div id="console-dock" class="h-36 shrink-0 bg-slate-950 border-t border-slate-800 flex flex-col transition-all duration-200">
+      <div id="console-dock" class="h-36 shrink-0 bg-slate-950 border-t border-slate-800 flex flex-col">
+        <div id="console-resize" class="console-resize" role="separator" aria-orientation="horizontal" aria-label="Resize terminal" title="Drag to resize the terminal"></div>
         <div class="h-8 shrink-0 bg-slate-900/80 px-3 flex items-center justify-between border-b border-slate-800/60 cursor-pointer select-none" onclick="toggleConsole()">
           <div class="flex items-center space-x-2 text-xs text-slate-300 font-medium">
             <i class="fa-solid fa-terminal text-slate-400"></i>
@@ -159,6 +231,8 @@
         </div>
       </div>
     </section>
+
+    <div id="split-handle" class="split-handle" role="separator" aria-orientation="vertical" aria-label="Resize device" title="Drag to resize the device"></div>
 
     <!-- Right Panel: Device Emulator -->
     <section class="sim-pane h-1/2 md:h-full min-h-0 bg-slate-900 flex flex-col items-center justify-between p-4 relative overflow-hidden">
@@ -195,8 +269,16 @@
               <option value="ipadpro11">iPad Pro 11"</option>
               <option value="ipadair">iPad Air</option>
             </optgroup>
+            <optgroup label="Tablet">
+              <option value="galaxytabs9">Galaxy Tab S9</option>
+              <option value="pixeltablet">Pixel Tablet</option>
+            </optgroup>
           </select>
         <div class="flex items-center space-x-2">
+          <button onclick="goHome()" title="Home" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-house text-xs"></i>
+          </button>
+
           <button onclick="toggleTheme()" title="Toggle Preview Theme (Dark/Light)" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
             <i id="theme-icon" class="fa-solid fa-moon text-xs"></i>
           </button>
@@ -217,23 +299,33 @@
           <div id="modal-root" style="position:absolute;top:32px;left:0;right:0;bottom:20px;z-index:45;pointer-events:none;overflow:hidden"></div>
           <div id="phone-notch" style="display:none;pointer-events:none;"></div>
 
-          <div id="status-bar" class="h-8 shrink-0 px-6 pt-1 flex items-center justify-between text-[10px] font-semibold text-slate-400 z-40">
+          <div id="status-bar" class="shrink-0 z-40">
             <span id="status-time">9:41</span>
-            <div class="flex items-center space-x-1.5">
-              <i class="fa-solid fa-signal text-[9px]"></i>
-              <i class="fa-solid fa-wifi text-[9px]"></i>
-              <i class="fa-solid fa-battery-full text-xs"></i>
+            <span id="status-cutout-space"></span>
+            <div id="status-icons">
+              <i class="fa-solid fa-signal"></i>
+              <i class="fa-solid fa-wifi"></i>
+              <span id="battery-wrap" title="Battery">
+                <i id="battery-icon" class="fa-solid fa-battery-full"></i>
+                <i id="battery-bolt" class="fa-solid fa-bolt"></i>
+              </span>
             </div>
           </div>
 
-          <!-- FIX: explicit light colors (text no longer inherits near-white from <html>) -->
-          <div id="emulator-screen" class="emulator-screen flex-1 min-h-0 overflow-y-auto relative w-full flex flex-col" style="background-color:#ffffff;color:#0f172a;">
-            <div id="app-root" class="w-full min-h-full flex flex-col"></div>
+          <div id="emulator-screen" class="emulator-screen flex-1 min-h-0 overflow-hidden relative w-full" style="background-color:#ffffff;color:#0f172a;">
+            <div id="os-home"></div>
+            <div id="os-system"></div>
+            <div id="app-root"></div>
           </div>
 
           <div id="kb-panel" style="display:none;flex-direction:column;gap:8px;padding:8px 4px;background:#d1d5db;color:#111827;flex-shrink:0;z-index:40"></div>
-          <div id="home-indicator-container" class="h-5 shrink-0 w-full flex items-center justify-center bg-transparent z-40">
-            <div id="home-indicator" class="w-32 h-1 bg-slate-400/50 rounded-full"></div>
+          <div id="home-indicator-container" class="shrink-0 w-full flex items-center justify-center bg-transparent z-40" onclick="goHome()" title="Home">
+            <div id="home-indicator"></div>
+          </div>
+          <div id="android-nav">
+            <button type="button" onclick="goBack()" title="Back"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" onclick="goHome()" title="Home"><i class="fa-solid fa-circle"></i></button>
+            <button type="button" onclick="goHome()" title="Recent apps"><i class="fa-regular fa-square"></i></button>
           </div>
 
         </div></div>
