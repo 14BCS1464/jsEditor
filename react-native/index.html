@@ -144,6 +144,140 @@
     html[data-ui="light"] .monaco-editor-background,
     html[data-ui="light"] .monaco-editor .margin { background-color: #ffffff !important; }
 
+    .rn-files {
+      width: 168px;
+      flex: 0 0 168px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #0d1117;
+      border-right: 1px solid rgba(51, 65, 85, 0.85);
+    }
+    .rn-files-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 8px 6px 10px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .rn-files-head button,
+    .rn-file-row,
+    .rn-tab,
+    .rn-tab-close {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      box-shadow: none;
+    }
+    .rn-files-head > span { display: inline-flex; align-items: center; gap: 2px; }
+    .rn-files-head button {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      color: #22d3ee;
+    }
+    .rn-files-rail {
+      display: none;
+      flex: 0 0 36px;
+      width: 36px;
+      align-self: stretch;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      padding-top: 10px;
+      border: 0;
+      border-right: 1px solid rgba(51, 65, 85, 0.85);
+      background: #0d1117;
+      color: #94a3b8;
+      cursor: pointer;
+      font-family: 'Fira Code', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .rn-files-rail span { writing-mode: vertical-rl; }
+    body.rn-files-collapsed .rn-files { display: none; }
+    body.rn-files-collapsed .rn-files-rail { display: flex; }
+    html[data-ui="light"] .rn-files-rail { background: #f8fafc; color: #475569; border-right-color: #e5e7eb; }
+    .rn-files-head button:hover,
+    .rn-file-row:hover { background: rgba(148, 163, 184, 0.12); }
+    .rn-new-form { padding: 0 8px 8px; }
+    .rn-new-form input,
+    .rn-files input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 5px 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      outline: none;
+    }
+    .rn-file-tree { overflow: auto; padding: 0 6px 8px; min-height: 0; }
+    .rn-folder {
+      margin: 8px 4px 2px;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .rn-file-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      text-align: left;
+      border-radius: 6px;
+      padding: 4px 6px;
+      color: #cbd5e1;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+    }
+    .rn-file-row.active { background: rgba(34, 211, 238, 0.12); color: #67e8f9; }
+    .rn-file-actions { margin-left: auto; display: none; gap: 2px; }
+    .rn-file-row:hover .rn-file-actions,
+    .rn-file-row.active .rn-file-actions { display: inline-flex; }
+    .rn-file-actions span {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      color: #94a3b8;
+    }
+    .rn-tabs { display: flex; gap: 2px; overflow-x: auto; min-width: 0; }
+    .rn-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 160px;
+      padding: 6px 8px;
+      border-radius: 6px 6px 0 0;
+      color: #94a3b8;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+    }
+    .rn-tab.active { color: #22d3ee; background: #0d1117; border-top: 2px solid #22d3ee; }
+    .rn-tab span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-ui="light"] .rn-files { background: #f8fafc; border-right-color: #e5e7eb; }
+    html[data-ui="light"] .rn-files-head,
+    html[data-ui="light"] .rn-folder,
+    html[data-ui="light"] .rn-file-row,
+    html[data-ui="light"] .rn-tab { color: #475569; }
+    html[data-ui="light"] .rn-file-row.active,
+    html[data-ui="light"] .rn-tab.active { color: #0369a1; background: #ffffff; }
+    html[data-ui="light"] .rn-new-form input,
+    html[data-ui="light"] .rn-files input { background: #ffffff; color: #0f172a; border-color: #e2e8f0; }
+
     @media (min-width: 980px) {
       .playground { flex-direction: row; }
       .editor-pane { flex: 1.25 1 0; }
@@ -178,13 +312,24 @@
     <!-- Left Panel: Editor & Console -->
     <section class="editor-pane h-1/2 md:h-full min-h-0 flex flex-col border-r border-slate-800 bg-editorBg relative">
 
-      <div class="h-10 shrink-0 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between px-3 text-xs select-none">
-        <div class="flex items-center space-x-1">
-          <div class="px-3 py-1.5 rounded-t-md bg-editorBg text-cyan-400 font-mono text-xs border-t-2 border-cyan-400 flex items-center space-x-2">
-            <i class="fa-brands fa-react"></i>
-            <span>App.jsx</span>
+      <div class="flex flex-1 min-h-0">
+        <button type="button" class="rn-files-rail" id="rn-show-files" title="Show files" aria-label="Show files"><i class="fa-solid fa-folder-tree"></i><span>Files</span></button>
+        <aside class="rn-files" id="rn-files">
+          <div class="rn-files-head">
+            <span>Files</span>
+            <span>
+              <button type="button" id="rn-new-file" title="New file" aria-label="New file"><i class="fa-solid fa-plus"></i></button>
+              <button type="button" id="rn-hide-files" title="Hide files" aria-label="Hide files"><i class="fa-solid fa-chevron-left"></i></button>
+            </span>
           </div>
-        </div>
+          <form id="rn-new-form" class="rn-new-form" hidden>
+            <input id="rn-new-input" type="text" placeholder="components/Hello.jsx" autocomplete="off" spellcheck="false" aria-label="New file path" />
+          </form>
+          <div id="rn-file-tree" class="rn-file-tree"></div>
+        </aside>
+        <div class="flex-1 min-w-0 min-h-0 flex flex-col">
+      <div class="h-10 shrink-0 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between px-3 text-xs select-none">
+        <div id="rn-tabs" class="rn-tabs"></div>
 
         <div class="flex items-center space-x-3 text-slate-400 min-w-0">
           <span id="editor-engine" class="text-[11px] text-slate-500 shrink-0">Loading editor…</span>
@@ -199,6 +344,8 @@
 
       <!-- FIX: min-h-0 + overflow-hidden so the editor can shrink inside the flex column -->
       <div id="monaco-editor" class="flex-1 min-h-0 w-full overflow-hidden relative"></div>
+        </div>
+      </div>
 
       <!-- Console Dock -->
       <div id="console-dock" class="h-36 shrink-0 bg-slate-950 border-t border-slate-800 flex flex-col">

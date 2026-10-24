@@ -33,25 +33,49 @@
   </header>
 
   <div class="container">
-
-
-
-
-    <!-- <div class="panel-header">📝 Editor - App.tsx</div> -->
-    <div id="editor"></div>
-
-    <div class="preview-panel">
-      <div class="panel-header">👁️ Live Preview</div>
-      <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
-
-      <div class="console-container">
-        <div class="console-header">
-          <span>💻 Console</span>
-          <button class="clear-btn" onclick="clearConsole()">Clear</button>
+    <div class="editor-workspace">
+      <button type="button" class="files-rail" id="showFilesBtn" title="Show files" aria-label="Show files"><i class="fa-solid fa-folder-tree"></i><span>Files</span></button>
+      <aside class="file-explorer" id="fileExplorer">
+        <div class="file-explorer-head">
+          <span>Files</span>
+          <span class="file-explorer-tools">
+            <button type="button" id="newFileBtn" title="New file" aria-label="New file"><i class="fa-solid fa-plus"></i></button>
+            <button type="button" class="pane-icon" id="toggleFilesBtn" title="Hide files" aria-label="Hide files"><i class="fa-solid fa-chevron-left"></i></button>
+          </span>
         </div>
-        <div id="error"></div>
-        <div id="console">> Ready to run your React code...</div>
+        <form id="newFileForm" class="new-file-form" hidden>
+          <input id="newFileInput" type="text" placeholder="src/Button.jsx" autocomplete="off" spellcheck="false" aria-label="New file path" />
+        </form>
+        <div id="fileTree" class="file-tree"></div>
+      </aside>
+      <div class="editor-column">
+        <div class="editor-main">
+          <div class="editor-tabs" id="editorTabs"></div>
+          <div id="editor"></div>
+        </div>
+        <div class="pane-split pane-split-row" id="consoleSplit" role="separator" aria-orientation="horizontal" aria-label="Resize console" title="Drag to resize the console"></div>
+        <div class="console-container" id="consolePanel">
+          <div class="console-header">
+            <span>💻 Console</span>
+            <span class="console-actions">
+              <button class="clear-btn" type="button" onclick="clearConsole()">Clear</button>
+              <button type="button" class="pane-icon" id="toggleConsoleBtn" title="Hide console" aria-label="Hide console"><i class="fa-solid fa-chevron-down"></i></button>
+            </span>
+          </div>
+          <div id="error"></div>
+          <div id="console">> Ready to run your React code...</div>
+        </div>
+        <button type="button" class="pane-icon pane-text" id="showConsoleBtn" title="Show console" aria-label="Show console" hidden><i class="fa-solid fa-terminal"></i><span>Console</span></button>
       </div>
+    </div>
+
+    <div class="pane-split" id="previewSplit" role="separator" aria-orientation="vertical" aria-label="Resize preview" title="Drag to resize the preview"></div>
+
+    <div class="preview-panel" id="previewPanel">
+      <div class="panel-header">
+        <span class="panel-title">👁️ Live Preview</span>
+      </div>
+      <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
     </div>
   </div>
 
@@ -60,6 +84,8 @@
       <span>React</span>
       <span>•</span>
       <span>React 18</span>
+      <span>•</span>
+      <span id="active-file">src/App.jsx</span>
     </div>
     <div id="status-indicator" class="status-item ready">
       <span>● Ready</span>

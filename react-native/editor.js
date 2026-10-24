@@ -157,7 +157,101 @@ fontSize: 15,
    };
 
 // ==========================================
-// 3. EDITOR STATE
+// 3. PROJECT FILES
+// ==========================================
+const RN_PROJECT_KEY = 'suite-rn-project';
+
+function rnStarter() {
+  return { version: 1, active: 'App.jsx', open: ['App.jsx'], files: { 'App.jsx': TEMPLATES.basic } };
+}
+
+function rnNormalizePath(input) {
+  const parts = [];
+  for (const part of String(input || '').split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') parts.pop();
+    else parts.push(part);
+  }
+  return parts.join('/');
+}
+
+function loadRnProject() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(RN_PROJECT_KEY) || '');
+    if (saved && saved.files && Object.keys(saved.files).length) {
+      const files = {};
+      Object.keys(saved.files).forEach((path) => {
+        const clean = rnNormalizePath(path);
+        if (clean) files[clean] = String(saved.files[path] ?? '');
+      });
+      let active = rnNormalizePath(saved.active);
+      if (!files[active]) active = files['App.jsx'] != null ? 'App.jsx' : Object.keys(files)[0];
+      let open = Array.isArray(saved.open) ? saved.open.map(rnNormalizePath).filter((path) => files[path]) : [];
+      if (!open.includes(active)) open.unshift(active);
+      return { version: 1, active, open, files };
+    }
+  } catch { /* first visit */ }
+  return rnStarter();
+}
+
+let rnProject = loadRnProject();
+let rnSaveTimer = null;
+
+function saveRnProject() {
+  clearTimeout(rnSaveTimer);
+  rnSaveTimer = setTimeout(() => {
+    try { localStorage.setItem(RN_PROJECT_KEY, JSON.stringify(rnProject)); } catch { /* private mode */ }
+  }, 200);
+}
+
+function rnDirname(path) {
+  const index = path.lastIndexOf('/');
+  return index === -1 ? '' : path.slice(0, index);
+}
+
+function resolveRnImport(fromFile, spec, files) {
+  if (!spec.startsWith('.')) return null;
+  const base = rnNormalizePath((rnDirname(fromFile) ? rnDirname(fromFile) + '/' : '') + spec);
+  const candidates = [
+    base,
+    base + '.jsx', base + '.js', base + '.tsx', base + '.ts', base + '.json',
+    base + '/index.jsx', base + '/index.js', base + '/index.tsx', base + '/index.ts'
+  ];
+  return candidates.find((candidate) => Object.prototype.hasOwnProperty.call(files, candidate)) || null;
+}
+
+function relativeRnImport(fromFile, toFile) {
+  const from = rnDirname(fromFile).split('/').filter(Boolean);
+  const to = toFile.split('/').filter(Boolean);
+  let shared = 0;
+  while (shared < from.length && shared < to.length && from[shared] === to[shared]) shared += 1;
+  const rel = [...Array(from.length - shared).fill('..'), ...to.slice(shared)].join('/');
+  return rel.startsWith('.') ? rel : './' + rel;
+}
+
+function findRnEntry(files) {
+  const preferred = ['App.jsx', 'App.js', 'App.tsx', 'src/App.jsx', 'src/App.js'];
+  const named = preferred.find((path) => Object.prototype.hasOwnProperty.call(files, path));
+  if (named) return named;
+  return Object.keys(files).find((path) => /(^|\/)App\.(jsx|js|tsx|ts)$/.test(path))
+    || Object.keys(files).find((path) => /\.(jsx|js|tsx|ts)$/.test(path) && /\bfunction\s+App\b|\bclass\s+App\b/.test(files[path]))
+    || null;
+}
+
+function rnEscape(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function rnLanguage(path) {
+  if (/\.json$/i.test(path)) return 'json';
+  if (/\.tsx?$/i.test(path)) return 'typescript';
+  return 'javascript';
+}
+
+// ==========================================
+// 3b. EDITOR STATE
 // ==========================================
 let editor = null;
 let compileDebounceTimer = null;
@@ -199,13 +293,14 @@ function createMonacoEditor() {
     allowJs: true,
     target: ts.ScriptTarget.ES2020
   });
-  // Imports like 'react-native' have no types here, so skip semantic errors but keep syntax errors
-  ts.javascriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
+  // Imports like 'react-native' have no types here. Syntax markers are off too:
+  // relative paths written without quotes still compile, and Monaco would underline them.
+  ts.javascriptDefaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: true });
 
-  const model = monaco.editor.createModel(TEMPLATES.basic, 'javascript', monaco.Uri.parse('file:///App.jsx'));
+  Object.keys(rnProject.files).forEach(ensureRnModel);
 
   editor = monaco.editor.create(container, {
-    model,
+    model: ensureRnModel(rnProject.active),
     theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : 'vs'),
     automaticLayout: true,
     fontSize: 13,
@@ -216,10 +311,35 @@ function createMonacoEditor() {
     tabSize: 2
   });
 
-  editor.onDidChangeModelContent(scheduleRun);
   setEngineLabel('Monaco');
   applyEditorTheme();
+  renderRnFiles();
   runCode();
+}
+
+function ensureRnModel(path) {
+  const uri = monaco.Uri.parse('file:///' + path);
+  let model = monaco.editor.getModel(uri);
+  if (model) return model;
+  model = monaco.editor.createModel(rnProject.files[path] ?? '', rnLanguage(path), uri);
+  model.onDidChangeContent(() => {
+    if (model.__silent) return;
+    rnProject.files[path] = model.getValue();
+    saveRnProject();
+    scheduleRun();
+  });
+  return model;
+}
+
+function setRnFileValue(path, value) {
+  rnProject.files[path] = value;
+  if (typeof monaco === 'undefined' || !monaco.editor) return;
+  const model = monaco.editor.getModel(monaco.Uri.parse('file:///' + path));
+  if (model && model.getValue() !== value) {
+    model.__silent = true;
+    model.setValue(value);
+    model.__silent = false;
+  }
 }
 
 function applyEditorTheme() {
@@ -265,7 +385,7 @@ function createFallbackEditor() {
   const ta = document.createElement('textarea');
   ta.className = 'absolute inset-0 w-full h-full bg-editorBg text-slate-200 font-mono text-[13px] leading-5 p-3 outline-none resize-none';
   ta.spellcheck = false;
-  ta.value = TEMPLATES.basic;
+  ta.value = rnProject.files[rnProject.active] || '';
 
   ta.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
@@ -273,10 +393,16 @@ function createFallbackEditor() {
       const s = ta.selectionStart;
       ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(ta.selectionEnd);
       ta.selectionStart = ta.selectionEnd = s + 2;
+      rnProject.files[rnProject.active] = ta.value;
+      saveRnProject();
       scheduleRun();
     }
   });
-  ta.addEventListener('input', scheduleRun);
+  ta.addEventListener('input', () => {
+    rnProject.files[rnProject.active] = ta.value;
+    saveRnProject();
+    scheduleRun();
+  });
   container.appendChild(ta);
 
   editor = {
@@ -286,6 +412,7 @@ function createFallbackEditor() {
   };
   setEngineLabel('Basic editor (Monaco unavailable)');
   console.warn('Monaco editor could not be loaded, using the basic editor instead.');
+  renderRnFiles();
   runCode();
 }
 
@@ -339,10 +466,121 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function quoteBareRnSpecifiers(source) {
+  return source
+    .replace(/(^|\n)(\s*import\s+)(\.{1,2}\/[A-Za-z0-9_./$-]+)/g, "$1$2'$3'")
+    .replace(/\b(from\s+)(\.{1,2}\/[A-Za-z0-9_./$-]+)/g, "$1'$2'");
+}
+
+function lowercaseImportedJsx({ types: t }) {
+  return {
+    visitor: {
+      Program(programPath) {
+        const names = new Set();
+        programPath.traverse({
+          JSXIdentifier(idPath) {
+            const parent = idPath.parent;
+            if (parent.type !== 'JSXOpeningElement' && parent.type !== 'JSXClosingElement') return;
+            const name = idPath.node.name;
+            if (!/^[a-z_$]/.test(name)) return;
+            const binding = idPath.scope.getBinding(name);
+            if (binding && binding.kind === 'module') names.add(name);
+          }
+        });
+        if (!names.size) return;
+        const aliases = [];
+        names.forEach((name) => {
+          const alias = '_Rn' + name.charAt(0).toUpperCase() + name.slice(1);
+          aliases.push(t.variableDeclaration('const', [
+            t.variableDeclarator(t.identifier(alias), t.identifier(name))
+          ]));
+          programPath.traverse({
+            JSXIdentifier(idPath) {
+              const parent = idPath.parent;
+              if (parent.type !== 'JSXOpeningElement' && parent.type !== 'JSXClosingElement') return;
+              if (idPath.node.name !== name) return;
+              const binding = idPath.scope.getBinding(name);
+              if (binding && binding.kind === 'module') idPath.node.name = alias;
+            }
+          });
+        });
+        let insertAt = 0;
+        programPath.node.body.forEach((node, index) => {
+          if (node.type === 'ImportDeclaration') insertAt = index + 1;
+        });
+        programPath.node.body.splice(insertAt, 0, ...aliases);
+        programPath.scope.crawl();
+      }
+    }
+  };
+}
+
+function compileRnFile(path, source) {
+  if (/\.json$/i.test(path)) {
+    JSON.parse(source);
+    return 'exports.__esModule = true;\nexports.default = ' + source + ';\n';
+  }
+  const tsx = !/\.ts$/i.test(path) || /\.tsx$/i.test(path);
+  return Babel.transform(quoteBareRnSpecifiers(source), {
+    filename: path,
+    sourceType: 'module',
+    babelrc: false,
+    configFile: false,
+    plugins: [lowercaseImportedJsx],
+    presets: [
+      ['env', { modules: 'commonjs' }],
+      ['react', { runtime: 'classic' }],
+      ['typescript', { isTSX: tsx, allExtensions: true }]
+    ]
+  }).code;
+}
+
+function executeRnProject(files) {
+  const compiled = {};
+  Object.keys(files).forEach((path) => {
+    if (!/\.(jsx|js|tsx|ts|json)$/i.test(path)) return;
+    try { compiled[path] = compileRnFile(path, files[path]); }
+    catch (error) { throw new Error(path + ': ' + error.message); }
+  });
+
+  const cache = {};
+  function load(path) {
+    if (cache[path]) return cache[path].exports;
+    if (!compiled[path]) throw new Error('Cannot load "' + path + '"');
+    const record = { exports: {} };
+    cache[path] = record;
+    const module = { exports: record.exports };
+    const runFn = new Function('require', 'module', 'exports', 'React', compiled[path]);
+    runFn(makeRequire(path), module, record.exports, window.React);
+    record.exports = module.exports;
+    return record.exports;
+  }
+  function makeRequire(fromFile) {
+    return (moduleName) => {
+      if (moduleName === 'react') return window.React;
+      if (window.RNComponents && window.RNComponents.__modules && window.RNComponents.__modules[moduleName]) {
+        return window.RNComponents.__modules[moduleName];
+      }
+      if (moduleName === 'react-native' || moduleName === 'react-native-web') return window.RNComponents;
+      if (moduleName.startsWith('.')) {
+        const resolved = resolveRnImport(fromFile, moduleName, files);
+        if (!resolved) throw new Error(fromFile + ': cannot find "' + moduleName + '"');
+        return load(resolved);
+      }
+      throw new Error("Module '" + moduleName + "' is not supported in this browser sandbox.");
+    };
+  }
+
+  const entry = findRnEntry(files);
+  if (!entry) throw new Error('Add App.jsx with export default function App().');
+  const exported = load(entry);
+  return exported.default || exported.App || (window.__rnAppRegistry && window.__rnAppRegistry.getApplication());
+}
+
 function runCode(launch) {
   if (!editor) return;
 
-  const code = editor.getValue();
+  if (rnProject.active) rnProject.files[rnProject.active] = editor.getValue();
   const mountNode = document.getElementById('app-root');
 
   // Tear down previous render (React 18 root API)
@@ -358,30 +596,7 @@ function runCode(launch) {
       throw new Error('Babel failed to load. Check your internet connection and reload the page.');
     }
 
-    const transformed = Babel.transform(code, {
-      presets: [
-        ['env', { modules: 'commonjs' }],
-        ['react', { runtime: 'classic' }]
-      ],
-      sourceType: 'module',
-      filename: 'App.jsx'
-    }).code;
-
-    const customRequire = (moduleName) => {
-      if (moduleName === 'react') return window.React;
-      if (window.RNComponents.__modules[moduleName]) return window.RNComponents.__modules[moduleName];
-      if (moduleName === 'react-native' || moduleName === 'react-native-web') return window.RNComponents;
-      throw new Error(`Module '${moduleName}' is not supported in this browser sandbox.`);
-    };
-
-    const exports = {};
-    const module = { exports };
-
-    const runFn = new Function('require', 'module', 'exports', 'React', transformed);
-    runFn(customRequire, module, exports, window.React);
-
-    const App = (module.exports && module.exports.default) || exports.default
-      || (window.__rnAppRegistry && window.__rnAppRegistry.getApplication());
+    const App = executeRnProject(rnProject.files);
 
     if (!App) {
       throw new Error("No 'default export' found in App.jsx. Ensure you have 'export default function App()'.");
@@ -400,7 +615,7 @@ function runCode(launch) {
     mountNode.innerHTML = `
       <div style="padding: 16px; background-color: #fef2f2; color: #991b1b; font-family: monospace; font-size: 12px; min-height: 100%; overflow-y: auto;">
         <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">⚠️ Compilation Error</div>
-        <pre style="white-space: pre-wrap; word-break: break-all; background: #fee2e2; padding: 10px; border-radius: 6px; margin: 0;">${escapeHtml(err.message)}</pre>
+        <pre style="white-space: pre-wrap; word-break: break-all; background: #fee2e2; padding: 10px; border-radius: 6px; margin: 0;">${rnEscape(err.message)}</pre>
       </div>
         `;
     if (launch === true && window.openExpo) window.openExpo();
@@ -411,10 +626,12 @@ function runCode(launch) {
 // 5. UI CONTROLS & UTILITIES
 // ==========================================
 function loadTemplate(key) {
-  if (TEMPLATES[key] && editor) {
-    editor.setValue(TEMPLATES[key]);
-    runCode();
-  }
+  if (!TEMPLATES[key] || !editor) return;
+  const path = rnProject.files['App.jsx'] != null ? 'App.jsx' : rnProject.active;
+  setRnFileValue(path, TEMPLATES[key]);
+  if (editor.isFallback && rnProject.active === path) editor.setValue(TEMPLATES[key]);
+  saveRnProject();
+  runCode();
 }
 
 function formatCode() {
@@ -544,5 +761,270 @@ function setupPaneResize() {
   });
 }
 
+function renderRnFiles() {
+  const tree = document.getElementById('rn-file-tree');
+  const tabs = document.getElementById('rn-tabs');
+  if (tree) tree.innerHTML = renderRnBranch(rnFileTree(Object.keys(rnProject.files)), 0);
+  if (tabs) {
+    tabs.innerHTML = rnProject.open.map((path) => {
+      const active = path === rnProject.active ? ' active' : '';
+      const name = path.split('/').pop();
+      return `<button type="button" class="rn-tab${active}" data-action="open" data-path="${rnEscape(path)}" title="${rnEscape(path)}"><span>${rnEscape(name)}</span><span class="rn-tab-close" data-action="close" data-path="${rnEscape(path)}" title="Close">×</span></button>`;
+    }).join('');
+  }
+}
+
+function rnFileTree(paths) {
+  const root = { dirs: {}, files: [] };
+  paths.slice().sort().forEach((path) => {
+    const parts = path.split('/');
+    let node = root;
+    parts.forEach((part, index) => {
+      if (index === parts.length - 1) node.files.push({ name: part, path });
+      else {
+        node.dirs[part] = node.dirs[part] || { dirs: {}, files: [] };
+        node = node.dirs[part];
+      }
+    });
+  });
+  return root;
+}
+
+function renderRnBranch(node, depth) {
+  const pad = depth * 10;
+  let html = Object.keys(node.dirs).sort().map((name) => (
+    `<div class="rn-folder" style="padding-left:${pad}px">${rnEscape(name)}</div>` +
+    renderRnBranch(node.dirs[name], depth + 1)
+  )).join('');
+  node.files.forEach((file) => {
+    const active = file.path === rnProject.active ? ' active' : '';
+    html += `<button type="button" class="rn-file-row${active}" data-action="open" data-path="${rnEscape(file.path)}">
+      <span style="width:${pad}px;flex:0 0 auto"></span>
+      <i class="fa-brands fa-react"></i>
+      <span>${rnEscape(file.name)}</span>
+      <span class="rn-file-actions">
+        <span data-action="rename" data-path="${rnEscape(file.path)}" title="Rename"><i class="fa-solid fa-pen"></i></span>
+        <span data-action="delete" data-path="${rnEscape(file.path)}" title="Delete"><i class="fa-solid fa-trash"></i></span>
+      </span>
+    </button>`;
+  });
+  return html;
+}
+
+function openRnFile(path) {
+  if (rnProject.files[path] == null) return;
+  if (editor && rnProject.active && rnProject.active !== path) rnProject.files[rnProject.active] = editor.getValue();
+  rnProject.active = path;
+  if (!rnProject.open.includes(path)) rnProject.open.push(path);
+  if (editor && editor.isFallback) editor.setValue(rnProject.files[path]);
+  else if (editor && typeof monaco !== 'undefined') editor.setModel(ensureRnModel(path));
+  renderRnFiles();
+  saveRnProject();
+}
+
+function createRnFile(raw) {
+  let path = rnNormalizePath(String(raw || '').trim());
+  if (!path) throw new Error('Enter a file name, like components/Hello.jsx');
+  if (!/\.[a-z0-9]+$/i.test(path)) path += '.jsx';
+  if (rnProject.files[path] != null) {
+    openRnFile(path);
+    return;
+  }
+  const base = path.split('/').pop().replace(/\.[^.]+$/, '');
+  const ident = base.replace(/[^A-Za-z0-9_$]/g, '') || 'Hello';
+  const rawName = /^[A-Za-z_$]/.test(ident) ? ident : 'Hello';
+  const name = /^[a-z]/.test(rawName) ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : rawName;
+  let content = `import React from 'react';\nimport { View, Text } from 'react-native';\n\nexport default function ${name}() {\n  return (\n    <View>\n      <Text>${name}</Text>\n    </View>\n  );\n}\n`;
+  if (/\.json$/i.test(path)) content = '{\n  "title": ""\n}\n';
+  else if (/\.(js|ts)$/i.test(path)) content = `export function ${name}() {\n  return null;\n}\n`;
+  rnProject.files[path] = content;
+  if (typeof monaco !== 'undefined' && monaco.editor) ensureRnModel(path);
+  openRnFile(path);
+  scheduleRun();
+}
+
+function renameRnFile(oldPath, raw) {
+  let nextPath = rnNormalizePath(String(raw || '').trim());
+  if (!nextPath) throw new Error('Enter a file path');
+  if (!/\.[a-z0-9]+$/i.test(nextPath)) {
+    const ext = oldPath.includes('.') ? oldPath.slice(oldPath.lastIndexOf('.')) : '.jsx';
+    nextPath += ext;
+  }
+  if (nextPath === oldPath) {
+    renderRnFiles();
+    return;
+  }
+  if (rnProject.files[nextPath] != null) throw new Error(nextPath + ' already exists');
+  const snapshot = { ...rnProject.files };
+  Object.keys(snapshot).forEach((file) => {
+    if (file === oldPath || !/\.(jsx|js|tsx|ts)$/i.test(file)) return;
+    const updated = snapshot[file]
+      .replace(
+        /(from\s+|import\s+)(['"])([^'"]+)\2/g,
+        (full, lead, quote, spec) => {
+          if (!spec.startsWith('.')) return full;
+          if (resolveRnImport(file, spec, snapshot) !== oldPath) return full;
+          return lead + quote + relativeRnImport(file, nextPath) + quote;
+        }
+      )
+      .replace(
+        /\b(from\s+)(\.{1,2}\/[A-Za-z0-9_./$-]+)/g,
+        (full, lead, spec) => {
+          if (resolveRnImport(file, spec, snapshot) !== oldPath) return full;
+          return lead + "'" + relativeRnImport(file, nextPath) + "'";
+        }
+      );
+    if (updated !== snapshot[file]) setRnFileValue(file, updated);
+  });
+  rnProject.files[nextPath] = rnProject.files[oldPath];
+  delete rnProject.files[oldPath];
+  rnProject.open = rnProject.open.map((file) => (file === oldPath ? nextPath : file));
+  if (typeof monaco !== 'undefined' && monaco.editor) {
+    const oldModel = monaco.editor.getModel(monaco.Uri.parse('file:///' + oldPath));
+    if (oldModel) {
+      if (editor && !editor.isFallback && editor.getModel() === oldModel) editor.setModel(null);
+      oldModel.dispose();
+    }
+    ensureRnModel(nextPath);
+  }
+  rnProject.active = nextPath;
+  openRnFile(nextPath);
+  scheduleRun();
+}
+
+function deleteRnFile(path) {
+  const codeFiles = Object.keys(rnProject.files).filter((file) => /\.(jsx|js|tsx|ts)$/i.test(file));
+  if (codeFiles.length === 1 && codeFiles[0] === path) {
+    console.error('Keep at least one JavaScript file.');
+    return;
+  }
+  if (!confirm('Delete ' + path + '?')) return;
+  delete rnProject.files[path];
+  rnProject.open = rnProject.open.filter((file) => file !== path);
+  if (typeof monaco !== 'undefined' && monaco.editor) {
+    const model = monaco.editor.getModel(monaco.Uri.parse('file:///' + path));
+    if (model) {
+      if (editor && !editor.isFallback && editor.getModel() === model) editor.setModel(null);
+      model.dispose();
+    }
+  }
+  if (rnProject.active === path) {
+    const next = rnProject.open[0] || Object.keys(rnProject.files)[0];
+    if (next) openRnFile(next);
+  } else renderRnFiles();
+  saveRnProject();
+  scheduleRun();
+}
+
+function closeRnTab(path) {
+  if (rnProject.open.length === 1) return;
+  const index = rnProject.open.indexOf(path);
+  rnProject.open = rnProject.open.filter((file) => file !== path);
+  if (rnProject.active === path) openRnFile(rnProject.open[Math.max(0, index - 1)]);
+  else {
+    renderRnFiles();
+    saveRnProject();
+  }
+}
+
+function startRnRename(path) {
+  const row = [...document.querySelectorAll('.rn-file-row')].find((item) => item.dataset.path === path);
+  if (!row) return;
+  const input = document.createElement('input');
+  input.value = path;
+  input.setAttribute('aria-label', 'Rename file');
+  row.replaceWith(input);
+  input.focus();
+  input.select();
+  let settled = false;
+  const finish = (save) => {
+    if (settled) return;
+    settled = true;
+    if (!save) {
+      renderRnFiles();
+      return;
+    }
+    try { renameRnFile(path, input.value); }
+    catch (error) {
+      console.error(error.message);
+      renderRnFiles();
+    }
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+    else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+}
+
+const RN_FILES_OPEN_KEY = 'suite-rn-files-open';
+
+function applyRnFilesOpen(open) {
+  document.body.classList.toggle('rn-files-collapsed', !open);
+  const rail = document.getElementById('rn-show-files');
+  if (rail) rail.hidden = open;
+  try { localStorage.setItem(RN_FILES_OPEN_KEY, open ? '1' : '0'); } catch (e) {}
+  if (editor && editor.layout) requestAnimationFrame(() => editor.layout());
+}
+
+function bindRnFiles() {
+  const tree = document.getElementById('rn-file-tree');
+  const tabs = document.getElementById('rn-tabs');
+  const form = document.getElementById('rn-new-form');
+  const input = document.getElementById('rn-new-input');
+  const button = document.getElementById('rn-new-file');
+  if (button && form && input) {
+    button.onclick = () => {
+      form.hidden = false;
+      input.value = '';
+      input.focus();
+    };
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      try {
+        createRnFile(input.value);
+        form.hidden = true;
+        input.value = '';
+      } catch (error) {
+        console.error(error.message);
+      }
+    };
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') form.hidden = true;
+      else if (event.key === 'Enter') {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+  }
+  const hideFiles = document.getElementById('rn-hide-files');
+  const showFiles = document.getElementById('rn-show-files');
+  if (hideFiles) hideFiles.onclick = () => applyRnFilesOpen(false);
+  if (showFiles) showFiles.onclick = () => applyRnFilesOpen(true);
+  let filesOpen = true;
+  try { filesOpen = localStorage.getItem(RN_FILES_OPEN_KEY) !== '0'; } catch (e) {}
+  applyRnFilesOpen(filesOpen);
+  if (tree) {
+    tree.addEventListener('click', (event) => {
+      const node = event.target.closest('[data-action]');
+      if (!node) return;
+      const path = node.dataset.path;
+      if (node.dataset.action === 'rename') startRnRename(path);
+      else if (node.dataset.action === 'delete') deleteRnFile(path);
+      else openRnFile(path);
+    });
+  }
+  if (tabs) {
+    tabs.addEventListener('click', (event) => {
+      const node = event.target.closest('[data-action]');
+      if (!node) return;
+      if (node.dataset.action === 'close') closeRnTab(node.dataset.path);
+      else openRnFile(node.dataset.path);
+    });
+  }
+}
+
 setupPaneResize();
 syncUiThemeButton();
+renderRnFiles();
+bindRnFiles();

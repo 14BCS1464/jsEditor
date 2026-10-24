@@ -289,10 +289,335 @@ body.suite-react .container {
   height: auto;
   min-height: 0;
   margin: 0;
-  gap: 14px;
+  gap: 0;
   padding: 12px 14px;
 }
-body.suite-react #editor {
+body.suite-react .pane-split {
+  flex: 0 0 14px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+}
+body.suite-react .pane-split::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 22px;
+  bottom: 22px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--suite-border);
+}
+body.suite-react .pane-split-row {
+  flex: 0 0 8px;
+  cursor: row-resize;
+}
+body.suite-react .pane-split-row::after {
+  left: 22px;
+  right: 22px;
+  top: 3px;
+  bottom: auto;
+  width: auto;
+  height: 2px;
+}
+body.suite-react .pane-split:hover::after,
+body.suite-react .pane-split.dragging::after { background: var(--suite-accent); }
+body.suite-react.pane-dragging,
+body.suite-react.pane-dragging * { user-select: none; }
+body.suite-react.pane-dragging iframe { pointer-events: none; }
+body.suite-react .file-explorer-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+body.suite-react .pane-icon,
+body.suite-react .files-rail {
+  appearance: none;
+  width: 22px !important;
+  height: 22px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+  animation: none !important;
+  color: var(--suite-sub) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+body.suite-react .pane-icon[hidden],
+body.suite-react .files-rail[hidden] { display: none !important; }
+body.suite-react .pane-icon::before,
+body.suite-react .pane-icon::after,
+body.suite-react .files-rail::before,
+body.suite-react .files-rail::after { content: none !important; display: none !important; }
+body.suite-react .pane-icon:hover,
+body.suite-react .files-rail:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background: var(--suite-bg3) !important;
+  color: var(--suite-text) !important;
+}
+body.suite-react .pane-text {
+  width: auto !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  gap: 6px;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+body.suite-react .files-rail {
+  display: none !important;
+  flex: 0 0 36px;
+  width: 36px !important;
+  height: auto !important;
+  align-self: stretch;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid var(--suite-border) !important;
+  border-radius: 0 !important;
+  background: var(--suite-bg) !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+body.suite-react .files-rail span { writing-mode: vertical-rl; }
+body.suite-react.files-collapsed .files-rail { display: flex !important; }
+body.suite-react.files-collapsed .file-explorer { display: none; }
+body.suite-react .console-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+body.suite-react.console-collapsed #consolePanel,
+body.suite-react.console-collapsed #consoleSplit { display: none; }
+body.suite-react .editor-workspace {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  background: var(--suite-bg2);
+  border: 1px solid var(--suite-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+body.suite-react .file-explorer {
+  width: 200px;
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--suite-bg);
+  border-right: 1px solid var(--suite-border);
+}
+body.suite-react .file-explorer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 8px 12px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--suite-sub);
+}
+body.suite-react .file-explorer button,
+body.suite-react .editor-tabs button {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+  animation: none !important;
+  letter-spacing: 0 !important;
+  overflow: visible !important;
+  color: var(--suite-sub) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+body.suite-react .file-explorer button::before,
+body.suite-react .file-explorer button::after,
+body.suite-react .editor-tabs button::before,
+body.suite-react .editor-tabs button::after {
+  content: none !important;
+  display: none !important;
+}
+body.suite-react .file-explorer button:hover,
+body.suite-react .editor-tabs button:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background: var(--suite-bg3) !important;
+  color: var(--suite-text) !important;
+}
+body.suite-react #newFileBtn,
+body.suite-react #toggleFilesBtn,
+body.suite-react #toggleConsoleBtn {
+  width: 22px !important;
+  height: 22px !important;
+}
+body.suite-react #newFileBtn { color: var(--suite-accent) !important; }
+body.suite-react .new-file-form { padding: 0 8px 8px; }
+body.suite-react .new-file-form input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--suite-border);
+  background: var(--suite-bg2);
+  color: var(--suite-text);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 12px;
+  outline: none;
+}
+body.suite-react .new-file-form input:focus { border-color: var(--suite-accent); }
+body.suite-react .file-tree {
+  overflow: auto;
+  padding: 0 6px 10px;
+  min-height: 0;
+}
+body.suite-react .file-folder {
+  margin: 8px 6px 2px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--suite-dim);
+}
+body.suite-react .file-indent {
+  flex: 0 0 auto;
+  height: 1px;
+}
+body.suite-react button.file-row {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100% !important;
+  text-align: left;
+  border-radius: 8px !important;
+  padding: 5px 6px !important;
+  color: var(--suite-text) !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+body.suite-react .file-row.active {
+  background: color-mix(in srgb, var(--suite-accent) 14%, transparent) !important;
+  color: var(--suite-accent) !important;
+}
+body.suite-react .file-row .file-actions {
+  margin-left: auto;
+  display: none;
+  gap: 2px;
+}
+body.suite-react .file-row:hover .file-actions,
+body.suite-react .file-row.active .file-actions { display: inline-flex; }
+body.suite-react .file-icon-btn {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--suite-dim);
+  cursor: pointer;
+}
+body.suite-react .file-icon-btn:hover { color: var(--suite-text); background: var(--suite-bg3); }
+body.suite-react .file-tree input,
+body.suite-react .rename-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--suite-accent);
+  background: var(--suite-bg2);
+  color: var(--suite-text);
+  border-radius: 6px;
+  padding: 2px 4px;
+  font: inherit;
+  outline: none;
+}
+body.suite-react .editor-column {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+body.suite-react .editor-main {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+body.suite-react #showConsoleBtn {
+  width: 100% !important;
+  height: 32px !important;
+  border-radius: 0 !important;
+  border-top: 1px solid var(--suite-border) !important;
+  justify-content: flex-start !important;
+  padding: 0 12px !important;
+  gap: 8px;
+  background: var(--suite-bg3) !important;
+}
+body.suite-react .editor-tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  padding: 6px 8px 0;
+  background: var(--suite-bg3);
+  border-bottom: 1px solid var(--suite-border);
+}
+body.suite-react .editor-tabs button.editor-tab {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  padding: 7px 8px 7px 10px !important;
+  border-radius: 8px 8px 0 0 !important;
+  color: var(--suite-sub) !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+body.suite-react .editor-tab.active {
+  background: var(--suite-bg2) !important;
+  color: var(--suite-text) !important;
+}
+body.suite-react .editor-tab span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.suite-react .tab-close {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 4px !important;
+  font-size: 13px !important;
+}
+body.suite-react #editor,
+body.suite-react #editor:hover,
+body.suite-react #editor:focus-within {
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
@@ -300,20 +625,43 @@ body.suite-react #editor {
   height: auto;
   margin: 0;
   padding: 0;
-  border-radius: 14px;
-  box-shadow: none;
+  border-radius: 0;
+  box-shadow: none !important;
   background: var(--suite-bg2);
-  border: 1px solid var(--suite-border);
+  border: 0;
   overflow: hidden;
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  transition: none !important;
+}
+body.suite-react #editor::before,
+body.suite-react #editor:hover::before {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
 }
 body.suite-react .preview-panel {
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   background: var(--suite-bg2);
   border: 1px solid var(--suite-border);
   border-radius: 14px;
   overflow: hidden;
+}
+body.suite-react #preview {
+  flex: 1 1 0;
+  align-self: stretch;
+  width: 100%;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  display: block;
 }
 body.suite-react .panel-header,
 body.suite-react .console-header,
@@ -553,6 +901,34 @@ html[data-theme="dark"] body.suite .suite-header button:hover {
 html[data-theme="dark"] body.suite-js #editor {
   background: #1e1e1e;
   box-shadow: none;
+}
+@media (max-width: 1024px) {
+  body.suite-react .editor-workspace { flex-direction: column; }
+  body.suite-react .file-explorer {
+    width: 100%;
+    flex: 0 0 auto;
+    max-height: 160px;
+    border-right: 0;
+    border-bottom: 1px solid var(--suite-border);
+  }
+  body.suite-react .pane-split:not(.pane-split-row) { cursor: row-resize; }
+  body.suite-react .pane-split:not(.pane-split-row)::after {
+    left: 22px;
+    right: 22px;
+    top: 6px;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+  }
+  body.suite-react.files-collapsed .files-rail {
+    flex-direction: row;
+    width: 100% !important;
+    height: 36px !important;
+    flex-basis: 36px;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--suite-border) !important;
+  }
+  body.suite-react.files-collapsed .files-rail span { writing-mode: horizontal-tb; }
 }
 html[data-theme="dark"] body.suite-react #preview { background: #1f1e27; }
 html[data-theme="dark"] body.suite-react #console {
