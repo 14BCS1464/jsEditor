@@ -1,0 +1,177 @@
+/* ========== Realistic Phone Frame ========== */
+
+.phone-shadow {
+  box-shadow:
+    0 25px 60px -12px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 40px rgba(97, 218, 251, 0.08);
+}
+
+#phone-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#phone-frame {
+  background: #0a0a0a;
+  border: 10px solid #1a1a1a;
+  border-radius: 46px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  /* Metal edge highlight */
+  box-shadow:
+    0 0 0 1px #3a3a3a inset,
+    0 0 0 2px #0a0a0a inset;
+}
+
+/* The script draws the cutout on #phone-notch. These extras used to stay visible on every device. */
+.dynamic-island,
+.android-punchhole {
+  display: none;
+}
+
+/* Dynamic Island (iPhone 15 Pro style) */
+.dynamic-island {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 34px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 60;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Optional camera lens inside Dynamic Island */
+.dynamic-island::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 30% 30%, #1a1a2e, #000);
+  border-radius: 50%;
+  box-shadow: inset 0 0 2px #4a4a6a;
+}
+
+/* Classic notch (fallback) */
+.iphone-notch {
+  width: 140px;
+  height: 28px;
+  background: #000;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
+/* Pixel / Android punch hole */
+.android-punchhole {
+  width: 16px;
+  height: 16px;
+  background: #000;
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  box-shadow: 0 0 0 2px #111;
+}
+
+/* Side buttons (volume + power) */
+#phone-frame::before,
+#phone-frame::after {
+  content: '';
+  position: absolute;
+  background: linear-gradient(to bottom, #3a3a3a, #1a1a1a);
+  border-radius: 2px;
+  z-index: 40;
+}
+
+/* Volume buttons (left) */
+#phone-frame::before {
+  left: -3px;
+  top: 120px;
+  width: 3px;
+  height: 70px;
+  box-shadow: 0 80px 0 #2a2a2a; /* second volume button */
+}
+
+/* Power button (right) */
+#phone-frame::after {
+  right: -3px;
+  top: 160px;
+  width: 3px;
+  height: 90px;
+}
+
+/* Status bar refinements */
+#status-bar {
+  height: 44px;
+  padding-top: 6px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #000;
+}
+
+/* Home indicator (more realistic) */
+#home-indicator {
+  width: 134px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 100px;
+  transition: background 0.2s;
+}
+
+/* Dark mode home indicator */
+.dark #home-indicator,
+[data-theme="dark"] #home-indicator {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Screen corner radius matching frame */
+#emulator-screen {
+
+  overflow: hidden;
+}
+
+/* Device-specific overrides */
+#phone-frame[data-device="iphone15"] {
+  border-radius: 48px;
+}
+#phone-frame[data-device="iphone15"] .iphone-notch {
+  display: none;
+}
+#phone-frame[data-device="iphone15"] .dynamic-island {
+  display: block;
+}
+
+#phone-frame[data-device="pixel8"] .iphone-notch,
+#phone-frame[data-device="pixel8"] .dynamic-island {
+  display: none;
+}
+#phone-frame[data-device="pixel8"] .android-punchhole {
+  display: block;
+}
+
+#phone-frame[data-device="iphonese"] {
+  border-radius: 36px;
+  border-width: 8px;
+}
+#phone-frame[data-device="iphonese"] .iphone-notch,
+#phone-frame[data-device="iphonese"] .dynamic-island,
+#phone-frame[data-device="iphonese"] .android-punchhole {
+  display: none;
+}
