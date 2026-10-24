@@ -31,6 +31,35 @@
       background: var(--glass); border-right: 1px solid var(--border); min-height: 0;
     }
     body.sidebar-collapsed .sidebar { display: none; }
+    .side-rail {
+      display: none;
+      flex: 0 0 36px;
+      width: 36px;
+      align-self: stretch;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0 0;
+      border: 0;
+      border-right: 1px solid var(--suite-border);
+      border-radius: 0;
+      background: var(--suite-bg);
+      color: var(--suite-sub);
+      cursor: pointer;
+      font-family: 'DM Mono', ui-monospace, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .side-rail span { writing-mode: vertical-rl; }
+    .side-rail:hover { background: var(--suite-bg3); color: var(--suite-text); }
+    body.sidebar-collapsed .side-rail { display: flex; }
+    .side-head .icon-btn {
+      width: 22px; height: 22px; padding: 0; border: 0; background: transparent;
+      color: var(--suite-sub);
+    }
+    .side-head .icon-btn:hover { background: var(--suite-bg3); color: var(--suite-text); }
     .side-head, .side-label {
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 12px 6px; font-size: 11px; letter-spacing: 0.08em;
@@ -156,13 +185,14 @@
     }
     .proxy-banner[hidden] { display: none; }
     .insecure-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .show-side {
-      display: none; margin: 8px; align-self: flex-start;
-    }
-    body.sidebar-collapsed .show-side { display: inline-flex; }
     @media (max-width: 900px) {
       .workspace { flex-direction: column; }
-      .sidebar { width: 100%; flex-basis: auto; max-height: 220px; }
+      .sidebar { width: 100%; flex-basis: auto; max-height: 220px; border-right: 0; border-bottom: 1px solid var(--border); }
+      body.sidebar-collapsed .side-rail {
+        flex-direction: row; width: 100%; height: 36px; flex-basis: 36px;
+        border-right: 0; border-bottom: 1px solid var(--suite-border); padding: 0 12px;
+      }
+      body.sidebar-collapsed .side-rail span { writing-mode: horizontal-tb; }
       .header-line { grid-template-columns: 1fr; }
     }
   </style>
@@ -180,9 +210,9 @@
   <div class="proxy-banner" id="proxyBanner" hidden>Project APIs are blocked in this tab. Run <b>python3 server.py</b> and open <b>http://127.0.0.1:8787/json/</b>.</div>
 
   <div class="workspace">
-    <button type="button" class="text-btn show-side" id="showSide">Collections</button>
+    <button type="button" class="side-rail" id="showSide" title="Show collections" aria-label="Show collections"><i class="fa-solid fa-folder-tree"></i><span>Collections</span></button>
     <aside class="sidebar">
-      <div class="side-head">Collections <button type="button" class="icon-btn" id="hideSide" title="Hide collections">‹</button></div>
+      <div class="side-head">Collections <button type="button" class="icon-btn" id="hideSide" title="Hide collections" aria-label="Hide collections"><i class="fa-solid fa-chevron-left"></i></button></div>
       <div class="side-scroll saved" id="collectionList"></div>
       <div class="side-save">
         <input id="requestName" type="text" placeholder="Request name" />
@@ -492,7 +522,7 @@ function renderEnvSelect() {
 }
 function renderEnvEditor() {
   const box = document.getElementById('envEditor');
-  if (!currentEnv || !envOpen) { box.hidden = true; if (!currentEnv) box.innerHTML = ''; return; }
+  if (!currentEnv || !envOpen) { box.hidden = true; box.innerHTML = ''; return; }
   box.hidden = false;
   const vars = environments[currentEnv] || {};
   const rows = Object.keys(vars).map((key) => ({ k: key, v: vars[key], on: true }));
@@ -500,7 +530,8 @@ function renderEnvEditor() {
   fillKv('envTable', rows);
 }
 function saveEnvFromTable() {
-  if (!currentEnv || !document.getElementById('envTable')) return;
+  const box = document.getElementById('envEditor');
+  if (!currentEnv || !box || box.hidden || !document.getElementById('envTable')) return;
   const obj = {};
   activeKv('envTable').forEach(([k, v]) => { obj[k] = v; });
   environments[currentEnv] = obj;
