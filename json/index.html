@@ -12,14 +12,14 @@
       --bg1: #0a0e27; --bg2: #020308; --glass: rgba(255,255,255,0.05);
       --border: rgba(255,255,255,0.12); --text: #e5e7eb; --muted: #9ca3af;
       --accent: #8b5cf6; --accent2: #a78bfa; --success: #10b981; --error: #ef4444;
-      --input: rgba(255,255,255,0.06); --json-key: #7dd3fc; --json-str: #86efac;
+      --input: rgba(255,255,255,0.06); --menu: #1c1b24; --json-key: #7dd3fc; --json-str: #86efac;
       --json-num: #fdba74; --json-bool: #fcd34d; --json-null: #f87171;
     }
     .light {
       --bg1: #f7f6f3; --bg2: #efece6; --glass: #ffffff;
       --border: #e4e1db; --text: #2c2a26; --muted: #6b6860;
       --accent: #6b5ce7; --accent2: #5a4fcf; --success: #2a9d6e; --error: #e05a5a;
-      --input: #ffffff; --json-key: #0369a1; --json-str: #15803d;
+      --input: #ffffff; --menu: #ffffff; --json-key: #0369a1; --json-str: #15803d;
       --json-num: #c2410c; --json-bool: #a16207; --json-null: #b91c1c;
     }
     * { box-sizing: border-box; }
@@ -92,19 +92,45 @@
       display: flex; gap: 8px; align-items: center; padding: 12px;
       background: var(--glass); border-bottom: 1px solid var(--border);
     }
-    #method {
-      font-weight: 800; min-width: 108px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--input); color: var(--text); padding: 10px 12px;
+    .picker { position: relative; flex: 0 0 auto; }
+    .picker-btn {
+      display: inline-flex; align-items: center; justify-content: space-between; gap: 12px;
+      min-width: 148px; max-width: 220px; height: 40px; padding: 0 12px 0 14px;
+      border-radius: 10px; border: 1px solid var(--border); background: var(--input);
+      color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer;
     }
-    #method.GET { color: #059669; } #method.POST { color: #d97706; }
-    #method.PUT { color: #0284c7; } #method.PATCH { color: #7c3aed; }
-    #method.DELETE { color: #e11d48; } #method.HEAD { color: #64748b; }
+    .picker-btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .picker-btn svg { color: var(--muted); flex: 0 0 auto; transition: transform 0.15s ease; }
+    .picker-btn.open svg { transform: rotate(180deg); }
+    .picker-btn:focus-visible, .picker-btn.open { outline: none; border-color: var(--accent); }
+    .method-btn { min-width: 128px; font-weight: 800; letter-spacing: 0.04em; }
+    .method-btn.GET, .method-menu .m-GET { color: #059669; }
+    .method-btn.POST, .method-menu .m-POST { color: #d97706; }
+    .method-btn.PUT, .method-menu .m-PUT { color: #0284c7; }
+    .method-btn.PATCH, .method-menu .m-PATCH { color: #7c3aed; }
+    .method-btn.DELETE, .method-menu .m-DELETE { color: #e11d48; }
+    .method-btn.HEAD, .method-menu .m-HEAD { color: #64748b; }
+    .picker-menu {
+      position: absolute; top: calc(100% + 6px); left: 0; z-index: 40;
+      min-width: 100%; padding: 6px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--menu);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
+    }
+    .picker-menu[hidden] { display: none; }
+    .picker-menu button {
+      display: flex; align-items: center; width: 100%; height: 34px; padding: 0 10px;
+      border: 0; border-radius: 8px; background: transparent; color: var(--text);
+      font-weight: 600; font-size: 13px; cursor: pointer; text-align: left; white-space: nowrap;
+    }
+    .method-menu button { font-weight: 800; font-size: 12px; letter-spacing: 0.05em; }
+    .picker-menu button:hover { background: rgba(107, 92, 231, 0.08); }
+    .picker-menu button.active { background: rgba(107, 92, 231, 0.14); }
     #url {
       flex: 1; min-width: 0; border-radius: 10px; border: 1px solid var(--border);
       background: var(--input); color: var(--text); padding: 10px 12px;
       font-family: 'DM Mono', ui-monospace, monospace; font-size: 13px;
     }
-    #url:focus, #method:focus, textarea:focus, .kv-row input:focus, .env-add input:focus {
+    #url:focus, textarea:focus, .kv-row input:focus, .env-add input:focus {
       outline: none; border-color: var(--accent);
     }
     #sendBtn { padding: 10px 18px; }
@@ -112,6 +138,13 @@
       display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
       padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--glass);
     }
+    .env-bar .text-btn, .env-bar input {
+      height: 40px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--input); color: var(--text); font-size: 13px;
+    }
+    .env-bar input { min-width: 160px; padding: 0 14px; }
+    .env-bar input:focus { outline: none; border-color: var(--accent); }
+    .env-bar .text-btn { padding: 0 14px; font-weight: 600; }
     .env-editor { align-items: stretch; flex-direction: column; }
     .env-add { display: flex; gap: 8px; }
     .env-add input, .env-bar select, .side-save input, .body-tools select, .auth-grid input, .auth-grid select {
@@ -179,11 +212,6 @@
       padding: 6px 12px; font-size: 12px; border-top: 1px solid var(--border); background: var(--glass);
     }
     .status-bar.ok { color: var(--success); } .status-bar.err { color: var(--error); }
-    .proxy-banner {
-      padding: 8px 12px; font-size: 13px; background: rgba(217, 119, 6, 0.12);
-      color: var(--text); border-bottom: 1px solid var(--border);
-    }
-    .proxy-banner[hidden] { display: none; }
     .insecure-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
     @media (max-width: 900px) {
       .workspace { flex-direction: column; }
@@ -207,7 +235,6 @@
       <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" id="themeBtn" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
     </div>
   </header>
-  <div class="proxy-banner" id="proxyBanner" hidden>Project APIs are blocked in this tab. Run <b>python3 server.py</b> and open <b>http://127.0.0.1:8787/json/</b>.</div>
 
   <div class="workspace">
     <button type="button" class="side-rail" id="showSide" title="Show collections" aria-label="Show collections"><i class="fa-solid fa-folder-tree"></i><span>Collections</span></button>
@@ -226,16 +253,35 @@
 
     <section class="content">
       <div class="topbar">
-        <select id="method" class="GET">
-          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option>
-        </select>
+        <div class="picker">
+          <button type="button" class="picker-btn method-btn GET" id="methodBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Request method">
+            <span id="methodLabel">GET</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="picker-menu method-menu" id="methodMenu" role="listbox" hidden>
+            <button type="button" role="option" data-method="GET" class="m-GET">GET</button>
+            <button type="button" role="option" data-method="POST" class="m-POST">POST</button>
+            <button type="button" role="option" data-method="PUT" class="m-PUT">PUT</button>
+            <button type="button" role="option" data-method="PATCH" class="m-PATCH">PATCH</button>
+            <button type="button" role="option" data-method="DELETE" class="m-DELETE">DELETE</button>
+            <button type="button" role="option" data-method="HEAD" class="m-HEAD">HEAD</button>
+          </div>
+          <input type="hidden" id="method" value="GET">
+        </div>
         <input id="url" type="text" placeholder="https://api.example.com/users or {{baseUrl}}/users" spellcheck="false" />
         <button id="sendBtn" class="suite-btn-run" type="button">Send</button>
         <label class="insecure-toggle" title="Use this for a local API with a self-signed certificate"><input id="insecureTls" type="checkbox"> Insecure HTTPS</label>
       </div>
 
       <div class="env-bar">
-        <select id="envSelect"></select>
+        <div class="picker">
+          <button type="button" class="picker-btn" id="envBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Environment">
+            <span id="envLabel">No environment</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="picker-menu" id="envMenu" role="listbox" hidden></div>
+          <input type="hidden" id="envSelect" value="">
+        </div>
         <input id="newEnvName" type="text" placeholder="New environment" />
         <button type="button" class="text-btn" id="addEnv">Add</button>
         <button type="button" class="text-btn" id="deleteEnv">Delete</button>
@@ -491,8 +537,7 @@ function unresolved(str) {
 function applyRequest(req) {
   const data = Object.assign(blankDraft(), req || {});
   document.getElementById('requestName').value = data.name || '';
-  document.getElementById('method').value = data.method || 'GET';
-  document.getElementById('method').className = data.method || 'GET';
+  setMethod(data.method || 'GET');
   document.getElementById('url').value = data.url || '';
   fillKv('paramsTable', data.params && data.params.length ? data.params : queryOf(data.url || '').pairs.map((p) => ({ k: p.k, v: p.v, on: true })));
   fillKv('headersTable', data.headers && data.headers.length ? data.headers : [{ k: '', v: '', on: true }]);
@@ -512,12 +557,16 @@ function applyRequest(req) {
 }
 
 function renderEnvSelect() {
-  const sel = document.getElementById('envSelect');
   const names = Object.keys(environments);
   if (currentEnv && !environments[currentEnv]) currentEnv = '';
-  sel.innerHTML = '<option value="">No environment</option>' + names.map((name) =>
-    '<option value="' + esc(name) + '"' + (name === currentEnv ? ' selected' : '') + '>' + esc(name) + '</option>'
-  ).join('');
+  const menu = document.getElementById('envMenu');
+  const options = [{ value: '', label: 'No environment' }].concat(names.map((name) => ({ value: name, label: name })));
+  menu.innerHTML = options.map((opt) => {
+    const on = opt.value === currentEnv;
+    return '<button type="button" role="option" data-env="' + esc(opt.value) + '"' + (on ? ' class="active" aria-selected="true"' : ' aria-selected="false"') + '>' + esc(opt.label) + '</button>';
+  }).join('');
+  document.getElementById('envSelect').value = currentEnv;
+  document.getElementById('envLabel').textContent = currentEnv || 'No environment';
   renderEnvEditor();
 }
 function renderEnvEditor() {
@@ -618,11 +667,13 @@ async function send() {
   } catch (error) {
     const cors = !proxyReady && /failed to fetch|networkerror|load failed/i.test(error.message || '');
     const message = cors
-      ? 'The browser blocked this request. Start python3 server.py and open http://127.0.0.1:8787/json/ to test a project API.'
+      ? (isLocalPage()
+        ? 'This API blocked the browser. On your computer, run python3 server.py and open http://127.0.0.1:8787/json/.'
+        : 'This API does not allow calls from this site.')
       : error.message;
     lastResponse = { status: 0, statusText: 'Network error', time: Math.round(performance.now() - start), size: 0, text: message, json: null, headers: [], ok: false };
     renderResponse();
-    setStatus(message, true);
+    setStatus(cors ? 'Request blocked' : message, true);
   } finally {
     sendBtn.disabled = false;
   }
@@ -654,17 +705,18 @@ async function sendThroughProxy(url, method, headers, body) {
   return { status: data.status, statusText: data.statusText || '', text: data.body || '', headers: data.headers || [] };
 }
 
+function isLocalPage() {
+  const host = location.hostname;
+  return location.protocol === 'file:' || host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
 async function detectProxy() {
-  const banner = document.getElementById('proxyBanner');
+  proxyReady = false;
   try {
     const res = await fetch('/__proxy', { headers: { Accept: 'application/json' } });
     const data = await res.json();
     proxyReady = !!(data && data.proxy);
-  } catch (e) {
-    proxyReady = false;
-  }
-  banner.hidden = proxyReady;
-  if (proxyReady) setStatus('Local server is on. Project APIs can be tested from here.');
+  } catch (e) {}
 }
 
 function renderResponse() {
@@ -760,6 +812,32 @@ function curl() {
   return lines.join(' \\\n');
 }
 
+function setMethod(method) {
+  const names = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
+  const value = names.includes(method) ? method : 'GET';
+  const btn = document.getElementById('methodBtn');
+  const menu = document.getElementById('methodMenu');
+  document.getElementById('method').value = value;
+  document.getElementById('methodLabel').textContent = value;
+  btn.className = 'picker-btn method-btn ' + value + (menu.hidden ? '' : ' open');
+  menu.querySelectorAll('button').forEach((item) => {
+    const on = item.dataset.method === value;
+    item.classList.toggle('active', on);
+    item.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+}
+
+function closePickers() {
+  document.querySelectorAll('.picker-menu').forEach((menu) => {
+    menu.hidden = true;
+    const btn = menu.parentElement.querySelector('.picker-btn');
+    if (btn) {
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
 function bind() {
   document.getElementById('sendBtn').onclick = send;
   const insecureBox = document.getElementById('insecureTls');
@@ -767,7 +845,50 @@ function bind() {
   insecureBox.onchange = () => localStorage.setItem('api_insecure', insecureBox.checked ? '1' : '0');
   document.getElementById('url').addEventListener('input', () => { urlToParams(); saveDraft(); });
   document.getElementById('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
-  document.getElementById('method').onchange = (e) => { e.target.className = e.target.value; saveDraft(); };
+  const methodBtn = document.getElementById('methodBtn');
+  const methodMenu = document.getElementById('methodMenu');
+  const envBtn = document.getElementById('envBtn');
+  const envMenu = document.getElementById('envMenu');
+  methodBtn.onclick = (event) => {
+    event.stopPropagation();
+    const open = methodMenu.hidden;
+    closePickers();
+    if (open) {
+      methodMenu.hidden = false;
+      methodBtn.classList.add('open');
+      methodBtn.setAttribute('aria-expanded', 'true');
+    }
+  };
+  methodMenu.onclick = (event) => {
+    const choice = event.target.closest('button');
+    if (!choice) return;
+    event.stopPropagation();
+    setMethod(choice.dataset.method);
+    closePickers();
+    saveDraft();
+  };
+  envBtn.onclick = (event) => {
+    event.stopPropagation();
+    const open = envMenu.hidden;
+    closePickers();
+    if (open) {
+      envMenu.hidden = false;
+      envBtn.classList.add('open');
+      envBtn.setAttribute('aria-expanded', 'true');
+    }
+  };
+  envMenu.onclick = (event) => {
+    const choice = event.target.closest('button');
+    if (!choice) return;
+    event.stopPropagation();
+    saveEnvFromTable();
+    currentEnv = choice.dataset.env || '';
+    localStorage.setItem('api_current_env', currentEnv);
+    renderEnvSelect();
+    closePickers();
+  };
+  document.addEventListener('click', closePickers);
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePickers(); });
   document.getElementById('requestName').oninput = saveDraft;
   document.getElementById('body').oninput = saveDraft;
   document.getElementById('bodyType').onchange = () => { showBody(); saveDraft(); };
@@ -834,12 +955,6 @@ function bind() {
     localStorage.setItem('api_current_env', '');
     renderEnvSelect();
   };
-  document.getElementById('envSelect').onchange = (e) => {
-    saveEnvFromTable();
-    currentEnv = e.target.value;
-    localStorage.setItem('api_current_env', currentEnv);
-    renderEnvEditor();
-  };
   document.getElementById('envEditor').addEventListener('input', saveEnvFromTable);
   document.getElementById('envEditor').addEventListener('change', saveEnvFromTable);
   document.getElementById('hideSide').onclick = () => { document.body.classList.add('sidebar-collapsed'); localStorage.setItem('api_sidebar', '0'); };
@@ -880,7 +995,6 @@ renderEnvSelect();
 renderSidebar();
 bind();
 detectProxy();
-document.getElementById('method').className = document.getElementById('method').value;
 </script>
 </body>
 </html>
