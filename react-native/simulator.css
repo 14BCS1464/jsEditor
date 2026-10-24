@@ -12,16 +12,25 @@
 }
 
 #phone-frame {
-  background: #0a0a0a;
-  border: 11px solid #161616;
+  background: #1c1c1e;
+  border: 12px solid #111111;
   border-radius: 48px;
   position: absolute;
   top: 0;
   left: 0;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px #3f3f3f inset,
-    0 0 0 2px #0a0a0a inset;
+    0 0 0 2px #000,
+    inset 0 0 0 2px #1a1a1a,
+    0 25px 60px -12px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] #phone-frame {
+  border-color: #8d8d92;
+  box-shadow:
+    0 0 0 3px #d4d4d8,
+    inset 0 0 0 2px #2c2c2e,
+    0 25px 60px -12px rgba(0, 0, 0, 0.55);
 }
 
 /* Side buttons */
@@ -29,7 +38,7 @@
 #phone-frame::after {
   content: '';
   position: absolute;
-  background: linear-gradient(to bottom, #4a4a4a, #1f1f1f);
+  background: linear-gradient(to bottom, #3a3a3c, #111111);
   border-radius: 2px;
   z-index: 40;
 }
@@ -38,7 +47,7 @@
   top: 130px;
   width: 3.5px;
   height: 68px;
-  box-shadow: 0 86px 0 #2c2c2c;
+  box-shadow: 0 86px 0 #222;
 }
 #phone-frame::after {
   right: -3.5px;
@@ -59,6 +68,20 @@
   box-sizing: border-box;
   position: relative;
   z-index: 40;
+  margin-bottom: -1px;
+  border: none;
+  box-shadow: none;
+}
+#emulator-screen,
+#app-root,
+#home-indicator-container,
+#android-nav {
+  border: none;
+  box-shadow: none;
+}
+#home-indicator-container,
+#android-nav {
+  margin-top: -2px;
 }
 #status-time { justify-self: start; font-variant-numeric: tabular-nums; }
 #status-icons {
@@ -322,12 +345,29 @@
 /* Tablet and iPad chrome. Phones keep the 4-column layout above. */
 #phone-frame[data-form="tablet"] {
   border-width: 16px;
-  border-color: #1a1a1a;
+  border-color: #111111;
+}
+
+html[data-theme="dark"] #phone-frame[data-form="tablet"] {
+  border-color: #8d8d92;
 }
 #phone-frame[data-form="tablet"]::before {
   top: 72px;
   height: 42px;
-  box-shadow: 0 54px 0 #2c2c2c;
+  box-shadow: 0 54px 0 #222;
+}
+
+html[data-theme="dark"] #phone-frame::before,
+html[data-theme="dark"] #phone-frame::after {
+  background: linear-gradient(to bottom, #c8c8cc, #7a7a80);
+}
+
+html[data-theme="dark"] #phone-frame::before {
+  box-shadow: 0 86px 0 #9a9aa0;
+}
+
+html[data-theme="dark"] #phone-frame[data-form="tablet"]::before {
+  box-shadow: 0 54px 0 #9a9aa0;
 }
 #phone-frame[data-form="tablet"]::after {
   top: 96px;

@@ -253,7 +253,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(refreshAllDiagnostics, 600);
     setTimeout(refreshAllDiagnostics, 1600);
 
-    showToast("Editor Ready — TypeScript validation active!", "success");
 });
 
 /* ===============================
@@ -580,7 +579,6 @@ function runInWorker(jsCode, silent) {
         else if (kind === "done") {
             clearTimeout(timeoutId); worker.terminate(); URL.revokeObjectURL(url);
             if (currentWorker === worker) currentWorker = null;
-            if (!silent) showToast("Execution completed", "success");
         } else if (kind === "error") {
             clearTimeout(timeoutId); worker.terminate(); URL.revokeObjectURL(url);
             if (currentWorker === worker) currentWorker = null;

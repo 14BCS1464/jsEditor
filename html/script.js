@@ -105,7 +105,7 @@ function loadSavedState() {
 
             // Apply layout preferences
             if (layout.previewWidth) {
-                previewPanel.style.width = `${layout.previewWidth}px`;
+                requestAnimationFrame(() => setPaneSizes(layout.previewWidth));
             }
 
             if (typeof layout.previewVisible === 'boolean') {
@@ -515,8 +515,6 @@ function runCode() {
 
     // Save state after run
     saveState();
-
-    showToast('Preview updated successfully', 'success');
 }
 
 function scheduleRun() {
@@ -655,8 +653,25 @@ function updateCursorPosition(textarea) {
 }
 
 // Resize functionality
+function setPaneSizes(previewPx) {
+    const container = previewPanel.parentElement;
+    if (!container) return;
+    const handleWidth = resizeHandle ? resizeHandle.offsetWidth : 0;
+    const total = container.clientWidth - handleWidth;
+    const minPreview = 220;
+    const minEditor = 280;
+    const preview = Math.max(minPreview, Math.min(previewPx, total - minEditor));
+    const editor = Math.max(minEditor, total - preview);
+    const editorArea = container.querySelector('.editor-area');
+    if (editorArea) editorArea.style.flex = `0 0 ${editor}px`;
+    previewPanel.style.flex = `0 0 ${preview}px`;
+    previewPanel.style.width = `${preview}px`;
+}
+
 function startResizing(e) {
+    e.preventDefault();
     isResizing = true;
+    document.body.classList.add('html-pane-dragging');
     document.addEventListener('mousemove', resize);
     document.addEventListener('mouseup', stopResizing);
     resizeHandle.classList.add('active');
@@ -664,21 +679,19 @@ function startResizing(e) {
 
 function resize(e) {
     if (!isResizing) return;
-
-    const totalWidth = window.innerWidth;
-    const sidebarWidth = 60;
-    const newPreviewWidth = totalWidth - e.clientX - sidebarWidth;
-
-    if (newPreviewWidth > 300 && newPreviewWidth < totalWidth - 500) {
-        previewPanel.style.width = `${newPreviewWidth}px`;
-    }
+    const rect = previewPanel.parentElement.getBoundingClientRect();
+    const handleWidth = resizeHandle ? resizeHandle.offsetWidth : 0;
+    setPaneSizes(rect.right - e.clientX - handleWidth / 2);
 }
 
 function stopResizing() {
+    if (!isResizing) return;
     isResizing = false;
+    document.body.classList.remove('html-pane-dragging');
     document.removeEventListener('mousemove', resize);
     document.removeEventListener('mouseup', stopResizing);
     resizeHandle.classList.remove('active');
+    debouncedSave();
 }
 
 // Status updates
@@ -747,7 +760,6 @@ function formatCode(type) {
     const action = editor.getAction('editor.action.formatDocument');
     if (action) action.run();
     else if (type === 'html') editor.setValue(editor.getValue().replace(/></g, '>\n<'));
-    showToast(`${type.toUpperCase()} formatted`, 'success');
 }
 
 // Toast notification

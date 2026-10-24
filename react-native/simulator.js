@@ -115,6 +115,7 @@ const createRNPrimitives = () => {
       position: 'relative',
       borderWidth: 0,
       borderStyle: 'solid',
+      borderColor: 'transparent',
       minWidth: 0,
       minHeight: 0
     };
@@ -174,6 +175,7 @@ const createRNPrimitives = () => {
         opacity: isPressed && !disabled ? activeOpacity : (disabled ? 0.5 : 1),
         borderWidth: 0,
         borderStyle: 'solid',
+        borderColor: 'transparent',
         ...processStyles(style)
       },
       ...domProps(props)
@@ -218,6 +220,7 @@ const createRNPrimitives = () => {
         opacity: disabled ? 0.5 : 1,
         borderWidth: 0,
         borderStyle: 'solid',
+        borderColor: 'transparent',
         ...processStyles(computedStyle)
       },
       ...domProps(props)
@@ -1582,14 +1585,8 @@ function applyDevice() {
   // Resolution label
   document.getElementById('resolution-display').innerText = `${d.n} • ${w} × ${h}`;
 
-  // Frame color / shadow (slightly better metal edge)
-  frame.style.borderColor = '#1a1a1a';
-  frame.style.boxShadow = `
-    0 0 0 1px #3a3a3a inset,
-    0 0 0 2px #0a0a0a inset,
-    0 25px 60px -12px rgba(0,0,0,.75),
-    0 0 40px rgba(97,218,251,.08)
-  `;
+  paintFrameChrome();
+  paintOrientIcon();
 
   buildLauncher();
   fitDevice();
@@ -1614,11 +1611,43 @@ function setDevice(key) {
   runCode(); // re-run so Platform.OS and Dimensions update
 }
 
+function paintFrameChrome() {
+  const frame = document.getElementById('phone-frame');
+  if (!frame) return;
+  const dark = document.documentElement.dataset.theme === 'dark';
+  if (dark) {
+    frame.style.borderColor = '#8d8d92';
+    frame.style.boxShadow = '0 0 0 3px #d4d4d8, inset 0 0 0 2px #2c2c2e, 0 25px 60px -12px rgba(0,0,0,.55)';
+  } else {
+    frame.style.borderColor = '#111111';
+    frame.style.boxShadow = '0 0 0 2px #000, inset 0 0 0 2px #1a1a1a, 0 25px 60px -12px rgba(0,0,0,.4)';
+  }
+}
+
+function paintOrientIcon() {
+  const rect = document.getElementById('orient-phone');
+  const btn = document.getElementById('orient-btn');
+  const land = currentOrientation === 'landscape';
+  if (rect) {
+    rect.setAttribute('x', land ? '1.5' : '7');
+    rect.setAttribute('y', land ? '7' : '1.5');
+    rect.setAttribute('width', land ? '21' : '10');
+    rect.setAttribute('height', land ? '10' : '21');
+  }
+  if (btn) {
+    const label = land ? 'Switch to portrait' : 'Switch to landscape';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
+}
+
 function toggleOrientation() {
   currentOrientation = currentOrientation === 'portrait' ? 'landscape' : 'portrait';
   applyDevice();
   setTimeout(runCode, 350);
 }
+
+document.addEventListener('suite-theme', paintFrameChrome);
 
 function applyPreviewTheme() {
   const screen = document.getElementById('emulator-screen');
@@ -1674,22 +1703,30 @@ function paintStatusBar() {
   }
   if (osMode === 'home' || osMode === 'system') light = isDarkPreview;
   const nav = document.getElementById('android-nav');
+  const themeBg = isDarkPreview ? '#020617' : '#ffffff';
   if (osMode === 'home') {
     sb.style.background = isDarkPreview ? '#0f172a' : '#e8eef6';
     sb.style.color = isDarkPreview ? '#ffffff' : '#0f172a';
     hic.style.background = isDarkPreview ? '#020617' : '#e2e8f0';
+    screen.style.backgroundColor = themeBg;
   } else if (osMode === 'system') {
     sb.style.background = isDarkPreview ? '#0f172a' : '#f2f2f7';
     sb.style.color = isDarkPreview ? '#ffffff' : '#0f172a';
     hic.style.background = isDarkPreview ? '#0f172a' : '#f2f2f7';
+    screen.style.backgroundColor = themeBg;
   } else {
     sb.style.background = bg;
     sb.style.color = light ? '#ffffff' : '#0f172a';
     hic.style.background = bg;
+    screen.style.backgroundColor = bg;
   }
+  sb.style.border = 'none';
+  screen.style.border = 'none';
   if (nav) {
     nav.style.background = sb.style.background;
     nav.style.color = sb.style.color;
+    nav.style.border = 'none';
+    nav.style.boxShadow = 'none';
   }
   if (hi.dataset.shape === 'button') {
     hi.style.background = 'transparent';

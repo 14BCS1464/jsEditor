@@ -24,6 +24,8 @@ const qtext = document.getElementById('qtext');
 const qcode = document.getElementById('qcode');
 const optionsEl = document.getElementById('options');
 const feedback = document.getElementById('feedback');
+const explainStatus = document.getElementById('explainStatus');
+const explainBody = document.getElementById('explainBody');
 const result = document.getElementById('result');
 const counter = document.getElementById('counter');
 const bar = document.getElementById('bar');
@@ -49,6 +51,127 @@ const reviewBtn = document.getElementById('reviewBtn');
 // Utility functions
 const isMulti = (q) => Array.isArray(q.answer);
 const eqSet = (a, b) => a.size === b.size && [...a].every(v => b.has(v));
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+}
+
+function highlightLine(line) {
+  const keywords = /^(const|let|var|function|return|if|else|new|await|async|class|typeof|instanceof|try|catch|throw|for|while|of|in|switch|case|break|continue|import|export|from|default|true|false|null|undefined)\b/;
+  let html = '';
+  let i = 0;
+  while (i < line.length) {
+    const rest = line.slice(i);
+    if (rest.startsWith('//')) {
+      html += `<span class="tok-cmt">${escapeHtml(rest)}</span>`;
+      break;
+    }
+    const str = rest.match(/^(?:`(?:\\.|[^`\\])*`|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")/);
+    if (str) {
+      html += `<span class="tok-str">${escapeHtml(str[0])}</span>`;
+      i += str[0].length;
+      continue;
+    }
+    const num = rest.match(/^\d+(?:\.\d+)?/);
+    if (num && (i === 0 || !/[A-Za-z_$]/.test(line[i - 1]))) {
+      html += `<span class="tok-num">${num[0]}</span>`;
+      i += num[0].length;
+      continue;
+    }
+    const word = rest.match(keywords);
+    if (word && (i === 0 || !/[A-Za-z0-9_$]/.test(line[i - 1]))) {
+      html += `<span class="tok-kw">${word[0]}</span>`;
+      i += word[0].length;
+      continue;
+    }
+    const fn = rest.match(/^[A-Za-z_$][\w$]*(?=\s*\()/);
+    if (fn) {
+      html += `<span class="tok-fn">${escapeHtml(fn[0])}</span>`;
+      i += fn[0].length;
+      continue;
+    }
+    html += escapeHtml(rest[0]);
+    i += 1;
+  }
+  return html;
+}
+
+function renderCode(code) {
+  if (!code) {
+    qcode.classList.add('hidden');
+    qcode.innerHTML = '';
+    return;
+  }
+  const lines = String(code).replace(/\n$/, '').split('\n');
+  const gutter = lines.map((_, n) => `<span>${n + 1}</span>`).join('');
+  const body = lines.map((line) => `<div class="editor-line">${highlightLine(line) || '&nbsp;'}</div>`).join('');
+  qcode.classList.remove('hidden');
+  qcode.innerHTML = `
+    <div class="editor-bar">
+      <span class="editor-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="editor-name">question.js</span>
+    </div>
+    <div class="editor-body">
+      <div class="editor-gutter">${gutter}</div>
+      <div class="editor-code">${body}</div>
+    </div>`;
+}
+
+function inlineExplain(text) {
+  return escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+function formatExplain(text) {
+  const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+  let html = '';
+  let inList = false;
+  const closeList = () => {
+    if (inList) {
+      html += '</ul>';
+      inList = false;
+    }
+  };
+  lines.forEach((raw) => {
+    const line = raw.trim();
+    if (!line) {
+      closeList();
+      return;
+    }
+    if (/final (execution )?order/i.test(line)) {
+      closeList();
+      html += `<p class="explain-order">${inlineExplain(line)}</p>`;
+      return;
+    }
+    if (/detailed explanation/i.test(line)) {
+      closeList();
+      html += `<h3>${inlineExplain(line.replace(/^[^A-Za-z]+/, ''))}</h3>`;
+      return;
+    }
+    if (/^\d+[.)]\s+/.test(line)) {
+      closeList();
+      html += `<h4>${inlineExplain(line)}</h4>`;
+      return;
+    }
+    if (/^[-•]/.test(line)) {
+      if (!inList) {
+        html += '<ul>';
+        inList = true;
+      }
+      html += `<li>${inlineExplain(line.replace(/^[-•]\s*/, ''))}</li>`;
+      return;
+    }
+    closeList();
+    html += `<p>${inlineExplain(line)}</p>`;
+  });
+  closeList();
+  return html;
+}
+
+function resetExplanation() {
+  feedback.className = 'explain-pane idle';
+  explainStatus.textContent = 'Choose an answer, then press Check. The explanation stays on this side.';
+  explainBody.innerHTML = '';
+}
 
 // Score popup functionality
 function showScorePopup(score, total, percentage) {
@@ -206,18 +329,10 @@ function render() {
   const q = QUESTIONS[index];
   counter.textContent = `Q ${index + 1}/${QUESTIONS.length}`;
   bar.style.width = `${((index + 1) / QUESTIONS.length) * 100}%`;
-  feedback.style.display = 'none';
-  feedback.textContent = '';
-  feedback.className = 'feedback';
+  resetExplanation();
 
   qtext.textContent = q.question;
-  if (q.code) {
-    qcode.classList.remove('hidden');
-    qcode.textContent = q.code;
-  } else {
-    qcode.classList.add('hidden');
-    qcode.textContent = '';
-  }
+  renderCode(q.code);
 
   optionsEl.innerHTML = '';
   const saved = userSelections.get(q.id) || new Set();
@@ -255,9 +370,9 @@ function checkAnswer() {
   const q = QUESTIONS[index];
   const sel = userSelections.get(q.id) || new Set();
   if (sel.size === 0) {
-    feedback.classList.add('bad');
-    feedback.textContent = 'Please select at least one option.';
-    feedback.style.display = 'block';
+    feedback.className = 'explain-pane bad';
+    explainStatus.textContent = 'Select an answer';
+    explainBody.innerHTML = '<p>Pick at least one option, then press Check.</p>';
     return;
   }
 
@@ -269,20 +384,20 @@ function checkAnswer() {
     correct = sel.has(Number(q.answer));
   }
 
+  feedback.className = 'explain-pane ' + (correct ? 'ok' : 'bad');
+  explainStatus.textContent = correct ? 'Correct' : 'Not quite';
+  explainBody.innerHTML = q.explain
+    ? formatExplain(q.explain)
+    : '<p>There is no written explanation for this question.</p>';
+
   if (correct) {
-    feedback.classList.add('ok');
-    feedback.textContent = 'Correct! ' + (q.explain || '');
     const key = `scored-${q.id}`;
     if (!sessionStorage.getItem(key)) {
       score += 1;
       scorePill.textContent = `Score: ${score}`;
       sessionStorage.setItem(key, '1');
     }
-  } else {
-    feedback.classList.add('bad');
-    feedback.textContent = 'Not quite. ' + (q.explain || '');
   }
-  feedback.style.display = 'block';
 }
 
 function finishQuiz() {

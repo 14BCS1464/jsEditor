@@ -55,9 +55,9 @@
             left: 0;
             right: 0;
             z-index: 100;
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            justify-content: space-between;
             padding: 0 48px;
             height: 64px;
             background: rgba(247, 246, 243, 0.9);
@@ -74,15 +74,23 @@
 
         .nav-links {
             display: flex;
-            gap: 32px;
+            gap: 28px;
+            justify-self: center;
         }
 
         .nav-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             font-size: 13px;
             font-weight: 400;
             color: var(--sub);
             text-decoration: none;
             transition: color 0.15s;
+        }
+
+        .nav-links svg {
+            flex-shrink: 0;
         }
 
         .nav-links a:hover {
@@ -108,13 +116,12 @@
 
         /* ─── HERO ─── */
         .hero {
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             text-align: center;
-            padding: 100px 24px 60px;
+            padding: 88px 24px 20px;
             position: relative;
             overflow: hidden;
         }
@@ -154,7 +161,7 @@
             font-size: 11px;
             color: var(--accent2);
             letter-spacing: 0.08em;
-            margin-bottom: 28px;
+            margin-bottom: 16px;
             animation: fadeUp 0.6s ease forwards;
         }
 
@@ -180,12 +187,12 @@
 
         h1 {
             font-family: 'Syne', sans-serif;
-            font-size: clamp(42px, 7vw, 80px);
+            font-size: clamp(34px, 4.4vw, 52px);
             font-weight: 800;
-            line-height: 1.05;
+            line-height: 1.08;
             letter-spacing: -0.03em;
             color: var(--text);
-            margin-bottom: 24px;
+            margin-bottom: 14px;
             animation: fadeUp 0.6s 0.1s ease both;
             max-width: 800px;
         }
@@ -202,7 +209,7 @@
             line-height: 1.7;
             max-width: 520px;
             animation: fadeUp 0.6s 0.2s ease both;
-            margin-bottom: 40px;
+            margin-bottom: 0;
         }
 
         .hero-ctas {
@@ -211,7 +218,7 @@
             justify-content: center;
             flex-wrap: wrap;
             animation: fadeUp 0.6s 0.3s ease both;
-            margin-bottom: 64px;
+            margin-bottom: 22px;
         }
 
         .btn-primary {
@@ -249,40 +256,34 @@
             background: var(--bg2);
         }
 
-        /* ─── STATS ─── */
-        .stats {
+        /* ─── TOOL JUMP ─── */
+        .tool-jump {
             display: flex;
-            gap: 48px;
+            gap: 8px;
             justify-content: center;
             flex-wrap: wrap;
+            max-width: 760px;
             animation: fadeUp 0.6s 0.4s ease both;
         }
 
-        .stat {
-            text-align: center;
-        }
-
-        .stat-num {
-            font-family: 'Syne', sans-serif;
-            font-size: 28px;
-            font-weight: 700;
+        .tool-jump a {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 0.5px solid var(--border2);
+            background: var(--bg2);
             color: var(--text);
+            text-decoration: none;
+            font-size: 13px;
         }
 
-        .stat-num span {
+        .tool-jump a:hover {
+            border-color: var(--accent);
             color: var(--accent2);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--sub);
-            margin-top: 2px;
-            letter-spacing: 0.04em;
         }
 
         /* ─── SECTION COMMON ─── */
         section {
-            padding: 96px 24px;
+            padding: 48px 24px;
         }
 
         .section-inner {
@@ -326,7 +327,7 @@
 
         .tools-header {
             text-align: center;
-            margin-bottom: 56px;
+            margin-bottom: 28px;
         }
 
         .tools-header .section-sub {
@@ -398,11 +399,24 @@
             background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
         }
 
+        .tc-shot {
+            margin: -24px -24px 16px;
+            height: 128px;
+            background: #f3f1ec;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .tc-shot svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
         .tc-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .tc-icon {
@@ -475,52 +489,27 @@
         }
 
         /* ─── CODE PREVIEW ─── */
-        .code-section {
-            background: var(--bg);
+        #coffee {
+            margin-top: 28px;
+            scroll-margin-top: 84px;
         }
 
-        .code-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 48px;
-            align-items: start;
+        .js-sample {
+            margin-top: 28px;
+            scroll-margin-top: 84px;
         }
 
-        .code-info {
-            padding-top: 16px;
-        }
-
-        .code-features {
-            margin-top: 32px;
+        .js-sample-head {
             display: flex;
-            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
             gap: 16px;
+            margin-bottom: 16px;
         }
 
-        .cf-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .cf-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--accent2);
-            margin-top: 7px;
-            flex-shrink: 0;
-        }
-
-        .cf-text {
-            font-size: 14px;
-            color: var(--sub);
-            line-height: 1.6;
-        }
-
-        .cf-text strong {
-            color: var(--text);
-            font-weight: 500;
+        .js-sample .section-title {
+            font-size: clamp(26px, 3vw, 36px);
+            margin-bottom: 0;
         }
 
         .code-window {
@@ -722,113 +711,96 @@
             font-weight: 300;
         }
 
-        /* ─── TESTIMONIALS ─── */
-        .testi-section {
+        /* ─── COFFEE ─── */
+        .coffee-section {
             background: var(--bg);
+            padding-top: 28px;
         }
 
-        .testi-grid {
+        .coffee-card {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-top: 56px;
-        }
-
-        .testi-card {
-            background: #ffffff;
+            grid-template-columns: 92px 1.4fr auto;
+            gap: 24px;
+            align-items: center;
+            background: var(--bg2);
             border: 0.5px solid var(--border);
+            border-radius: 20px;
+            padding: 22px 28px;
+        }
+
+        .coffee-art {
+            width: 92px;
+            height: 92px;
             border-radius: 16px;
-            padding: 28px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+            background: #fff8e8;
+            border: 0.5px solid rgba(217, 119, 6, 0.25);
+            overflow: hidden;
         }
 
-        .testi-stars {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
+        .coffee-art svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
-        .star {
-            color: var(--amber);
-            font-size: 14px;
-        }
-
-        .testi-text {
-            font-size: 14px;
+        .coffee-card p {
+            margin-top: 12px;
             color: var(--sub);
-            line-height: 1.75;
+            font-size: 15px;
+            line-height: 1.7;
             font-weight: 300;
-            margin-bottom: 20px;
-            font-style: italic;
+            max-width: 520px;
         }
 
-        .testi-text::before {
-            content: '"';
-            color: var(--accent2);
-            font-size: 24px;
-            font-family: 'Syne', serif;
-            line-height: 0;
-            vertical-align: -8px;
-            margin-right: 4px;
-        }
-
-        .testi-author {
+        .coffee-actions {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
         }
 
-        .testi-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        .coffee-amounts {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .coffee-amounts a,
+        .coffee-btn {
+            text-decoration: none;
+            border-radius: 10px;
             font-weight: 600;
-            flex-shrink: 0;
         }
 
-        .av1 {
-            background: rgba(107, 92, 231, 0.15);
-            color: var(--accent2);
-        }
-
-        .av2 {
-            background: rgba(42, 157, 110, 0.12);
-            color: var(--green);
-        }
-
-        .av3 {
-            background: rgba(14, 165, 233, 0.12);
-            color: var(--teal);
-        }
-
-        .av4 {
-            background: rgba(217, 119, 6, 0.12);
-            color: var(--amber);
-        }
-
-        .av5 {
-            background: rgba(224, 90, 90, 0.12);
-            color: var(--coral);
-        }
-
-        .av6 {
-            background: rgba(139, 92, 246, 0.12);
-            color: #8b5cf6;
-        }
-
-        .testi-name {
-            font-size: 13px;
-            font-weight: 500;
+        .coffee-amounts a {
+            padding: 8px 12px;
+            border: 0.5px solid var(--border2);
             color: var(--text);
+            background: var(--bg);
+            font-size: 13px;
         }
 
-        .testi-role {
+        .coffee-amounts a:hover {
+            border-color: var(--amber);
+        }
+
+        .coffee-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            background: #ffdd00;
+            color: #1a1a1a;
+            font-size: 15px;
+        }
+
+        .coffee-btn:hover {
+            filter: brightness(0.96);
+        }
+
+        .coffee-note {
             font-size: 12px;
-            color: var(--sub);
+            color: var(--dim);
         }
 
         /* ─── TRUST BADGES ─── */
@@ -972,32 +944,43 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .code-layout {
-                grid-template-columns: 1fr;
+            .js-sample-head {
+                align-items: flex-start;
+                flex-direction: column;
             }
 
             .features-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .testi-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .coffee-card {
+                grid-template-columns: 72px 1fr;
+            }
+
+            .coffee-actions {
+                grid-column: 1 / -1;
             }
 
             nav {
-                padding: 0 24px;
+                height: auto;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 16px;
+                padding: 12px 16px;
             }
 
             .nav-links {
-                display: none;
+                order: 3;
+                width: 100%;
+                gap: 16px;
+                overflow-x: auto;
             }
         }
 
         @media (max-width: 600px) {
 
             .tools-grid,
-            .features-grid,
-            .testi-grid {
+            .features-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -1007,8 +990,8 @@
                 text-align: center;
             }
 
-            .stats {
-                gap: 32px;
+            .tool-jump {
+                justify-content: flex-start;
             }
         }
     </style>
@@ -1020,12 +1003,27 @@
     <nav>
         <div class="nav-logo">js.zero2hero</div>
         <div class="nav-links">
-            <a href="#tools">Tools</a>
-            <a href="#features">Features</a>
-            <a href="#examples">Examples</a>
-            <a href="#reviews">Reviews</a>
+            <a href="editor/">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                JS
+            </a>
+            <a href="react/">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg>
+                React
+            </a>
+            <a href="notebook/">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 0-2 2z"/><path d="M4 4v16"/><line x1="8" y1="8" x2="14" y2="8"/><line x1="8" y1="12" x2="14" y2="12"/></svg>
+                Notebook
+            </a>
+            <a href="json/">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/></svg>
+                API
+            </a>
+            <a href="#coffee">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+                Coffee
+            </a>
         </div>
-        <a href="#tools" class="nav-cta">Start Coding →</a>
     </nav>
 
     <!-- HERO -->
@@ -1035,45 +1033,38 @@
             <span class="dot"></span>
             Free · No install · No account required
         </div>
-        <h1>Learn <em>JavaScript</em><br>right in your browser</h1>
-        <p class="hero-sub">A complete toolkit for beginners and pros. Write, run, and understand JavaScript — with zero
-            setup, zero friction, zero excuses.</p>
-        <div class="hero-ctas">
-            <a href="#tools" class="btn-primary">Open the Editor</a>
-            <a href="#examples" class="btn-ghost">See Code Examples</a>
-        </div>
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-num">6<span>+</span></div>
-                <div class="stat-label">Built-in tools</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">0<span>ms</span></div>
-                <div class="stat-label">Setup time</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">100<span>%</span></div>
-                <div class="stat-label">Free, forever</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">ES<span>2024</span></div>
-                <div class="stat-label">Latest JS support</div>
-            </div>
-        </div>
+        <h1>JavaScript editors in the <em>browser</em></h1>
+        <p class="hero-sub">Open an editor and run code. JavaScript, TypeScript, React, React Native, HTML, and an API
+            client. Nothing to install, and no account.</p>
     </section>
 
     <!-- TOOLS -->
     <section class="tools-section" id="tools">
         <div class="section-inner">
             <div class="tools-header">
-                <div class="section-tag">// pick your weapon</div>
-                <h2 class="section-title">Every tool you need to learn JS</h2>
-                <p class="section-sub">From a beginner's first hello world to a senior dev prototyping a component —
-                    there's a tool for every moment.</p>
+                <div class="section-tag">// the editors</div>
+                <h2 class="section-title">Pick an editor and start</h2>
+                <p class="section-sub">Each one opens in the browser. Your work stays in this browser unless you copy it
+                    out.</p>
             </div>
             <div class="tools-grid">
 
                 <a href="editor/" class="tool-card tc-js">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#f3f1ec"/>
+                            <rect x="18" y="16" width="324" height="118" rx="10" fill="#1e1d27"/>
+                            <circle cx="36" cy="32" r="3.5" fill="#e05a5a"/>
+                            <circle cx="50" cy="32" r="3.5" fill="#e8b84b"/>
+                            <circle cx="64" cy="32" r="3.5" fill="#2a9d6e"/>
+                            <text x="250" y="36" fill="#8b87a8" font-size="10" font-family="ui-monospace,monospace">playground.js</text>
+                            <text x="32" y="60" fill="#a78bfa" font-size="12" font-family="ui-monospace,monospace">const</text>
+                            <text x="74" y="60" fill="#f4f2ee" font-size="12" font-family="ui-monospace,monospace">greet = name =&gt;</text>
+                            <text x="48" y="80" fill="#86efac" font-size="12" font-family="ui-monospace,monospace">`Hello, ${name}`</text>
+                            <rect x="18" y="96" width="324" height="38" fill="#16151c"/>
+                            <text x="32" y="120" fill="#4ade80" font-size="12" font-family="ui-monospace,monospace">› Hello, Ayesha</text>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-js">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1093,6 +1084,19 @@
                 </a>
 
                 <a href="notebook/" class="tool-card tc-nb">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#f8f3ea"/>
+                            <rect x="22" y="16" width="316" height="52" rx="8" fill="#fff" stroke="#eadfce"/>
+                            <text x="36" y="38" fill="#d97706" font-size="11" font-family="ui-monospace,monospace">1</text>
+                            <text x="54" y="38" fill="#3d3a33" font-size="12" font-family="ui-monospace,monospace">const total = 2 + 3</text>
+                            <rect x="22" y="78" width="316" height="56" rx="8" fill="#fff" stroke="#eadfce"/>
+                            <text x="36" y="100" fill="#d97706" font-size="11" font-family="ui-monospace,monospace">2</text>
+                            <text x="54" y="100" fill="#3d3a33" font-size="12" font-family="ui-monospace,monospace">total</text>
+                            <rect x="54" y="110" width="36" height="14" rx="4" fill="#fff4e0"/>
+                            <text x="60" y="121" fill="#b45309" font-size="10" font-family="ui-monospace,monospace">5</text>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-nb">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1114,6 +1118,20 @@
                 </a>
 
                 <a href="react/" class="tool-card tc-react">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#eef6fb"/>
+                            <rect x="16" y="16" width="168" height="118" rx="10" fill="#1e1d27"/>
+                            <text x="28" y="40" fill="#7dd3fc" font-size="11" font-family="ui-monospace,monospace">function App()</text>
+                            <text x="28" y="60" fill="#e2e8f0" font-size="11" font-family="ui-monospace,monospace">return (</text>
+                            <text x="40" y="78" fill="#86efac" font-size="11" font-family="ui-monospace,monospace">&lt;Button /&gt;</text>
+                            <text x="28" y="96" fill="#e2e8f0" font-size="11" font-family="ui-monospace,monospace">)</text>
+                            <rect x="196" y="16" width="148" height="118" rx="10" fill="#fff" stroke="#d7e6f0"/>
+                            <text x="214" y="48" fill="#64748b" font-size="10" font-family="ui-sans-serif,sans-serif">Preview</text>
+                            <rect x="214" y="64" width="92" height="28" rx="8" fill="#0ea5e9"/>
+                            <text x="232" y="82" fill="#fff" font-size="12" font-family="ui-sans-serif,sans-serif">Hello</text>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-react">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1126,14 +1144,26 @@
                         </div>
                         <div>
                             <div class="tc-name">React Editor</div>
-                            <div class="tc-tag">JSX + hot reload</div>
+                            <div class="tc-tag">JSX and a live preview</div>
                         </div>
                     </div>
-                    <p class="tc-desc">Write React components with JSX syntax and see them live in a split preview. No
-                        bundler setup, no config — just components that work immediately.</p>
+                    <p class="tc-desc">Write React components across files, import them, and run a live preview next to
+                        the code.</p>
                     <div class="tc-link">Open React editor →</div>
                 </a>
                 <a href="react-native/" class="tool-card tc-react">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#eef6fb"/>
+                            <rect x="148" y="10" width="64" height="130" rx="12" fill="#111827"/>
+                            <rect x="152" y="22" width="56" height="106" rx="6" fill="#f8fafc"/>
+                            <rect x="160" y="34" width="40" height="28" rx="6" fill="#e0f2fe"/>
+                            <text x="168" y="52" fill="#0369a1" font-size="9" font-family="ui-sans-serif,sans-serif">Hi</text>
+                            <rect x="160" y="72" width="40" height="16" rx="8" fill="#0ea5e9"/>
+                            <text x="168" y="83" fill="#fff" font-size="8" font-family="ui-sans-serif,sans-serif">Tap</text>
+                            <rect x="172" y="116" width="16" height="4" rx="2" fill="#111827"/>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-react">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1146,16 +1176,25 @@
                         </div>
                         <div>
                             <div class="tc-name">React Native Editor</div>
-                            <div class="tc-tag">React Native + hot reload</div>
+                            <div class="tc-tag">Phone preview</div>
                         </div>
                     </div>
-                    <p class="tc-desc">Write React Native components with JSX syntax and see them live in a split preview. No
-                        bundler setup, no config — just components that work immediately. 
-                        It is a phone-style React Native screen. Press the button and a detail panel opens on
-                        top of the app, the same way a mobile screen opens.</p>
+                    <p class="tc-desc">Write React Native components and see them on a phone preview. You can add files
+                        and import them the same way you would in a small app.</p>
                     <div class="tc-link">Open React Native editor →</div>
                 </a>
                 <a href="typescript/" class="tool-card tc-ts">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#eef6f2"/>
+                            <rect x="18" y="16" width="324" height="118" rx="10" fill="#1e1d27"/>
+                            <text x="32" y="46" fill="#86efac" font-size="12" font-family="ui-monospace,monospace">type User = {</text>
+                            <text x="48" y="66" fill="#e2e8f0" font-size="12" font-family="ui-monospace,monospace">name: string</text>
+                            <text x="32" y="86" fill="#86efac" font-size="12" font-family="ui-monospace,monospace">}</text>
+                            <rect x="196" y="100" width="128" height="20" rx="6" fill="#14532d"/>
+                            <text x="208" y="114" fill="#86efac" font-size="10" font-family="ui-sans-serif,sans-serif">No type errors</text>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-ts">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1176,6 +1215,20 @@
                 </a>
 
                 <a href="html/" class="tool-card tc-html">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#fbf1f1"/>
+                            <rect x="28" y="18" width="304" height="114" rx="10" fill="#fff" stroke="#f0d4d4"/>
+                            <rect x="28" y="18" width="304" height="22" rx="10" fill="#f8ecec"/>
+                            <circle cx="46" cy="29" r="3" fill="#e05a5a"/>
+                            <circle cx="58" cy="29" r="3" fill="#e8b84b"/>
+                            <circle cx="70" cy="29" r="3" fill="#2a9d6e"/>
+                            <text x="48" y="66" fill="#1f1e27" font-size="16" font-family="ui-sans-serif,sans-serif" font-weight="700">A small page</text>
+                            <text x="48" y="86" fill="#6b6760" font-size="11" font-family="ui-sans-serif,sans-serif">HTML, CSS, and JS together</text>
+                            <rect x="48" y="98" width="72" height="18" rx="6" fill="#e05a5a"/>
+                            <text x="62" y="111" fill="#fff" font-size="10" font-family="ui-sans-serif,sans-serif">Open</text>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-html">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1194,6 +1247,20 @@
                 </a>
 
                 <a href="json/" class="tool-card tc-json">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#f4f1fb"/>
+                            <rect x="18" y="16" width="324" height="118" rx="10" fill="#fff" stroke="#e4dff3"/>
+                            <rect x="32" y="32" width="42" height="18" rx="5" fill="#6b5ce7"/>
+                            <text x="40" y="45" fill="#fff" font-size="10" font-family="ui-sans-serif,sans-serif" font-weight="700">GET</text>
+                            <text x="82" y="45" fill="#1f1e27" font-size="12" font-family="ui-monospace,monospace">/users/1</text>
+                            <rect x="250" y="32" width="74" height="18" rx="5" fill="#dcfce7"/>
+                            <text x="262" y="45" fill="#166534" font-size="10" font-family="ui-sans-serif,sans-serif">200 OK</text>
+                            <text x="32" y="78" fill="#6b5ce7" font-size="12" font-family="ui-monospace,monospace">{</text>
+                            <text x="46" y="96" fill="#3d3a33" font-size="12" font-family="ui-monospace,monospace">"name": "Ayesha"</text>
+                            <text x="32" y="114" fill="#6b5ce7" font-size="12" font-family="ui-monospace,monospace">}</text>
+                        </svg>
+                    </div>
                     <div class="tc-header">
                         <div class="tc-icon ic-json">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1203,48 +1270,89 @@
                             </svg>
                         </div>
                         <div>
-                            <div class="tc-name">JSON Viewer</div>
-                            <div class="tc-tag">Format, validate, explore</div>
+                            <div class="tc-name">API Client</div>
+                            <div class="tc-tag">Requests, tokens, environments</div>
                         </div>
                     </div>
-                    <p class="tc-desc">Paste raw JSON and get a beautiful, collapsible tree view with syntax validation,
-                        search, and formatting. Indispensable when debugging APIs.</p>
-                    <div class="tc-link">Open JSON viewer →</div>
+                    <p class="tc-desc">Send GET, POST, and the other methods. Save requests, switch environments, and
+                        attach a bearer token. Project APIs work when you run the local server.</p>
+                    <div class="tc-link">Open API client →</div>
+                </a>
+
+                <a href="mcq/" class="tool-card tc-js">
+                    <div class="tc-shot" aria-hidden="true">
+                        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="360" height="150" fill="#f3f1ec"/>
+                            <rect x="28" y="18" width="304" height="114" rx="10" fill="#fff" stroke="#e6e2da"/>
+                            <text x="44" y="46" fill="#1f1e27" font-size="13" font-family="ui-sans-serif,sans-serif" font-weight="700">What does === check?</text>
+                            <rect x="44" y="60" width="200" height="22" rx="6" fill="#f4f2ee" stroke="#e6e2da"/>
+                            <text x="56" y="75" fill="#6b6760" font-size="11" font-family="ui-sans-serif,sans-serif">Value only</text>
+                            <rect x="44" y="90" width="200" height="22" rx="6" fill="#ede9fe" stroke="#c4b5fd"/>
+                            <text x="56" y="105" fill="#5b21b6" font-size="11" font-family="ui-sans-serif,sans-serif">Value and type</text>
+                        </svg>
+                    </div>
+                    <div class="tc-header">
+                        <div class="tc-icon ic-js">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 11l3 3L22 4" />
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="tc-name">JS MCQ</div>
+                            <div class="tc-tag">Practice questions</div>
+                        </div>
+                    </div>
+                    <p class="tc-desc">Answer JavaScript questions and check what you know. Useful when you are
+                        preparing for an interview.</p>
+                    <div class="tc-link">Open MCQ →</div>
                 </a>
 
             </div>
-        </div>
-    </section>
 
-    <!-- CODE EXAMPLES -->
-    <section class="code-section" id="examples">
-        <div class="section-inner">
-            <div class="code-layout">
-                <div class="code-info">
-                    <div class="section-tag">// code examples</div>
-                    <h2 class="section-title">Real code.<br>Real output.</h2>
-                    <p class="section-sub">Every concept is runnable. Switch between examples to see JavaScript patterns
-                        that actually matter.</p>
-                    <div class="code-features">
-                        <div class="cf-item">
-                            <div class="cf-dot"></div>
-                            <div class="cf-text"><strong>ES2024 syntax</strong> — async/await, optional chaining,
-                                destructuring and all modern features work out of the box.</div>
-                        </div>
-                        <div class="cf-item">
-                            <div class="cf-dot"></div>
-                            <div class="cf-text"><strong>Live console</strong> — see <code
-                                    style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2)">console.log</code>
-                                output, errors, and warnings instantly as you type.</div>
-                        </div>
-                        <div class="cf-item">
-                            <div class="cf-dot"></div>
-                            <div class="cf-text"><strong>Shareable snippets</strong> — copy a link to share your code
-                                with anyone. No account needed.</div>
-                        </div>
-                    </div>
+            <div id="coffee">
+            <div class="coffee-card">
+                <div class="coffee-art" aria-hidden="true">
+                    <svg viewBox="0 0 92 92" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="92" height="92" fill="#fff8e8"/>
+                        <path d="M28 38h28v22a10 10 0 0 1-10 10H38a10 10 0 0 1-10-10V38z" fill="#fff" stroke="#d97706" stroke-width="2"/>
+                        <path d="M56 42h6a7 7 0 0 1 0 14h-6" fill="none" stroke="#d97706" stroke-width="2"/>
+                        <path d="M36 28c0 4-4 4-4 8" fill="none" stroke="#e8b84b" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M46 26c0 4-4 4-4 8" fill="none" stroke="#e8b84b" stroke-width="2" stroke-linecap="round"/>
+                        <ellipse cx="42" cy="48" rx="8" ry="4" fill="#f3d7a1"/>
+                    </svg>
                 </div>
+                <div>
+                    <div class="section-tag">// support</div>
+                    <h2 class="section-title">Buy a coffee</h2>
+                    <p>The editors are free to use. If one of them saved you time, a coffee helps pay for keeping the
+                        site up.</p>
+                </div>
+                <div class="coffee-actions">
+                    <a class="coffee-btn" href="https://buymeacoffee.com/thejseditors" target="_blank" rel="noopener">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
+                            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                            <line x1="6" y1="2" x2="6" y2="4" />
+                            <line x1="10" y1="2" x2="10" y2="4" />
+                            <line x1="14" y1="2" x2="14" y2="4" />
+                        </svg>
+                        Buy me a coffee
+                    </a>
+                    <p class="coffee-note">Opens Buy Me a Coffee in a new tab. You choose the amount there.</p>
+                </div>
+            </div>
+            </div>
 
+            <div class="js-sample" id="examples">
+                <div class="js-sample-head">
+                    <div>
+                        <div class="section-tag">// javascript</div>
+                        <h2 class="section-title">A JavaScript sample</h2>
+                    </div>
+                    <a href="editor/" class="tc-link">Open in JS Editor →</a>
+                </div>
                 <div class="code-window">
                     <div class="cw-header">
                         <div class="cw-dot r"></div>
@@ -1352,8 +1460,8 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                         </svg>
                     </div>
                     <div class="feat-name">Instant execution</div>
-                    <div class="feat-desc">Code runs in milliseconds. No compilation step, no waiting — results appear
-                        as fast as you can think.</div>
+                    <div class="feat-desc">Press Run and the result shows on the page. JavaScript runs in the
+                        browser. React and TypeScript are compiled in the page first.</div>
                 </div>
 
                 <div class="feat-card">
@@ -1377,8 +1485,8 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                         </svg>
                     </div>
                     <div class="feat-name">Live error messages</div>
-                    <div class="feat-desc">Errors are explained clearly, not dumped raw. Understand what went wrong and
-                        how to fix it.</div>
+                    <div class="feat-desc">Type errors and runtime errors show up next to the code, so you can see
+                        what failed.</div>
                 </div>
 
                 <div class="feat-card">
@@ -1404,9 +1512,9 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                             <line x1="12" y1="2" x2="12" y2="15" />
                         </svg>
                     </div>
-                    <div class="feat-name">Share your code</div>
-                    <div class="feat-desc">Every snippet gets a permanent link. Share code with your study group, team,
-                        or teacher in one click.</div>
+                    <div class="feat-name">Saved in this browser</div>
+                    <div class="feat-desc">Editors keep your last code on this device. Clear the site data and it is
+                        gone. There is no account to sync it.</div>
                 </div>
 
                 <div class="feat-card">
@@ -1418,98 +1526,9 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                             <path d="M6 20v-6" />
                         </svg>
                     </div>
-                    <div class="feat-name">Zero tracking</div>
-                    <div class="feat-desc">We don't collect your code, your data, or your email. Your work stays yours,
-                        always.</div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- TESTIMONIALS -->
-    <section class="testi-section" id="reviews">
-        <div class="section-inner">
-            <div class="section-tag">// from the community</div>
-            <h2 class="section-title">Trusted by developers<br>at every level</h2>
-            <div class="testi-grid">
-
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">Finally a JS playground that doesn't feel like it was designed in 2012. The
-                        notebook mode is exactly what I needed to explain closures to my students.</p>
-                    <div class="testi-author">
-                        <div class="testi-avatar av1">SP</div>
-                        <div>
-                            <div class="testi-name">Sneha Patel</div>
-                            <div class="testi-role">CS Lecturer, Pune</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">I switched from CodePen because the TypeScript editor here actually shows me
-                        type errors in real time. Zero config, it just works.</p>
-                    <div class="testi-author">
-                        <div class="testi-avatar av2">AK</div>
-                        <div>
-                            <div class="testi-name">Arjun Khanna</div>
-                            <div class="testi-role">Frontend Dev, Bangalore</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">As a self-taught developer, having everything in one clean tool kept me
-                        focused. I went from zero JS to my first job in 8 months.</p>
-                    <div class="testi-author">
-                        <div class="testi-avatar av3">MR</div>
-                        <div>
-                            <div class="testi-name">Maya Reddy</div>
-                            <div class="testi-role">Junior Dev, Remote</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">The JSON viewer saved me hours of debugging a nasty API response. Clean tree
-                        view, instant validation — bookmark this immediately.</p>
-                    <div class="testi-author">
-                        <div class="testi-avatar av4">RJ</div>
-                        <div>
-                            <div class="testi-name">Rahul Joshi</div>
-                            <div class="testi-role">Backend Engineer, Delhi</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">I run coding bootcamps and this is now our primary tool for live demos.
-                        Students can follow along without fighting with local environments.</p>
-                    <div class="testi-author">
-                        <div class="testi-avatar av5">NK</div>
-                        <div>
-                            <div class="testi-name">Nisha Kapoor</div>
-                            <div class="testi-role">Bootcamp Instructor</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testi-card">
-                    <div class="testi-stars">★★★★★</div>
-                    <p class="testi-text">The React editor is surprisingly capable. I built a full working counter app
-                        prototype to pitch to my team — no setup, no drama.</p>
-                    <div class="testi-author">
-                        <div class="testi-avatar av6">DS</div>
-                        <div>
-                            <div class="testi-name">Dev Sharma</div>
-                            <div class="testi-role">Product Designer, Mumbai</div>
-                        </div>
-                    </div>
+                    <div class="feat-name">No signup</div>
+                    <div class="feat-desc">Open a tool and use it. You do not create an account, and you do not hand
+                        over an email address.</div>
                 </div>
 
             </div>
@@ -1542,14 +1561,14 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                         <rect x="3" y="11" width="18" height="11" rx="2" />
                         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
-                    Your code is never stored
+                    Saved on this device only
                 </div>
                 <div class="trust-badge">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    Free forever, no hidden plan
+                    Free to use
                 </div>
                 <div class="trust-badge">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e05a5a" stroke-width="2"
@@ -1565,28 +1584,15 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
         </div>
     </section>
 
-    <!-- CTA -->
-    <section class="cta-section">
-        <div class="section-tag" style="text-align:center">// ready when you are</div>
-        <h2 class="cta-title">Stop reading.<br>Start coding.</h2>
-        <p class="cta-sub">No download. No signup. Just open a tool and go.</p>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative">
-       
-            <a href="mcq/" class="btn-primary"> JS MCQ →</a>
-       
-        </div>
-    </section>
-
     <!-- FOOTER -->
     <footer>
-        <div class="footer-logo">js.zero2hero · 2025</div>
+        <div class="footer-logo">js.zero2hero · 2024</div>
         <div class="footer-links">
-            <a href="#">About</a>
-            <a href="#">GitHub</a>
-            <a href="#">Privacy</a>
-            <a href="#">Contact</a>
+            <a href="#tools">Editors</a>
+            <a href="#coffee">Coffee</a>
+            <a href="https://github.com/14BCS1464/jsEditor" target="_blank" rel="noopener">GitHub</a>
         </div>
-        <div class="footer-copy">Built for learners. Made with ♥</div>
+        <div class="footer-copy">Free editors in the browser.</div>
     </footer>
 
     <script>
