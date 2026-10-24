@@ -16,7 +16,7 @@
 
   <script src="../shared/theme.js"></script>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="../shared/chrome.css">
+  <link rel="stylesheet" href="../shared/chrome.css?v=console-header">
 </head>
 
 <body class="suite suite-react">
@@ -75,7 +75,9 @@
       <div class="panel-header">
         <span class="panel-title">👁️ Live Preview</span>
       </div>
-      <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+      <div class="preview-stage">
+        <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
     </div>
   </div>
 
@@ -92,7 +94,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=preview-fill"></script>
 </body>
 
 </html>

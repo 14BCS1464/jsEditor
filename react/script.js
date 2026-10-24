@@ -1392,6 +1392,15 @@ function applyPaneLayout() {
   if (consolePanel) consolePanel.style.height = paneLayout.consoleHeight + 'px';
   if (showConsole) showConsole.hidden = paneLayout.consoleOpen;
   if (editor && editor.layout) editor.layout();
+  fitPreview();
+}
+
+function fitPreview() {
+  const stage = document.querySelector('.preview-stage');
+  const frame = document.getElementById('preview');
+  if (!stage || !frame) return;
+  frame.style.width = stage.clientWidth + 'px';
+  frame.style.height = stage.clientHeight + 'px';
 }
 
 function bindPaneDrag(handle, onMove) {
@@ -1451,6 +1460,11 @@ function bindPaneLayout() {
     paneLayout.consoleHeight = Math.max(80, Math.min(rect.bottom - event.clientY, rect.height - 120));
   });
   window.addEventListener('resize', () => applyPaneLayout());
+  const stage = document.querySelector('.preview-stage');
+  if (stage && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => fitPreview()).observe(stage);
+  }
+  fitPreview();
 }
 
 renderFiles();
