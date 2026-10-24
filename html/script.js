@@ -396,21 +396,21 @@ function chooseLanguage(e) {
 function switchLanguage(lang) {
     switch (lang) {
         case "javascript":
-            window.location.href = "/src/editor/index.html";
+            window.location.href = "../editor/";
             break;
 
         case "typescript":
-            window.location.href = "/src/typescript/index.html"; // Leading slash!
+            window.location.href = "../typescript/";
             break;
 
         case "html":
-            window.location.href = "/src/html/index.html";
+            window.location.href = "../html/";
             break;
         case "react":
-            window.location.href = "/src/react/index.html";
+            window.location.href = "../react/";
             break;
         case "json":
-            window.location.href = "/src/jsonformatter/index.html";
+            window.location.href = "../json/";
             break;
 
         default:
