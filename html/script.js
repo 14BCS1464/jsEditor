@@ -713,7 +713,7 @@ function mountEditors() {
                 const editor = monaco.editor.create(host, {
                     value: state.files[file] || '',
                     language,
-                    theme: 'vs',
+                    theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : 'vs'),
                     automaticLayout: true,
                     fontSize: 14,
                     fontFamily: 'JetBrains Mono, ui-monospace, monospace',

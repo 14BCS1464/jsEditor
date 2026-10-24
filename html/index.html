@@ -9,6 +9,7 @@
 
     <title>Advanced Code Editor - VS Code Style</title>
 
+    <script src="../shared/theme.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="../shared/chrome.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
@@ -20,6 +21,7 @@
         <a class="suite-logo" href="../">js.zero2hero</a>
         <div class="suite-title"><strong>HTML</strong><span>Editor</span></div>
         <div class="suite-actions">
+            <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
             <button id="run" class="suite-btn suite-btn-run" onclick="runCode()"><i class="fa-solid fa-play"></i> Run</button>
             <button id="addfile" class="suite-btn"><i class="fa-solid fa-file-import"></i> Add</button>
         </div>

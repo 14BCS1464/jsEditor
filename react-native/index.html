@@ -43,9 +43,14 @@
   </script>
 
   <script>
-    try { if (localStorage.getItem('rn-ui') !== 'dark') document.documentElement.dataset.ui = 'light'; } catch (e) {}
+    try {
+      if (!localStorage.getItem('suite-theme') && localStorage.getItem('rn-ui') === 'dark') localStorage.setItem('suite-theme', 'dark');
+      if (localStorage.getItem('suite-theme') === 'dark') delete document.documentElement.dataset.ui;
+      else document.documentElement.dataset.ui = 'light';
+    } catch (e) {}
   </script>
   <link rel="stylesheet" href="simulator.css">
+  <script src="../shared/theme.js"></script>
   <link rel="stylesheet" href="../shared/chrome.css">
   <style>
     /* FIX: select-none on body can block typing in Safari. Allow selection in editor areas. */
@@ -154,7 +159,7 @@
     <a class="suite-logo" href="../">js.zero2hero</a>
     <div class="suite-title"><strong>React Native</strong><span>Playground</span></div>
     <div class="suite-actions">
-      <button id="ui-theme" class="suite-btn" onclick="toggleUiTheme()" title="Switch workspace appearance">
+      <button id="ui-theme" type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" title="Dark or light">
         <i id="ui-theme-icon" class="fa-solid fa-moon"></i>
         <span>Dark</span>
       </button>

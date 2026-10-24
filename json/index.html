@@ -92,6 +92,8 @@
     .auth-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
     .auth-row select, .auth-row input { flex: 1; }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="../shared/theme.js"></script>
   <link rel="stylesheet" href="../shared/chrome.css">
 </head>
 <body class="suite suite-json light">
@@ -101,7 +103,7 @@
     <div class="suite-actions">
       <button class="suite-btn" onclick="beautify()">Beautify</button>
       <button class="suite-btn" onclick="minify()">Minify</button>
-      <button class="suite-btn" onclick="toggleTheme()" id="themeBtn">Theme</button>
+      <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" id="themeBtn" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
     </div>
   </header>
   <div class="topbar">
@@ -481,9 +483,7 @@
     } catch (e) { setStatus('Invalid JSON', true); }
   }
   function toggleTheme() {
-    const isLight = document.body.classList.toggle('light');
-    document.body.classList.toggle('dark', !isLight);
-    document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+    if (typeof suiteToggleTheme === 'function') suiteToggleTheme();
   }
   function setStatus(msg, err = false) {
     const el = document.getElementById('status');

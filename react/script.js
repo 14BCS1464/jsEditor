@@ -148,7 +148,7 @@ declare module "react" {
   editor = monaco.editor.create(document.getElementById("editor"), {
     value: currentCode,
     language: "typescript",
-    theme: "vs",
+    theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : "vs"),
     automaticLayout: true,
     minimap: { enabled: true },
     fontSize: 14,

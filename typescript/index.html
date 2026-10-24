@@ -24,6 +24,7 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
+    <script src="../shared/theme.js"></script>
     <link rel="stylesheet" href="../shared/chrome.css">
 
     <style>
@@ -166,6 +167,7 @@
         <a class="suite-logo" href="../">js.zero2hero</a>
         <div class="suite-title"><strong>TypeScript</strong><span>Compiler</span></div>
         <div class="suite-actions">
+            <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
             <button id="btn-run" class="suite-btn suite-btn-run"><i class="fas fa-play"></i> Run</button>
             <button id="btn-format" class="suite-btn suite-btn-primary"><i class="fas fa-indent"></i> Format</button>
             <button id="btn-clear" class="suite-btn"><i class="fas fa-broom"></i> Clear</button>
@@ -300,7 +302,7 @@ function initMonaco() {
             editor = monaco.editor.create(document.getElementById("editor"), {
                 value: localStorage.getItem("typescript_code") || INITIAL_CODE,
                 language: "typescript",
-                theme: "vs",
+                theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : "vs"),
                 fontSize: 15,
                 fontFamily: "'Cascadia Code', 'Consolas', 'Fira Code', monospace",
                 automaticLayout: true,

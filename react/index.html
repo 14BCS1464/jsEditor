@@ -14,6 +14,7 @@
   <!-- Monaco Editor -->
   <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
+  <script src="../shared/theme.js"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="../shared/chrome.css">
 </head>
@@ -24,6 +25,7 @@
     <a class="suite-logo" href="../">js.zero2hero</a>
     <div class="suite-title"><strong>React</strong><span>Editor</span></div>
     <div class="suite-actions">
+      <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
       <button id="run" class="suite-btn suite-btn-run" onclick="run()"><i class="fa-solid fa-play"></i> Run</button>
       <button id="format" class="suite-btn suite-btn-primary" onclick="formatCode()"><i class="fa-solid fa-wand-magic-sparkles"></i> Format</button>
       <button class="suite-btn" onclick="resetCode()"><i class="fa-solid fa-rotate-left"></i> Reset</button>

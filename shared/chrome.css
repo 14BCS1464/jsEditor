@@ -1,4 +1,4 @@
-/* Shared editor chrome. Matches the landing page. The notebook does not use this file. */
+/* Shared editor chrome. Matches the landing page. Light and dark share these tokens. */
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,500&display=swap');
 
 body.suite:not(.suite-mcq) {
@@ -23,9 +23,28 @@ body.suite {
   --suite-green: #2a9d6e;
   --suite-amber: #d97706;
   --suite-coral: #e05a5a;
+  --suite-grid: rgba(107, 92, 231, 0.075);
   background: var(--suite-bg);
   color: var(--suite-text);
   font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* Graph-paper skin shared with the JS editor and notebook. */
+body.suite::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--suite-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--suite-grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+body.suite > * {
+  position: relative;
+  z-index: 1;
 }
 
 .suite-header {
@@ -36,7 +55,7 @@ body.suite {
   justify-content: flex-start;
   gap: 16px;
   padding: 0 16px 0 18px;
-  background: rgba(247, 246, 243, 0.94);
+  background: color-mix(in srgb, var(--suite-bg) 94%, transparent);
   border-bottom: 1px solid var(--suite-border);
   backdrop-filter: blur(12px);
   z-index: 30;
@@ -95,7 +114,7 @@ body.suite .suite-header button {
   padding: 0 12px !important;
   border-radius: 8px !important;
   border: 1px solid var(--suite-border) !important;
-  background: #fff !important;
+  background: var(--suite-bg2) !important;
   color: var(--suite-text) !important;
   font-family: 'DM Sans', sans-serif !important;
   font-size: 13px !important;
@@ -157,7 +176,7 @@ body.suite .suite-header .font-size-control {
   gap: 2px;
   height: 34px;
   padding: 0 4px;
-  background: #fff;
+  background: var(--suite-bg2);
   border: 1px solid var(--suite-border);
   border-radius: 8px;
   box-shadow: none;
@@ -198,13 +217,13 @@ body.suite-js .tab {
 }
 
 body.suite-js .tab:hover:not(.active) {
-  background: #fff;
+  background: var(--suite-bg2);
   color: var(--suite-text);
   transform: none;
 }
 
 body.suite-js .tab.active {
-  background: #fff;
+  background: var(--suite-bg2);
   color: var(--suite-text);
   box-shadow: none;
 }
@@ -226,12 +245,17 @@ body.suite-ts .container {
   padding: 12px 16px 16px;
   background: transparent;
 }
+body.suite-ts .editor-container,
+body.suite-ts .panel {
+  border-radius: 14px;
+  overflow: hidden;
+}
 
 body.suite-ts .status-bar,
 body.suite-ts .panel,
 body.suite-ts .editor-container,
 body.suite-ts .section-header {
-  background: #fff;
+  background: var(--suite-bg2);
   border-color: var(--suite-border);
   color: var(--suite-text);
 }
@@ -244,7 +268,7 @@ body.suite-ts .count-badge { background: var(--suite-bg3); color: var(--suite-su
 body.suite-ts button.secondary,
 body.suite-ts #btn-clear-output,
 body.suite-ts #btn-copy-output {
-  background: #fff;
+  background: var(--suite-bg2);
   color: var(--suite-text);
   border: 1px solid var(--suite-border);
   box-shadow: none;
@@ -265,7 +289,8 @@ body.suite-react .container {
   height: auto;
   min-height: 0;
   margin: 0;
-  gap: 0;
+  gap: 14px;
+  padding: 12px 14px;
 }
 body.suite-react #editor {
   flex: 1 1 0;
@@ -275,18 +300,20 @@ body.suite-react #editor {
   height: auto;
   margin: 0;
   padding: 0;
-  border-radius: 0;
+  border-radius: 14px;
   box-shadow: none;
-  background: #fff;
-  border: none;
-  border-right: 1px solid var(--suite-border);
+  background: var(--suite-bg2);
+  border: 1px solid var(--suite-border);
+  overflow: hidden;
 }
 body.suite-react .preview-panel {
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
-  background: #fff;
-  border-color: var(--suite-border);
+  background: var(--suite-bg2);
+  border: 1px solid var(--suite-border);
+  border-radius: 14px;
+  overflow: hidden;
 }
 body.suite-react .panel-header,
 body.suite-react .console-header,
@@ -296,7 +323,7 @@ body.suite-react .status-bar {
   border-color: var(--suite-border);
   letter-spacing: 0.04em;
 }
-body.suite-react .status-bar { background: #fff; }
+body.suite-react .status-bar { background: var(--suite-bg2); }
 body.suite-react button:not(.suite-header button) {
   font-family: 'DM Sans', sans-serif;
 }
@@ -331,7 +358,7 @@ body.suite-html .tab {
   border-right-color: var(--suite-border);
 }
 body.suite-html .tab.active {
-  background: #fff;
+  background: var(--suite-bg2);
   color: var(--suite-text);
   border-bottom-color: var(--suite-accent);
 }
@@ -341,8 +368,8 @@ body.suite-html .html-code {
   flex: 1;
   min-height: 0;
   padding: 0;
-  background: #fff;
-  color: #2c2a26;
+  background: var(--suite-bg2);
+  color: var(--suite-text);
   caret-color: var(--suite-accent);
 }
 body.suite-html .editor-btn {
@@ -355,8 +382,20 @@ body.suite-html .editor-btn {
   animation: none !important;
   letter-spacing: 0 !important;
 }
-body.suite-html .preview-panel { background: #fff; border-left-color: var(--suite-border); }
-body.suite-html .status-bar { background: #fff; color: var(--suite-sub); height: 28px; }
+body.suite-html .main-container {
+  background: transparent;
+  gap: 14px;
+  padding: 12px 14px;
+}
+body.suite-html .editor-area,
+body.suite-html .preview-panel {
+  border: 1px solid var(--suite-border);
+  border-radius: 14px;
+  overflow: hidden;
+  min-width: 0;
+}
+body.suite-html .preview-panel { background: var(--suite-bg2); border-left-color: var(--suite-border); }
+body.suite-html .status-bar { background: var(--suite-bg2); color: var(--suite-sub); height: 28px; }
 
 /* JSON */
 body.suite-json.light {
@@ -373,8 +412,8 @@ body.suite-json.light {
   --input: #ffffff;
 }
 body.suite-json .topbar {
-  background: #fff;
-  border-bottom: 1px solid #e4e1db;
+  background: var(--suite-bg2);
+  border-bottom: 1px solid var(--suite-border);
 }
 body.suite-json #sendBtn {
   background: #2a9d6e;
@@ -385,14 +424,143 @@ body.suite-json #sendBtn {
 }
 body.suite-json .sidebar,
 body.suite-json .content,
-body.suite-json .status-bar { color: #2c2a26; }
+body.suite-json .status-bar { color: var(--suite-text); }
 body.suite-json .tab.active { color: #5a4fcf; border-bottom-color: #6b5ce7; }
 
 /* React Native header sits in a playground that also has a dark theme */
 body.suite-rn .suite-header { border-bottom-color: #e4e1db; }
+body.suite-rn .sim-pane > .absolute.inset-0 {
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(var(--suite-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--suite-grid) 1px, transparent 1px) !important;
+  background-size: 40px 40px !important;
+  opacity: 1 !important;
+}
 
 @media (max-width: 760px) {
   .suite-header { height: auto; min-height: 56px; padding: 8px 12px; flex-wrap: wrap; }
   .suite-title span { display: none; }
   .suite-actions { width: 100%; }
+}
+
+/* Dark mode. One switch, shared by every editor. */
+html[data-theme="dark"] body.suite {
+  --suite-bg: #16151c;
+  --suite-bg2: #1f1e27;
+  --suite-bg3: #2a2833;
+  --suite-border: #3a3744;
+  --suite-text: #f3f1ea;
+  --suite-sub: #b7b3a8;
+  --suite-dim: #8d897f;
+  --suite-accent: #8b7cf7;
+  --suite-accent-2: #a394ff;
+  --suite-green: #3cba86;
+  --suite-amber: #e0a04a;
+  --suite-coral: #f07178;
+  --suite-grid: rgba(167, 156, 255, 0.12);
+  background: var(--suite-bg);
+  color: var(--suite-text);
+}
+
+html[data-theme="dark"] {
+  --dark-bg: #16151c;
+  --card-bg: #1f1e27;
+  --card-bg2: #2a2833;
+  --card-bg3: #35323f;
+  --text-primary: #f3f1ea;
+  --text-secondary: #b7b3a8;
+  --text-muted: #8d897f;
+  --border: rgba(243, 241, 234, 0.1);
+  --primary-color: #8b7cf7;
+  --secondary-color: #3cba86;
+  --bg-primary: #16151c;
+  --bg-secondary: #1f1e27;
+  --bg-tertiary: #2a2833;
+  --card: #1f1e27;
+  --card-hover: #2a2833;
+  --text: #f3f1ea;
+  --console-bg: #1a1922;
+  --border-color: rgba(243, 241, 234, 0.12);
+  --glass-bg: rgba(31, 30, 39, 0.92);
+  --border-subtle: rgba(243, 241, 234, 0.08);
+  --border-medium: rgba(243, 241, 234, 0.14);
+}
+
+html[data-theme="dark"] body.suite-html {
+  --bg-main: #16151c;
+  --bg-dark: #1f1e27;
+  --bg-darker: #16151c;
+  --bg-darkest: #121118;
+  --panel: #1f1e27;
+  --border: #3a3744;
+  --text-main: #f3f1ea;
+  --text: #f3f1ea;
+  --text-primary: #f3f1ea;
+  --text-secondary: #b7b3a8;
+  --text-muted: #8d897f;
+  --text-light: #f3f1ea;
+  --accent: #8b7cf7;
+  --sidebar-bg: #16151c;
+}
+
+html[data-theme="dark"] body.suite-json,
+html[data-theme="dark"] body.suite-json.light {
+  --bg1: #16151c;
+  --bg2: #121118;
+  --glass: #1f1e27;
+  --border: #3a3744;
+  --text: #f3f1ea;
+  --muted: #b7b3a8;
+  --accent: #8b7cf7;
+  --accent2: #a394ff;
+  --success: #3cba86;
+  --error: #f07178;
+  --input: #2a2833;
+  --json-key: #93c5fd;
+  --json-str: #86efac;
+  --json-num: #fdba74;
+  --json-bool: #fcd34d;
+  --json-null: #f87171;
+}
+
+html[data-theme="dark"] body.suite-json .tab.active { color: #c4b5fd; border-bottom-color: #8b7cf7; }
+html[data-theme="dark"] body.suite-rn .suite-header { border-bottom-color: #3a3744; }
+
+html[data-theme="dark"] body.suite-mcq .card,
+html[data-theme="dark"] body.suite-mcq .opt,
+html[data-theme="dark"] body.suite-mcq .opt:hover {
+  background: #1f1e27;
+  color: #f3f1ea;
+  border-color: #3a3744;
+}
+html[data-theme="dark"] body.suite-mcq .code {
+  background: #16151c;
+  color: #86efac;
+  border-color: #3a3744;
+}
+
+html[data-theme="dark"] body.suite-mcq .card > header {
+  background: #1a1922;
+  color: #f3f1ea;
+}
+
+html[data-theme="dark"] body.suite .suite-header button:hover {
+  border-color: #4a4658;
+  background: var(--suite-bg3);
+}
+
+html[data-theme="dark"] body.suite-js #editor {
+  background: #1e1e1e;
+  box-shadow: none;
+}
+html[data-theme="dark"] body.suite-react #preview { background: #1f1e27; }
+html[data-theme="dark"] body.suite-react #console {
+  background: #1a1922;
+  color: #d6d3cd;
+}
+html[data-theme="dark"] body.suite-react .console-header,
+html[data-theme="dark"] body.suite-react .panel-header {
+  background: #2a2833;
+  color: #c4b5fd;
 }

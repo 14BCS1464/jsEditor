@@ -17,6 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
+    <script src="../shared/theme.js"></script>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="../shared/chrome.css">
 </head>
@@ -26,6 +27,7 @@
         <a class="suite-logo" href="../">js.zero2hero</a>
         <div class="suite-title"><strong>JavaScript</strong><span>Editor</span></div>
         <div class="suite-actions">
+            <button type="button" class="suite-btn" data-suite-theme onclick="suiteToggleTheme()" title="Dark or light"><i class="fa-solid fa-moon"></i><span>Dark</span></button>
             <button id="newTabBtn" class="suite-btn" title="New file">
                 <i class="fa-solid fa-plus"></i> New Tab
             </button>

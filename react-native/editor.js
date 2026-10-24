@@ -206,7 +206,7 @@ function createMonacoEditor() {
 
   editor = monaco.editor.create(container, {
     model,
-    theme: 'vs-dark',
+    theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : 'vs'),
     automaticLayout: true,
     fontSize: 13,
     fontFamily: 'Fira Code, monospace',
@@ -233,17 +233,20 @@ function applyEditorTheme() {
 }
 
 function toggleUiTheme() {
+  if (typeof suiteToggleTheme === 'function') { suiteToggleTheme(); return; }
   const root = document.documentElement;
   const next = root.dataset.ui === 'light' ? 'dark' : 'light';
   if (next === 'light') root.dataset.ui = 'light';
   else delete root.dataset.ui;
-  const icon = document.getElementById('ui-theme-icon');
-  const label = document.querySelector('#ui-theme span');
-  if (icon) icon.className = next === 'light' ? 'fa-solid fa-moon text-slate-600' : 'fa-solid fa-sun text-amber-300';
-  if (label) label.textContent = next === 'light' ? 'Dark' : 'Light';
-  try { localStorage.setItem('rn-ui', next); } catch (e) {}
+  try { localStorage.setItem('suite-theme', next); } catch (e) {}
   applyEditorTheme();
+  syncUiThemeButton();
 }
+
+document.addEventListener('suite-theme', () => {
+  applyEditorTheme();
+  syncUiThemeButton();
+});
 
 function syncUiThemeButton() {
   const light = document.documentElement.dataset.ui === 'light';

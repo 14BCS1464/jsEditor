@@ -604,7 +604,7 @@ require(["vs/editor/editor.main"], function () {
     if (fontSizeLabel) fontSizeLabel.textContent = currentFontSize;
 
     editor = monaco.editor.create(document.getElementById("editor"), {
-        theme: "vs-light",
+        theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : "vs"),
         automaticLayout: true,
         minimap: { enabled: true },
         scrollBeyondLastLine: true,
