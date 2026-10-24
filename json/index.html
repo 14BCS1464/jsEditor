@@ -92,17 +92,24 @@
     .auth-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
     .auth-row select, .auth-row input { flex: 1; }
   </style>
+  <link rel="stylesheet" href="../shared/chrome.css">
 </head>
-<body class="dark">
+<body class="suite suite-json light">
+  <header class="suite-header">
+    <a class="suite-logo" href="../">js.zero2hero</a>
+    <div class="suite-title"><strong>JSON</strong><span>API Client</span></div>
+    <div class="suite-actions">
+      <button class="suite-btn" onclick="beautify()">Beautify</button>
+      <button class="suite-btn" onclick="minify()">Minify</button>
+      <button class="suite-btn" onclick="toggleTheme()" id="themeBtn">Theme</button>
+    </div>
+  </header>
   <div class="topbar">
     <select id="method" class="GET">
       <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
     </select>
     <input id="url" type="text" placeholder="https://api.example.com/users or {{baseUrl}}/users" value="https://dummyjson.com/products" />
-    <button id="sendBtn" onclick="send()">Send</button>
-    <button class="secondary" onclick="beautify()">Beautify</button>
-    <button class="secondary" onclick="minify()">Minify</button>
-    <button class="secondary" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button id="sendBtn" class="suite-btn-run" onclick="send()">Send</button>
   </div>
 
   <div class="main">

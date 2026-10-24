@@ -148,7 +148,7 @@ declare module "react" {
   editor = monaco.editor.create(document.getElementById("editor"), {
     value: currentCode,
     language: "typescript",
-    theme: "react-dark",
+    theme: "vs",
     automaticLayout: true,
     minimap: { enabled: true },
     fontSize: 14,
@@ -581,6 +581,16 @@ function showNotification(message) {
 }
 
 /* ==================== RESET FUNCTION ==================== */
+function downloadCode() {
+  const text = editor ? editor.getValue() : '';
+  const blob = new Blob([text], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'App.jsx';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
 function resetCode() {
   if (confirm("Reset to default code? Your changes will be lost.")) {
     if (editor) {

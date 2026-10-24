@@ -18,41 +18,33 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify.min.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../shared/chrome.css">
 </head>
 
-<body>
-    <div class="editor-heading">
-
-        <div id="controls">
-            <h2>
-                <span class="gradient-text" id="editor-title">Advanced <span class="language-dynamic">JavaScript</span>
-                    Editor</span>
-            </h2>
-            <div style="display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
-            justify-content: center;">
-                <button id="newTabBtn" class="toolbar-btn new-tab-btn" title="New file">
-                    <i class="fa-solid fa-plus"></i> New Tab
-                </button>
-                <button id="run" class="toolbar-btn btn-run" title="Run code (Ctrl+Enter)">
-                    <i class="fa-solid fa-play"></i> Run
-                </button>
-                <button id="addfile" class="toolbar-btn" title="Import a .js file">
-                    <i class="fa-solid fa-file-import"></i> Add
-                </button>
-                <button id="download" class="toolbar-btn" title="Download this file">
-                    <i class="fa-solid fa-download"></i> Download
-                </button>
-                <button id="format" class="toolbar-btn" title="Format code (Alt+Shift+F)">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Format
-                </button>
-                <div class="font-size-control">
-                    <button id="fontDecrease" title="Decrease font size">A-</button>
-                    <span id="fontSizeLabel">14</span>
-                    <button id="fontIncrease" title="Increase font size">A+</button>
-                </div>
+<body class="suite suite-js">
+    <header class="suite-header">
+        <a class="suite-logo" href="../">js.zero2hero</a>
+        <div class="suite-title"><strong>JavaScript</strong><span>Editor</span></div>
+        <div class="suite-actions">
+            <button id="newTabBtn" class="suite-btn" title="New file">
+                <i class="fa-solid fa-plus"></i> New Tab
+            </button>
+            <button id="run" class="suite-btn suite-btn-run" title="Run code (Ctrl+Enter)">
+                <i class="fa-solid fa-play"></i> Run
+            </button>
+            <button id="addfile" class="suite-btn" title="Import a .js file">
+                <i class="fa-solid fa-file-import"></i> Add
+            </button>
+            <button id="format" class="suite-btn suite-btn-primary" title="Format code (Alt+Shift+F)">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Format
+            </button>
+            <div class="font-size-control">
+                <button id="fontDecrease" title="Decrease font size">A-</button>
+                <span id="fontSizeLabel">14</span>
+                <button id="fontIncrease" title="Increase font size">A+</button>
             </div>
         </div>
-    </div>
+    </header>
 
     <div id="tabBar" class="tab-bar">
         <div id="tabList" class="tab-list"></div>

@@ -10,27 +10,20 @@
     <title>Advanced Code Editor - VS Code Style</title>
 
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="../shared/chrome.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
 </head>
 
-<body>
+<body class="suite suite-html">
 
-    <!-- Header -->
-    <div class="editor-heading">
-
-        <div id="controls">
-            <h2>
-                <span class="gradient-text" id="editor-title">Advanced <span class="language-dynamic">HTML</span>
-                    Editor</span>
-            </h2>
-            <div style="padding: 10px; gap: 20px;align-self: center;">
-                <button id="run" onclick="runCode()">▶️ Run </button>
-                <button id="addfile">Add </button>
-                <button id="download">Download </button>
-
-
-            </div>
+    <header class="suite-header">
+        <a class="suite-logo" href="../">js.zero2hero</a>
+        <div class="suite-title"><strong>HTML</strong><span>Editor</span></div>
+        <div class="suite-actions">
+            <button id="run" class="suite-btn suite-btn-run" onclick="runCode()"><i class="fa-solid fa-play"></i> Run</button>
+            <button id="addfile" class="suite-btn"><i class="fa-solid fa-file-import"></i> Add</button>
         </div>
-    </div>
+    </header>
 
     <!-- Main Container -->
     <div class="main-container">
@@ -62,15 +55,12 @@
                     <div class="editor-header">
                         <span>index.html</span>
                         <div class="editor-actions">
-                            <button id="format" class="editor-btn" onclick="formatCode('html')">
+                            <button class="editor-btn" onclick="formatCode('html')">
                                 <i class="fas fa-indent"></i> Format
-                            </button>
-                            <button id="download" class="editor-btn" onclick="foldAll('html')">
-                                <i class="fas fa-caret-down"></i> Fold All
                             </button>
                         </div>
                     </div>
-                    <textarea class="code-area" id="htmlCode" spellcheck="false"></textarea>
+                    <div class="code-area" id="htmlCode"></div>
                 </div>
 
                 <div class="code-editor" id="style.css">
@@ -78,15 +68,12 @@
                     <div class="editor-header">
                         style.css
                         <div class="editor-actions">
-                            <button id="format" class="editor-btn" onclick="formatCode('css')">
+                            <button class="editor-btn" onclick="formatCode('css')">
                                 Format
-                            </button>
-                            <button id="download" class="editor-btn" onclick="foldAll('css')">
-                                Fold All
                             </button>
                         </div>
                     </div>
-                    <textarea class="code-area" id="cssCode" spellcheck="false"></textarea>
+                    <div class="code-area" id="cssCode"></div>
                 </div>
 
                 <div class="code-editor" id="script.js">
@@ -94,15 +81,12 @@
                     <div class="editor-header">
                         script.js
                         <div class="editor-actions">
-                            <button id="format" class="editor-btn" onclick="formatCode('js')">
+                            <button class="editor-btn" onclick="formatCode('js')">
                                 Format
-                            </button>
-                            <button id="download" class="editor-btn" onclick="foldAll('js')">
-                                Fold All
                             </button>
                         </div>
                     </div>
-                    <textarea class="code-area" id="jsCode" spellcheck="false"></textarea>
+                    <div class="code-area" id="jsCode"></div>
                 </div>
             </div>
         </div>

@@ -43,9 +43,10 @@
   </script>
 
   <script>
-    try { if (localStorage.getItem('rn-ui') === 'light') document.documentElement.dataset.ui = 'light'; } catch (e) {}
+    try { if (localStorage.getItem('rn-ui') !== 'dark') document.documentElement.dataset.ui = 'light'; } catch (e) {}
   </script>
   <link rel="stylesheet" href="simulator.css">
+  <link rel="stylesheet" href="../shared/chrome.css">
   <style>
     /* FIX: select-none on body can block typing in Safari. Allow selection in editor areas. */
     textarea, input, #monaco-editor, #monaco-editor * {
@@ -147,39 +148,21 @@
     }
   </style>
 </head>
-<body class="h-full flex flex-col font-sans overflow-hidden">
+<body class="suite suite-rn h-full flex flex-col font-sans overflow-hidden">
 
-  <!-- Top Navigation Header -->
-  <header class="h-14 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-20 select-none">
-    <div class="flex items-center space-x-3">
-      <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-        <i class="fa-brands fa-react text-xl animate-spin-slow"></i>
-      </div>
-      <div>
-        <h1 class="font-bold text-sm tracking-wide flex items-center gap-2">
-          React Native  <span class="text-xs bg-cyan-500/20 text-cyan-300 font-semibold px-2 py-0.5 rounded-full border border-cyan-500/30">Playground</span>
-        </h1>
-        <p class="text-[10px] text-slate-400">Live In-Browser Transpiler & Emulator</p>
-      </div>
-    </div>
-
-    <!-- Template Selector -->
- 
-
-    <!-- Action Buttons -->
-    <div class="flex items-center space-x-2">
-      <button id="ui-theme" onclick="toggleUiTheme()" title="Switch workspace appearance" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition">
-        <i id="ui-theme-icon" class="fa-solid fa-sun text-amber-300"></i>
-        <span class="hidden sm:inline">Light</span>
+  <header class="suite-header">
+    <a class="suite-logo" href="../">js.zero2hero</a>
+    <div class="suite-title"><strong>React Native</strong><span>Playground</span></div>
+    <div class="suite-actions">
+      <button id="ui-theme" class="suite-btn" onclick="toggleUiTheme()" title="Switch workspace appearance">
+        <i id="ui-theme-icon" class="fa-solid fa-moon"></i>
+        <span>Dark</span>
       </button>
-      <button onclick="formatCode()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition">
-        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
-        <span class="hidden sm:inline">Format</span>
+      <button class="suite-btn suite-btn-primary" onclick="formatCode()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Format
       </button>
-
-      <button onclick="runCode(true)" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-900/30 transition active:scale-95">
-        <i class="fa-solid fa-play text-[10px]"></i>
-        <span>Run Code</span>
+      <button class="suite-btn suite-btn-run" onclick="runCode(true)">
+        <i class="fa-solid fa-play"></i> Run
       </button>
     </div>
   </header>

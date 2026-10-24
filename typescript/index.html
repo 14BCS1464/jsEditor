@@ -24,6 +24,7 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
+    <link rel="stylesheet" href="../shared/chrome.css">
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -160,20 +161,19 @@
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="top-bar">
-            <h2><span class="gradient-text">Advanced TypeScript Online Compiler</span></h2>
-            <div class="button-group">
-                <button id="btn-run" class="success"><i class="fas fa-play"></i> Run Code</button>
-                <button id="btn-format" class="secondary"><i class="fas fa-indent"></i> Format</button>
-                <button id="btn-clear" class="warning"><i class="fas fa-broom"></i> Clear</button>
-                <button id="btn-save" class="secondary"><i class="fas fa-save"></i> Save</button>
-                <button id="btn-share" class="secondary"><i class="fas fa-share"></i> Share</button>
-                <button id="btn-check-types" class="secondary"><i class="fas fa-check"></i> Check Types</button>
-            </div>
+<body class="suite suite-ts">
+    <header class="suite-header">
+        <a class="suite-logo" href="../">js.zero2hero</a>
+        <div class="suite-title"><strong>TypeScript</strong><span>Compiler</span></div>
+        <div class="suite-actions">
+            <button id="btn-run" class="suite-btn suite-btn-run"><i class="fas fa-play"></i> Run</button>
+            <button id="btn-format" class="suite-btn suite-btn-primary"><i class="fas fa-indent"></i> Format</button>
+            <button id="btn-clear" class="suite-btn"><i class="fas fa-broom"></i> Clear</button>
+            <button id="btn-save" class="suite-btn"><i class="fas fa-save"></i> Save</button>
+            <button id="btn-check-types" class="suite-btn"><i class="fas fa-check"></i> Check Types</button>
         </div>
-
+    </header>
+    <div class="container">
         <div class="status-bar">
             <span id="status">Initializing TypeScript...</span>
             <span id="line-info">Ln 1, Col 1</span>
@@ -300,7 +300,7 @@ function initMonaco() {
             editor = monaco.editor.create(document.getElementById("editor"), {
                 value: localStorage.getItem("typescript_code") || INITIAL_CODE,
                 language: "typescript",
-                theme: "vs-dark",
+                theme: "vs",
                 fontSize: 15,
                 fontFamily: "'Cascadia Code', 'Consolas', 'Fira Code', monospace",
                 automaticLayout: true,

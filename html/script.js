@@ -22,6 +22,8 @@ let previewFrame, previewLoading, tabsBar, sidebar, previewPanel;
 let resizeHandle, bottomPanel, welcomeScreen, lineNumberElements;
 let resizeTimeout;
 let isResizing = false;
+const codeEditors = {};
+const editorFiles = { htmlCode: 'index.html', cssCode: 'style.css', jsCode: 'script.js' };
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -51,6 +53,8 @@ function init() {
 
     // Load saved state from localStorage
     loadSavedState();
+
+    mountEditors();
 
     // Set up event listeners
     setupEventListeners();
@@ -126,10 +130,7 @@ function loadSavedState() {
             state.activeFile = lastActiveFile;
         }
 
-        // Update textareas with loaded content
-        document.getElementById('htmlCode').value = state.files['index.html'];
-        document.getElementById('cssCode').value = state.files['style.css'];
-        document.getElementById('jsCode').value = state.files['script.js'];
+        syncEditorsFromState();
 
         // Update tab states
         updateTabStates();
@@ -304,21 +305,20 @@ function setupEventListeners() {
         textarea.addEventListener('keyup', (e) => updateCursorPosition(e.target));
     });
 
-    // Control buttons
-    document.getElementById('runBtn').addEventListener('click', runCode);
-    document.getElementById('saveBtn').addEventListener('click', saveAllFiles);
-    document.getElementById('refreshPreview').addEventListener('click', runCode);
-    document.getElementById('togglePreview').addEventListener('click', togglePreview);
-    document.getElementById('togglePreviewPanel').addEventListener('click', togglePreview);
-    document.getElementById('autoRunStatus').addEventListener('click', toggleAutoRun);
-    document.getElementById('toggleBottomPanel').addEventListener('click', toggleBottomPanel);
-
-    document.getElementById('languageList').addEventListener('click', chooseLanguage);
-    // Resize handle
-    resizeHandle.addEventListener('mousedown', startResizing);
-
-    // Responsive toggle
-    document.getElementById('responsiveToggle').addEventListener('click', toggleResponsiveMode);
+    const bind = (id, event, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(event, fn);
+    };
+    bind('runBtn', 'click', runCode);
+    bind('saveBtn', 'click', saveAllFiles);
+    bind('refreshPreview', 'click', runCode);
+    bind('togglePreview', 'click', togglePreview);
+    bind('togglePreviewPanel', 'click', togglePreview);
+    bind('autoRunStatus', 'click', toggleAutoRun);
+    bind('toggleBottomPanel', 'click', toggleBottomPanel);
+    bind('languageList', 'click', chooseLanguage);
+    bind('responsiveToggle', 'click', toggleResponsiveMode);
+    if (resizeHandle) resizeHandle.addEventListener('mousedown', startResizing);
 
     // Panel tabs
     document.querySelectorAll('.panel-tab').forEach(tab => {
@@ -329,11 +329,10 @@ function setupEventListeners() {
     });
 
     // Welcome screen buttons
-    document.getElementById('newProjectBtn').addEventListener('click', () => {
-        welcomeScreen.classList.add('hidden');
-    });
-
-    document.getElementById('openProjectBtn').addEventListener('click', () => {
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    if (newProjectBtn && welcomeScreen) newProjectBtn.addEventListener('click', () => welcomeScreen.classList.add('hidden'));
+    const openProjectBtn = document.getElementById('openProjectBtn');
+    if (openProjectBtn && welcomeScreen) openProjectBtn.addEventListener('click', () => {
         welcomeScreen.classList.add('hidden');
         showToast('Open project dialog would appear here', 'info');
     });
@@ -366,9 +365,7 @@ function setupEventListeners() {
     });
 
     // Save state on resize end
-    resizeHandle.addEventListener('mouseup', () => {
-        debouncedSave();
-    });
+    if (resizeHandle) resizeHandle.addEventListener('mouseup', () => debouncedSave());
 }
 
 function chooseLanguage(e) {
@@ -438,16 +435,16 @@ function switchTab(file) {
 
     // Update status bar language
     const ext = file.split('.').pop();
-    document.getElementById('languageStatus').querySelector('span').textContent = ext.toUpperCase();
+    const languageStatus = document.getElementById('languageStatus');
+    if (languageStatus) languageStatus.querySelector('span').textContent = ext.toUpperCase();
 
     // Update line numbers
     updateLineNumbers(file);
 
     // Update cursor position for active editor
-    const activeEditor = document.querySelector(`#${file} .code-area`);
-    if (activeEditor) {
-        updateCursorPosition(activeEditor);
-    }
+    const activeId = file === 'style.css' ? 'cssCode' : file === 'script.js' ? 'jsCode' : 'htmlCode';
+    const activeEditor = codeEditors[activeId];
+    if (activeEditor) requestAnimationFrame(() => activeEditor.layout());
 
     // Save state
     debouncedSave();
@@ -500,12 +497,14 @@ function runCode() {
 
     // Update terminal with run info
     const terminal = document.getElementById('terminalContent');
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const runLine = document.createElement('div');
-    runLine.className = 'terminal-line output';
-    runLine.textContent = `[${time}] Preview updated`;
-    terminal.appendChild(runLine);
-    terminal.scrollTop = terminal.scrollHeight;
+    if (terminal) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const runLine = document.createElement('div');
+        runLine.className = 'terminal-line output';
+        runLine.textContent = `[${time}] Preview updated`;
+        terminal.appendChild(runLine);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
 
     // Mark files as clean
     Object.keys(state.fileDirty).forEach(file => {
@@ -655,34 +654,6 @@ function updateCursorPosition(textarea) {
         `Ln ${line}, Col ${col}`;
 }
 
-// Format code (simplified)
-function formatCode(type) {
-    const editorMap = {
-        'html': 'htmlCode',
-        'css': 'cssCode',
-        'js': 'jsCode'
-    };
-
-    const textarea = document.getElementById(editorMap[type]);
-    if (textarea) {
-        // Simple formatting - in a real app, use a proper formatter
-        let value = textarea.value;
-
-        // Basic indentation fix
-        if (type === 'html') {
-            value = value.replace(/></g, '>\n<');
-        }
-
-        textarea.value = value;
-        textarea.dispatchEvent(new Event('input'));
-        showToast(`${type.toUpperCase()} formatted`, 'success');
-    }
-}
-
-function foldAll(type) {
-    showToast(`Folding all ${type.toUpperCase()} code sections`, 'info');
-}
-
 // Resize functionality
 function startResizing(e) {
     isResizing = true;
@@ -712,12 +683,71 @@ function stopResizing() {
 
 // Status updates
 function updateStatus() {
-    // Update error count (simulated)
-    const errorCount = Math.random() > 0.7 ? 1 : 0;
     const errorStatus = document.getElementById('errorStatus');
-    errorStatus.querySelector('span').textContent = `${errorCount} Error${errorCount !== 1 ? 's' : ''}`;
-    errorStatus.querySelector('i').className = errorCount > 0 ?
-        'fas fa-exclamation-circle' : 'fas fa-check-circle';
+    if (!errorStatus) return;
+    const errorCount = 0;
+    errorStatus.querySelector('span').textContent = `${errorCount} Errors`;
+    errorStatus.querySelector('i').className = 'fas fa-check-circle';
+}
+
+function syncEditorsFromState() {
+    Object.entries(editorFiles).forEach(([id, file]) => {
+        const editor = codeEditors[id];
+        if (editor && editor.getValue() !== (state.files[file] || '')) editor.setValue(state.files[file] || '');
+    });
+}
+
+function mountEditors() {
+    const start = () => {
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], () => {
+            const specs = [
+                ['htmlCode', 'html'],
+                ['cssCode', 'css'],
+                ['jsCode', 'javascript']
+            ];
+            specs.forEach(([id, language]) => {
+                const host = document.getElementById(id);
+                if (!host || codeEditors[id]) return;
+                const file = editorFiles[id];
+                const editor = monaco.editor.create(host, {
+                    value: state.files[file] || '',
+                    language,
+                    theme: 'vs',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    fontFamily: 'JetBrains Mono, ui-monospace, monospace',
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'on',
+                    padding: { top: 12 }
+                });
+                editor.onDidChangeModelContent(() => {
+                    state.files[file] = editor.getValue();
+                    state.fileDirty[file] = true;
+                    const tab = document.querySelector(`.tab[data-file="${file}"]`);
+                    if (tab) tab.classList.add('dirty');
+                    if (state.autoRun) scheduleRun();
+                    debouncedSave();
+                });
+                codeEditors[id] = editor;
+            });
+            const activeId = state.activeFile === 'style.css' ? 'cssCode' : state.activeFile === 'script.js' ? 'jsCode' : 'htmlCode';
+            if (codeEditors[activeId]) codeEditors[activeId].layout();
+        });
+    };
+    if (window.require) start();
+    else window.addEventListener('load', start);
+}
+
+function formatCode(type) {
+    const id = type === 'css' ? 'cssCode' : type === 'js' ? 'jsCode' : 'htmlCode';
+    const editor = codeEditors[id];
+    if (!editor) return;
+    const action = editor.getAction('editor.action.formatDocument');
+    if (action) action.run();
+    else if (type === 'html') editor.setValue(editor.getValue().replace(/></g, '>\n<'));
+    showToast(`${type.toUpperCase()} formatted`, 'success');
 }
 
 // Toast notification
