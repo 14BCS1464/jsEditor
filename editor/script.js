@@ -68,6 +68,7 @@ function createObjectInspector(obj, depth, maxDepth, seen) {
             html += '<div><span class="object-key">' + index + ':</span> ' +
                 createObjectInspector(item, depth + 1, maxDepth, seen) + '</div>';
         });
+        html += prototypeChainHtml(obj, new WeakSet(), 0);
         html += '</div></div>';
         return html;
     }
@@ -86,11 +87,50 @@ function createObjectInspector(obj, depth, maxDepth, seen) {
             html += '<div><span class="object-key">' + escapeHtml(key) + ':</span> ' +
                 createObjectInspector(obj[key], depth + 1, maxDepth, seen) + '</div>';
         });
+        html += prototypeChainHtml(obj, new WeakSet(), 0);
         html += '</div></div>';
         return html;
     }
 
     return '<span class="object-value">' + escapeHtml(String(obj)) + '</span>';
+}
+
+function prototypeChainHtml(obj, protoSeen, depth) {
+    if (!obj || typeof obj !== 'object' || depth > 5) return '';
+    let proto;
+    try { proto = Object.getPrototypeOf(obj); } catch (e) { return ''; }
+    if (proto === null) {
+        return '<div class="prototype-section"><div class="prototype-header">[[Prototype]]: null</div></div>';
+    }
+    if (protoSeen.has(proto)) {
+        return '<div class="prototype-section"><div class="prototype-header">[[Prototype]]: circular</div></div>';
+    }
+    protoSeen.add(proto);
+    const name = (proto.constructor && proto.constructor.name) || 'Object';
+    const id = 'inspect_' + (inspectIdCounter++);
+    let html = '<div class="prototype-section">';
+    html += '<div class="prototype-header expandable" onclick="toggleExpand(\\'' + id + '\\')">[[Prototype]]: ' + escapeHtml(name) + '</div>';
+    html += '<div id="' + id + '" class="prototype-content collapsed">';
+    let names = [];
+    try { names = Object.getOwnPropertyNames(proto); } catch (e) { names = []; }
+    names.forEach(function (key) {
+        if (key === 'constructor') return;
+        let desc;
+        try { desc = Object.getOwnPropertyDescriptor(proto, key); } catch (e) { return; }
+        if (!desc) return;
+        html += '<div><span class="object-key">' + escapeHtml(key) + ':</span> ';
+        if (typeof desc.value === 'function') {
+            html += '<span class="object-value">function ' + escapeHtml(key) + '(' + getFunctionParams(desc.value) + ')</span>';
+        } else if (desc.get || desc.set) {
+            html += '<span class="object-value">[Getter/Setter]</span>';
+        } else {
+            html += createObjectInspector(desc.value, 0, 1, new WeakSet());
+        }
+        html += '</div>';
+    });
+    html += prototypeChainHtml(proto, protoSeen, depth + 1);
+    html += '</div></div>';
+    return html;
 }
 
 let logLineCount = 0;
@@ -120,15 +160,76 @@ console.info = function () { emit('info', Array.prototype.slice.call(arguments))
 console.table = function () { emit('log', Array.prototype.slice.call(arguments)); };
 
 const MAX_INTERVAL_RUNS = ${SAFETY_LIMITS.maxIntervalRuns};
+const _origSetTimeout = self.setTimeout;
 const _origSetInterval = self.setInterval;
+const _origClearTimeout = self.clearTimeout;
+const _origClearInterval = self.clearInterval;
+const _origQueueMicrotask = self.queueMicrotask;
+
+let pendingAsync = 0;
+let executionSettled = false;
+let settleTimer = null;
+const timeoutIds = new Set();
+const intervalIds = new Set();
+
+function armSettleCheck() {
+    if (settleTimer || executionSettled) return;
+    settleTimer = _origSetTimeout(function () {
+        settleTimer = null;
+        if (pendingAsync === 0 && !executionSettled) {
+            executionSettled = true;
+            self.postMessage({ kind: 'settled' });
+        }
+    }, 0);
+}
+
+function enterAsync() {
+    pendingAsync++;
+}
+
+function leaveAsync() {
+    pendingAsync = Math.max(0, pendingAsync - 1);
+    if (pendingAsync === 0) armSettleCheck();
+}
+
+self.setTimeout = function (fn, delay) {
+    const args = Array.prototype.slice.call(arguments, 2);
+    enterAsync();
+    const id = _origSetTimeout(function () {
+        if (!timeoutIds.has(id)) return;
+        timeoutIds.delete(id);
+        try {
+            if (typeof fn === 'function') fn.apply(null, args);
+        } catch (err) {
+            console.error(err.name + ': ' + err.message);
+        } finally {
+            leaveAsync();
+        }
+    }, delay);
+    timeoutIds.add(id);
+    return id;
+};
+
+self.clearTimeout = function (id) {
+    if (timeoutIds.has(id)) {
+        timeoutIds.delete(id);
+        leaveAsync();
+    }
+    return _origClearTimeout(id);
+};
+
 self.setInterval = function (fn, delay) {
     let count = 0;
     const args = Array.prototype.slice.call(arguments, 2);
+    enterAsync();
     const id = _origSetInterval(function () {
+        if (!intervalIds.has(id)) return;
         count++;
         if (count > MAX_INTERVAL_RUNS) {
-            self.clearInterval(id);
+            intervalIds.delete(id);
+            _origClearInterval(id);
             console.warn('Interval auto-stopped after max iterations');
+            leaveAsync();
             return;
         }
         try {
@@ -137,25 +238,48 @@ self.setInterval = function (fn, delay) {
             console.error(err.name + ': ' + err.message);
         }
     }, delay);
+    intervalIds.add(id);
     return id;
 };
+
+self.clearInterval = function (id) {
+    if (intervalIds.has(id)) {
+        intervalIds.delete(id);
+        leaveAsync();
+    }
+    return _origClearInterval(id);
+};
+
+if (typeof _origQueueMicrotask === 'function') {
+    self.queueMicrotask = function (fn) {
+        enterAsync();
+        return _origQueueMicrotask(function () {
+            try {
+                if (typeof fn === 'function') fn();
+            } catch (err) {
+                console.error(err.name + ': ' + err.message);
+            } finally {
+                leaveAsync();
+            }
+        });
+    };
+}
 
 self.onmessage = function (e) {
     const code = e.data.code;
     try {
         const result = (0, eval)(code);
         if (result && typeof result.then === 'function') {
+            enterAsync();
             result
-                .then(function (v) { if (v !== undefined) console.log(v); })
-                .catch(function (err) { console.error(err.name + ': ' + err.message); })
-                .finally(function () { self.postMessage({ kind: 'sync-done' }); });
+                .catch(function (err) { console.error((err && err.name) + ': ' + (err && err.message)); })
+                .finally(function () { leaveAsync(); });
         } else {
-            if (result !== undefined) console.log(result);
-            self.postMessage({ kind: 'sync-done' });
+            armSettleCheck();
         }
     } catch (err) {
         console.error(err.name + ': ' + err.message);
-        self.postMessage({ kind: 'sync-done', error: true });
+        armSettleCheck();
     }
 };
 `;
@@ -242,6 +366,8 @@ function terminateCurrentWorker(reason) {
         currentHardKillTimer = null;
     }
     if (currentWorker) {
+        currentWorker.onmessage = null;
+        currentWorker.onerror = null;
         currentWorker.terminate();
         currentWorker = null;
         if (reason) addLogEntry(reason, 'warn');
@@ -691,6 +817,11 @@ require(["vs/editor/editor.main"], function () {
         }
     });
 
+    let runInFlight = false;
+    let runGeneration = 0;
+    let queuedFollowUp = false;
+    let lastStartedCode = null;
+
     function safeAutoExecute() {
         if (!autoExecuteEnabled || isRateLimited()) return;
 
@@ -706,7 +837,7 @@ require(["vs/editor/editor.main"], function () {
 
         autoExecuteTimer = setTimeout(() => {
             try {
-                runCodeSafely(code);
+                runCodeSafely(editor.getValue());
             } catch (error) {
                 addLogEntry(`Auto-execution error: ${error.message}`, 'error');
             }
@@ -720,6 +851,8 @@ require(["vs/editor/editor.main"], function () {
         saveTimer = setTimeout(() => {
             saveCodeToStorage();
         }, 1000);
+
+        if (autoExecuteTimer) clearTimeout(autoExecuteTimer);
 
         if (autoExecuteEnabled && code.trim()) {
             if (changeTimer) clearTimeout(changeTimer);
@@ -905,15 +1038,31 @@ require(["vs/editor/editor.main"], function () {
         }
     };
 
-    function runCode(code) {
-        if (typeof code !== 'string') code = editor.getValue();
-        if (!code || !code.trim()) return;
+    function completeRun(generation, reason) {
+        if (generation !== runGeneration) return;
+        terminateCurrentWorker(reason);
+        runInFlight = false;
+        if (!queuedFollowUp || !autoExecuteEnabled) {
+            queuedFollowUp = false;
+            return;
+        }
+        queuedFollowUp = false;
+        const next = editor.getValue();
+        if (!next || !next.trim() || next === lastStartedCode) return;
+        startRun(next);
+    }
 
+    function startRun(code) {
         const safetyCheck = isSafeCode(code);
         if (!safetyCheck.safe) {
             addLogEntry(`⛔ Execution blocked: ${safetyCheck.reason}`, 'warn');
             return;
         }
+
+        const generation = ++runGeneration;
+        lastStartedCode = code;
+        queuedFollowUp = false;
+        runInFlight = true;
 
         terminateCurrentWorker();
 
@@ -930,34 +1079,51 @@ require(["vs/editor/editor.main"], function () {
         currentWorker = spawnWorker();
 
         currentWorker.onmessage = (e) => {
+            if (generation !== runGeneration) return;
             const msg = e.data;
             if (msg.kind === 'log') {
                 addLogEntry(msg.html, msg.logType);
             } else if (msg.kind === 'flood') {
-                terminateCurrentWorker();
-            } else if (msg.kind === 'sync-done') {
+                completeRun(generation);
+            } else if (msg.kind === 'settled' || msg.kind === 'sync-done') {
                 const executionTime = Date.now() - startTime;
-                if (executionTime > 1000) {
+                const willRerun = queuedFollowUp && autoExecuteEnabled;
+                if (!willRerun && executionTime > 1000) {
                     addLogEntry(`⏱️ Execution time: ${executionTime}ms`, 'info');
                 }
+                completeRun(generation);
             }
         };
 
         currentWorker.onerror = (err) => {
+            if (generation !== runGeneration) return;
             addLogEntry(`Worker error: ${err.message}`, 'error');
-            terminateCurrentWorker();
+            completeRun(generation);
         };
 
         currentHardKillTimer = setTimeout(() => {
-            terminateCurrentWorker('⏱️ Execution timeout — stopped');
+            completeRun(generation, '⏱️ Execution timeout — stopped');
         }, SAFETY_LIMITS.maxExecutionTime);
 
         currentWorker.postMessage({ code });
     }
 
+    function runCode(code, manual) {
+        if (typeof code !== 'string') code = editor.getValue();
+        if (!code || !code.trim()) return;
+
+        if (!manual && runInFlight) {
+            queuedFollowUp = true;
+            return;
+        }
+
+        queuedFollowUp = false;
+        startRun(code);
+    }
+
     function runCodeSafely(code) {
         if (!code) code = editor.getValue();
-        runCode(code);
+        runCode(code, false);
     }
 
     window.clearOutput = function () {
@@ -1026,7 +1192,7 @@ require(["vs/editor/editor.main"], function () {
         }
     }
 
-    document.getElementById("run")?.addEventListener("click", () => runCode());
+    document.getElementById("run")?.addEventListener("click", () => runCode(undefined, true));
     document.getElementById("download")?.addEventListener("click", downloadCode);
     document.getElementById("format")?.addEventListener("click", () => applyFormatting());
 
@@ -1084,7 +1250,7 @@ require(["vs/editor/editor.main"], function () {
     document.addEventListener('keydown', function (e) {
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
-            runCode();
+            runCode(undefined, true);
         }
         if (e.altKey && e.shiftKey && e.key === 'F') {
             e.preventDefault();
@@ -1143,6 +1309,7 @@ require(["vs/editor/editor.main"], function () {
         } else {
             if (label) label.textContent = "Auto-Execute: OFF";
             if (autoExecuteTimer) clearTimeout(autoExecuteTimer);
+            queuedFollowUp = false;
             addLogEntry("⏸️ Auto-execution disabled", "warn");
         }
     });

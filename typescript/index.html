@@ -226,7 +226,7 @@ let currentWorker = null;
 let liveDebounceTimer = null;
 let monacoReady = false;
 
-const EXEC_TIMEOUT_MS = 3000;
+const EXEC_TIMEOUT_MS = 5000;
 
 const INITIAL_CODE = `// ✅ REAL-TIME TYPE CHECKING IS ACTIVE!
 // You should see a RED squiggly under "1000" immediately.
@@ -249,11 +249,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupEventListeners();
     loadCodeFromURL();
 
-    // Wait for TS worker to warm up, then force first check
-    setTimeout(() => {
-        refreshAllDiagnostics();
-        executeCode({ silent: true });
-    }, 1500);
+    // The worker publishes markers a moment after the model is indexed.
+    setTimeout(refreshAllDiagnostics, 600);
+    setTimeout(refreshAllDiagnostics, 1600);
 
     showToast("Editor Ready — TypeScript validation active!", "success");
 });
@@ -270,11 +268,12 @@ function initMonaco() {
         });
 
         require(["vs/editor/editor.main"], () => {
-            // ── 1. Strict compiler options ──
+            // Do not set `lib` here. The short names fail to resolve in this
+            // worker, which drops every default library (including console).
+            // The ES2020 default lib already includes DOM.
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                 target: monaco.languages.typescript.ScriptTarget.ES2020,
                 module: monaco.languages.typescript.ModuleKind.ESNext,
-                lib: ["es2020", "dom"],
                 strict: true,
                 noImplicitAny: true,
                 strictNullChecks: true,
@@ -283,8 +282,8 @@ function initMonaco() {
                 strictPropertyInitialization: true,
                 noImplicitThis: true,
                 alwaysStrict: true,
+                allowNonTsExtensions: true,
                 esModuleInterop: true,
-                noEmit: true,
                 skipLibCheck: true
             });
 
@@ -298,10 +297,19 @@ function initMonaco() {
 
             monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
 
-            // ── 3. Create editor ──
+            // An inmemory:// model is invisible to the TS worker, so every
+            // file looked valid. A file URI is what the worker indexes.
+            const fileUri = monaco.Uri.parse("file:///main.ts");
+            const previous = monaco.editor.getModel(fileUri);
+            if (previous) previous.dispose();
+            const model = monaco.editor.createModel(
+                localStorage.getItem("typescript_code") || INITIAL_CODE,
+                "typescript",
+                fileUri
+            );
+
             editor = monaco.editor.create(document.getElementById("editor"), {
-                value: localStorage.getItem("typescript_code") || INITIAL_CODE,
-                language: "typescript",
+                model,
                 theme: (window.suiteMonacoTheme ? suiteMonacoTheme() : "vs"),
                 fontSize: 15,
                 fontFamily: "'Cascadia Code', 'Consolas', 'Fira Code', monospace",
@@ -442,19 +450,6 @@ function updateLineInfo(pos) {
    RUN / EXECUTE CODE
 ================================ */
 async function runCode() {
-    const markers = getDiagnosticsFromMarkers();
-    const errors = markers.filter(m => m.isError);
-
-    if (errors.length > 0) {
-        const msg = errors.slice(0, 3).map(e =>
-            `Line ${e.startLineNumber}: ${e.message.substring(0, 60)}`
-        ).join("\n");
-
-        if (!confirm(`⚠️ ${errors.length} TypeScript error(s):\n\n${msg}\n\nRun anyway?`)) {
-            showToast("Execution cancelled", "warning");
-            return;
-        }
-    }
     executeCode({ silent: false });
 }
 
@@ -471,7 +466,7 @@ function executeCode({ silent = false } = {}) {
     try {
         jsCode = ts.transpile(editor.getValue(), {
             target: ts.ScriptTarget.ES2020,
-            module: ts.ModuleKind.ESNext
+            module: ts.ModuleKind.CommonJS
         });
     } catch (err) {
         outputElement.innerHTML = "";
@@ -488,14 +483,83 @@ function runInWorker(jsCode, silent) {
     outputElement.innerHTML = "";
 
     const src = `
-        function safeSerialize(v){ try{JSON.stringify(v);return v;}catch(e){return String(v);} }
-        function makeLogger(t){ return function(...a){ self.postMessage({kind:'log',logType:t,args:a.map(safeSerialize)}); }; }
-        const console={log:makeLogger('log'),error:makeLogger('error'),warn:makeLogger('warn'),info:makeLogger('info')};
-        self.onmessage=function(e){
-            try{ const fn=new Function('console','Date','Math','JSON','Array','Object','String','Number','Boolean',e.data);
-                fn(console,Date,Math,JSON,Array,Object,String,Number,Boolean);
-                self.postMessage({kind:'done'});
-            }catch(err){ self.postMessage({kind:'error',message:err.message}); }
+        const module = { exports: {} };
+        const exports = module.exports;
+        function require() { throw new Error('This file cannot import other files.'); }
+        let pending = 0;
+        let settled = false;
+        let settleTimer = null;
+        function arm() {
+            if (settleTimer || settled) return;
+            settleTimer = _setTimeout(function () {
+                settleTimer = null;
+                if (pending === 0 && !settled) {
+                    settled = true;
+                    self.postMessage({ kind: 'done' });
+                }
+            }, 0);
+        }
+        function enter() { pending++; }
+        function leave() { pending = Math.max(0, pending - 1); if (pending === 0) arm(); }
+        const _setTimeout = self.setTimeout.bind(self);
+        const _clearTimeout = self.clearTimeout.bind(self);
+        const _setInterval = self.setInterval.bind(self);
+        const _clearInterval = self.clearInterval.bind(self);
+        const timeoutIds = new Set();
+        const intervalIds = new Set();
+        self.setTimeout = function (fn, delay) {
+            const args = Array.prototype.slice.call(arguments, 2);
+            enter();
+            const id = _setTimeout(function () {
+                if (!timeoutIds.has(id)) return;
+                timeoutIds.delete(id);
+                try { if (typeof fn === 'function') fn.apply(null, args); }
+                catch (err) { self.postMessage({ kind: 'error', message: err.message }); }
+                finally { leave(); }
+            }, delay);
+            timeoutIds.add(id);
+            return id;
+        };
+        self.clearTimeout = function (id) {
+            if (timeoutIds.has(id)) { timeoutIds.delete(id); leave(); }
+            return _clearTimeout(id);
+        };
+        self.setInterval = function (fn, delay) {
+            const args = Array.prototype.slice.call(arguments, 2);
+            enter();
+            let count = 0;
+            const id = _setInterval(function () {
+                if (!intervalIds.has(id)) return;
+                count++;
+                if (count > 50) {
+                    intervalIds.delete(id);
+                    _clearInterval(id);
+                    leave();
+                    return;
+                }
+                try { if (typeof fn === 'function') fn.apply(null, args); }
+                catch (err) { self.postMessage({ kind: 'error', message: err.message }); }
+            }, delay);
+            intervalIds.add(id);
+            return id;
+        };
+        self.clearInterval = function (id) {
+            if (intervalIds.has(id)) { intervalIds.delete(id); leave(); }
+            return _clearInterval(id);
+        };
+        function safeSerialize(v){ try { JSON.stringify(v); return v; } catch (e) { return String(v); } }
+        function makeLogger(t){ return function () { self.postMessage({ kind:'log', logType:t, args: Array.prototype.slice.call(arguments).map(safeSerialize) }); }; }
+        const console = { log: makeLogger('log'), error: makeLogger('error'), warn: makeLogger('warn'), info: makeLogger('info') };
+        self.onmessage = function (e) {
+            const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+            try {
+                const fn = new AsyncFunction('console','require','module','exports','Date','Math','JSON','Array','Object','String','Number','Boolean', e.data);
+                Promise.resolve(fn(console, require, module, exports, Date, Math, JSON, Array, Object, String, Number, Boolean))
+                    .then(function () { arm(); })
+                    .catch(function (err) { self.postMessage({ kind:'error', message: err.message }); });
+            } catch (err) {
+                self.postMessage({ kind:'error', message: err.message });
+            }
         };
     `;
     const blob = new Blob([src], { type: "application/javascript" });
