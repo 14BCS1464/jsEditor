@@ -199,45 +199,6 @@
         </div>
     </div>
 
-    <!-- AI PANEL (right slide-in) -->
-    <div id="ai-panel">
-        <div class="ai-panel-header">
-            <div>
-                <div class="ai-panel-title">✦ AI Assistant</div>
-                <div class="ai-panel-subtitle" id="ai-panel-subtitle">Cell [01]</div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="closeAIPanel()">✕ Close</button>
-        </div>
-        <div id="ai-panel-output">// Ready. Select an action and click Run AI.</div>
-        <div class="ai-panel-footer">
-            <select id="ai-action-select">
-                <option value="fix">🔧 Fix bugs &amp; errors</option>
-                <option value="explain">📖 Explain this code</option>
-                <option value="optimize">⚡ Optimize performance</option>
-                <option value="complexity">📊 Analyze complexity</option>
-                <option value="refactor">✨ Refactor &amp; clean up</option>
-            </select>
-            <button class="ai-run-btn" id="ai-run-btn" onclick="runAIOnCell()">▶ Run AI</button>
-        </div>
-    </div>
-
-    <!-- AI KEY MODAL -->
-    <div class="modal-overlay" id="ai-key-modal">
-        <div class="modal" style="width:420px">
-            <h2>✦ AI Assistant</h2>
-            <p class="modal-sub">// Enter your gemini API key to get AI suggestions</p>
-            <div class="form-group">
-                <label>gemini API Key</label>
-                <input type="password" id="ai-api-key" placeholder="sk-ant-…">
-            </div>
-            <p class="modal-sub" style="font-size:0.55rem;margin-top:6px">Key is stored only in localStorage — never sent anywhere except gemini's API.</p>
-            <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closeModal('ai-key-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveAIKey()">Save &amp; Continue</button>
-            </div>
-        </div>
-    </div>
-
     <!-- FIREBASE MODAL -->
     <div class="modal-overlay" id="firebase-modal">
         <div class="modal">
@@ -690,83 +651,6 @@
     function toggleThemePanel(){ document.getElementById('theme-panel').classList.contains('open') ? closeThemePanel() : openThemePanel(); }
 
     // ════════════════════════════════════════
-    //  AI PANEL
-    // ════════════════════════════════════════
-    let _aiCellId = null;
-
-    function openAIPanel(cellId) {
-        const key = localStorage.getItem('geminei_api_key');
-        if (!key) { _aiCellId = cellId; openModal('ai-key-modal'); return; }
-        _aiCellId = cellId;
-        const idx = cells.findIndex(c => c.id === cellId);
-        document.getElementById('ai-panel-subtitle').textContent = 'Cell [' + String(idx+1).padStart(2,'0') + '] — ' + (cells[idx]?.lang||'js').toUpperCase();
-        document.getElementById('ai-panel-output').textContent = '// Ready. Select an action and click Run AI.';
-        document.getElementById('ai-panel').classList.add('open');
-        document.body.classList.add('ai-open');
-    }
-    function closeAIPanel() {
-        document.getElementById('ai-panel').classList.remove('open');
-        document.body.classList.remove('ai-open');
-        _aiCellId = null;
-    }
-    function saveAIKey() {
-        const key = (document.getElementById('ai-api-key').value || '').trim();
-        if (!key || !key.startsWith('sk-ant-')) { showToast('Invalid key — must start with sk-ant-', 'error'); return; }
-        localStorage.setItem('anthropic_api_key', key);
-        closeModal('ai-key-modal');
-        if (_aiCellId) openAIPanel(_aiCellId);
-    }
-    async function runAIOnCell() {
-        if (!_aiCellId) return;
-        const key = localStorage.getItem('anthropic_api_key');
-        if (!key) { openModal('ai-key-modal'); return; }
-        const editor = cellEditors[_aiCellId];
-        const code = editor ? editor.getValue() : '';
-        if (!code.trim()) { showToast('Cell is empty', 'error'); return; }
-        const action = document.getElementById('ai-action-select').value;
-        const cell = cells.find(c => c.id === _aiCellId);
-        const lang = cell?.lang || 'javascript';
-        const prompts = {
-            fix:       `You are a ${lang} expert. Find and fix ALL bugs in this code. Show corrected code and explain what was wrong.\n\nCode:\n\`\`\`${lang}\n${code}\n\`\`\``,
-            explain:   `Explain this ${lang} code clearly. Cover what it does, how it works, and important patterns.\n\nCode:\n\`\`\`${lang}\n${code}\n\`\`\``,
-            optimize:  `Optimize this ${lang} code for performance. Show the improved version and explain changes.\n\nCode:\n\`\`\`${lang}\n${code}\n\`\`\``,
-            complexity:`Analyze time and space complexity of this ${lang} code. Identify bottlenecks.\n\nCode:\n\`\`\`${lang}\n${code}\n\`\`\``,
-            refactor:  `Refactor this ${lang} code to be cleaner and more readable. Show refactored version with explanation.\n\nCode:\n\`\`\`${lang}\n${code}\n\`\`\``
-        };
-        const outEl = document.getElementById('ai-panel-output');
-        const btn   = document.getElementById('ai-run-btn');
-        outEl.textContent = '⏳ Thinking…';
-        btn.disabled = true; btn.textContent = '⏳ Running…';
-        try {
-            const res = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': key,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true'
-                },
-                body: JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
-                    max_tokens: 1500,
-                    messages: [{ role: 'user', content: prompts[action] }]
-                })
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
-                outEl.textContent = '✖ API Error: ' + (err.error?.message || res.statusText);
-                return;
-            }
-            const data = await res.json();
-            outEl.textContent = data.content?.[0]?.text || '(no response)';
-        } catch (e) {
-            outEl.textContent = '✖ Network error: ' + e.message;
-        } finally {
-            btn.disabled = false; btn.textContent = '▶ Run AI';
-        }
-    }
-
-    // ════════════════════════════════════════
     //  CORE APP
     // ════════════════════════════════════════
     let db = null, cells = [], cellEditors = {}, dsaQuestions = [];
@@ -1011,7 +895,6 @@
         '<div class="cell-toolbar"><div class="tl-left"><span class="cell-num" id="cnum-'+id+'">[01]</span><div class="lang-toggle"><button class="lang-btn '+(lang==='javascript'?'active':'')+'" onclick="setLang('+id+',\'javascript\')">JS</button><button class="lang-btn '+(lang==='typescript'?'active':'')+'" onclick="setLang('+id+',\'typescript\')">TS</button></div><span class="line-count-badge" id="lcbadge-'+id+'">0 L</span><span class="run-count" id="rcbadge-'+id+'">✦0</span></div>'+
         '<div class="tl-right"><div class="font-size-ctrl"><button class="fs-btn" onclick="setFontSize('+id+',-1)">A−</button><span class="fs-display" id="fsize-'+id+'">'+fontSize+'px</span><button class="fs-btn" onclick="setFontSize('+id+',+1)">A+</button></div>'+
         '<button class="format-btn" id="fmtbtn-'+id+'" onclick="formatCell('+id+')" title="Format">✦ Fmt</button>'+
-        '<button class="ai-btn" id="aibtn-'+id+'" onclick="openAIPanel('+id+')" title="AI Help">✦ AI</button>'+
         '<button class="practice-btn" id="practicebtn-'+id+'" onclick="openPracticeModal('+id+')" title="Open an isolated practice sandbox — never syncs back to this cell">⚡ Practice</button>'+
         '<button class="copy-btn" id="copybtn-'+id+'" onclick="copyCell('+id+')" title="Copy">⎘ Copy</button>'+
         '<button class="run-btn" id="runbtn-'+id+'" onclick="runCell('+id+')">▶ Run</button>'+
