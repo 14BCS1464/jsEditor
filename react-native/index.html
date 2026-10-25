@@ -49,7 +49,7 @@
       else document.documentElement.dataset.ui = 'light';
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="simulator.css?v=modal-home">
+  <link rel="stylesheet" href="simulator.css?v=safe-area">
   <script src="../shared/theme.js"></script>
   <link rel="stylesheet" href="../shared/chrome.css">
   <style>
@@ -408,10 +408,17 @@
               <option value="galaxytabs9">Galaxy Tab S9</option>
               <option value="pixeltablet">Pixel Tablet</option>
             </optgroup>
+            <optgroup label="Web">
+              <option value="web">Web</option>
+            </optgroup>
           </select>
         <div class="flex items-center space-x-2">
-          <button onclick="goHome()" title="Home" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+          <button id="toolbar-home" type="button" title="Home. Double-click for recent apps" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
             <i class="fa-solid fa-house text-xs"></i>
+          </button>
+
+          <button id="wallpaper-btn" type="button" title="Change wallpaper" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-image text-xs"></i>
           </button>
 
           <button onclick="toggleTheme()" title="Toggle Preview Theme (Dark/Light)" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
@@ -424,15 +431,26 @@
             </svg>
           </button>
 
-          <button onclick="runCode()" title="Reload App" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+          <button onclick="runCode()" title="Reload app" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
             <i class="fa-solid fa-arrows-rotate text-xs"></i>
+          </button>
+
+          <button id="restart-emulator" type="button" title="Restart emulator" class="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-power-off text-xs"></i>
           </button>
         </div>
       </div>
 
-      <div class="flex-1 min-h-0 flex items-center justify-center w-full my-auto z-10">
+      <div id="device-stage" class="flex-1 min-h-0 flex items-center justify-center w-full my-auto z-10">
         <div id="phone-wrap" style="position:relative;width:360px;height:640px">
             <div id="phone-frame" data-screen="home" class="transition-all duration-300 ease-out rounded-[48px] phone-shadow flex flex-col overflow-hidden select-none" style="left:0;top:0;transform-origin:top left;width:360px;height:640px;">
+          <div id="emulator-boot" aria-hidden="true"><span></span><b>Restarting</b></div>
+          <div id="web-bar">
+            <span class="web-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="web-url">localhost</span>
+            <button type="button" id="web-reload" title="Reload page">Reload</button>
+          </div>
+          <div id="os-wallpaper" data-wallpaper="aurora" aria-hidden="true"></div>
           <div id="phone-notch" style="display:none;pointer-events:none;"></div>
 
           <div id="status-bar" class="shrink-0 z-40">
@@ -451,18 +469,20 @@
           <div id="emulator-screen" class="emulator-screen flex-1 min-h-0 overflow-hidden relative w-full" style="background-color:#ffffff;color:#0f172a;">
             <div id="os-home"></div>
             <div id="os-system"></div>
+            <div id="os-unsupported"></div>
             <div id="app-root"></div>
+            <div id="app-switcher"></div>
             <div id="modal-root"></div>
           </div>
 
           <div id="kb-panel" class="rn-kb" style="display:none"></div>
-          <div id="home-indicator-container" class="shrink-0 w-full flex items-center justify-center bg-transparent z-40" onclick="goHome()" title="Home">
+          <div id="home-indicator-container" class="shrink-0 w-full flex items-center justify-center bg-transparent z-40" title="Home. Double-click for recent apps">
             <div id="home-indicator"></div>
           </div>
           <div id="android-nav">
-            <button type="button" onclick="goBack()" title="Back"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" onclick="goHome()" title="Home"><i class="fa-solid fa-circle"></i></button>
-            <button type="button" onclick="goHome()" title="Recent apps"><i class="fa-regular fa-square"></i></button>
+            <button type="button" id="android-back" title="Back"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" id="android-home" title="Home. Double-click for recent apps"><i class="fa-solid fa-circle"></i></button>
+            <button type="button" id="android-recent" title="Recent apps"><i class="fa-regular fa-square"></i></button>
           </div>
 
         </div></div>
@@ -480,9 +500,9 @@
 
   <!-- Monaco AMD loader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
-  <script src="simulator.js?v=modal-home"></script>
+  <script src="simulator.js?v=safe-area"></script>
   <script src="examples.js?v=modal-example"></script>
-  <script src="editor.js"></script>
+  <script src="editor.js?v=emulator-real"></script>
 
 </body>
 </html>

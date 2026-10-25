@@ -142,7 +142,33 @@ html[data-theme="dark"] #phone-frame {
 }
 #android-nav button:active { background: rgba(128,128,128,.2); }
 
-#emulator-screen { overflow: hidden; display: flex; flex-direction: column; }
+#emulator-screen { overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 1; }
+#os-wallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: none;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.35), transparent 40%),
+    radial-gradient(circle at 85% 5%, rgba(99, 102, 241, 0.35), transparent 35%),
+    linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #020617 100%);
+}
+#phone-frame[data-screen="home"] #os-wallpaper,
+#phone-frame[data-screen="switcher"] #os-wallpaper { display: block; }
+#phone-frame[data-screen="home"] #status-bar,
+#phone-frame[data-screen="switcher"] #status-bar,
+#phone-frame[data-screen="home"] #home-indicator-container,
+#phone-frame[data-screen="switcher"] #home-indicator-container,
+#phone-frame[data-screen="home"] #android-nav,
+#phone-frame[data-screen="switcher"] #android-nav,
+#phone-frame[data-screen="home"] #emulator-screen,
+#phone-frame[data-screen="switcher"] #emulator-screen,
+#phone-frame[data-screen="home"] #os-home,
+#phone-frame[data-screen="switcher"] #os-home {
+  background: transparent !important;
+  background-image: none !important;
+}
 #phone-frame pre.ex-code, #phone-frame pre.ex-code * {
   -webkit-user-select: text;
   user-select: text;
@@ -194,8 +220,15 @@ html[data-theme="dark"] #phone-frame {
 #app-root.rn-layout-anim, #app-root.rn-layout-anim * { transition: all .3s ease; }
 
 /* ========== Attractive Home Screen ========== */
-#os-home, #os-system, #app-root { flex: 1; min-height: 0; width: 100%; }
-#os-system, #app-root { display: none; }
+#os-home, #os-system, #app-root, #os-unsupported, #app-switcher {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  width: 100%;
+}
+#os-system, #app-root, #os-unsupported, #app-switcher { display: none; }
+#app-root, #os-system, #os-unsupported { z-index: 2; }
+#app-switcher { z-index: 5; }
 #modal-root {
   display: none;
   position: absolute;
@@ -218,16 +251,90 @@ html[data-theme="dark"] #phone-frame {
     radial-gradient(circle at 85% 5%, rgba(99, 102, 241, 0.35), transparent 35%),
     linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #020617 100%);
   color: #fff;
-  padding: 16px 14px 10px;
+  padding: 6px 14px 6px;
   box-sizing: border-box;
   overflow: hidden;
 }
-#os-home.light {
+#os-home[data-ink="dark"] { color: #0f172a; }
+#os-home[data-ink="light"] { color: #fff; }
+#os-wallpaper[data-wallpaper="aurora"] {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.35), transparent 40%),
+    radial-gradient(circle at 85% 5%, rgba(99, 102, 241, 0.35), transparent 35%),
+    linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #020617 100%);
+}
+#os-wallpaper[data-wallpaper="ocean"] {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(45, 212, 191, 0.35), transparent 36%),
+    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.28), transparent 40%),
+    linear-gradient(180deg, #083344 0%, #0f172a 55%, #042f2e 100%);
+}
+#os-wallpaper[data-wallpaper="sunset"] {
+  background:
+    radial-gradient(circle at 70% 20%, rgba(251, 146, 60, 0.85), transparent 42%),
+    radial-gradient(circle at 20% 80%, rgba(244, 114, 182, 0.55), transparent 40%),
+    linear-gradient(165deg, #fb923c 0%, #f43f5e 48%, #4c1d95 100%);
+}
+#os-wallpaper[data-wallpaper="forest"] {
+  background:
+    radial-gradient(circle at 30% 0%, rgba(163, 230, 53, 0.28), transparent 36%),
+    radial-gradient(circle at 80% 90%, rgba(16, 185, 129, 0.3), transparent 40%),
+    linear-gradient(180deg, #14532d 0%, #052e16 100%);
+}
+#os-wallpaper[data-wallpaper="sand"] {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.7), transparent 36%),
+    radial-gradient(circle at 90% 80%, rgba(251, 191, 36, 0.35), transparent 40%),
+    linear-gradient(165deg, #fef3c7 0%, #fdba74 48%, #fb7185 100%);
+}
+#os-wallpaper[data-wallpaper="bloom"] {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.75), transparent 34%),
+    radial-gradient(circle at 85% 75%, rgba(192, 132, 252, 0.45), transparent 40%),
+    linear-gradient(160deg, #fce7f3 0%, #e9d5ff 50%, #c4b5fd 100%);
+}
+#os-wallpaper[data-wallpaper="midnight"] {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.35), transparent 42%),
+    linear-gradient(180deg, #18181b 0%, #09090b 100%);
+}
+#os-wallpaper[data-wallpaper="sky"] {
   background:
     radial-gradient(circle at 15% 0%, rgba(125, 211, 252, 0.8), transparent 42%),
     radial-gradient(circle at 88% 10%, rgba(196, 181, 253, 0.7), transparent 38%),
     linear-gradient(165deg, #e0f2fe 0%, #f8fafc 50%, #e2e8f0 100%);
-  color: #0f172a;
+}
+
+.os-clock {
+  padding: 6px 6px 0;
+}
+.os-clock-time {
+  font-size: 68px;
+  font-weight: 300;
+  letter-spacing: -2px;
+  line-height: 0.95;
+}
+.os-clock-date {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 560;
+  opacity: 0.88;
+}
+.os-shelf {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+  margin-top: auto;
+  padding: 16px 22px 10px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+#os-home[data-ink="dark"] .os-shelf {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Grid */
@@ -444,11 +551,74 @@ html[data-theme="dark"] #phone-frame[data-form="tablet"]::before {
   border-radius: 12px;
   font-size: 20px;
 }
-#os-home[data-shell="android"] {
-  background:
-    radial-gradient(circle at 12% 0%, rgba(52, 211, 153, 0.28), transparent 36%),
-    radial-gradient(circle at 90% 18%, rgba(59, 130, 246, 0.32), transparent 34%),
-    linear-gradient(180deg, #1f2937 0%, #0f172a 100%);
+#wallpaper-sheet {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: rgba(0, 0, 0, 0.38);
+  align-items: flex-end;
+  font-family: Inter, system-ui, sans-serif;
+}
+#wallpaper-sheet.on { display: flex; animation: rn-fade .18s ease-out; }
+.wp-panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 14px 18px;
+  border-radius: 22px 22px 0 0;
+  background: rgba(255, 255, 255, 0.94);
+  color: #0f172a;
+  max-height: 78%;
+  overflow: auto;
+}
+#wallpaper-sheet.dark .wp-panel { background: rgba(15, 23, 42, 0.94); color: #f8fafc; }
+.wp-title { font-size: 15px; font-weight: 700; margin: 2px 4px 12px; }
+.wp-file {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #0284c7;
+  color: #fff;
+  font: 650 13px/1.2 Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+.wp-file-input { display: none; }
+.wp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.wp-swatch {
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  padding: 0;
+}
+.wp-swatch.on { border-color: #0284c7; }
+.wp-swatch[data-id="aurora"] {
+  background: linear-gradient(165deg, #0f172a 0%, #1e293b 45%, #020617 100%);
+}
+.wp-swatch[data-id="ocean"] {
+  background: linear-gradient(180deg, #083344 0%, #0f172a 55%, #042f2e 100%);
+}
+.wp-swatch[data-id="sunset"] {
+  background: linear-gradient(165deg, #fb923c 0%, #f43f5e 48%, #4c1d95 100%);
+}
+.wp-swatch[data-id="forest"] {
+  background: linear-gradient(180deg, #14532d 0%, #052e16 100%);
+}
+.wp-swatch[data-id="sand"] {
+  background: linear-gradient(165deg, #fef3c7 0%, #fdba74 48%, #fb7185 100%);
+}
+.wp-swatch[data-id="bloom"] {
+  background: linear-gradient(160deg, #fce7f3 0%, #e9d5ff 50%, #c4b5fd 100%);
+}
+.wp-swatch[data-id="midnight"] {
+  background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+}
+.wp-swatch[data-id="sky"] {
+  background: linear-gradient(165deg, #e0f2fe 0%, #f8fafc 50%, #e2e8f0 100%);
 }
 #phone-frame[data-form="tablet"] .os-sys-title,
 #phone-frame[data-form="tablet"] .os-sys-body {
@@ -464,4 +634,299 @@ html[data-theme="dark"] #phone-frame[data-form="tablet"]::before {
 @keyframes rn-slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+@keyframes rn-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes rn-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes rn-app-in {
+  from { transform: scale(0.16); opacity: 0.55; border-radius: 32px; }
+  to { transform: scale(1); opacity: 1; border-radius: 0; }
+}
+@keyframes rn-app-in-center {
+  from { transform: scale(0.86); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes rn-app-in-android {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes rn-app-out {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.86) translateY(8%); opacity: 0; }
+}
+@keyframes rn-app-out-icon {
+  from { transform: scale(1); opacity: 1; border-radius: 0; }
+  to { transform: scale(0.16); opacity: 0; border-radius: 32px; }
+}
+.rn-app-in { animation: rn-app-in .42s cubic-bezier(.2, .85, .2, 1) both; z-index: 3; }
+.rn-app-in-center { animation: rn-app-in-center .32s cubic-bezier(.2, .85, .2, 1) both; z-index: 3; }
+.rn-app-in-android { animation: rn-app-in-android .32s cubic-bezier(.2, .8, .2, 1) both; z-index: 3; }
+.rn-app-out { animation: rn-app-out .28s ease-in both; z-index: 3; }
+.rn-app-out-icon { animation: rn-app-out-icon .28s ease-in both; z-index: 3; }
+
+#emulator-boot {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  background: #000;
+  color: #f8fafc;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+#emulator-boot.on { display: flex; }
+#emulator-boot span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: rn-boot-spin .7s linear infinite;
+}
+@keyframes rn-boot-spin { to { transform: rotate(360deg); } }
+
+#web-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 12px;
+  background: #f4f4f5;
+  border-bottom: 1px solid #e4e4e7;
+  flex-shrink: 0;
+  z-index: 6;
+}
+#web-bar .web-dots { display: flex; gap: 6px; }
+#web-bar .web-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d4d4d8;
+}
+#web-bar .web-dots i:nth-child(1) { background: #fb7185; }
+#web-bar .web-dots i:nth-child(2) { background: #fbbf24; }
+#web-bar .web-dots i:nth-child(3) { background: #34d399; }
+#web-bar .web-url {
+  flex: 1;
+  height: 28px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #52525b;
+  font-size: 12px;
+  font-family: Inter, system-ui, sans-serif;
+}
+#web-bar button {
+  border: 0;
+  background: transparent;
+  color: #3f3f46;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+#web-bar button:hover { background: #e4e4e7; }
+#phone-frame[data-os="web"] #web-bar { display: flex; }
+#phone-frame[data-os="web"]::before,
+#phone-frame[data-os="web"]::after { display: none; }
+#phone-frame[data-os="web"] #status-bar,
+#phone-frame[data-os="web"] #home-indicator-container,
+#phone-frame[data-os="web"] #android-nav,
+#phone-frame[data-os="web"] #phone-notch { display: none !important; }
+#device-stage:has(#phone-frame[data-os="web"]) {
+  align-items: stretch;
+  justify-content: stretch;
+}
+html[data-theme="dark"] #web-bar { background: #18181b; border-bottom-color: #27272a; }
+html[data-theme="dark"] #web-bar .web-url { background: #09090b; border-color: #27272a; color: #d4d4d8; }
+html[data-theme="dark"] #web-bar button { color: #e4e4e7; }
+html[data-theme="dark"] #web-bar button:hover { background: #27272a; }
+
+#os-unsupported {
+  flex-direction: column;
+  background: #f2f2f7;
+}
+#os-unsupported.dark { background: #0f172a; }
+.os-unsup {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 28px 22px;
+  background: #f2f2f7;
+  color: #0f172a;
+  font-family: Inter, system-ui, sans-serif;
+}
+.os-unsup-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+.os-unsup-name { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.os-unsup p { margin: 0; font-size: 14px; line-height: 1.45; color: #475569; max-width: 260px; }
+.os-unsup-sub { margin-top: 8px !important; font-size: 13px !important; }
+.os-unsup-btn {
+  margin-top: 18px;
+  border: 0;
+  background: #0284c7;
+  color: #fff;
+  font-weight: 650;
+  font-size: 15px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+#os-unsupported.dark .os-unsup { background: #0f172a; color: #f8fafc; }
+#os-unsupported.dark .os-unsup p { color: #cbd5e1; }
+
+#app-switcher {
+  background: rgba(8, 10, 18, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  flex-direction: column;
+  color: #fff;
+  font-family: Inter, system-ui, sans-serif;
+}
+.rn-switcher-in { animation: rn-fade .22s ease-out both; }
+.rn-switcher-title {
+  min-height: 18px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 650;
+  padding: 12px 12px 0;
+}
+.rn-switcher-title:empty { display: none; }
+.rn-switcher-cards {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 18px 22px 8px;
+  scroll-snap-type: x mandatory;
+}
+#app-switcher.android .rn-switcher-cards {
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.rn-card {
+  position: relative;
+  flex: 0 0 74%;
+  height: 78%;
+  scroll-snap-align: center;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  touch-action: none;
+  cursor: pointer;
+}
+#app-switcher.android .rn-card { flex: 0 0 auto; width: 100%; height: 210px; }
+.rn-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 8px 12px;
+  color: #fff;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+}
+.rn-card-head span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rn-card-head i {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+.rn-card-body {
+  flex: 1;
+  margin: 0 8px 8px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+}
+#app-switcher.dark .rn-card-body { background: #0f172a; color: #94a3b8; }
+.rn-card-x {
+  position: static;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  line-height: 22px;
+  cursor: pointer;
+}
+.rn-card-away { animation: rn-card-away .2s ease-in both; }
+@keyframes rn-card-away {
+  to { transform: translateY(-120%); opacity: 0; }
+}
+.rn-switcher-hint {
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.8;
+  padding: 0 12px 14px;
+}
+.rn-switcher-empty {
+  margin: auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px;
+  max-width: 240px;
+}
+.rn-switcher-empty b { font-size: 16px; }
+.rn-switcher-empty span { font-size: 13px; opacity: 0.8; line-height: 1.4; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rn-app-in, .rn-app-in-center, .rn-app-in-android, .rn-app-out, .rn-app-out-icon, .rn-switcher-in, .rn-card-away, #emulator-boot span { animation: none !important; }
 }

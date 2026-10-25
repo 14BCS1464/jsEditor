@@ -1,6 +1,28 @@
 // Device simulator: phone chrome, React Native primitives, and preview runtime.
 let currentDevice = 'iphone';
 let currentOrientation = 'portrait';
+const WALLPAPERS = [
+  { id: 'aurora', name: 'Aurora', dark: true, top: '#0f172a', bottom: '#020617' },
+  { id: 'ocean', name: 'Ocean', dark: true, top: '#083344', bottom: '#042f2e' },
+  { id: 'sunset', name: 'Sunset', dark: false, top: '#fb923c', bottom: '#4c1d95' },
+  { id: 'forest', name: 'Forest', dark: true, top: '#14532d', bottom: '#052e16' },
+  { id: 'sand', name: 'Sand', dark: false, top: '#fef3c7', bottom: '#fb7185' },
+  { id: 'bloom', name: 'Bloom', dark: false, top: '#fce7f3', bottom: '#c4b5fd' },
+  { id: 'midnight', name: 'Midnight', dark: true, top: '#18181b', bottom: '#09090b' },
+  { id: 'sky', name: 'Sky', dark: false, top: '#e0f2fe', bottom: '#e2e8f0' }
+];
+let wallpaperId = 'aurora';
+let customWallpaper = null;
+try { wallpaperId = localStorage.getItem('rn-wallpaper') || 'aurora'; } catch (e) {}
+try {
+  const url = localStorage.getItem('rn-wallpaper-image');
+  const meta = JSON.parse(localStorage.getItem('rn-wallpaper-meta') || 'null');
+  if (url && meta && meta.top && meta.bottom) {
+    customWallpaper = { id: 'custom', url: url, dark: !!meta.dark, top: meta.top, bottom: meta.bottom };
+  }
+} catch (e) {}
+if (wallpaperId === 'custom' && !customWallpaper) wallpaperId = 'aurora';
+
 let isDarkPreview = true;
 try { isDarkPreview = localStorage.getItem('rn-device') !== 'light'; } catch (e) {}
 
@@ -526,13 +548,15 @@ const createRNPrimitives = () => {
   // FIX: Platform.OS follows the selected device (ios / android)
   const Platform = {
     get OS() {
+      if (currentDevice === 'web') return 'web';
       return (currentDevice === 'iphone' || currentDevice === 'ipad') ? 'ios' : 'android';
     },
     get isPad() { return currentDevice === 'ipad'; },
     isTV: false,
     isTesting: false,
-    get Version() { return this.OS === 'ios' ? '18.0' : 35; },
+    get Version() { return this.OS === 'ios' ? '18.0' : this.OS === 'web' ? 'web' : 35; },
     get constants() {
+      if (this.OS === 'web') return { reactNativeVersion: { major: 0, minor: 19 }, Model: 'browser' };
       return this.OS === 'ios'
         ? { forceTouchAvailable: false, interfaceIdiom: this.isPad ? 'pad' : 'phone', osVersion: '18.0', systemName: 'iOS' }
         : { Version: 35, Release: '15', Model: 'sdk', uiMode: 'normal', Brand: 'google' };
@@ -792,6 +816,19 @@ function createRNExtras(RN) {
   const Modal = ({ visible, isVisible, transparent, animationType = 'none', onRequestClose, onShow, children }) => {
     const open = visible != null ? !!visible : isVisible != null ? !!isVisible : false;
     const root = document.getElementById('modal-root');
+    const [present, setPresent] = R.useState(open);
+    const [phase, setPhase] = R.useState(open ? 'in' : 'out');
+    R.useEffect(() => {
+      if (open) {
+        setPresent(true);
+        setPhase('in');
+        return;
+      }
+      setPhase('out');
+      const ms = animationType === 'slide' ? 280 : animationType === 'fade' ? 200 : 0;
+      const t = setTimeout(() => setPresent(false), ms);
+      return () => clearTimeout(t);
+    }, [open, animationType]);
     R.useEffect(() => { if (open && onShow) onShow(); }, [open]);
     R.useEffect(() => {
       if (!open) return;
@@ -803,8 +840,13 @@ function createRNExtras(RN) {
         if (sub) sub.remove();
       };
     }, [open, onRequestClose]);
-    if (!open || !root) return null;
-    const anim = animationType === 'slide' ? 'rn-slide-up .28s ease-out both' : animationType === 'fade' ? 'rn-fade .2s ease-out both' : 'none';
+    if (!present || !root) return null;
+    const closing = phase === 'out' && !open;
+    const anim = animationType === 'slide'
+      ? (closing ? 'rn-slide-down .28s ease-in both' : 'rn-slide-up .28s ease-out both')
+      : animationType === 'fade'
+        ? (closing ? 'rn-fade-out .2s ease-in both' : 'rn-fade .2s ease-out both')
+        : 'none';
     const screen = document.getElementById('emulator-screen');
     return ReactDOM.createPortal(h('div', {
       style: {
@@ -1465,6 +1507,8 @@ const DEVICES = {
   // ===== Android tablets =====
   galaxytabs9:    { n: 'Galaxy Tab S9',     w: 753, h: 1205, os: 'android', form: 'tablet', r: 16, type: 'none', sb: 32, dpr: 2 },
   pixeltablet:    { n: 'Pixel Tablet',      w: 800, h: 1280, os: 'android', form: 'tablet', r: 20, type: 'none', sb: 32, dpr: 2 },
+
+  web:            { n: 'Web',               w: 1280, h: 800, os: 'web', form: 'web', r: 16, type: 'none', sb: 0, dpr: 1 },
 };
 
 function isTabletDevice(d) {
@@ -1479,9 +1523,31 @@ function launcherColumns(d, land) {
 let deviceKey = 'iphone15pro';
 let osMode = 'home';
 
+function applyWebDevice() {
+  currentDevice = 'web';
+  const frame = document.getElementById('phone-frame');
+  const wrap = document.getElementById('phone-wrap');
+  const orient = document.getElementById('orient-btn');
+  frame.dataset.form = 'web';
+  frame.dataset.os = 'web';
+  frame.style.borderRadius = '16px';
+  if (orient) orient.style.display = 'none';
+  const wpBtn = document.getElementById('wallpaper-btn');
+  if (wpBtn) wpBtn.style.display = 'none';
+  document.getElementById('resolution-display').innerText = 'Web';
+  paintFrameChrome();
+  fitDevice();
+  osMode = 'expo';
+  showOs();
+}
+
 function applyDevice() {
   const d = DEVICES[deviceKey];
   if (!d) return;
+  if (d.os === 'web') {
+    applyWebDevice();
+    return;
+  }
 
   const land = currentOrientation === 'landscape';
   const w = land ? d.h : d.w;
@@ -1499,6 +1565,10 @@ function applyDevice() {
 
   frame.dataset.form = tablet ? 'tablet' : 'phone';
   frame.dataset.os = d.os;
+  const orient = document.getElementById('orient-btn');
+  if (orient) orient.style.display = '';
+  const wpBtn = document.getElementById('wallpaper-btn');
+  if (wpBtn) wpBtn.style.display = '';
   frame.style.setProperty('--os-cols', String(launcherColumns(d, land)));
 
   // Frame size + radius
@@ -1606,6 +1676,15 @@ function applyDevice() {
 function fitDevice() {
   const frame = document.getElementById('phone-frame');
   const wrap = document.getElementById('phone-wrap');
+  if (deviceKey === 'web') {
+    frame.style.transform = 'none';
+    frame.style.width = '100%';
+    frame.style.height = '100%';
+    wrap.style.width = '100%';
+    wrap.style.height = '100%';
+    window.__deviceScale = 1;
+    return;
+  }
   const area = wrap.parentElement;
   const fw = parseFloat(frame.style.width), fh = parseFloat(frame.style.height);
   const s = Math.max(0.1, Math.min(1, (area.clientWidth - 8) / fw, (area.clientHeight - 8) / fh));
@@ -1624,6 +1703,14 @@ function setDevice(key) {
 function paintFrameChrome() {
   const frame = document.getElementById('phone-frame');
   if (!frame) return;
+  if (frame.dataset.os === 'web') {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    frame.style.borderWidth = '1px';
+    frame.style.borderColor = dark ? '#3f3f46' : '#d4d4d8';
+    frame.style.boxShadow = '0 18px 50px rgba(0,0,0,.28)';
+    return;
+  }
+  frame.style.borderWidth = '12px';
   const dark = document.documentElement.dataset.theme === 'dark';
   if (dark) {
     frame.style.borderColor = '#8d8d92';
@@ -1652,6 +1739,7 @@ function paintOrientIcon() {
 }
 
 function toggleOrientation() {
+  if (deviceKey === 'web') return;
   currentOrientation = currentOrientation === 'portrait' ? 'landscape' : 'portrait';
   applyDevice();
   setTimeout(runCode, 350);
@@ -1659,14 +1747,263 @@ function toggleOrientation() {
 
 document.addEventListener('suite-theme', paintFrameChrome);
 
+function wallpaperById(id) {
+  return WALLPAPERS.find((item) => item.id === id) || WALLPAPERS[0];
+}
+
+function currentWallpaper() {
+  if (wallpaperId === 'custom' && customWallpaper) return customWallpaper;
+  return wallpaperById(wallpaperId);
+}
+
+function rememberCustomWallpaper() {
+  if (!customWallpaper) return;
+  try {
+    localStorage.setItem('rn-wallpaper-image', customWallpaper.url);
+    localStorage.setItem('rn-wallpaper-meta', JSON.stringify({
+      dark: customWallpaper.dark,
+      top: customWallpaper.top,
+      bottom: customWallpaper.bottom
+    }));
+  } catch (e) {}
+}
+
+function sampleStrip(ctx, width, y0, y1) {
+  const h = Math.max(1, y1 - y0);
+  const data = ctx.getImageData(0, y0, width, h).data;
+  let r = 0, g = 0, b = 0, n = 0;
+  const step = Math.max(4, Math.floor(data.length / 1600) * 4);
+  for (let i = 0; i < data.length; i += step) {
+    r += data[i];
+    g += data[i + 1];
+    b += data[i + 2];
+    n++;
+  }
+  return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
+}
+
+function useWallpaperFile(file) {
+  if (!file) return;
+  if (file.type && file.type.indexOf('image/') !== 0) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxEdge = 1280;
+      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const top = sampleStrip(ctx, canvas.width, 0, Math.max(1, Math.round(canvas.height * 0.14)));
+      const bottom = sampleStrip(ctx, canvas.width, Math.min(canvas.height - 1, Math.round(canvas.height * 0.86)), canvas.height);
+      const lum = 0.299 * top[0] + 0.587 * top[1] + 0.114 * top[2];
+      const css = (c) => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+      customWallpaper = {
+        id: 'custom',
+        url: canvas.toDataURL('image/jpeg', 0.82),
+        dark: lum < 160,
+        top: css(top),
+        bottom: css(bottom)
+      };
+      rememberCustomWallpaper();
+      paintCustomSwatch();
+      applyWallpaper('custom');
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function paintCustomSwatch() {
+  const grid = document.querySelector('#wallpaper-sheet .wp-grid');
+  if (!grid) return;
+  let el = grid.querySelector('.wp-swatch[data-id="custom"]');
+  if (!customWallpaper) {
+    if (el) el.remove();
+    return;
+  }
+  if (!el) {
+    el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'wp-swatch';
+    el.dataset.id = 'custom';
+    el.title = 'Your photo';
+    el.setAttribute('aria-label', 'Your photo');
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyWallpaper('custom');
+    });
+    grid.appendChild(el);
+  }
+  el.style.backgroundImage = 'url("' + customWallpaper.url + '")';
+  el.style.backgroundSize = 'cover';
+  el.style.backgroundPosition = 'center';
+  el.classList.toggle('on', wallpaperId === 'custom');
+}
+
+function closeWallpaper() {
+  const sheet = document.getElementById('wallpaper-sheet');
+  if (sheet) sheet.classList.remove('on');
+}
+
+function applyWallpaper(id) {
+  if (id === 'custom' && !customWallpaper) id = 'aurora';
+  const wp = id === 'custom' ? customWallpaper : wallpaperById(id);
+  wallpaperId = wp.id;
+  const home = document.getElementById('os-home');
+  const layer = document.getElementById('os-wallpaper');
+  if (home) {
+    home.dataset.wallpaper = wp.id;
+    home.dataset.ink = wp.dark ? 'light' : 'dark';
+  }
+  if (layer) {
+    layer.dataset.wallpaper = wp.id;
+    if (wp.id === 'custom') {
+      layer.style.backgroundImage = 'url("' + wp.url + '")';
+      layer.style.backgroundSize = 'cover';
+      layer.style.backgroundPosition = 'center';
+      layer.style.backgroundRepeat = 'no-repeat';
+    } else {
+      layer.style.removeProperty('background-image');
+      layer.style.removeProperty('background-size');
+      layer.style.removeProperty('background-position');
+      layer.style.removeProperty('background-repeat');
+    }
+  }
+  try { localStorage.setItem('rn-wallpaper', wp.id); } catch (e) {}
+  const sheet = document.getElementById('wallpaper-sheet');
+  if (sheet) {
+    sheet.querySelectorAll('.wp-swatch').forEach((el) => {
+      el.classList.toggle('on', el.dataset.id === wp.id);
+    });
+  }
+  paintStatusBar();
+}
+
+function ensureWallpaperSheet() {
+  if (document.getElementById('wallpaper-sheet')) return;
+  const screen = document.getElementById('emulator-screen');
+  if (!screen) return;
+  const sheet = document.createElement('div');
+  sheet.id = 'wallpaper-sheet';
+  const panel = document.createElement('div');
+  panel.className = 'wp-panel';
+  const title = document.createElement('div');
+  title.className = 'wp-title';
+  title.textContent = 'Wallpaper';
+  const grid = document.createElement('div');
+  grid.className = 'wp-grid';
+  WALLPAPERS.forEach((wp) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'wp-swatch';
+    btn.dataset.id = wp.id;
+    btn.title = wp.name;
+    btn.setAttribute('aria-label', wp.name);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyWallpaper(wp.id);
+    });
+    grid.appendChild(btn);
+  });
+  const pick = document.createElement('button');
+  pick.type = 'button';
+  pick.className = 'wp-file';
+  pick.textContent = 'From your computer';
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.className = 'wp-file-input';
+  input.setAttribute('aria-label', 'Choose a wallpaper from your computer');
+  pick.addEventListener('click', (e) => {
+    e.stopPropagation();
+    input.click();
+  });
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (file) useWallpaperFile(file);
+  });
+  panel.append(title, pick, input, grid);
+  sheet.appendChild(panel);
+  sheet.addEventListener('click', (e) => {
+    if (e.target === sheet) closeWallpaper();
+  });
+  screen.appendChild(sheet);
+  paintCustomSwatch();
+}
+
+function openWallpaper() {
+  if (deviceKey === 'web') return;
+  const show = () => {
+    if (osMode !== 'home') return;
+    ensureWallpaperSheet();
+    const sheet = document.getElementById('wallpaper-sheet');
+    if (!sheet) return;
+    sheet.classList.toggle('dark', isDarkPreview);
+    paintCustomSwatch();
+    sheet.querySelectorAll('.wp-swatch').forEach((el) => {
+      el.classList.toggle('on', el.dataset.id === wallpaperId);
+    });
+    sheet.classList.add('on');
+  };
+  if (osMode === 'home') {
+    show();
+    return;
+  }
+  goHome();
+  setTimeout(show, motionMs(320));
+}
+
+function bindWallpaper() {
+  ensureWallpaperSheet();
+  applyWallpaper(wallpaperId);
+  const btn = document.getElementById('wallpaper-btn');
+  if (btn) btn.addEventListener('click', openWallpaper);
+  const home = document.getElementById('os-home');
+  if (!home) return;
+  let timer = 0;
+  let start = null;
+  home.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('.os-app, button, a')) return;
+    start = { x: e.clientX, y: e.clientY };
+    timer = setTimeout(() => {
+      timer = 0;
+      openWallpaper();
+    }, 480);
+  });
+  home.addEventListener('pointermove', (e) => {
+    if (!timer || !start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (dx * dx + dy * dy > 64) {
+      clearTimeout(timer);
+      timer = 0;
+    }
+  });
+  const end = () => {
+    if (!timer) return;
+    clearTimeout(timer);
+    timer = 0;
+  };
+  home.addEventListener('pointerup', end);
+  home.addEventListener('pointercancel', end);
+}
+
 function applyPreviewTheme() {
   const screen = document.getElementById('emulator-screen');
   const icon = document.getElementById('theme-icon');
   const home = document.getElementById('os-home');
   const system = document.getElementById('os-system');
   if (window.rnAppearance) window.rnAppearance.set(isDarkPreview ? 'dark' : 'light');
-  if (home) home.classList.toggle('light', !isDarkPreview);
+  if (home) applyWallpaper(wallpaperId);
   if (system) system.classList.toggle('dark', isDarkPreview);
+  const unsupported = document.getElementById('os-unsupported');
+  if (unsupported) unsupported.classList.toggle('dark', isDarkPreview);
+  const switcher = document.getElementById('app-switcher');
+  if (switcher) switcher.classList.toggle('dark', isDarkPreview);
   const kbp = document.getElementById('kb-panel');
   if (kbp) kbp.classList.toggle('dark', isDarkPreview);
   if (window.__kbRerender && window.__kbOpen) window.__kbRerender();
@@ -1711,14 +2048,16 @@ function paintStatusBar() {
     const m = (bg.match(/[\d.]+/g) || [255, 255, 255]).map(Number);
     light = (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) < 140;
   }
-  if (osMode === 'home' || osMode === 'system') light = isDarkPreview;
+  if (osMode === 'system') light = isDarkPreview;
   const nav = document.getElementById('android-nav');
   const themeBg = isDarkPreview ? '#020617' : '#ffffff';
-  if (osMode === 'home') {
-    sb.style.background = isDarkPreview ? '#0f172a' : '#e8eef6';
-    sb.style.color = isDarkPreview ? '#ffffff' : '#0f172a';
-    hic.style.background = isDarkPreview ? '#020617' : '#e2e8f0';
-    screen.style.backgroundColor = themeBg;
+  const wp = currentWallpaper();
+  if (osMode === 'home' || osMode === 'switcher') {
+    light = wp.dark;
+    sb.style.background = 'transparent';
+    sb.style.color = wp.dark ? '#ffffff' : '#0f172a';
+    hic.style.background = 'transparent';
+    screen.style.backgroundColor = 'transparent';
   } else if (osMode === 'system') {
     sb.style.background = isDarkPreview ? '#0f172a' : '#f2f2f7';
     sb.style.color = isDarkPreview ? '#ffffff' : '#0f172a';
@@ -1733,7 +2072,7 @@ function paintStatusBar() {
   sb.style.border = 'none';
   screen.style.border = 'none';
   if (nav) {
-    nav.style.background = sb.style.background;
+    nav.style.background = (osMode === 'home' || osMode === 'switcher') ? 'transparent' : sb.style.background;
     nav.style.color = sb.style.color;
     nav.style.border = 'none';
     nav.style.boxShadow = 'none';
@@ -1865,44 +2204,11 @@ window.shakePhone = () => {
 
 // ---------- Phone launcher (Expo-style home screen) ----------
 const LAUNCHER = [
-  // Core / System
   { id: 'expo', name: 'React Native', bg: '#09090b', fg: '#61dafb', icon: 'fa-brands fa-react', kind: 'expo' },
   { id: 'examples', name: 'Examples', bg: '#4f46e5', fg: '#ffffff', icon: 'fa-solid fa-flask', kind: 'examples' },
-  { id: 'settings', name: 'Settings', bg: '#6b7280', fg: '#ffffff', icon: 'fa-solid fa-gear' },
-  { id: 'appstore', name: 'App Store', bg: '#0ea5e9', fg: '#ffffff', icon: 'fa-brands fa-app-store-ios' },
-  { id: 'files', name: 'Files', bg: '#3b82f6', fg: '#ffffff', icon: 'fa-solid fa-folder' },
-
-  // Media
-  { id: 'photos', name: 'Photos', bg: '#ffffff', fg: '#e11d48', icon: 'fa-solid fa-images' },
-  { id: 'camera', name: 'Camera', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-camera' },
-  { id: 'music', name: 'Music', bg: '#fb7185', fg: '#ffffff', icon: 'fa-solid fa-music' },
-  { id: 'podcasts', name: 'Podcasts', bg: '#7c3aed', fg: '#ffffff', icon: 'fa-solid fa-podcast' },
-  { id: 'tv', name: 'TV', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-tv' },
-
-  // Utilities
-  { id: 'weather', name: 'Weather', bg: '#38bdf8', fg: '#ffffff', icon: 'fa-solid fa-cloud-sun' },
-  { id: 'clock', name: 'Clock', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-clock' },
-  { id: 'calc', name: 'Calculator', bg: '#374151', fg: '#ffffff', icon: 'fa-solid fa-calculator' },
-  { id: 'calendar', name: 'Calendar', bg: '#ef4444', fg: '#ffffff', icon: 'fa-solid fa-calendar' },
-  { id: 'reminders', name: 'Reminders', bg: '#f59e0b', fg: '#ffffff', icon: 'fa-solid fa-list-check' },
-  { id: 'notes', name: 'Notes', bg: '#fde68a', fg: '#92400e', icon: 'fa-solid fa-note-sticky' },
-
-  // Communication
-  { id: 'mail', name: 'Mail', bg: '#2563eb', fg: '#ffffff', icon: 'fa-solid fa-envelope' },
-  { id: 'safari', name: 'Safari', bg: '#ffffff', fg: '#0284c7', icon: 'fa-solid fa-compass' },
-  { id: 'messages', name: 'Messages', bg: '#22c55e', fg: '#ffffff', icon: 'fa-solid fa-comment', dockOnly: true },
-  { id: 'phone', name: 'Phone', bg: '#22c55e', fg: '#ffffff', icon: 'fa-solid fa-phone', dockOnly: true },
-  { id: 'facetime', name: 'FaceTime', bg: '#22c55e', fg: '#ffffff', icon: 'fa-solid fa-video' },
-
-  // Navigation & Maps
-  { id: 'maps', name: 'Maps', bg: '#d1fae5', fg: '#047857', icon: 'fa-solid fa-map-location-dot' },
-
-  // Extra useful ones
-  { id: 'wallet', name: 'Wallet', bg: '#111827', fg: '#ffffff', icon: 'fa-solid fa-wallet' },
-  { id: 'health', name: 'Health', bg: '#ef4444', fg: '#ffffff', icon: 'fa-solid fa-heart-pulse' },
-  { id: 'books', name: 'Books', bg: '#f97316', fg: '#ffffff', icon: 'fa-solid fa-book' },
-  { id: 'stocks', name: 'Stocks', bg: '#111827', fg: '#22c55e', icon: 'fa-solid fa-chart-line' },
 ];
+
+let launchOrigin = null;
 
 function launcherButton(app) {
   const button = document.createElement('button');
@@ -1911,6 +2217,16 @@ function launcherButton(app) {
   button.innerHTML = '<span class="os-icon" style="background:' + app.bg + ';color:' + app.fg + '"><i class="' + app.icon + '"></i></span><span>' + app.name + '</span>';
   button.addEventListener('click', (event) => {
     event.stopPropagation();
+    const icon = button.querySelector('.os-icon');
+    const screen = document.getElementById('emulator-screen');
+    if (icon && screen) {
+      const ir = icon.getBoundingClientRect();
+      const sr = screen.getBoundingClientRect();
+      launchOrigin = {
+        x: ((ir.left + ir.width / 2) - sr.left) / sr.width * 100,
+        y: ((ir.top + ir.height / 2) - sr.top) / sr.height * 100
+      };
+    }
     openApp(app);
   });
   return button;
@@ -1923,99 +2239,325 @@ function buildLauncher() {
   const tablet = isTabletDevice(d);
   home.dataset.shell = !tablet ? 'phone' : d.os === 'ipad' ? 'ipad' : 'android';
   home.innerHTML = '';
-  const grid = document.createElement('div');
-  grid.className = 'os-grid';
-  LAUNCHER.filter((app) => !app.dockOnly).forEach((app) => grid.appendChild(launcherButton(app)));
+  const clock = document.createElement('div');
+  clock.className = 'os-clock';
+  clock.innerHTML = '<div class="os-clock-time" id="os-home-clock"></div><div class="os-clock-date" id="os-home-date"></div>';
   const dock = document.createElement('div');
-  dock.className = 'os-dock' + (home.dataset.shell === 'ipad' ? ' ipad-dock' : home.dataset.shell === 'android' ? ' android-taskbar' : '');
-  const dockIds = home.dataset.shell === 'ipad'
-    ? ['phone', 'messages', 'safari', 'photos', 'notes', 'expo']
-    : home.dataset.shell === 'android'
-      ? ['phone', 'messages', 'photos', 'camera', 'notes', 'expo']
-      : ['phone', 'messages', 'safari', 'expo'];
-  dockIds.forEach((id) => {
-    const app = LAUNCHER.find((item) => item.id === id);
-    if (app) dock.appendChild(launcherButton(app));
-  });
-  home.append(grid, dock);
+  dock.className = 'os-shelf';
+  LAUNCHER.forEach((app) => dock.appendChild(launcherButton(app)));
+  home.append(clock, dock);
+  paintClock();
 }
 
-function systemMarkup(app) {
-  if (app.id === 'photos') {
-    const colors = ['#fda4af', '#93c5fd', '#86efac', '#fde68a', '#c4b5fd', '#fdba74', '#67e8f9', '#f9a8d4', '#a5b4fc'];
-    return '<div class="os-sys-title">Photos</div><div class="os-sys-body"><div class="os-photos">' + colors.map((c) => '<i style="background:' + c + '"></i>').join('') + '</div></div>';
-  }
-  if (app.id === 'camera') return '<div class="os-cam"><div class="os-shutter"></div></div>';
-  if (app.id === 'weather') return '<div class="os-sys-title">Weather</div><div class="os-sys-body"><div class="os-row" style="font-size:42px;font-weight:300">24°</div><div class="os-row">Partly cloudy</div></div>';
-  if (app.id === 'clock') return '<div class="os-sys-title">Clock</div><div class="os-sys-body"><div class="os-row" id="os-app-clock" style="font-size:40px;font-weight:300"></div></div>';
-  if (app.id === 'maps') return '<div class="os-sys-title">Maps</div><div class="os-sys-body"><div class="os-row" style="height:180px;background:linear-gradient(#d1fae5,#bfdbfe);display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-location-dot" style="color:#e11d48;font-size:28px"></i></div></div>';
-  if (app.id === 'notes') return '<div class="os-sys-title">Notes</div><div class="os-sys-body"><div class="os-row">Shopping list</div><div class="os-row">Ideas</div><div class="os-row">Meeting notes</div></div>';
-  if (app.id === 'mail') return '<div class="os-sys-title">Mail</div><div class="os-sys-body"><div class="os-row"><b>Expo</b><div>Your project is ready to open.</div></div><div class="os-row"><b>Welcome</b><div>This mailbox is part of the emulator.</div></div></div>';
-  if (app.id === 'settings') return '<div class="os-sys-title">Settings</div><div class="os-sys-body"><div class="os-row">Wi-Fi</div><div class="os-row">Bluetooth</div><div class="os-row">Display & Brightness</div><div class="os-row">Battery</div></div>';
-  if (app.id === 'phone') return '<div class="os-sys-title">Phone</div><div class="os-sys-body"><div class="os-row">Keypad</div><div class="os-row">Recents</div><div class="os-row">Contacts</div></div>';
-  if (app.id === 'messages') return '<div class="os-sys-title">Messages</div><div class="os-sys-body"><div class="os-row"><b>Expo</b><div>Open the Expo app to run your project.</div></div></div>';
-  return '<div class="os-sys-title">' + app.name + '</div><div class="os-sys-body"><div class="os-row">' + app.name + ' is installed on this emulator.</div></div>';
+let recents = [];
+let screenGen = 0;
+let homeTap = 0;
+
+function motionMs(ms) {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms;
+}
+
+function remember(id) {
+  const at = recents.indexOf(id);
+  if (at >= 0) recents.splice(at, 1);
+  recents.unshift(id);
 }
 
 function showOs() {
   const home = document.getElementById('os-home');
   const system = document.getElementById('os-system');
   const app = document.getElementById('app-root');
+  const blocked = document.getElementById('os-unsupported');
+  const sw = document.getElementById('app-switcher');
   if (!home || !system || !app) return;
-  home.style.display = osMode === 'home' ? 'flex' : 'none';
-  system.style.display = osMode === 'system' ? 'flex' : 'none';
-  app.style.display = osMode === 'expo' ? 'flex' : 'none';
+  const mode = osMode;
+  home.style.display = (mode === 'home' || mode === 'switcher') ? 'flex' : 'none';
+  system.style.display = mode === 'system' ? 'flex' : 'none';
+  app.style.display = mode === 'expo' ? 'flex' : 'none';
+  if (blocked) blocked.style.display = mode === 'unsupported' ? 'flex' : 'none';
+  if (sw) sw.style.display = mode === 'switcher' ? 'flex' : 'none';
   const frame = document.getElementById('phone-frame');
-  if (frame) frame.dataset.screen = osMode;
+  if (frame) frame.dataset.screen = mode;
+  if (mode !== 'home') closeWallpaper();
   paintStatusBar();
-  if (window.__kbHide) window.__kbHide();
+  if (mode !== 'expo' && mode !== 'system' && window.__kbHide) window.__kbHide();
+}
+
+function enterLayer(el) {
+  if (!el) return;
+  el.classList.remove('rn-app-out', 'rn-app-out-icon', 'rn-app-in', 'rn-app-in-center', 'rn-app-in-android');
+  const fromIcon = !!(launchOrigin && currentDevice !== 'android');
+  if (fromIcon) {
+    el.style.transformOrigin = launchOrigin.x + '% ' + launchOrigin.y + '%';
+    el.dataset.originX = String(launchOrigin.x);
+    el.dataset.originY = String(launchOrigin.y);
+  } else if (currentDevice !== 'android') {
+    el.style.transformOrigin = '50% 50%';
+  }
+  launchOrigin = null;
+  const kind = currentDevice === 'android' ? 'rn-app-in-android' : (fromIcon ? 'rn-app-in' : 'rn-app-in-center');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.add(kind);
+      setTimeout(() => el.classList.remove(kind), motionMs(460));
+    });
+  });
+}
+
+function revealApp(mode) {
+  const token = ++screenGen;
+  osMode = mode;
+  showOs();
+  const home = document.getElementById('os-home');
+  const layer = mode === 'expo' ? document.getElementById('app-root')
+    : mode === 'system' ? document.getElementById('os-system')
+    : document.getElementById('os-unsupported');
+  if (home && deviceKey !== 'web') home.style.display = 'flex';
+  enterLayer(layer);
+  setTimeout(() => {
+    if (token !== screenGen) return;
+    if (osMode === 'home' || osMode === 'switcher') return;
+    if (home) home.style.display = 'none';
+  }, motionMs(440));
 }
 
 function goHome() {
-  if (window.__examplesLeave) window.__examplesLeave();
-  osMode = 'home';
-  showOs();
+  if (deviceKey === 'web') return;
+  if (osMode === 'home') return;
+  const token = ++screenGen;
+  const layer = osMode === 'expo' ? document.getElementById('app-root')
+    : osMode === 'system' ? document.getElementById('os-system')
+    : osMode === 'unsupported' ? document.getElementById('os-unsupported')
+    : null;
+  if (!layer || osMode === 'switcher') {
+    osMode = 'home';
+    showOs();
+    return;
+  }
+  document.getElementById('os-home').style.display = 'flex';
+  layer.classList.remove('rn-app-in', 'rn-app-in-center', 'rn-app-in-android');
+  const backToIcon = layer.dataset.originX && currentDevice !== 'android';
+  if (backToIcon) layer.style.transformOrigin = layer.dataset.originX + '% ' + layer.dataset.originY + '%';
+  const outClass = backToIcon ? 'rn-app-out-icon' : 'rn-app-out';
+  layer.classList.add(outClass);
+  setTimeout(() => {
+    layer.classList.remove(outClass);
+    if (token !== screenGen) return;
+    osMode = 'home';
+    showOs();
+  }, motionMs(280));
 }
 
 function goBack() {
+  if (osMode === 'switcher') { goHome(); return; }
   if (window.__rnBack && window.__rnBack()) return;
   if (window.__examplesBack && window.__examplesBack()) return;
   if (osMode !== 'home') goHome();
 }
 
 function openExpo() {
-  osMode = 'expo';
-  showOs();
+  remember('expo');
+  const root = document.getElementById('app-root');
+  const empty = !root || !root.firstElementChild;
+  revealApp('expo');
+  if (empty && window.runCode) window.runCode();
 }
 
 function openExamples() {
-  if (window.__examplesLeave) window.__examplesLeave();
-  osMode = 'system';
-  showOs();
+  remember('examples');
+  revealApp('system');
   if (window.renderExamples) window.renderExamples();
 }
 
+function showUnsupported(app) {
+  const host = document.getElementById('os-unsupported');
+  if (!host) return;
+  host.innerHTML = '<div class="os-unsup">'
+    + '<div class="os-unsup-icon" style="background:' + app.bg + ';color:' + app.fg + '"><i class="' + app.icon + '"></i></div>'
+    + '<div class="os-unsup-name">' + escapeHtml(app.name) + '</div>'
+    + '<p>' + escapeHtml(app.name) + ' is not supported in this emulator yet.</p>'
+    + '<p class="os-unsup-sub">React Native and Examples are the only apps you can open.</p>'
+    + '<button type="button" class="os-unsup-btn">Go Home</button>'
+    + '</div>';
+  host.querySelector('.os-unsup-btn').addEventListener('click', goHome);
+  revealApp('unsupported');
+}
+
 function openApp(app) {
-  if (app.kind === 'expo') {
-    if (window.__examplesLeave) window.__examplesLeave();
-    openExpo();
+  if (app.kind === 'expo') { openExpo(); return; }
+  if (app.kind === 'examples') { openExamples(); return; }
+  showUnsupported(app);
+}
+
+function renderSwitcher() {
+  const sw = document.getElementById('app-switcher');
+  if (!sw) return;
+  const android = currentDevice === 'android';
+  sw.classList.toggle('android', android);
+  if (!recents.length) {
+    sw.innerHTML = '<div class="rn-switcher-empty"><b>No recent apps</b><span>Open React Native or Examples, then come back here to close them.</span></div>';
     return;
   }
-  if (app.kind === 'examples') {
-    openExamples();
-    return;
+  const cards = recents.map((id) => {
+    const app = LAUNCHER.find((item) => item.id === id);
+    if (!app) return '';
+    return '<article class="rn-card" data-app="' + id + '">'
+      + '<div class="rn-card-head">'
+      + '<i class="' + app.icon + '" style="background:' + app.bg + ';color:' + app.fg + '"></i>'
+      + '<span>' + escapeHtml(app.name) + '</span>'
+      + '<button type="button" class="rn-card-x" title="Close ' + escapeHtml(app.name) + '" aria-label="Close ' + escapeHtml(app.name) + '">×</button>'
+      + '</div>'
+      + '<div class="rn-card-body"><i class="' + app.icon + '"></i></div>'
+      + '</article>';
+  }).join('');
+  sw.innerHTML = '<div class="rn-switcher-title">' + (android ? 'Recent apps' : '') + '</div>'
+    + '<div class="rn-switcher-cards">' + cards + '</div>'
+    + '<div class="rn-switcher-hint">Swipe a card up, or tap ×, to close it</div>';
+  sw.querySelectorAll('.rn-card').forEach((card) => {
+    const id = card.getAttribute('data-app');
+    let startY = 0;
+    let dragY = 0;
+    let dragging = false;
+    card.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.rn-card-x')) return;
+      dragging = true;
+      startY = e.clientY;
+      dragY = 0;
+      card.setPointerCapture(e.pointerId);
+    });
+    card.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const scale = window.__deviceScale || 1;
+      dragY = Math.min(0, (e.clientY - startY) / scale);
+      card.style.transform = 'translateY(' + dragY + 'px)';
+    });
+    card.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      if (dragY < -70) {
+        card.classList.add('rn-card-away');
+        setTimeout(() => killRecent(id), motionMs(200));
+      } else if (dragY > -12) {
+        card.style.transform = '';
+        resumeRecent(id);
+      } else {
+        card.style.transform = '';
+      }
+    });
+    card.addEventListener('pointercancel', () => { dragging = false; card.style.transform = ''; });
+    card.querySelector('.rn-card-x').addEventListener('click', (e) => {
+      e.stopPropagation();
+      card.classList.add('rn-card-away');
+      setTimeout(() => killRecent(id), motionMs(200));
+    });
+  });
+}
+
+function resumeRecent(id) {
+  if (id === 'expo') openExpo();
+  else if (id === 'examples') openExamples();
+}
+
+function killRecent(id) {
+  recents = recents.filter((item) => item !== id);
+  if (id === 'examples' && window.__examplesLeave) window.__examplesLeave();
+  if (id === 'expo') {
+    const modal = document.getElementById('modal-root');
+    if (modal) modal.innerHTML = '';
+    if (window.__rnUnmount) window.__rnUnmount();
   }
-  if (window.__examplesLeave) window.__examplesLeave();
-  osMode = 'system';
-  document.getElementById('os-system').innerHTML = systemMarkup(app);
+  if (osMode === 'switcher') renderSwitcher();
+}
+
+function openSwitcher() {
+  if (deviceKey === 'web') return;
+  ++screenGen;
+  renderSwitcher();
+  osMode = 'switcher';
   showOs();
-  paintClock();
+  const sw = document.getElementById('app-switcher');
+  if (sw) {
+    sw.classList.remove('rn-switcher-in');
+    void sw.offsetWidth;
+    sw.classList.add('rn-switcher-in');
+  }
+}
+
+function pressHome() {
+  const now = Date.now();
+  if (now - homeTap < 320) {
+    homeTap = 0;
+    openSwitcher();
+    return;
+  }
+  homeTap = now;
+  goHome();
+}
+
+function restartEmulator() {
+  ++screenGen;
+  recents = [];
+  if (window.__examplesLeave) window.__examplesLeave();
+  if (window.__kbHide) window.__kbHide();
+  const modal = document.getElementById('modal-root');
+  if (modal) modal.innerHTML = '';
+  if (window.__rnUnmount) window.__rnUnmount();
+  const blocked = document.getElementById('os-unsupported');
+  if (blocked) blocked.innerHTML = '';
+  const boot = document.getElementById('emulator-boot');
+  if (boot) boot.classList.add('on');
+  osMode = 'home';
+  showOs();
+  setTimeout(() => {
+    if (boot) boot.classList.remove('on');
+    if (deviceKey === 'web') {
+      osMode = 'expo';
+      showOs();
+      if (window.runCode) window.runCode(true);
+    } else if (window.runCode) {
+      window.runCode();
+    }
+  }, 700);
 }
 
 window.goHome = goHome;
 window.goBack = goBack;
-window.openExpo = openExpo; 
+window.openExpo = openExpo;
+window.openSwitcher = openSwitcher;
+window.restartEmulator = restartEmulator;
 window.openApp = openApp;
+
+(function bindChrome() {
+  const homeBar = document.getElementById('home-indicator-container');
+  const toolbarHome = document.getElementById('toolbar-home');
+  const androidHome = document.getElementById('android-home');
+  const androidBack = document.getElementById('android-back');
+  const androidRecent = document.getElementById('android-recent');
+  const restart = document.getElementById('restart-emulator');
+  const webReload = document.getElementById('web-reload');
+  if (homeBar) homeBar.addEventListener('click', pressHome);
+  if (toolbarHome) toolbarHome.addEventListener('click', pressHome);
+  if (androidHome) androidHome.addEventListener('click', pressHome);
+  if (androidBack) androidBack.addEventListener('click', goBack);
+  if (androidRecent) androidRecent.addEventListener('click', () => { if (osMode === 'switcher') goHome(); else openSwitcher(); });
+  if (restart) restart.addEventListener('click', restartEmulator);
+  if (webReload) webReload.addEventListener('click', () => { if (window.runCode) window.runCode(true); });
+  const sw = document.getElementById('app-switcher');
+  if (sw) sw.addEventListener('click', (e) => {
+    if (osMode !== 'switcher') return;
+    if (e.target.closest('.rn-card')) return;
+    goHome();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const sheet = document.getElementById('wallpaper-sheet');
+    if (sheet && sheet.classList.contains('on')) {
+      closeWallpaper();
+      return;
+    }
+    if (osMode === 'switcher') goHome();
+  });
+})();
 
 function paintBattery(level, charging) {
   const icon = document.getElementById('battery-icon');
@@ -2047,8 +2589,10 @@ function paintClock() {
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   const status = document.getElementById('status-time');
   if (status) status.textContent = time;
-  const appClock = document.getElementById('os-app-clock');
-  if (appClock) appClock.textContent = time;
+  const homeTime = document.getElementById('os-home-clock');
+  const homeDate = document.getElementById('os-home-date');
+  if (homeTime) homeTime.textContent = time;
+  if (homeDate) homeDate.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 setInterval(paintStatusBar, 800);
@@ -2059,6 +2603,7 @@ const picked = document.getElementById('device-select');
 if (picked && DEVICES[picked.value]) deviceKey = picked.value;
 applyDevice();
 applyPreviewTheme();
+bindWallpaper();
 showOs();
 new ResizeObserver(fitDevice).observe(document.getElementById('phone-wrap').parentElement);
 

@@ -577,6 +577,17 @@ function executeRnProject(files) {
   return exported.default || exported.App || (window.__rnAppRegistry && window.__rnAppRegistry.getApplication());
 }
 
+function unmountRnApp() {
+  if (reactRoot) {
+    try { reactRoot.unmount(); } catch (e) {}
+    reactRoot = null;
+  }
+  const mountNode = document.getElementById('app-root');
+  if (mountNode) mountNode.innerHTML = '';
+  if (window.setStatusBar) window.setStatusBar(null);
+}
+window.__rnUnmount = unmountRnApp;
+
 function runCode(launch) {
   if (!editor) return;
 
