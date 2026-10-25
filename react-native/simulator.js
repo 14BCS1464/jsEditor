@@ -1530,6 +1530,8 @@ function applyWebDevice() {
   const orient = document.getElementById('orient-btn');
   frame.dataset.form = 'web';
   frame.dataset.os = 'web';
+  frame.dataset.orient = 'portrait';
+  frame.dataset.cutout = 'none';
   frame.style.borderRadius = '16px';
   if (orient) orient.style.display = 'none';
   const wpBtn = document.getElementById('wallpaper-btn');
@@ -1565,6 +1567,8 @@ function applyDevice() {
 
   frame.dataset.form = tablet ? 'tablet' : 'phone';
   frame.dataset.os = d.os;
+  frame.dataset.orient = land ? 'landscape' : 'portrait';
+  frame.dataset.cutout = d.type || 'none';
   const orient = document.getElementById('orient-btn');
   if (orient) orient.style.display = '';
   const wpBtn = document.getElementById('wallpaper-btn');
@@ -1582,8 +1586,18 @@ function applyDevice() {
   notch.style.cssText = 'display:none;pointer-events:none;';
 
   // ===== Cutout handling (more realistic) =====
-  if (!land && d.type !== 'none') {
-    if (d.type === 'island') {
+  // In landscape the physical top of the phone is the left edge, so the cutout moves there.
+  const cam = '<div class="os-cam"></div>';
+  if (d.type === 'island') {
+    if (land) {
+      notch.style.cssText = `
+        display:block; pointer-events:none;
+        position:absolute; left:10px; top:50%; transform:translateY(-50%);
+        width:34px; height:118px; background:#000; border-radius:20px;
+        z-index:60; box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;
+      `;
+      notch.innerHTML = cam;
+    } else {
       const islandH = 34;
       const islandTop = Math.max(6, Math.round((d.sb - islandH) / 2));
       notch.style.cssText = `
@@ -1592,9 +1606,18 @@ function applyDevice() {
         width:110px; height:${islandH}px; background:#000; border-radius:20px;
         z-index:60; box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;
       `;
-      notch.innerHTML = `<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:12px;height:12px;background:radial-gradient(circle at 35% 35%,#1a1a2e,#000);border-radius:50%;box-shadow:inset 0 0 2px #4a4a6a;"></div>`;
+      notch.innerHTML = cam;
     }
-    else if (d.type === 'notch') {
+  } else if (d.type === 'notch') {
+    if (land) {
+      notch.style.cssText = `
+        display:block; pointer-events:none;
+        position:absolute; left:0; top:50%; transform:translateY(-50%);
+        width:28px; height:146px; background:#000;
+        border-top-right-radius:18px; border-bottom-right-radius:18px;
+        z-index:50;
+      `;
+    } else {
       notch.style.cssText = `
         display:block; pointer-events:none;
         position:absolute; top:0; left:50%; transform:translateX(-50%);
@@ -1603,8 +1626,16 @@ function applyDevice() {
         z-index:50;
       `;
     }
-    else if (d.type === 'punch') {
-      const hole = 14;
+  } else if (d.type === 'punch') {
+    const hole = 14;
+    if (land) {
+      notch.style.cssText = `
+        display:block; pointer-events:none;
+        position:absolute; left:12px; top:50%; transform:translateY(-50%);
+        width:${hole}px; height:${hole}px; background:#000; border-radius:50%;
+        z-index:50; box-shadow:0 0 0 2px #111;
+      `;
+    } else {
       const holeTop = Math.max(8, Math.round((d.sb - hole) / 2));
       notch.style.cssText = `
         display:block; pointer-events:none;
@@ -1618,10 +1649,11 @@ function applyDevice() {
   // ===== Status bar =====
   // Middle column is exactly the cutout width, so the clock and icons stay in the safe side areas.
   const cutoutW = land || d.type === 'none' ? 0 : d.type === 'island' ? 126 : d.type === 'notch' ? 168 : 36;
+  const sbH = land ? Math.min(d.sb, d.os === 'android' ? 28 : 32) : d.sb;
   sb.style.display = 'grid';
   sb.style.gridTemplateColumns = '1fr ' + cutoutW + 'px 1fr';
   sb.style.alignItems = 'center';
-  sb.style.height = d.sb + 'px';
+  sb.style.height = sbH + 'px';
   sb.style.boxSizing = 'border-box';
   sb.style.paddingTop = '0px';
   sb.style.paddingBottom = '0px';
@@ -1631,9 +1663,10 @@ function applyDevice() {
   // ===== Home indicator, classic home button, or Android navigation =====
   const nav = document.getElementById('android-nav');
   const classicHome = d.os === 'iphone' && d.type === 'none' && !land;
-  const gestureHome = d.os === 'ipad' || (d.type !== 'none' && d.os === 'iphone' && !land);
-  const androidNav = d.os === 'android' && (tablet || !land);
+  const gestureHome = d.os === 'ipad' || (d.type !== 'none' && d.os === 'iphone');
+  const androidNav = d.os === 'android';
   nav.style.display = androidNav ? 'flex' : 'none';
+  nav.style.height = land ? '36px' : '48px';
   if (androidNav) {
     hic.style.display = 'none';
     hi.style.display = 'none';

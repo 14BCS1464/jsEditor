@@ -55,6 +55,85 @@ html[data-theme="dark"] #phone-frame {
   width: 3.5px;
   height: 92px;
 }
+#phone-frame[data-orient="landscape"]::before {
+  left: 16%;
+  right: auto;
+  top: auto;
+  bottom: -3.5px;
+  width: 68px;
+  height: 3.5px;
+  box-shadow: 78px 0 0 #222;
+  background: linear-gradient(to right, #3a3a3c, #111111);
+}
+#phone-frame[data-orient="landscape"]::after {
+  left: auto;
+  right: 18%;
+  top: -3.5px;
+  bottom: auto;
+  width: 92px;
+  height: 3.5px;
+  background: linear-gradient(to right, #3a3a3c, #111111);
+}
+#phone-notch .os-cam {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 35% 35%, #1a1a2e, #000);
+  border-radius: 50%;
+  box-shadow: inset 0 0 2px #4a4a6a;
+}
+#phone-frame[data-orient="landscape"] #phone-notch .os-cam {
+  right: auto;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+}
+#phone-frame[data-orient="landscape"] .os-clock-time {
+  font-size: 44px;
+  letter-spacing: -1px;
+}
+#phone-frame[data-orient="landscape"] .os-clock-date { font-size: 14px; }
+#phone-frame[data-orient="landscape"] .os-clock { padding-top: 2px; }
+#phone-frame[data-orient="landscape"] .os-shelf {
+  align-self: center;
+  width: max-content;
+  padding: 12px 28px 8px;
+  gap: 28px;
+}
+#phone-frame[data-orient="landscape"][data-cutout="island"] #os-home,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #os-home {
+  padding-left: 56px;
+}
+#phone-frame[data-orient="landscape"][data-cutout="punch"] #os-home {
+  padding-left: 36px;
+}
+#phone-frame[data-orient="landscape"][data-cutout="island"] #app-root,
+#phone-frame[data-orient="landscape"][data-cutout="island"] #os-system,
+#phone-frame[data-orient="landscape"][data-cutout="island"] #os-unsupported,
+#phone-frame[data-orient="landscape"][data-cutout="island"] #app-switcher,
+#phone-frame[data-orient="landscape"][data-cutout="island"] #modal-root,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #app-root,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #os-system,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #os-unsupported,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #app-switcher,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #modal-root {
+  left: 48px;
+}
+#phone-frame[data-orient="landscape"][data-cutout="punch"] #app-root,
+#phone-frame[data-orient="landscape"][data-cutout="punch"] #os-system,
+#phone-frame[data-orient="landscape"][data-cutout="punch"] #os-unsupported {
+  left: 28px;
+}
+#phone-frame[data-orient="landscape"][data-cutout="island"] #android-nav,
+#phone-frame[data-orient="landscape"][data-cutout="notch"] #android-nav {
+  padding-left: 48px;
+}
+#phone-frame[data-orient="landscape"][data-cutout="punch"] #android-nav {
+  padding-left: 28px;
+}
 
 /* Status bar */
 #status-bar {
