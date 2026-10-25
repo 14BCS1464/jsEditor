@@ -10,8 +10,11 @@ This server makes the call itself, the same way Postman does.
 
 import json
 import os
+import secrets
 import ssl
 import sys
+import threading
+from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -22,6 +25,12 @@ HOST = "127.0.0.1"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
 MAX_BYTES = 8 * 1024 * 1024
 TIMEOUT = 30
+INTERVIEW_DIR = os.path.join(os.path.expanduser("~"), ".js-zero-interview")
+BOOKINGS_FILE = os.path.join(INTERVIEW_DIR, "bookings.json")
+PASSWORD_FILE = os.path.join(INTERVIEW_DIR, "password")
+BMC_TOKEN_FILE = os.path.join(INTERVIEW_DIR, "bmc-token")
+BMC_SUPPORTERS = "https://developers.buymeacoffee.com/api/v1/supporters"
+interview_lock = threading.Lock()
 SKIP_HEADERS = {
     "host",
     "content-length",
@@ -36,24 +45,154 @@ SKIP_HEADERS = {
 
 
 class EditorHandler(SimpleHTTPRequestHandler):
+    # Safari's fetch cannot read an HTTP/1.0 body. It then reports
+    # "The string did not match the expected pattern."
+    protocol_version = "HTTP/1.1"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "close")
+        self.close_connection = True
         super().end_headers()
 
     def do_GET(self):
-        if self.path.split("?", 1)[0] == "/__proxy":
+        path = urlparse(self.path).path
+        if path == "/__proxy":
             self._send_json(200, {"ok": True, "proxy": True})
+            return
+        if path.startswith("/.interview") or path.startswith("/.js-zero-interview"):
+            self.send_error(404)
             return
         super().do_GET()
 
     def do_POST(self):
-        if self.path.split("?", 1)[0] != "/__proxy":
-            self.send_error(404)
+        path = urlparse(self.path).path
+        if path == "/__proxy":
+            self._proxy()
             return
-        self._proxy()
+        if path == "/__interview":
+            try:
+                self._interview()
+            except Exception:
+                self._send_json(500, {"ok": False, "error": "Could not check the payment."})
+            return
+        self.send_error(404)
+
+    def _read_json(self):
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if length < 0 or length > 20000:
+            return None
+        try:
+            return json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return None
+
+    def _interview(self):
+        payload = self._read_json()
+        if not isinstance(payload, dict):
+            self._send_json(400, {"ok": False, "error": "Send the booking as JSON."})
+            return
+        action = payload.get("action")
+        if action == "check":
+            self._check_interview_payment(payload)
+            return
+        if action == "book":
+            self._book_interview(payload)
+            return
+        if action == "list":
+            self._list_interviews(payload)
+            return
+        self._send_json(400, {"ok": False, "error": "Unknown request."})
+
+    def _check_interview_payment(self, payload):
+        email = _clip(payload.get("email"), 120)
+        if "@" not in email or "." not in email.split("@")[-1]:
+            self._send_json(400, {"ok": False, "error": "Add the email you used for the coffee."})
+            return
+        payment, problem = _find_coffee(email)
+        if problem == "not-configured":
+            self._send_json(503, {"ok": False, "error": "Payment check is not connected yet."})
+            return
+        if problem:
+            self._send_json(502, {"ok": False, "error": "Could not reach Buy Me a Coffee."})
+            return
+        if not payment:
+            self._send_json(402, {"ok": False, "error": "No coffee payment found for this email."})
+            return
+        if _coffee_already_used(payment["support_id"]):
+            self._send_json(409, {"ok": False, "error": "This coffee was already used to book a slot."})
+            return
+        self._send_json(200, {"ok": True, "payment": _public_payment(payment), "name": payment.get("payer_name") or ""})
+
+    def _book_interview(self, payload):
+        email = _clip(payload.get("email"), 120)
+        payment, problem = _find_coffee(email)
+        if problem == "not-configured":
+            self._send_json(503, {"ok": False, "error": "Payment check is not connected yet."})
+            return
+        if problem:
+            self._send_json(502, {"ok": False, "error": "Could not reach Buy Me a Coffee."})
+            return
+        if not payment:
+            self._send_json(402, {"ok": False, "error": "No coffee payment found for this email."})
+            return
+        if _coffee_already_used(payment["support_id"]):
+            self._send_json(409, {"ok": False, "error": "This coffee was already used to book a slot."})
+            return
+        name = _clip(payload.get("name"), 80)
+        phone = _clip(payload.get("phone"), 40)
+        experience = _clip(payload.get("experience"), 80)
+        times = _clip(payload.get("times"), 400)
+        note = _clip(payload.get("note"), 1000)
+        topics = payload.get("topics")
+        if not isinstance(topics, list):
+            topics = []
+        topics = [_clip(item, 40) for item in topics if _clip(item, 40)][:8]
+        if not name or "@" not in email or "." not in email.split("@")[-1]:
+            self._send_json(400, {"ok": False, "error": "Add your name and a real email."})
+            return
+        if not times:
+            self._send_json(400, {"ok": False, "error": "Add the days and times you can meet."})
+            return
+        booking = {
+            "id": secrets.token_hex(6),
+            "at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "experience": experience,
+            "topics": topics,
+            "times": times,
+            "note": note,
+            "payment": _public_payment(payment),
+        }
+        with interview_lock:
+            os.makedirs(INTERVIEW_DIR, exist_ok=True)
+            rows = _read_bookings()
+            rows.append(booking)
+            with open(BOOKINGS_FILE, "w", encoding="utf-8") as handle:
+                json.dump(rows, handle, indent=2)
+        self._send_json(200, {"ok": True})
+
+    def _list_interviews(self, payload):
+        given = str(payload.get("password") or "")
+        with interview_lock:
+            expected = ""
+            if os.path.exists(PASSWORD_FILE):
+                with open(PASSWORD_FILE, encoding="utf-8") as handle:
+                    expected = handle.read().strip()
+        if not expected or not secrets.compare_digest(given, expected):
+            self._send_json(401, {"ok": False, "error": "That password does not open the desk."})
+            return
+        with interview_lock:
+            rows = list(reversed(_read_bookings()))
+        self._send_json(200, {"ok": True, "bookings": rows})
 
     def _proxy(self):
         try:
@@ -142,8 +281,107 @@ class EditorHandler(SimpleHTTPRequestHandler):
         super().log_message(fmt, *args)
 
 
+def _clip(value, limit):
+    return " ".join(str(value or "").split())[:limit]
+
+
+def _bmc_token():
+    if not os.path.exists(BMC_TOKEN_FILE):
+        return ""
+    with open(BMC_TOKEN_FILE, encoding="utf-8") as handle:
+        return handle.read().strip()
+
+
+def _coffee_already_used(support_id):
+    for row in _read_bookings():
+        payment = row.get("payment") or {}
+        if payment.get("support_id") == support_id:
+            return True
+    return False
+
+
+def _public_payment(payment):
+    return {
+        "support_id": payment.get("support_id"),
+        "coffees": payment.get("coffees"),
+        "price": payment.get("price"),
+        "currency": payment.get("currency"),
+        "paid_at": payment.get("paid_at"),
+        "email": payment.get("email"),
+    }
+
+
+def _match_coffee(rows, email):
+    wanted = email.strip().lower()
+    for row in rows:
+        if row.get("is_refunded") is True:
+            continue
+        addresses = [row.get("support_email"), row.get("payer_email")]
+        if wanted not in [str(item or "").strip().lower() for item in addresses]:
+            continue
+        return {
+            "support_id": row.get("support_id"),
+            "coffees": row.get("support_coffees"),
+            "price": row.get("support_coffee_price"),
+            "currency": row.get("support_currency") or "USD",
+            "paid_at": row.get("support_created_on") or "",
+            "email": wanted,
+            "payer_name": row.get("supporter_name") or row.get("payer_name") or "",
+        }
+    return None
+
+
+def _find_coffee(email):
+    token = _bmc_token()
+    if not token:
+        return None, "not-configured"
+    url = BMC_SUPPORTERS
+    for _ in range(6):
+        request = Request(url, headers={"Authorization": "Bearer " + token, "Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=TIMEOUT) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except HTTPError:
+            return None, "bmc"
+        except (URLError, json.JSONDecodeError, TimeoutError):
+            return None, "bmc"
+        rows = body.get("data") if isinstance(body, dict) else None
+        if not isinstance(rows, list):
+            return None, "bmc"
+        found = _match_coffee(rows, email)
+        if found:
+            return found, None
+        url = body.get("next_page_url") if isinstance(body, dict) else None
+        if not url:
+            return None, None
+    return None, None
+
+
+def _read_bookings():
+    if not os.path.exists(BOOKINGS_FILE):
+        return []
+    try:
+        with open(BOOKINGS_FILE, encoding="utf-8") as handle:
+            rows = json.load(handle)
+        return rows if isinstance(rows, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _ensure_interview_desk():
+    os.makedirs(INTERVIEW_DIR, exist_ok=True)
+    if not os.path.exists(PASSWORD_FILE):
+        with open(PASSWORD_FILE, "w", encoding="utf-8") as handle:
+            handle.write(secrets.token_urlsafe(9))
+    with open(PASSWORD_FILE, encoding="utf-8") as handle:
+        password = handle.read().strip()
+    print("Interview desk: http://%s:%s/interview-desk.html" % (HOST, PORT), flush=True)
+    print("Interview desk password: %s" % password, flush=True)
+
+
 def main():
     os.chdir(ROOT)
+    _ensure_interview_desk()
     server = ThreadingHTTPServer((HOST, PORT), EditorHandler)
     print("API client ready at http://%s:%s/json/" % (HOST, PORT))
     print("Project APIs are called by this server, so browser CORS does not block them.")

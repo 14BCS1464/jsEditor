@@ -286,6 +286,12 @@
             margin-bottom: 22px;
         }
 
+        button.btn-primary {
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
         .btn-primary {
             padding: 14px 28px;
             border-radius: 10px;
@@ -865,6 +871,182 @@
             color: var(--dim);
         }
 
+        .interview-card {
+            margin-top: 28px;
+            background: var(--bg2);
+            border: 0.5px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+        }
+
+        .interview-card .section-title {
+            font-size: 28px;
+        }
+
+        .interview-lead {
+            margin-top: 10px;
+            max-width: 640px;
+            color: var(--sub);
+            font-size: 15px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .interview-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .interview-form {
+            display: grid;
+            gap: 14px;
+            margin-top: 18px;
+            max-width: 720px;
+        }
+
+        .interview-form label {
+            display: grid;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .interview-form[hidden],
+        #interview-pay-step[hidden],
+        .interview-done[hidden] {
+            display: none;
+        }
+
+        .interview-form input,
+        .interview-form textarea,
+        .interview-form select {
+            width: 100%;
+            border: 0.5px solid var(--border2);
+            background: var(--bg);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: 400 15px/1.5 'DM Sans', sans-serif;
+        }
+
+        .interview-form select {
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, var(--sub) 50%), linear-gradient(135deg, var(--sub) 50%, transparent 50%);
+            background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+        }
+
+        .interview-form textarea {
+            min-height: 88px;
+            resize: vertical;
+        }
+
+        .interview-topics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .interview-form .interview-topics label {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 10px 12px;
+            border: 0.5px solid var(--border2);
+            border-radius: 12px;
+            background: var(--bg);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .interview-form .interview-topics label:has(input:checked) {
+            border-color: var(--accent);
+            background: #ede9fe;
+            color: var(--accent2);
+        }
+
+        .interview-form .interview-topics input {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            padding: 0;
+            flex: 0 0 auto;
+            accent-color: var(--accent);
+        }
+
+        @media (max-width: 560px) {
+            .interview-topics {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .interview-submit {
+            justify-self: start;
+            border: 0;
+            cursor: pointer;
+        }
+
+        .interview-submit:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .interview-done {
+            margin-top: 16px;
+            color: var(--green);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .interview-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(44, 42, 38, 0.45);
+        }
+
+        .interview-modal[hidden] {
+            display: none;
+        }
+
+        .interview-dialog {
+            position: relative;
+            width: min(640px, 100%);
+            max-height: min(86vh, 820px);
+            overflow: auto;
+            background: var(--bg2);
+            border-radius: 20px;
+            padding: 28px 24px 24px;
+        }
+
+        .interview-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            border: 0;
+            background: transparent;
+            color: var(--sub);
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .interview-paid-note {
+            margin-bottom: 8px;
+            color: var(--green);
+            font-size: 14px;
+        }
+
         /* ─── TRUST BADGES ─── */
         .trust-section {
             background: var(--bg2);
@@ -1020,6 +1202,10 @@
                 grid-column: 1 / -1;
             }
 
+            .interview-card {
+                padding: 20px;
+            }
+
             nav {
                 height: auto;
                 display: flex;
@@ -1075,6 +1261,10 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 Features
             </a>
+            <a href="#interview">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Interview
+            </a>
             <a href="#coffee">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
                 Coffee
@@ -1097,6 +1287,9 @@
             <span>For interviews</span>
             A strong tool for companies running live coding interviews.
         </p>
+        <div class="hero-ctas">
+            <button class="btn-primary js-interview-open" type="button">Book a JavaScript interview slot</button>
+        </div>
     </section>
 
     <!-- TOOLS -->
@@ -1370,6 +1563,14 @@
                     <div class="tc-link">Open MCQ →</div>
                 </a>
 
+            </div>
+
+            <div id="interview" class="interview-card">
+                <h2 class="section-title">Book a JavaScript interview slot</h2>
+                <p class="interview-lead">Pay for a coffee with the email you will use here. The details form opens only after Buy Me a Coffee confirms that payment. I then write back with the Meet link.</p>
+                <div class="interview-actions">
+                    <button class="btn-primary js-interview-open" type="button">Book a JavaScript interview slot</button>
+                </div>
             </div>
 
             <div id="coffee">
@@ -1650,11 +1851,78 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
         <div class="footer-logo">js.zero2hero · 2024</div>
         <div class="footer-links">
             <a href="#tools">Editors</a>
+            <a href="#interview">Interview</a>
             <a href="#coffee">Coffee</a>
           
         </div>
         <div class="footer-copy">Free editors in the browser.</div>
     </footer>
+
+    <div id="interview-modal" class="interview-modal" hidden>
+        <div class="interview-dialog" role="dialog" aria-modal="true" aria-labelledby="interview-modal-title">
+            <button class="interview-close" id="interview-close" type="button" aria-label="Close">×</button>
+            <h2 id="interview-modal-title" class="section-title">Book a JavaScript interview slot</h2>
+            <div id="interview-pay-step">
+                <p class="interview-lead">Pay for a coffee first, using the same email you type below. This page asks Buy Me a Coffee if that email has a coffee. The details stay closed when it does not.</p>
+                <div class="interview-actions">
+                    <a class="coffee-btn" href="https://buymeacoffee.com/thejseditors" target="_blank" rel="noopener">Pay for a coffee</a>
+                </div>
+                <form id="interview-check-form" class="interview-form" novalidate>
+                    <label>Email used for the coffee
+                        <input id="interview-pay-email" name="email" type="text" inputmode="email" required maxlength="120" autocomplete="email" spellcheck="false">
+                    </label>
+                    <button class="btn-primary interview-submit" type="submit">Check payment</button>
+                    <p id="interview-check-error" class="coffee-note" hidden></p>
+                </form>
+            </div>
+            <form id="interview-form" class="interview-form" hidden novalidate>
+                <p id="interview-paid-note" class="interview-paid-note"></p>
+                <label>Name
+                    <input name="name" required maxlength="80" autocomplete="name">
+                </label>
+                <label>Email
+                    <input id="interview-email" name="email" type="text" inputmode="email" required maxlength="120" readonly spellcheck="false">
+                </label>
+                <label>Phone or WhatsApp
+                    <input name="phone" maxlength="40" autocomplete="tel">
+                </label>
+                <label>How long have you been writing JavaScript?
+                    <select name="experience" required>
+                        <option value="" selected>Choose years</option>
+                        <option value="1 year">1 year</option>
+                        <option value="2 years">2 years</option>
+                        <option value="3 years">3 years</option>
+                        <option value="4 years">4 years</option>
+                        <option value="5 years">5 years</option>
+                        <option value="6 years">6 years</option>
+                        <option value="7 years">7 years</option>
+                        <option value="8 years">8 years</option>
+                        <option value="9 years">9 years</option>
+                        <option value="10 years">10 years</option>
+                    </select>
+                </label>
+                <div>
+                    <div style="font-size:13px;font-weight:500;margin-bottom:8px">What should we cover?</div>
+                    <div class="interview-topics">
+                        <label><input type="checkbox" name="topics" value="JavaScript basics"><span>JavaScript basics</span></label>
+                        <label><input type="checkbox" name="topics" value="Live coding"><span>Live coding</span></label>
+                        <label><input type="checkbox" name="topics" value="React"><span>React</span></label>
+                        <label><input type="checkbox" name="topics" value="React Native"><span>React Native</span></label>
+                        <label><input type="checkbox" name="topics" value="Interview questions"><span>Interview questions</span></label>
+                    </div>
+                </div>
+                <label>Days and times you can meet
+                    <textarea name="times" required maxlength="400" placeholder="Tuesday evening, or Saturday morning IST"></textarea>
+                </label>
+                <label>Anything I should know before the interview
+                    <textarea name="note" maxlength="1000" placeholder="The role you are preparing for, topics you want to skip, or how you like to practice."></textarea>
+                </label>
+                <button class="btn-primary interview-submit" type="submit">Book this slot</button>
+                <p id="interview-error" class="coffee-note" hidden></p>
+            </form>
+            <p id="interview-done" class="interview-done" hidden>Request received. I will write to the email on the coffee payment and send the Meet link.</p>
+        </div>
+    </div>
 
     <script>
         function switchTab(name, btn) {
@@ -1663,6 +1931,113 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
             document.getElementById('tab-' + name).classList.add('active');
             btn.classList.add('active');
         }
+
+        (function () {
+            var modal = document.getElementById('interview-modal');
+            var payStep = document.getElementById('interview-pay-step');
+            var checkForm = document.getElementById('interview-check-form');
+            var form = document.getElementById('interview-form');
+            var done = document.getElementById('interview-done');
+            var checkError = document.getElementById('interview-check-error');
+            var error = document.getElementById('interview-error');
+            if (!modal || !form || !checkForm) return;
+
+            function openModal() {
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
+            }
+            function closeModal() {
+                modal.hidden = true;
+                document.body.style.overflow = '';
+            }
+            document.querySelectorAll('.js-interview-open').forEach(function (button) {
+                button.addEventListener('click', openModal);
+            });
+            document.getElementById('interview-close').addEventListener('click', closeModal);
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !modal.hidden) closeModal();
+            });
+
+            function postInterview(body) {
+                return fetch('/__interview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                }).then(function (response) {
+                    return response.text().then(function (text) {
+                        var payload = null;
+                        try { payload = JSON.parse(text); } catch (err) { payload = null; }
+                        if (!payload || typeof payload !== 'object') {
+                            throw new Error('The booking server did not answer. Reload the page and try again.');
+                        }
+                        return { ok: response.ok, body: payload };
+                    });
+                });
+            }
+
+            checkForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                checkError.hidden = true;
+                var email = document.getElementById('interview-pay-email').value.trim();
+                if (email.indexOf('@') < 1 || email.indexOf('.') < 0) {
+                    checkError.textContent = 'Add the email you used for the coffee.';
+                    checkError.hidden = false;
+                    return;
+                }
+                var button = checkForm.querySelector('button[type="submit"]');
+                button.disabled = true;
+                postInterview({ action: 'check', email: email }).then(function (result) {
+                    if (!result.body || !result.body.ok) {
+                        throw new Error((result.body && result.body.error) || 'Could not check the payment.');
+                    }
+                    var payment = result.body.payment || {};
+                    payStep.hidden = true;
+                    form.hidden = false;
+                    document.getElementById('interview-email').value = email;
+                    if (result.body.name) form.elements.name.value = result.body.name;
+                    document.getElementById('interview-paid-note').textContent = 'Coffee confirmed'
+                        + (payment.paid_at ? ' on ' + payment.paid_at : '')
+                        + (payment.coffees ? ' · ' + payment.coffees + ' coffee' : '')
+                        + '. Add the interview details.';
+                }).catch(function (err) {
+                    checkError.textContent = err.message || 'Could not check the payment.';
+                    checkError.hidden = false;
+                }).then(function () {
+                    button.disabled = false;
+                });
+            });
+
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                error.hidden = true;
+                var data = new FormData(form);
+                var button = form.querySelector('button[type="submit"]');
+                button.disabled = true;
+                postInterview({
+                    action: 'book',
+                    name: data.get('name'),
+                    email: data.get('email'),
+                    phone: data.get('phone'),
+                    experience: data.get('experience'),
+                    topics: data.getAll('topics'),
+                    times: data.get('times'),
+                    note: data.get('note')
+                }).then(function (result) {
+                    if (!result.body || !result.body.ok) {
+                        throw new Error((result.body && result.body.error) || 'Could not save the booking.');
+                    }
+                    form.hidden = true;
+                    done.hidden = false;
+                }).catch(function (err) {
+                    error.textContent = err.message || 'Could not save the booking.';
+                    error.hidden = false;
+                    button.disabled = false;
+                });
+            });
+        })();
     </script>
 </body>
 

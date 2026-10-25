@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interview desk</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: "DM Sans", sans-serif; background: #f7f6f3; color: #2c2a26; }
+    main { max-width: 760px; margin: 0 auto; padding: 40px 20px 64px; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    p { color: #6b6860; line-height: 1.6; }
+    form { display: flex; gap: 8px; margin: 18px 0 24px; }
+    input { flex: 1; border: 1px solid #d4d0c8; border-radius: 10px; padding: 10px 12px; font: inherit; }
+    button { border: 0; border-radius: 10px; background: #6b5ce7; color: #fff; padding: 10px 16px; font: inherit; cursor: pointer; }
+    article { background: #fff; border: 1px solid #e4e1db; border-radius: 16px; padding: 16px 18px; margin-bottom: 12px; }
+    h2 { font-size: 18px; margin: 0 0 4px; }
+    .meta { font-size: 13px; color: #6b6860; margin-bottom: 8px; }
+    a { color: #5a4fcf; }
+    .error { color: #e05a5a; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Interview desk</h1>
+    <p>A booking is saved only when Buy Me a Coffee lists a coffee for that email. Reply from their email and send the Meet link. The coffee id on each card is the payment.</p>
+    <p>Put your Buy Me a Coffee access token in <code>~/.js-zero-interview/bmc-token</code>. Create it at developers.buymeacoffee.com. The page cannot see a payment without that token.</p>
+    <form id="desk-form">
+      <input id="desk-password" type="password" placeholder="Desk password" autocomplete="current-password" required>
+      <button type="submit">Show bookings</button>
+    </form>
+    <p id="desk-error" class="error" hidden></p>
+    <div id="desk-list"></div>
+  </main>
+  <script>
+    var form = document.getElementById('desk-form');
+    var error = document.getElementById('desk-error');
+    var list = document.getElementById('desk-list');
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      error.hidden = true;
+      list.innerHTML = '';
+      fetch('/__interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list', password: document.getElementById('desk-password').value })
+      }).then(function (response) {
+        return response.json().then(function (body) { return { ok: response.ok, body: body }; });
+      }).then(function (result) {
+        if (!result.ok || !result.body.ok) throw new Error((result.body && result.body.error) || 'Could not open the desk.');
+        var rows = result.body.bookings || [];
+        if (!rows.length) {
+          list.innerHTML = '<p>No bookings yet.</p>';
+          return;
+        }
+        rows.forEach(function (row) {
+          var card = document.createElement('article');
+          var title = document.createElement('h2');
+          title.textContent = row.name || 'Booking';
+          var meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.textContent = row.at || '';
+          var email = document.createElement('div');
+          var link = document.createElement('a');
+          link.href = 'mailto:' + (row.email || '');
+          link.textContent = row.email || '';
+          email.appendChild(link);
+          if (row.phone) email.appendChild(document.createTextNode(' · ' + row.phone));
+          var payment = row.payment || {};
+          var detail = document.createElement('p');
+          detail.textContent = [
+            payment.support_id ? 'Coffee #' + payment.support_id + (payment.paid_at ? ' · ' + payment.paid_at : '') + (payment.price ? ' · ' + payment.price + ' ' + (payment.currency || '') : '') : '',
+            row.experience ? 'Experience: ' + row.experience : '',
+            (row.topics || []).join(', '),
+            row.times ? 'Times: ' + row.times : '',
+            row.note || ''
+          ].filter(Boolean).join('\n');
+          detail.style.whiteSpace = 'pre-wrap';
+          card.append(title, meta, email, detail);
+          list.appendChild(card);
+        });
+      }).catch(function (err) {
+        error.textContent = err.message || 'Could not open the desk.';
+        error.hidden = false;
+      });
+    });
+  </script>
+</body>
+</html>
