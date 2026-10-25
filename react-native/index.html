@@ -49,7 +49,7 @@
       else document.documentElement.dataset.ui = 'light';
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="simulator.css?v=android-line">
+  <link rel="stylesheet" href="simulator.css?v=modal-home">
   <script src="../shared/theme.js"></script>
   <link rel="stylesheet" href="../shared/chrome.css">
   <style>
@@ -432,8 +432,7 @@
 
       <div class="flex-1 min-h-0 flex items-center justify-center w-full my-auto z-10">
         <div id="phone-wrap" style="position:relative;width:360px;height:640px">
-            <div id="phone-frame" class="transition-all duration-300 ease-out rounded-[48px] phone-shadow flex flex-col overflow-hidden select-none" style="left:0;top:0;transform-origin:top left;width:360px;height:640px;">
-          <div id="modal-root" style="position:absolute;top:32px;left:0;right:0;bottom:20px;z-index:45;pointer-events:none;overflow:hidden"></div>
+            <div id="phone-frame" data-screen="home" class="transition-all duration-300 ease-out rounded-[48px] phone-shadow flex flex-col overflow-hidden select-none" style="left:0;top:0;transform-origin:top left;width:360px;height:640px;">
           <div id="phone-notch" style="display:none;pointer-events:none;"></div>
 
           <div id="status-bar" class="shrink-0 z-40">
@@ -453,6 +452,7 @@
             <div id="os-home"></div>
             <div id="os-system"></div>
             <div id="app-root"></div>
+            <div id="modal-root"></div>
           </div>
 
           <div id="kb-panel" class="rn-kb" style="display:none"></div>
@@ -480,8 +480,8 @@
 
   <!-- Monaco AMD loader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
-  <script src="simulator.js?v=android-line"></script>
-  <script src="examples.js"></script>
+  <script src="simulator.js?v=modal-home"></script>
+  <script src="examples.js?v=modal-example"></script>
   <script src="editor.js"></script>
 
 </body>

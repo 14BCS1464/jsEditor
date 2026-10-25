@@ -499,9 +499,28 @@
 </ScrollView>` },
     { id: 'activity', group: 'Components', name: 'ActivityIndicator', blurb: 'A spinning progress marker.', Demo: DemoActivity, code:
 `<ActivityIndicator size="large" color="#0284c7" />` },
-    { id: 'modal', group: 'Components', name: 'Modal', blurb: 'A layer that covers the screen.', Demo: DemoModal, code:
-`<Modal visible={open} transparent animationType="fade">
-  <View>{/* sheet */}</View>
+    { id: 'modal', group: 'Components', name: 'Modal', blurb: 'A dialog that covers the screen.', Demo: DemoModal, code:
+`const [open, setOpen] = useState(false);
+
+<Pressable onPress={() => setOpen(true)}>
+  <Text>Open modal</Text>
+</Pressable>
+
+<Modal
+  visible={open}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setOpen(false)}
+>
+  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '80%' }}>
+      <Text style={{ fontWeight: '700', marginBottom: 8 }}>Modal</Text>
+      <Text style={{ marginBottom: 12 }}>This sits above the screen.</Text>
+      <Pressable onPress={() => setOpen(false)}>
+        <Text style={{ color: '#0284c7' }}>Close</Text>
+      </Pressable>
+    </View>
+  </View>
 </Modal>` },
     { id: 'statusbar', group: 'Components', name: 'StatusBar', blurb: 'Light or dark icons in the status bar.', Demo: DemoStatusBar, code:
 `<StatusBar barStyle="light-content" />

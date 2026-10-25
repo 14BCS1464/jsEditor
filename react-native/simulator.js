@@ -787,19 +787,32 @@ function createRNExtras(RN) {
   };
 
   // ----- Modal (portal into the phone screen) -----
-  const Modal = ({ visible = true, transparent, animationType = 'none', onRequestClose, onShow, children }) => {
+  // `visible` is the React Native prop. `isVisible` is accepted too, since that
+  // is the name used by react-native-modal and a common mix-up. Closed by default.
+  const Modal = ({ visible, isVisible, transparent, animationType = 'none', onRequestClose, onShow, children }) => {
+    const open = visible != null ? !!visible : isVisible != null ? !!isVisible : false;
     const root = document.getElementById('modal-root');
-    R.useEffect(() => { if (visible && onShow) onShow(); }, [visible]);
+    R.useEffect(() => { if (open && onShow) onShow(); }, [open]);
     R.useEffect(() => {
-      if (!visible || !onRequestClose) return;
-      const f = (e) => e.key === 'Escape' && onRequestClose();
-      window.addEventListener('keydown', f);
-      return () => window.removeEventListener('keydown', f);
-    }, [visible, onRequestClose]);
-    if (!visible || !root) return null;
-    const anim = animationType === 'slide' ? 'rn-slide-up .3s ease-out' : animationType === 'fade' ? 'rn-fade .25s' : 'none';
+      if (!open) return;
+      const onKey = (e) => { if (e.key === 'Escape' && onRequestClose) onRequestClose(); };
+      window.addEventListener('keydown', onKey);
+      const sub = onRequestClose ? BackHandler.addEventListener('hardwareBackPress', () => { onRequestClose(); return true; }) : null;
+      return () => {
+        window.removeEventListener('keydown', onKey);
+        if (sub) sub.remove();
+      };
+    }, [open, onRequestClose]);
+    if (!open || !root) return null;
+    const anim = animationType === 'slide' ? 'rn-slide-up .28s ease-out both' : animationType === 'fade' ? 'rn-fade .2s ease-out both' : 'none';
+    const screen = document.getElementById('emulator-screen');
     return ReactDOM.createPortal(h('div', {
-      style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'auto', animation: anim, backgroundColor: transparent ? 'transparent' : (window.__scheme === 'dark' ? '#020617' : '#ffffff'), color: document.getElementById('emulator-screen').style.color }
+      style: {
+        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+        pointerEvents: 'auto', animation: anim,
+        backgroundColor: transparent ? 'transparent' : (window.__scheme === 'dark' ? '#020617' : '#ffffff'),
+        color: screen ? screen.style.color : 'inherit'
+      }
     }, children), root);
   };
 
@@ -1579,9 +1592,6 @@ function applyDevice() {
     hi.dataset.shape = '';
   }
 
-  // Modal root offset
-  document.getElementById('modal-root').style.top = d.sb + 'px';
-
   // Resolution label
   document.getElementById('resolution-display').innerText = `${d.n} • ${w} × ${h}`;
 
@@ -1955,6 +1965,8 @@ function showOs() {
   home.style.display = osMode === 'home' ? 'flex' : 'none';
   system.style.display = osMode === 'system' ? 'flex' : 'none';
   app.style.display = osMode === 'expo' ? 'flex' : 'none';
+  const frame = document.getElementById('phone-frame');
+  if (frame) frame.dataset.screen = osMode;
   paintStatusBar();
   if (window.__kbHide) window.__kbHide();
 }

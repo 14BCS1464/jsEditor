@@ -89,7 +89,7 @@ export default function App() {
       Build native UI across iOS, Android, and Web seamlessly.
     </Text>
     <Text style={styles.hint}>
-      To see examples of TouchableOpacity, animation, Alert, Toast, and the other supported APIs, open the Examples app on the home screen.
+      To see examples of Modal, TouchableOpacity, animation, Alert, Toast, and the other supported APIs, open the Examples app on the home screen.
     </Text>
     
     <TouchableOpacity 
