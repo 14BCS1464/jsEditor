@@ -1004,6 +1004,23 @@
             line-height: 1.6;
         }
 
+        #interview-summary {
+            width: 100%;
+            min-height: 160px;
+            margin-top: 12px;
+            border: 0.5px solid var(--border2);
+            background: var(--bg);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: 400 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+            resize: vertical;
+        }
+
+        #interview-summary[hidden] {
+            display: none;
+        }
+
         .interview-modal {
             position: fixed;
             inset: 0;
@@ -1567,7 +1584,7 @@
 
             <div id="interview" class="interview-card">
                 <h2 class="section-title">Book a JavaScript interview slot</h2>
-                <p class="interview-lead">Pay for a coffee with the email you will use here. The details form opens only after Buy Me a Coffee confirms that payment. I then write back with the Meet link.</p>
+                <p class="interview-lead">Add your interview details, then pay for a coffee and paste those details into the coffee message. I send the Meet link after that coffee arrives.</p>
                 <div class="interview-actions">
                     <button class="btn-primary js-interview-open" type="button">Book a JavaScript interview slot</button>
                 </div>
@@ -1881,7 +1898,7 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                     <input name="name" required maxlength="80" autocomplete="name">
                 </label>
                 <label>Email
-                    <input id="interview-email" name="email" type="text" inputmode="email" required maxlength="120" readonly spellcheck="false">
+                    <input id="interview-email" name="email" type="text" inputmode="email" required maxlength="120" autocomplete="email" spellcheck="false">
                 </label>
                 <label>Phone or WhatsApp
                     <input name="phone" maxlength="40" autocomplete="tel">
@@ -1920,7 +1937,10 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                 <button class="btn-primary interview-submit" type="submit">Book this slot</button>
                 <p id="interview-error" class="coffee-note" hidden></p>
             </form>
-            <p id="interview-done" class="interview-done" hidden>Request received. I will write to the email on the coffee payment and send the Meet link.</p>
+            <div id="interview-done" class="interview-done" hidden>
+                <p id="interview-done-text">Request received. I will write to the email on the coffee payment and send the Meet link.</p>
+                <textarea id="interview-summary" readonly hidden></textarea>
+            </div>
         </div>
     </div>
 
@@ -1938,13 +1958,31 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
             var checkForm = document.getElementById('interview-check-form');
             var form = document.getElementById('interview-form');
             var done = document.getElementById('interview-done');
+            var doneText = document.getElementById('interview-done-text');
+            var summaryBox = document.getElementById('interview-summary');
             var checkError = document.getElementById('interview-check-error');
             var error = document.getElementById('interview-error');
             if (!modal || !form || !checkForm) return;
 
+            function onPublicSite() {
+                var host = location.hostname;
+                if (host === '127.0.0.1' || host === 'localhost' || host === '::1') {
+                    return location.search.indexOf('public-booking=1') !== -1;
+                }
+                return true;
+            }
+
             function openModal() {
                 modal.hidden = false;
                 document.body.style.overflow = 'hidden';
+                done.hidden = true;
+                if (!onPublicSite()) return;
+                payStep.hidden = true;
+                form.hidden = false;
+                summaryBox.hidden = true;
+                document.getElementById('interview-email').readOnly = false;
+                document.getElementById('interview-paid-note').textContent = 'Add the details, then pay for a coffee. Paste the summary into the coffee message. I send the Meet link after that coffee arrives.';
+                form.querySelector('button[type="submit"]').textContent = 'Pay for a coffee';
             }
             function closeModal() {
                 modal.hidden = true;
@@ -1996,7 +2034,9 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                     var payment = result.body.payment || {};
                     payStep.hidden = true;
                     form.hidden = false;
-                    document.getElementById('interview-email').value = email;
+                    var confirmedEmail = document.getElementById('interview-email');
+                    confirmedEmail.value = email;
+                    confirmedEmail.readOnly = true;
                     if (result.body.name) form.elements.name.value = result.body.name;
                     document.getElementById('interview-paid-note').textContent = 'Coffee confirmed'
                         + (payment.paid_at ? ' on ' + payment.paid_at : '')
@@ -2010,11 +2050,47 @@ console.<span class="f">log</span>(<span class="s">`Total: $${total}`</span>);
                 });
             });
 
+            function bookingSummary(data) {
+                var topics = data.getAll('topics');
+                return [
+                    'JavaScript interview request',
+                    'Name: ' + String(data.get('name') || '').trim(),
+                    'Email: ' + String(data.get('email') || '').trim(),
+                    'Phone: ' + String(data.get('phone') || '').trim(),
+                    'Experience: ' + String(data.get('experience') || '').trim(),
+                    'Topics: ' + (topics.length ? topics.join(', ') : 'Not chosen'),
+                    'Times: ' + String(data.get('times') || '').trim(),
+                    'Note: ' + String(data.get('note') || '').trim()
+                ].join('\n');
+            }
+
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
                 error.hidden = true;
                 var data = new FormData(form);
                 var button = form.querySelector('button[type="submit"]');
+                if (onPublicSite()) {
+                    var name = String(data.get('name') || '').trim();
+                    var email = String(data.get('email') || '').trim();
+                    var experience = String(data.get('experience') || '').trim();
+                    var times = String(data.get('times') || '').trim();
+                    if (!name || email.indexOf('@') < 1 || email.indexOf('.') < 0 || !experience || !times) {
+                        error.textContent = 'Add your name, email, years, and a time you can meet.';
+                        error.hidden = false;
+                        return;
+                    }
+                    var summary = bookingSummary(data);
+                    window.open('https://buymeacoffee.com/thejseditors', '_blank', 'noopener');
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(summary).catch(function () {});
+                    }
+                    summaryBox.value = summary;
+                    summaryBox.hidden = false;
+                    doneText.textContent = 'The coffee page is open. Paste this summary into the coffee message, then pay. I send the Meet link after that coffee arrives. If there is no coffee, the slot is not booked.';
+                    form.hidden = true;
+                    done.hidden = false;
+                    return;
+                }
                 button.disabled = true;
                 postInterview({
                     action: 'book',
